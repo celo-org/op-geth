@@ -90,6 +90,13 @@ var PrecompiledContractsBerlin = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{9}): &blake2F{},
 }
 
+// PrecompiledContractsCel2 contains the default set of pre-compiled Ethereum
+// contracts used in the Cel2 release which don't require the extra
+// celoPrecompileContext, while PrecompiledCeloContractsCel2 contains those
+// that do.
+var PrecompiledContractsCel2 = PrecompiledContractsBerlin
+var PrecompiledCeloContractsCel2 = map[common.Address]CeloPrecompiledContract{}
+
 // PrecompiledContractsBLS contains the set of pre-compiled Ethereum
 // contracts specified in EIP-2537. These are exported for testing purposes.
 var PrecompiledContractsBLS = map[common.Address]PrecompiledContract{
@@ -105,6 +112,7 @@ var PrecompiledContractsBLS = map[common.Address]PrecompiledContract{
 }
 
 var (
+	PrecompiledAddressesCel2      []common.Address
 	PrecompiledAddressesBerlin    []common.Address
 	PrecompiledAddressesIstanbul  []common.Address
 	PrecompiledAddressesByzantium []common.Address
@@ -123,6 +131,12 @@ func init() {
 	}
 	for k := range PrecompiledContractsBerlin {
 		PrecompiledAddressesBerlin = append(PrecompiledAddressesBerlin, k)
+	}
+	for k := range PrecompiledContractsCel2 {
+		PrecompiledAddressesCel2 = append(PrecompiledAddressesCel2, k)
+	}
+	for k := range PrecompiledCeloContractsCel2 {
+		PrecompiledAddressesCel2 = append(PrecompiledAddressesCel2, k)
 	}
 }
 
@@ -145,13 +159,13 @@ func ActivePrecompiles(rules params.Rules) []common.Address {
 // - the returned bytes,
 // - the _remaining_ gas,
 // - any error that occurred
-func RunPrecompiledContract(p PrecompiledContract, input []byte, suppliedGas uint64) (ret []byte, remainingGas uint64, err error) {
+func RunPrecompiledContract(p CeloPrecompiledContract, input []byte, suppliedGas uint64, ctx *celoPrecompileContext) (ret []byte, remainingGas uint64, err error) {
 	gasCost := p.RequiredGas(input)
 	if suppliedGas < gasCost {
 		return nil, 0, ErrOutOfGas
 	}
 	suppliedGas -= gasCost
-	output, err := p.Run(input)
+	output, err := p.Run(input, ctx)
 	return output, suppliedGas, err
 }
 
