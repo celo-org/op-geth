@@ -195,12 +195,14 @@ var PrecompiledContractsIsthmus = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{0x01, 0x00}): &p256Verify{},
 }
 
-// PrecompiledContractsCel2 contains the default set of pre-compiled Ethereum
-// contracts used in the Cel2 release which don't require the extra
-// celoPrecompileContext, while PrecompiledCeloContractsCel2 contains those
-// that do.
-var PrecompiledContractsCel2 = PrecompiledContractsGranite
-var PrecompiledCeloContractsCel2 = map[common.Address]CeloPrecompiledContract{}
+// PrecompiledCeloContractsCel2 contains a set of pre-compiled contracts used
+// in the Cel2 release which require the extra celoPrecompileContext.
+// The Cel2 hardfork is handled differently because it can be combined with
+// multiple Ethereum/Optimism hardforks and therefore does not fit into the
+// linear history of normal hardforks.
+var PrecompiledCeloContractsCel2 = map[common.Address]CeloPrecompiledContract{
+	celoPrecompileAddress(2): &transfer{},
+}
 
 var (
 	PrecompiledAddressesIsthmus   []common.Address
