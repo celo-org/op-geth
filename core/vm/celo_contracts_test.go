@@ -6,6 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/holiman/uint256"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -26,10 +27,10 @@ func makeTestHeader(number *big.Int) *types.Header {
 var testHeader = makeTestHeader(big.NewInt(10000))
 
 var vmBlockCtx = BlockContext{
-	CanTransfer: func(db StateDB, addr common.Address, amount *big.Int) bool {
+	CanTransfer: func(db StateDB, addr common.Address, amount *uint256.Int) bool {
 		return db.GetBalance(addr).Cmp(amount) >= 0
 	},
-	Transfer: func(db StateDB, a1, a2 common.Address, i *big.Int) {
+	Transfer: func(db StateDB, a1, a2 common.Address, i *uint256.Int) {
 		panic("transfer: not implemented")
 	},
 	GetHash: func(u uint64) common.Hash {

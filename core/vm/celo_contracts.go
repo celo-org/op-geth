@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/holiman/uint256"
 )
 
 type CeloPrecompiledContract interface {
@@ -59,7 +60,7 @@ func (c *transfer) Run(input []byte, ctx *celoPrecompileContext) ([]byte, error)
 	if isGoldToken, err := ctx.IsCallerGoldToken(); err != nil {
 		return nil, err
 	} else if !isGoldToken {
-		return nil, fmt.Errorf("Unable to call transfer from unpermissioned address")
+		return nil, fmt.Errorf("unable to call transfer from unpermissioned address")
 	}
 
 	// input is comprised of 3 arguments:
@@ -74,22 +75,25 @@ func (c *transfer) Run(input []byte, ctx *celoPrecompileContext) ([]byte, error)
 	from := common.BytesToAddress(input[0:32])
 	to := common.BytesToAddress(input[32:64])
 
-	var parsed bool
 	value, parsed := math.ParseBig256(hexutil.Encode(input[64:96]))
 	if !parsed {
-		return nil, fmt.Errorf("Error parsing transfer: unable to parse value from " + hexutil.Encode(input[64:96]))
+		return nil, fmt.Errorf("error parsing transfer: unable to parse value from " + hexutil.Encode(input[64:96]))
+	}
+	valueU256, overflow := uint256.FromBig(value)
+	if overflow {
+		return nil, fmt.Errorf("overflow in transfer precompile parameters")
 	}
 
 	if from == common.ZeroAddress {
 		// Mint case: Create cGLD out of thin air
-		ctx.evm.StateDB.AddBalance(to, value)
+		ctx.evm.StateDB.AddBalance(to, valueU256)
 	} else {
 		// Fail if we're trying to transfer more than the available balance
-		if !ctx.CanTransfer(ctx.evm.StateDB, from, value) {
+		if !ctx.CanTransfer(ctx.evm.StateDB, from, valueU256) {
 			return nil, ErrInsufficientBalance
 		}
 
-		ctx.Transfer(ctx.evm.StateDB, from, to, value)
+		ctx.Transfer(ctx.evm.StateDB, from, to, valueU256)
 	}
 
 	return input, nil
