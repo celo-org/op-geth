@@ -617,7 +617,7 @@ func DeveloperGenesisBlock(period uint64, gasLimit uint64, faucet common.Address
 	}
 
 	// Assemble and return the genesis with the precompiles and faucet pre-funded
-	return &Genesis{
+	genesis := &Genesis{
 		Config:     &config,
 		ExtraData:  append(append(make([]byte, 32), faucet[:]...), make([]byte, crypto.SignatureLength)...),
 		GasLimit:   gasLimit,
@@ -636,6 +636,13 @@ func DeveloperGenesisBlock(period uint64, gasLimit uint64, faucet common.Address
 			faucet:                           {Balance: new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(9))},
 		},
 	}
+
+	// Add state from celoGenesisAccounts
+	for addr, data := range celoGenesisAccounts() {
+		genesis.Alloc[addr] = data
+	}
+
+	return genesis
 }
 
 func decodePrealloc(data string) GenesisAlloc {
