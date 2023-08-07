@@ -23,4 +23,4 @@ jobs:
         - uses: ./.github/workflows/composite/setup
         - name: Run e2e tests alfajores
           shell: bash
-          run: NETWORK=alfajores e2e_test/run_all_tests.sh
+          run: NETWORK=celo-sepolia e2e_test/run_all_tests.sh
