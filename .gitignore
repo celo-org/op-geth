@@ -9,6 +9,7 @@
 *un~
 .DS_Store
 */**/.DS_Store
+node_modules
 
 #*
 .#*
@@ -57,3 +58,5 @@ cmd/geth/geth
 cmd/rlpdump/rlpdump
 cmd/workload/workload
 cmd/keeper/keeper
+
+e2e_test/debug-fee-currency/*.log
