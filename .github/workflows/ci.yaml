@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+      - celo*
+
+  pull_request:
+    branches:
+      - master
+      - celo*
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  Test:
+    runs-on: ["op-stack", "self-hosted", "org"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/workflows/composite/setup
+
+      - name: Test
+        run: make test
+
+      - name: Run e2e tests local
+        shell: bash
+        run: e2e_test/run_all_tests.sh
+
+  Lint:
+    runs-on: ["op-stack", "self-hosted", "org"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/workflows/composite/setup
+        with:
+          build: false
+          setup-node-e2e: false
+      - name: Lint
+        run: make lint
+
+  Generate:
+    runs-on: ["ubuntu-latest"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/workflows/composite/setup
+        with:
+          build: false
+          setup-node-e2e: false
+      - name: Generate check
+        # Run go generate and see if anything changed.
+        # We need to use || true because currently we do not install protoc
+        # and protoc-gen-go which are required for generating some files,
+        # however despite this the non protobuf related types are generated.
+        run: |
+          go generate ./... || true
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Changes detected after running 'go generate ./...' run generate locally and commit the changes."
+            exit 1
+          fi
+        shell: sh
