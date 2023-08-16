@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+      - celo*
+
+  pull_request:
+    branches:
+      - master
+      - celo*
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  Test:
+    runs-on: ["op-stack", "self-hosted", "org"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/workflows/composite/setup
+
+      - name: Test
+        run: make test
+
+      - name: Run e2e tests local
+        shell: bash
+        run: e2e_test/run_all_tests.sh
+
+  Lint:
+    runs-on: ["op-stack", "self-hosted", "org"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/workflows/composite/setup
+        with:
+          build: false
+          setup-node-e2e: false
+      - name: Lint
+        run: make lint
+
+  Generate:
+    runs-on: ["ubuntu-latest"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/workflows/composite/setup
+        with:
+          build: false
+          setup-node-e2e: false
+      - name: Generate check
+        # Run go generate and see if anything changed.
+        run: |
+          go run build/ci.go check_generate
