@@ -1,0 +1,26 @@
+name: e2e-test-deployed-network
+
+on:
+  schedule:
+    - cron: "0 14 * * *"
+  pull_request:
+    branches:
+      - master
+      - celo*
+    paths:
+      - 'e2e_test/**'
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e-tests:
+    runs-on: ["op-stack","self-hosted","org"]
+    steps:
+        - uses: actions/checkout@v4
+        - uses: ./.github/workflows/composite/setup
+        - name: Run e2e tests alfajores
+          shell: bash
+          run: NETWORK=alfajores e2e_test/run_all_tests.sh
