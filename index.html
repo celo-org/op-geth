@@ -1,0 +1,1086 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.2/font/bootstrap-icons.css">
+
+    <title>CELO <> OP op-geth forkdiff</title>
+
+    <link rel="icon" type="image/x-icon" href="">
+
+    <style>
+        .line-stat {
+            width: 14rem;
+            float: right;
+        }
+        .line-stat div {
+            width: 50%;
+        }
+    </style>
+
+    
+<style>
+    .term-container {
+        background: #171717;
+        border-radius: 5px;
+        color: white;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        font-family: "SFMono-Regular", Monaco, Menlo, Consolas, "Liberation Mono", Courier, monospace;
+        font-size: 12px;
+        line-height: 20px;
+        padding: 14px 18px;
+        white-space: pre-wrap;
+    }
+
+    .term-container img { max-width: 100%; }
+
+    .term a { color: inherit; text-decoration: underline; text-decoration-style: dashed; }
+    .term a:hover { color: #2882F9 }
+
+    @keyframes blink-animation {
+        to {
+            visibility: hidden;
+        }
+    }
+
+    .term-fg1 { } /* don't bold beccause it looks weird */
+    .term-fg2 { color: #838887; } /* faint (decreased intensity) - same as gray really */
+    .term-fg3 { font-style: italic; } /* italic */
+    .term-fg4 { text-decoration: underline; } /* underline */
+    .term-fg5 { animation: blink-animation 1s steps(3, start) infinite; } /* blink */
+    .term-fg9 { text-decoration: line-through; } /* crossed-out */
+
+    .term-fg30 { color: #666666; } /* black (but we can't use black, so a diff color) */
+    .term-fg31 { color: #ff7070; } /* red */
+    .term-fg32 { color: #b0f986; } /* green */
+    .term-fg33 { color: #c6c502; } /* yellow */
+    .term-fg34 { color: #8db7e0; } /* blue */
+    .term-fg35 { color: #f271fb; } /* magenta */
+    .term-fg36 { color: #6bf7ff; } /* cyan */
+
+    /* high intense colors */
+    .term-fgi1 { color: #5ef765; }
+    .term-fgi90 { color: #838887; } /* grey */
+    .term-fgi91 { color: #ff3333; } /* red */
+    .term-fgi92 { color: #00FF00; } /* green */
+    .term-fgi93 { color: #fffc67; } /* yellow */
+    .term-fgi94 { color: #6871ff; } /* blue */
+    .term-fgi95 { color: #ff76ff; } /* magenta */
+    .term-fgi96 { color: #60fcff; } /* cyan */
+
+    /* background colors */
+    .term-bg40 { background: #676767; } /* grey */
+    .term-bg41 { background: #ff4343; } /* red */
+    .term-bg42 { background: #99ff5f; } /* green */
+
+    /* custom foreground/background combos for readability */
+    .term-fg31.term-bg40 { color: #F8A39F; }
+
+    /* xterm colors */
+    .term-fgx16 { color: #000000; }
+    .term-fgx17 { color: #00005f; }
+    .term-fgx18 { color: #000087; }
+    .term-fgx19 { color: #0000af; }
+    .term-fgx20 { color: #0000d7; }
+    .term-fgx21 { color: #0000ff; }
+    .term-fgx22 { color: #005f00; }
+    .term-fgx23 { color: #005f5f; }
+    .term-fgx24 { color: #005f87; }
+    .term-fgx25 { color: #005faf; }
+    .term-fgx26 { color: #005fd7; }
+    .term-fgx27 { color: #005fff; }
+    .term-fgx28 { color: #008700; }
+    .term-fgx29 { color: #00875f; }
+    .term-fgx30 { color: #008787; }
+    .term-fgx31 { color: #0087af; }
+    .term-fgx32 { color: #0087d7; }
+    .term-fgx33 { color: #0087ff; }
+    .term-fgx34 { color: #00af00; }
+    .term-fgx35 { color: #00af5f; }
+    .term-fgx36 { color: #00af87; }
+    .term-fgx37 { color: #00afaf; }
+    .term-fgx38 { color: #00afd7; }
+    .term-fgx39 { color: #00afff; }
+    .term-fgx40 { color: #00d700; }
+    .term-fgx41 { color: #00d75f; }
+    .term-fgx42 { color: #00d787; }
+    .term-fgx43 { color: #00d7af; }
+    .term-fgx44 { color: #00d7d7; }
+    .term-fgx45 { color: #00d7ff; }
+    .term-fgx46 { color: #00ff00; }
+    .term-fgx47 { color: #00ff5f; }
+    .term-fgx48 { color: #00ff87; }
+    .term-fgx49 { color: #00ffaf; }
+    .term-fgx50 { color: #00ffd7; }
+    .term-fgx51 { color: #00ffff; }
+    .term-fgx52 { color: #5f0000; }
+    .term-fgx53 { color: #5f005f; }
+    .term-fgx54 { color: #5f0087; }
+    .term-fgx55 { color: #5f00af; }
+    .term-fgx56 { color: #5f00d7; }
+    .term-fgx57 { color: #5f00ff; }
+    .term-fgx58 { color: #5f5f00; }
+    .term-fgx59 { color: #5f5f5f; }
+    .term-fgx60 { color: #5f5f87; }
+    .term-fgx61 { color: #5f5faf; }
+    .term-fgx62 { color: #5f5fd7; }
+    .term-fgx63 { color: #5f5fff; }
+    .term-fgx64 { color: #5f8700; }
+    .term-fgx65 { color: #5f875f; }
+    .term-fgx66 { color: #5f8787; }
+    .term-fgx67 { color: #5f87af; }
+    .term-fgx68 { color: #5f87d7; }
+    .term-fgx69 { color: #5f87ff; }
+    .term-fgx70 { color: #5faf00; }
+    .term-fgx71 { color: #5faf5f; }
+    .term-fgx72 { color: #5faf87; }
+    .term-fgx73 { color: #5fafaf; }
+    .term-fgx74 { color: #5fafd7; }
+    .term-fgx75 { color: #5fafff; }
+    .term-fgx76 { color: #5fd700; }
+    .term-fgx77 { color: #5fd75f; }
+    .term-fgx78 { color: #5fd787; }
+    .term-fgx79 { color: #5fd7af; }
+    .term-fgx80 { color: #5fd7d7; }
+    .term-fgx81 { color: #5fd7ff; }
+    .term-fgx82 { color: #5fff00; }
+    .term-fgx83 { color: #5fff5f; }
+    .term-fgx84 { color: #5fff87; }
+    .term-fgx85 { color: #5fffaf; }
+    .term-fgx86 { color: #5fffd7; }
+    .term-fgx87 { color: #5fffff; }
+    .term-fgx88 { color: #870000; }
+    .term-fgx89 { color: #87005f; }
+    .term-fgx90 { color: #870087; }
+    .term-fgx91 { color: #8700af; }
+    .term-fgx92 { color: #8700d7; }
+    .term-fgx93 { color: #8700ff; }
+    .term-fgx94 { color: #875f00; }
+    .term-fgx95 { color: #875f5f; }
+    .term-fgx96 { color: #875f87; }
+    .term-fgx97 { color: #875faf; }
+    .term-fgx98 { color: #875fd7; }
+    .term-fgx99 { color: #875fff; }
+    .term-fgx100 { color: #878700; }
+    .term-fgx101 { color: #87875f; }
+    .term-fgx102 { color: #878787; }
+    .term-fgx103 { color: #8787af; }
+    .term-fgx104 { color: #8787d7; }
+    .term-fgx105 { color: #8787ff; }
+    .term-fgx106 { color: #87af00; }
+    .term-fgx107 { color: #87af5f; }
+    .term-fgx108 { color: #87af87; }
+    .term-fgx109 { color: #87afaf; }
+    .term-fgx110 { color: #87afd7; }
+    .term-fgx111 { color: #87afff; }
+    .term-fgx112 { color: #87d700; }
+    .term-fgx113 { color: #87d75f; }
+    .term-fgx114 { color: #87d787; }
+    .term-fgx115 { color: #87d7af; }
+    .term-fgx116 { color: #87d7d7; }
+    .term-fgx117 { color: #87d7ff; }
+    .term-fgx118 { color: #87ff00; }
+    .term-fgx119 { color: #87ff5f; }
+    .term-fgx120 { color: #87ff87; }
+    .term-fgx121 { color: #87ffaf; }
+    .term-fgx122 { color: #87ffd7; }
+    .term-fgx123 { color: #87ffff; }
+    .term-fgx124 { color: #af0000; }
+    .term-fgx125 { color: #af005f; }
+    .term-fgx126 { color: #af0087; }
+    .term-fgx127 { color: #af00af; }
+    .term-fgx128 { color: #af00d7; }
+    .term-fgx129 { color: #af00ff; }
+    .term-fgx130 { color: #af5f00; }
+    .term-fgx131 { color: #af5f5f; }
+    .term-fgx132 { color: #af5f87; }
+    .term-fgx133 { color: #af5faf; }
+    .term-fgx134 { color: #af5fd7; }
+    .term-fgx135 { color: #af5fff; }
+    .term-fgx136 { color: #af8700; }
+    .term-fgx137 { color: #af875f; }
+    .term-fgx138 { color: #af8787; }
+    .term-fgx139 { color: #af87af; }
+    .term-fgx140 { color: #af87d7; }
+    .term-fgx141 { color: #af87ff; }
+    .term-fgx142 { color: #afaf00; }
+    .term-fgx143 { color: #afaf5f; }
+    .term-fgx144 { color: #afaf87; }
+    .term-fgx145 { color: #afafaf; }
+    .term-fgx146 { color: #afafd7; }
+    .term-fgx147 { color: #afafff; }
+    .term-fgx148 { color: #afd700; }
+    .term-fgx149 { color: #afd75f; }
+    .term-fgx150 { color: #afd787; }
+    .term-fgx151 { color: #afd7af; }
+    .term-fgx152 { color: #afd7d7; }
+    .term-fgx153 { color: #afd7ff; }
+    .term-fgx154 { color: #afff00; }
+    .term-fgx155 { color: #afff5f; }
+    .term-fgx156 { color: #afff87; }
+    .term-fgx157 { color: #afffaf; }
+    .term-fgx158 { color: #afffd7; }
+    .term-fgx159 { color: #afffff; }
+    .term-fgx160 { color: #d70000; }
+    .term-fgx161 { color: #d7005f; }
+    .term-fgx162 { color: #d70087; }
+    .term-fgx163 { color: #d700af; }
+    .term-fgx164 { color: #d700d7; }
+    .term-fgx165 { color: #d700ff; }
+    .term-fgx166 { color: #d75f00; }
+    .term-fgx167 { color: #d75f5f; }
+    .term-fgx168 { color: #d75f87; }
+    .term-fgx169 { color: #d75faf; }
+    .term-fgx170 { color: #d75fd7; }
+    .term-fgx171 { color: #d75fff; }
+    .term-fgx172 { color: #d78700; }
+    .term-fgx173 { color: #d7875f; }
+    .term-fgx174 { color: #d78787; }
+    .term-fgx175 { color: #d787af; }
+    .term-fgx176 { color: #d787d7; }
+    .term-fgx177 { color: #d787ff; }
+    .term-fgx178 { color: #d7af00; }
+    .term-fgx179 { color: #d7af5f; }
+    .term-fgx180 { color: #d7af87; }
+    .term-fgx181 { color: #d7afaf; }
+    .term-fgx182 { color: #d7afd7; }
+    .term-fgx183 { color: #d7afff; }
+    .term-fgx184 { color: #d7d700; }
+    .term-fgx185 { color: #d7d75f; }
+    .term-fgx186 { color: #d7d787; }
+    .term-fgx187 { color: #d7d7af; }
+    .term-fgx188 { color: #d7d7d7; }
+    .term-fgx189 { color: #d7d7ff; }
+    .term-fgx190 { color: #d7ff00; }
+    .term-fgx191 { color: #d7ff5f; }
+    .term-fgx192 { color: #d7ff87; }
+    .term-fgx193 { color: #d7ffaf; }
+    .term-fgx194 { color: #d7ffd7; }
+    .term-fgx195 { color: #d7ffff; }
+    .term-fgx196 { color: #ff0000; }
+    .term-fgx197 { color: #ff005f; }
+    .term-fgx198 { color: #ff0087; }
+    .term-fgx199 { color: #ff00af; }
+    .term-fgx200 { color: #ff00d7; }
+    .term-fgx201 { color: #ff00ff; }
+    .term-fgx202 { color: #ff5f00; }
+    .term-fgx203 { color: #ff5f5f; }
+    .term-fgx204 { color: #ff5f87; }
+    .term-fgx205 { color: #ff5faf; }
+    .term-fgx206 { color: #ff5fd7; }
+    .term-fgx207 { color: #ff5fff; }
+    .term-fgx208 { color: #ff8700; }
+    .term-fgx209 { color: #ff875f; }
+    .term-fgx210 { color: #ff8787; }
+    .term-fgx211 { color: #ff87af; }
+    .term-fgx212 { color: #ff87d7; }
+    .term-fgx213 { color: #ff87ff; }
+    .term-fgx214 { color: #ffaf00; }
+    .term-fgx215 { color: #ffaf5f; }
+    .term-fgx216 { color: #ffaf87; }
+    .term-fgx217 { color: #ffafaf; }
+    .term-fgx218 { color: #ffafd7; }
+    .term-fgx219 { color: #ffafff; }
+    .term-fgx220 { color: #ffd700; }
+    .term-fgx221 { color: #ffd75f; }
+    .term-fgx222 { color: #ffd787; }
+    .term-fgx223 { color: #ffd7af; }
+    .term-fgx224 { color: #ffd7d7; }
+    .term-fgx225 { color: #ffd7ff; }
+    .term-fgx226 { color: #ffff00; }
+    .term-fgx227 { color: #ffff5f; }
+    .term-fgx228 { color: #ffff87; }
+    .term-fgx229 { color: #ffffaf; }
+    .term-fgx230 { color: #ffffd7; }
+    .term-fgx231 { color: #ffffff; }
+    .term-fgx232 { color: #080808; }
+    .term-fgx233 { color: #121212; }
+    .term-fgx234 { color: #1c1c1c; }
+    .term-fgx235 { color: #262626; }
+    .term-fgx236 { color: #303030; }
+    .term-fgx237 { color: #3a3a3a; }
+    .term-fgx238 { color: #444444; }
+    .term-fgx239 { color: #4e4e4e; }
+    .term-fgx240 { color: #585858; }
+    .term-fgx241 { color: #626262; }
+    .term-fgx242 { color: #6c6c6c; }
+    .term-fgx243 { color: #767676; }
+    .term-fgx244 { color: #808080; }
+    .term-fgx245 { color: #8a8a8a; }
+    .term-fgx246 { color: #949494; }
+    .term-fgx247 { color: #9e9e9e; }
+    .term-fgx248 { color: #a8a8a8; }
+    .term-fgx249 { color: #b2b2b2; }
+    .term-fgx250 { color: #bcbcbc; }
+    .term-fgx251 { color: #c6c6c6; }
+    .term-fgx252 { color: #d0d0d0; }
+    .term-fgx253 { color: #dadada; }
+    .term-fgx254 { color: #e4e4e4; }
+    .term-fgx255 { color: #eeeeee; }
+</style>
+
+</head>
+<body>
+    <div class="col-xl-10 col-xxl-8 mx-auto px-3 py-1 py-md-3">
+        <main class="container-fluid">
+            <div class="row">
+                <div>
+                    <div class="float-end">
+                        <div class="form-check form-switch">
+                            <i class="bi bi-brightness-low" id="dark-mode-icon"></i>
+                            <input class="form-check-input" type="checkbox" role="switch" id="dark-mode-toggle" data-bs-toggle="tooltip"
+                                   data-bs-placement="bottom" data-bs-title="Toggle Dark Mode"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="ps-1 py-2 my-1"><div class="row border-bottom border-1"role="button" aria-expanded="true" aria-controls="id-dcddc67c8826171c10c8561c">
+        
+            <div class="col-12 col-sm-9 text-start"><h1>Celo's op-geth</h1></div>
+        
+        <div class="col-12 col-sm-3 ms-auto mt-2">
+            <div class="row line-stat">
+                <div class="text-end"><span class="text-success">+0</span></div>
+                <div class="text-start"><span class="text-danger">-0</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row forkdef-content collapse show border-1 ps-3 my-3" id="id-dcddc67c8826171c10c8561c">
+        <div><p>This is an overview of the changes in <a href="https://github.com/celo-org/op-geth">Celo&rsquo;s <code>op-geth</code> implementation</a>,
+a fork of <a href="https://github.com/ethereum-optimism/op-geth">Optimism&rsquo;s <code>op-geth</code></a>.</p>
+
+<p>For differences between the base <code>op-geth</code> and <code>go-ethereum</code>, check out Optimism&rsquo;s
+<a href="https://op-geth.optimism.io/">fork-diff overview of changes</a>.</p>
+</div>
+        <div>
+            
+        </div>
+        <div>
+            
+                <div class="ps-1 py-2 my-1"><div class="row border-bottom border-1"data-bs-toggle="collapse" data-bs-target="#id-e3bf53defd3cd9498951f2e4"role="button" aria-expanded="false" aria-controls="id-e3bf53defd3cd9498951f2e4">
+        
+            <div class="col-12 col-sm-9 text-start"><h2>Celo-specific features</h2></div>
+        
+        <div class="col-12 col-sm-3 ms-auto mt-2">
+            <div class="row line-stat">
+                <div class="text-end"><span class="text-success">+0</span></div>
+                <div class="text-start"><span class="text-danger">-0</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row forkdef-content collapse  border-1 ps-3 my-3" id="id-e3bf53defd3cd9498951f2e4">
+        <div></div>
+        <div>
+            
+        </div>
+        <div>
+            
+                <div class="ps-1 py-2 my-1"><div class="row border-bottom border-1"data-bs-toggle="collapse" data-bs-target="#id-644798414f0bd39aa9dc1055"role="button" aria-expanded="false" aria-controls="id-644798414f0bd39aa9dc1055">
+        
+            <div class="col-12 col-sm-9 text-start"><h3>Celo token duality</h3></div>
+        
+        <div class="col-12 col-sm-3 ms-auto mt-2">
+            <div class="row line-stat">
+                <div class="text-end"><span class="text-success">+0</span></div>
+                <div class="text-start"><span class="text-danger">-0</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row forkdef-content collapse  border-1 ps-3 my-3" id="id-644798414f0bd39aa9dc1055">
+        <div><p>The Celo token is both the native token and ERC-20 compatible.</p>
+</div>
+        <div>
+            
+        </div>
+        <div>
+            
+        </div>
+    </div>
+</div>
+
+            
+                <div class="ps-1 py-2 my-1"><div class="row border-bottom border-1"data-bs-toggle="collapse" data-bs-target="#id-d29d8b4ce6959e49714e53ec"role="button" aria-expanded="false" aria-controls="id-d29d8b4ce6959e49714e53ec">
+        
+            <div class="col-12 col-sm-9 text-start"><h3>Chain config</h3></div>
+        
+        <div class="col-12 col-sm-3 ms-auto mt-2">
+            <div class="row line-stat">
+                <div class="text-end"><span class="text-success">+0</span></div>
+                <div class="text-start"><span class="text-danger">-0</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row forkdef-content collapse  border-1 ps-3 my-3" id="id-d29d8b4ce6959e49714e53ec">
+        <div></div>
+        <div>
+            
+        </div>
+        <div>
+            
+        </div>
+    </div>
+</div>
+
+            
+        </div>
+    </div>
+</div>
+
+            
+        </div>
+    </div>
+</div>
+
+                
+                    <div class="text-muted">
+                        <div class="ps-1 py-2 my-1"><div class="row border-bottom border-1"data-bs-toggle="collapse" data-bs-target="#id-c905148b5175ce401492ca2f"role="button" aria-expanded="false" aria-controls="id-c905148b5175ce401492ca2f">
+        
+            <div class="col-12 col-sm-9 text-start"><h4>Ignored changes</h4></div>
+        
+        <div class="col-12 col-sm-3 ms-auto mt-2">
+            <div class="row line-stat">
+                <div class="text-end"><span class="text-success">+25</span></div>
+                <div class="text-start"><span class="text-danger">-346</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row forkdef-content collapse  border-1 ps-3 my-3" id="id-c905148b5175ce401492ca2f">
+        <div></div>
+        <div>
+            
+                <div class="border-bottom"><div class="row">
+            <div class="col-12 col-md-4 text-start pe-2">
+                <a class="text-decoration-none" data-bs-toggle="collapse" href="#id-2874a93c0af10402cdbaf282" role="button"
+                   aria-expanded="false" aria-controls="id-2874a93c0af10402cdbaf282">
+                    <code>.circleci/config.yml</code>
+                </a>
+            </div>
+
+            <div class="col-12 col-sm-8 col-md-4 text-start px-2">
+                <div class="row">
+                    <div class="col-6">
+                        
+                            <a href="https://github.com/ethereum-optimism/op-geth/blob/8f8af46ec728a79137d449891fc1827e1763cd7e/.circleci/config.yml" target="_blank">OP <i class="bi bi-github"></i></a>
+                        
+                    </div>
+
+                    <div class="col-6">
+                        
+                            <a href="https://github.com/celo-org/op-geth/blob/febc18779bb82319372d0a5b21356e2006990a69/.circleci/config.yml" target="_blank">CELO <i class="bi bi-github"></i></a>
+                        
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-4 ms-auto ps-2">
+                
+                    <div class="row line-stat">
+                        <div class="text-end"><span class="text-success">+2</span></div>
+                        <div class="text-start"><span class="text-danger">-162</span></div>
+                    </div>
+                
+            </div>
+        </div>
+        <div class="collapse patch-content term-container" id="id-2874a93c0af10402cdbaf282"><span class="term-fg1">diff --git OP&#47;.circleci&#47;config.yml CELO&#47;.circleci&#47;config.yml</span>
+<span class="term-fg1">index 0c9b7cda88004459f3635bc7e86704fc3df4f898..9080af54c563266d6f74069010666277e85350cd 100644</span>
+<span class="term-fg1">--- OP&#47;.circleci&#47;config.yml</span>
+<span class="term-fg1">+++ CELO&#47;.circleci&#47;config.yml</span>
+<span class="term-fg36">@@ -1,125 +1,16 @@</span>
+ version: 2.1
+&nbsp;
+<span class="term-fg31">-orbs:</span>
+<span class="term-fg31">-  gcp-cli: circleci&#47;gcp-cli@3.0.1</span>
+<span class="term-fg31">-  slack: circleci&#47;slack@4.10.1</span>
+<span class="term-fg31">-</span>
+<span class="term-fg31">-commands:</span>
+<span class="term-fg31">-  gcp-oidc-authenticate:</span>
+<span class="term-fg31">-    description: &quot;Authenticate with GCP using a CircleCI OIDC token.&quot;</span>
+<span class="term-fg31">-    parameters:</span>
+<span class="term-fg31">-      project_id:</span>
+<span class="term-fg31">-        type: env_var_name</span>
+<span class="term-fg31">-        default: GCP_PROJECT_ID</span>
+<span class="term-fg31">-      workload_identity_pool_id:</span>
+<span class="term-fg31">-        type: env_var_name</span>
+<span class="term-fg31">-        default: GCP_WIP_ID</span>
+<span class="term-fg31">-      workload_identity_pool_provider_id:</span>
+<span class="term-fg31">-        type: env_var_name</span>
+<span class="term-fg31">-        default: GCP_WIP_PROVIDER_ID</span>
+<span class="term-fg31">-      service_account_email:</span>
+<span class="term-fg31">-        type: env_var_name</span>
+<span class="term-fg31">-        default: GCP_SERVICE_ACCOUNT_EMAIL</span>
+<span class="term-fg31">-      gcp_cred_config_file_path:</span>
+<span class="term-fg31">-        type: string</span>
+<span class="term-fg31">-        default: &#47;home&#47;circleci&#47;gcp_cred_config.json</span>
+<span class="term-fg31">-      oidc_token_file_path:</span>
+<span class="term-fg31">-        type: string</span>
+<span class="term-fg31">-        default: &#47;home&#47;circleci&#47;oidc_token.json</span>
+<span class="term-fg31">-    steps:</span>
+<span class="term-fg31">-      - run:</span>
+<span class="term-fg31">-          name: &quot;Create OIDC credential configuration&quot;</span>
+<span class="term-fg31">-          command: |</span>
+<span class="term-fg31">-            # Store OIDC token in temp file</span>
+<span class="term-fg31">-            echo $CIRCLE_OIDC_TOKEN &gt; &lt;&lt; parameters.oidc_token_file_path &gt;&gt;</span>
+<span class="term-fg31">-            # Create a credential configuration for the generated OIDC ID Token</span>
+<span class="term-fg31">-            gcloud iam workload-identity-pools create-cred-config \</span>
+<span class="term-fg31">-                &quot;projects&#47;${&lt;&lt; parameters.project_id &gt;&gt;}&#47;locations&#47;global&#47;workloadIdentityPools&#47;${&lt;&lt; parameters.workload_identity_pool_id &gt;&gt;}&#47;providers&#47;${&lt;&lt; parameters.workload_identity_pool_provider_id &gt;&gt;}&quot;\</span>
+<span class="term-fg31">-                --output-file=&quot;&lt;&lt; parameters.gcp_cred_config_file_path &gt;&gt;&quot; \</span>
+<span class="term-fg31">-                --service-account=&quot;${&lt;&lt; parameters.service_account_email &gt;&gt;}&quot; \</span>
+<span class="term-fg31">-                --credential-source-file=&lt;&lt; parameters.oidc_token_file_path &gt;&gt;</span>
+<span class="term-fg31">-      - run:</span>
+<span class="term-fg31">-          name: &quot;Authenticate with GCP using OIDC&quot;</span>
+<span class="term-fg31">-          command: |</span>
+<span class="term-fg31">-            # Configure gcloud to leverage the generated credential configuration</span>
+<span class="term-fg31">-            gcloud auth login --brief --cred-file &quot;&lt;&lt; parameters.gcp_cred_config_file_path &gt;&gt;&quot;</span>
+<span class="term-fg31">-            # Configure ADC</span>
+<span class="term-fg31">-            echo &quot;export GOOGLE_APPLICATION_CREDENTIALS=&#39;&lt;&lt; parameters.gcp_cred_config_file_path &gt;&gt;&#39;&quot; | tee -a &quot;$BASH_ENV&quot;</span>
+<span class="term-fg31">-</span>
+ jobs:
+<span class="term-fg31">-  docker-release:</span>
+<span class="term-fg31">-    environment:</span>
+<span class="term-fg31">-      DOCKER_BUILDKIT: 1</span>
+<span class="term-fg31">-    parameters:</span>
+<span class="term-fg31">-      docker_name:</span>
+<span class="term-fg31">-        description: Docker image name</span>
+<span class="term-fg31">-        type: string</span>
+<span class="term-fg31">-        default: &quot;op-geth&quot;</span>
+<span class="term-fg31">-      docker_tags:</span>
+<span class="term-fg31">-        description: Docker image tags as csv</span>
+<span class="term-fg31">-        type: string</span>
+<span class="term-fg31">-      registry:</span>
+<span class="term-fg31">-        description: Docker registry</span>
+<span class="term-fg31">-        type: string</span>
+<span class="term-fg31">-        default: &quot;us-docker.pkg.dev&quot;</span>
+<span class="term-fg31">-      repo:</span>
+<span class="term-fg31">-        description: Docker repo</span>
+<span class="term-fg31">-        type: string</span>
+<span class="term-fg31">-        default: &quot;oplabs-tools-artifacts&#47;images&quot;</span>
+<span class="term-fg31">-      push_tags:</span>
+<span class="term-fg31">-        description: Push release push tags</span>
+<span class="term-fg31">-        type: boolean</span>
+<span class="term-fg31">-        default: false</span>
+<span class="term-fg31">-    machine:</span>
+<span class="term-fg31">-      image: ubuntu-2204:2022.07.1</span>
+<span class="term-fg31">-      resource_class: xlarge</span>
+<span class="term-fg31">-    steps:</span>
+<span class="term-fg31">-      - gcp-cli&#47;install</span>
+<span class="term-fg31">-      - gcp-oidc-authenticate</span>
+<span class="term-fg31">-      - checkout</span>
+<span class="term-fg31">-      - run:</span>
+<span class="term-fg31">-          name: Configure Docker</span>
+<span class="term-fg31">-          command: |</span>
+<span class="term-fg31">-            gcloud auth configure-docker &lt;&lt;parameters.registry&gt;&gt;</span>
+<span class="term-fg31">-      - run:</span>
+<span class="term-fg31">-          name: Build and push</span>
+<span class="term-fg31">-          command: |</span>
+<span class="term-fg31">-            RAW_TAGS=&quot;&lt;&lt;parameters.docker_tags&gt;&gt;&quot;</span>
+<span class="term-fg31">-            if [ &quot;$CIRCLE_BRANCH&quot; = &quot;optimism&quot; ]; then</span>
+<span class="term-fg31">-              RAW_TAGS=&quot;$RAW_TAGS,optimism&quot;</span>
+<span class="term-fg31">-            fi</span>
+<span class="term-fg31">-            IMAGE_BASE=&quot;&lt;&lt;parameters.registry&gt;&gt;&#47;&lt;&lt;parameters.repo&gt;&gt;&#47;&lt;&lt;parameters.docker_name&gt;&gt;&quot;</span>
+<span class="term-fg31">-            DOCKER_TAGS=$(echo -ne &quot;$RAW_TAGS&quot; | sed &quot;s&#47;,&#47;\n&#47;g&quot; | sed &quot;s&#47;[^a-zA-Z0-9\n.]&#47;-&#47;g&quot; | sed -e &quot;s|^|-t ${IMAGE_BASE}:|&quot;)</span>
+<span class="term-fg31">-            docker context create buildx-build</span>
+<span class="term-fg31">-            docker buildx create --use buildx-build</span>
+<span class="term-fg31">-            docker buildx build --push \</span>
+<span class="term-fg31">-              $(echo -ne $DOCKER_TAGS | tr &#39;\n&#39; &#39; &#39;) \</span>
+<span class="term-fg31">-              --platform=linux&#47;arm64,linux&#47;amd64 \</span>
+<span class="term-fg31">-              --build-arg VERSION=$CIRCLE_TAG \</span>
+<span class="term-fg31">-              --build-arg COMMIT=$CIRCLE_SHA \</span>
+<span class="term-fg31">-              --build-arg BUILDNUM=$CIRCLE_BUILD_NUM \</span>
+<span class="term-fg31">-              --progress plain \</span>
+<span class="term-fg31">-              -f Dockerfile .</span>
+<span class="term-fg31">-      - when:</span>
+<span class="term-fg31">-          condition:</span>
+<span class="term-fg31">-            equal: [ true, &lt;&lt;parameters.push_tags&gt;&gt; ]</span>
+<span class="term-fg31">-          steps:</span>
+<span class="term-fg31">-            - run:</span>
+<span class="term-fg31">-                name: Tag</span>
+<span class="term-fg31">-                command: |</span>
+<span class="term-fg31">-                  .&#47;.circleci&#47;ci-docker-tag-op-geth-release.sh &lt;&lt;parameters.registry&gt;&gt;&#47;&lt;&lt;parameters.repo&gt;&gt; $CIRCLE_TAG $CIRCLE_SHA1</span>
+<span class="term-fg31">-</span>
+<span class="term-fg31">-</span>
+   build-geth:
+     docker:
+       - image: cimg&#47;go:1.19
+<span class="term-fg31">-    resource_class: xlarge</span>
+<span class="term-fg32">+    resource_class: large</span>
+     steps:
+       - checkout
+       - run:
+           command: go run build&#47;ci.go install
+   unit-test:
+<span class="term-fg31">-    resource_class: xlarge</span>
+<span class="term-fg32">+    resource_class: large</span>
+     docker:
+       - image: cimg&#47;go:1.19
+     steps:
+<span class="term-fg36">@@ -134,18 +25,6 @@</span>     steps:
+       - checkout
+       - run:
+           command: go run build&#47;ci.go lint
+<span class="term-fg31">-  check-releases:</span>
+<span class="term-fg31">-    docker:</span>
+<span class="term-fg31">-      - image: cimg&#47;go:1.19</span>
+<span class="term-fg31">-    steps:</span>
+<span class="term-fg31">-      - checkout</span>
+<span class="term-fg31">-      - run:</span>
+<span class="term-fg31">-          command: .circleci&#47;check-releases.sh</span>
+<span class="term-fg31">-      - slack&#47;notify:</span>
+<span class="term-fg31">-          channel: C03N11M0BBN</span>
+<span class="term-fg31">-          branch_pattern: optimism</span>
+<span class="term-fg31">-          event: fail</span>
+<span class="term-fg31">-          template: basic_fail_1</span>
+&nbsp;
+
+ workflows:
+<span class="term-fg36">@@ -157,42 +36,3 @@</span>       - unit-test:
+           name: Run unit tests for geth
+       - lint-geth:
+           name: Run linter over geth
+<span class="term-fg31">-      - docker-release:</span>
+<span class="term-fg31">-          name: Push to Docker</span>
+<span class="term-fg31">-          docker_tags: &lt;&lt;pipeline.git.revision&gt;&gt;</span>
+<span class="term-fg31">-          context:</span>
+<span class="term-fg31">-            - oplabs-gcr</span>
+<span class="term-fg31">-  release:</span>
+<span class="term-fg31">-    jobs:</span>
+<span class="term-fg31">-      - hold:</span>
+<span class="term-fg31">-          type: approval</span>
+<span class="term-fg31">-          filters:</span>
+<span class="term-fg31">-            tags:</span>
+<span class="term-fg31">-              only: &#47;^v.*&#47;</span>
+<span class="term-fg31">-            branches:</span>
+<span class="term-fg31">-              ignore: &#47;.*&#47;</span>
+<span class="term-fg31">-      - docker-release:</span>
+<span class="term-fg31">-          name: Push to Docker (release)</span>
+<span class="term-fg31">-          filters:</span>
+<span class="term-fg31">-            tags:</span>
+<span class="term-fg31">-              only: &#47;^v.*&#47;</span>
+<span class="term-fg31">-            branches:</span>
+<span class="term-fg31">-              ignore: &#47;.*&#47;</span>
+<span class="term-fg31">-          docker_tags: &lt;&lt;pipeline.git.revision&gt;&gt;,&lt;&lt;pipeline.git.tag&gt;&gt;</span>
+<span class="term-fg31">-          push_tags: true</span>
+<span class="term-fg31">-          context:</span>
+<span class="term-fg31">-            - oplabs-gcr-release</span>
+<span class="term-fg31">-          requires:</span>
+<span class="term-fg31">-            - hold</span>
+<span class="term-fg31">-  scheduled:</span>
+<span class="term-fg31">-    triggers:</span>
+<span class="term-fg31">-      - schedule:</span>
+<span class="term-fg31">-          # run daily</span>
+<span class="term-fg31">-          cron: &quot;0 0 * * *&quot;</span>
+<span class="term-fg31">-          filters:</span>
+<span class="term-fg31">-            branches:</span>
+<span class="term-fg31">-              only: [ &quot;optimism&quot; ]</span>
+<span class="term-fg31">-    jobs:</span>
+<span class="term-fg31">-      - check-releases:</span>
+<span class="term-fg31">-          name: Check for new upstream releases</span>
+<span class="term-fg31">-          context: slack</span></div>
+    </div>
+
+            
+                <div class="border-bottom"><div class="row">
+            <div class="col-12 col-md-4 text-start pe-2">
+                <a class="text-decoration-none" data-bs-toggle="collapse" href="#id-1b8e16f9352803c6fc95ac55" role="button"
+                   aria-expanded="false" aria-controls="id-1b8e16f9352803c6fc95ac55">
+                    <code>.github/workflows/pages.yaml</code>
+                </a>
+            </div>
+
+            <div class="col-12 col-sm-8 col-md-4 text-start px-2">
+                <div class="row">
+                    <div class="col-6">
+                        
+                            <a href="https://github.com/ethereum-optimism/op-geth/blob/8f8af46ec728a79137d449891fc1827e1763cd7e/.github/workflows/pages.yaml" target="_blank">OP <i class="bi bi-github"></i></a>
+                        
+                    </div>
+
+                    <div class="col-6">
+                        
+                            <a href="https://github.com/celo-org/op-geth/blob/febc18779bb82319372d0a5b21356e2006990a69/.github/workflows/pages.yaml" target="_blank">CELO <i class="bi bi-github"></i></a>
+                        
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-4 ms-auto ps-2">
+                
+                    <div class="row line-stat">
+                        <div class="text-end"><span class="text-success">+1</span></div>
+                        <div class="text-start"><span class="text-danger">-3</span></div>
+                    </div>
+                
+            </div>
+        </div>
+        <div class="collapse patch-content term-container" id="id-1b8e16f9352803c6fc95ac55"><span class="term-fg1">diff --git OP&#47;.github&#47;workflows&#47;pages.yaml CELO&#47;.github&#47;workflows&#47;pages.yaml</span>
+<span class="term-fg1">index 6973b227ce779be6138ee2084e71bb5a5cdd57de..5569b3524f611eb655f6d67acf870645b61a347c 100644</span>
+<span class="term-fg1">--- OP&#47;.github&#47;workflows&#47;pages.yaml</span>
+<span class="term-fg1">+++ CELO&#47;.github&#47;workflows&#47;pages.yaml</span>
+<span class="term-fg36">@@ -4,6 +4,7 @@</span>   contents: write
+ on:
+   push:
+     branches:
+<span class="term-fg32">+      - eelanagaraj&#47;add-forkdiff # TODO remove</span>
+       - optimism
+ jobs:
+   deploy:
+<span class="term-fg36">@@ -25,9 +26,6 @@</span>         run: |
+           mkdir -p tmp&#47;pages
+           mv index.html tmp&#47;pages&#47;index.html
+           touch tmp&#47;pages&#47;.nojekyll
+<span class="term-fg31">-          if [ &quot;$GITHUB_REPOSITORY&quot; == &quot;ethereum-optimism&#47;op-geth&quot; ]; then</span>
+<span class="term-fg31">-              echo &quot;op-geth.optimism.io&quot; &gt; tmp&#47;pages&#47;CNAME</span>
+<span class="term-fg31">-          fi;</span>
+&nbsp;
+       - name: Deploy
+         uses: JamesIves&#47;github-pages-deploy-action@v4</div>
+    </div>
+
+            
+                <div class="border-bottom"><div class="row">
+            <div class="col-12 col-md-4 text-start pe-2">
+                <a class="text-decoration-none" data-bs-toggle="collapse" href="#id-b5b03bc7659248549c15b25a" role="button"
+                   aria-expanded="false" aria-controls="id-b5b03bc7659248549c15b25a">
+                    <code>fork.yaml</code>
+                </a>
+            </div>
+
+            <div class="col-12 col-sm-8 col-md-4 text-start px-2">
+                <div class="row">
+                    <div class="col-6">
+                        
+                            <a href="https://github.com/ethereum-optimism/op-geth/blob/8f8af46ec728a79137d449891fc1827e1763cd7e/fork.yaml" target="_blank">OP <i class="bi bi-github"></i></a>
+                        
+                    </div>
+
+                    <div class="col-6">
+                        
+                            <a href="https://github.com/celo-org/op-geth/blob/febc18779bb82319372d0a5b21356e2006990a69/fork.yaml" target="_blank">CELO <i class="bi bi-github"></i></a>
+                        
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-sm-4 ms-auto ps-2">
+                
+                    <div class="row line-stat">
+                        <div class="text-end"><span class="text-success">+22</span></div>
+                        <div class="text-start"><span class="text-danger">-181</span></div>
+                    </div>
+                
+            </div>
+        </div>
+        <div class="collapse patch-content term-container" id="id-b5b03bc7659248549c15b25a"><span class="term-fg1">diff --git OP&#47;fork.yaml CELO&#47;fork.yaml</span>
+<span class="term-fg1">index 061e8fd7c71840a05e60b911fb5dbe548a1839fb..0f83d46eac405b090831c75d7fd67dcefe2bd60f 100644</span>
+<span class="term-fg1">--- OP&#47;fork.yaml</span>
+<span class="term-fg1">+++ CELO&#47;fork.yaml</span>
+<span class="term-fg36">@@ -1,198 +1,39 @@</span>
+<span class="term-fg31">-title: &quot;op-geth - go-ethereum fork diff overview&quot;</span>
+<span class="term-fg32">+title: &quot;CELO &lt;&gt; OP op-geth forkdiff&quot;</span>
+ footer: |
+<span class="term-fg31">-  Fork-diff overview of [`op-geth`](https:&#47;&#47;github.com&#47;ethereum-optimism&#47;op-geth), a fork of [`go-ethereum`](https:&#47;&#47;github.com&#47;ethereum&#47;go-ethereum).</span>
+<span class="term-fg31">-  and execution-engine of the [OP-stack](https:&#47;&#47;github.com&#47;ethereum-optimism&#47;optimism).</span>
+<span class="term-fg32">+  Fork-diff overview of changes made in [Celo&#39;s `op-geth`](https:&#47;&#47;github.com&#47;celo-org&#47;op-geth),</span>
+<span class="term-fg32">+  a fork of [Optimism&#39;s `op-geth`](https:&#47;&#47;github.com&#47;ethereum-optimism&#47;op-geth).</span>
+ base:
+<span class="term-fg31">-  name: go-ethereum</span>
+<span class="term-fg31">-  url: https:&#47;&#47;github.com&#47;ethereum&#47;go-ethereum</span>
+<span class="term-fg31">-  hash: e501b3b05db8e169f67dc78b7b59bc352b3c638d</span>
+<span class="term-fg31">-fork:</span>
+<span class="term-fg31">-  name: op-geth</span>
+<span class="term-fg32">+  name: OP</span>
+   url: https:&#47;&#47;github.com&#47;ethereum-optimism&#47;op-geth
+<span class="term-fg31">-  ref: refs&#47;heads&#47;optimism</span>
+<span class="term-fg32">+  hash: 8f8af46ec728a79137d449891fc1827e1763cd7e # tracks the last rebased commit</span>
+<span class="term-fg32">+fork:</span>
+<span class="term-fg32">+  name: CELO</span>
+<span class="term-fg32">+  url: https:&#47;&#47;github.com&#47;celo-org&#47;op-geth</span>
+<span class="term-fg32">+  ref: HEAD</span>
+ def:
+<span class="term-fg31">-  title: &quot;op-geth&quot;</span>
+<span class="term-fg32">+  title: &quot;Celo&#39;s op-geth&quot;</span>
+   description: |
+<span class="term-fg31">-    This is an overview of the changes in [`op-geth`](https:&#47;&#47;github.com&#47;ethereum-optimism&#47;op-geth),</span>
+<span class="term-fg31">-    a fork of [`go-ethereum`](https:&#47;&#47;github.com&#47;ethereum&#47;go-ethereum), part of the OP-stack.</span>
+<span class="term-fg32">+    This is an overview of the changes in [Celo&#39;s `op-geth` implementation](https:&#47;&#47;github.com&#47;celo-org&#47;op-geth),</span>
+<span class="term-fg32">+    a fork of [Optimism&#39;s `op-geth`](https:&#47;&#47;github.com&#47;ethereum-optimism&#47;op-geth).</span>
+&nbsp;
+<span class="term-fg31">-    The OP-stack architecture is modular, following the Consensus&#47;Execution split of post-Merge Ethereum L1:</span>
+<span class="term-fg32">+    For differences between the base `op-geth` and `go-ethereum`, check out Optimism&#39;s</span>
+<span class="term-fg32">+    [fork-diff overview of changes](https:&#47;&#47;op-geth.optimism.io&#47;).</span>
+&nbsp;
+<span class="term-fg31">-      - [`op-node`](https:&#47;&#47;github.com&#47;ethereum-optimism&#47;optimism&#47;tree&#47;develop&#47;op-node) implements most rollup-specific functionality as Consensus-Layer, similar to a L1 beacon-node. </span>
+<span class="term-fg31">-      - [`op-geth`](https:&#47;&#47;github.com&#47;ethereum-optimism&#47;op-geth) implements the Execution-Layer, with **minimal changes** for a secure Ethereum-equivalent application environment.</span>
+<span class="term-fg31">-</span>
+<span class="term-fg31">-    Related [op-stack specifications](https:&#47;&#47;github.com&#47;ethereum-optimism&#47;optimism&#47;tree&#47;develop&#47;specs):</span>
+<span class="term-fg31">-</span>
+<span class="term-fg31">-    - [L2 Execution Engine spec](https:&#47;&#47;github.com&#47;ethereum-optimism&#47;optimism&#47;blob&#47;develop&#47;specs&#47;exec-engine.md)</span>
+<span class="term-fg31">-    - [Deposit Transaction spec](https:&#47;&#47;github.com&#47;ethereum-optimism&#47;optimism&#47;blob&#47;develop&#47;specs&#47;deposits.md)</span>
+   sub:
+<span class="term-fg31">-    - title: &quot;Core modifications&quot;</span>
+<span class="term-fg32">+    - title: &quot;Celo-specific features&quot;</span>
+       sub:
+<span class="term-fg31">-        - title: &quot;State-transition modifications&quot;</span>
+<span class="term-fg31">-          description: &quot;&quot;</span>
+<span class="term-fg31">-          sub:</span>
+<span class="term-fg31">-            - title: &quot;Deposit Transaction type&quot;</span>
+<span class="term-fg31">-              description: |</span>
+<span class="term-fg31">-                The Bedrock upgrade introduces a `Deposit` transaction-type (`0x7E`) to enable both users and the</span>
+<span class="term-fg31">-                rollup system itself to change the L2 state based on L1 events and system rules as</span>
+<span class="term-fg31">-                [specified](https:&#47;&#47;github.com&#47;ethereum-optimism&#47;optimism&#47;blob&#47;develop&#47;specs&#47;deposits.md).</span>
+<span class="term-fg31">-              globs:</span>
+<span class="term-fg31">-                - &quot;core&#47;types&#47;deposit_tx.go&quot;</span>
+<span class="term-fg31">-                - &quot;core&#47;types&#47;transaction_marshalling.go&quot;</span>
+<span class="term-fg31">-                - &quot;core&#47;types&#47;transaction_signing.go&quot;</span>
+<span class="term-fg31">-            - title: &quot;Transaction properties&quot;</span>
+<span class="term-fg31">-              description: |</span>
+<span class="term-fg31">-                The `Transaction` type now exposes the deposit-transaction and L1-cost properties required for the rollup.</span>
+<span class="term-fg31">-              globs:</span>
+<span class="term-fg31">-                - &quot;core&#47;types&#47;transaction.go&quot;</span>
+<span class="term-fg31">-                - &quot;core&#47;types&#47;tx_access_list.go&quot;</span>
+<span class="term-fg31">-                - &quot;core&#47;types&#47;tx_dynamic_fee.go&quot;</span>
+<span class="term-fg31">-                - &quot;core&#47;types&#47;tx_legacy.go&quot;</span>
+<span class="term-fg31">-            - title: &quot;L1 cost computation&quot;</span>
+<span class="term-fg31">-              description: |</span>
+<span class="term-fg31">-                Transactions must pay an additional L1 cost based on the amount of rollup-data-gas they consume,</span>
+<span class="term-fg31">-                estimated based on gas-price-oracle information and encoded tx size.&quot;</span>
+<span class="term-fg31">-              globs:</span>
+<span class="term-fg31">-                - &quot;core&#47;vm&#47;evm.go&quot;</span>
+<span class="term-fg31">-                - &quot;core&#47;types&#47;rollup_l1_cost.go&quot;</span>
+<span class="term-fg31">-                - &quot;core&#47;state_processor.go&quot;</span>
+<span class="term-fg31">-                - &quot;core&#47;state_prefetcher.go&quot;</span>
+<span class="term-fg31">-            - title: Transaction processing</span>
+<span class="term-fg31">-              description: |</span>
+<span class="term-fg31">-                Deposit transactions have special processing rules: gas is pre-paid on L1,</span>
+<span class="term-fg31">-                and deposits with EVM-failure are included with rolled back changes (except mint).</span>
+<span class="term-fg31">-                For regular transactions, at the end of the transition, the 1559 burn and L1 cost are routed to vaults.</span>
+<span class="term-fg31">-              globs:</span>
+<span class="term-fg31">-                - &quot;core&#47;state_transition.go&quot;</span>
+<span class="term-fg31">-            - title: &quot;Gaslimit&quot;</span>
+<span class="term-fg31">-              description: |</span>
+<span class="term-fg31">-                The gaslimit is free to be set by the Engine API caller, instead of enforcing adjustments of the</span>
+<span class="term-fg31">-                gaslimit in increments of 1&#47;1024 of the previous gaslimit.</span>
+<span class="term-fg31">-                The gaslimit is changed (and limited) through the `SystemConfig` contract.</span>
+<span class="term-fg31">-              globs:</span>
+<span class="term-fg31">-                - &quot;consensus&#47;misc&#47;eip1559.go&quot;</span>
+<span class="term-fg31">-            - title: &quot;Consensus tweaks&quot;</span>
+<span class="term-fg31">-              description: |</span>
+<span class="term-fg31">-                The Engine API is activated at the Merge transition, with a Total Terminal Difficulty (TTD).</span>
+<span class="term-fg31">-                The rollup starts post-merge, and thus sets the TTD to 0.</span>
+<span class="term-fg31">-              globs:</span>
+<span class="term-fg31">-                - &quot;consensus&#47;beacon&#47;consensus.go&quot;</span>
+<span class="term-fg32">+        - title: &quot;Celo token duality&quot;</span>
+<span class="term-fg32">+          description: &quot;The Celo token is both the native token and ERC-20 compatible.&quot;</span>
+<span class="term-fg32">+          globs:</span>
+<span class="term-fg32">+            - &quot;common&#47;celo-types&#47;*&quot;</span>
+<span class="term-fg32">+            # TODO: this should be updated to reflect the changes in the token duality implementation</span>
+<span class="term-fg32">+            # TODO EN: ticket for this or comment on Karl&#39;s ticket</span>
+         - title: &quot;Chain config&quot;
+<span class="term-fg31">-          description: |</span>
+<span class="term-fg31">-            The rollup functionality is enabled with the `optimism` field in the chain config.</span>
+<span class="term-fg31">-            The EIP-1559 parameters are configurable to adjust for faster more frequent and smaller blocks.</span>
+<span class="term-fg31">-            The parameters can be overriden for testing.</span>
+<span class="term-fg32">+          description: &quot;&quot;</span>
+           globs:
+             - &quot;params&#47;config.go&quot;
+             - &quot;params&#47;protocol_params.go&quot;
+             - &quot;core&#47;genesis.go&quot;
+<span class="term-fg31">-        - title: &quot;Chain config cleanup&quot;</span>
+<span class="term-fg31">-          description: |</span>
+<span class="term-fg31">-            The optimism Goerli testnet used clique-config data to make geth internals accept blocks.</span>
+<span class="term-fg31">-            Post-bedrock the beacon-consensus (i.e. follow Engine API) is now used, and the clique config is removed.</span>
+<span class="term-fg31">-          globs:</span>
+<span class="term-fg31">-            - &quot;core&#47;rawdb&#47;accessors_metadata.go&quot;</span>
+<span class="term-fg31">-        - title: &quot;Engine API modifications&quot;</span>
+<span class="term-fg31">-          description: |</span>
+<span class="term-fg31">-            The Engine API is extended to insert transactions into the block and optionally exclude the tx-pool,</span>
+<span class="term-fg31">-            to reproduce the exact block of the sequencer from just the inputs, as derived from L1 by the rollup-node.</span>
+<span class="term-fg31">-            See [L2 execution engine specs](https:&#47;&#47;github.com&#47;ethereum-optimism&#47;optimism&#47;blob&#47;develop&#47;specs&#47;exec-engine.md).</span>
+<span class="term-fg31">-          globs:</span>
+<span class="term-fg31">-            - &quot;beacon&#47;engine&#47;types.go&quot;</span>
+<span class="term-fg31">-            - &quot;beacon&#47;engine&#47;gen_blockparams.go&quot;</span>
+<span class="term-fg31">-            - &quot;eth&#47;catalyst&#47;api.go&quot;</span>
+<span class="term-fg31">-        - title: &quot;Block-building modifications&quot;</span>
+<span class="term-fg31">-          description: |</span>
+<span class="term-fg31">-            The block-building code (in the &quot;miner&quot; package because of Proof-Of-Work legacy of ethereum) implements the</span>
+<span class="term-fg31">-            changes to support the transaction-inclusion, tx-pool toggle and gaslimit parameters of the Engine API.</span>
+<span class="term-fg31">-          globs:</span>
+<span class="term-fg31">-            - &quot;miner&#47;*&quot;</span>
+<span class="term-fg31">-        - title: &quot;Tx-pool tx cost updates&quot;</span>
+<span class="term-fg31">-          description: |</span>
+<span class="term-fg31">-            Transaction queueing and inclusion needs to account for the L1 cost component.</span>
+<span class="term-fg31">-          globs:</span>
+<span class="term-fg31">-            - &quot;core&#47;txpool&#47;*&quot;</span>
+<span class="term-fg31">-    - title: &quot;Node modifications&quot;</span>
+<span class="term-fg31">-      description: Changes to the node configuration and services.</span>
+<span class="term-fg31">-      sub:</span>
+<span class="term-fg31">-        - title: &quot;CLI&quot;</span>
+<span class="term-fg31">-          sub:</span>
+<span class="term-fg31">-            - title: &quot;Flags&quot;</span>
+<span class="term-fg31">-              description: |</span>
+<span class="term-fg31">-                Flag changes:</span>
+<span class="term-fg31">-                  - Transactions can be forwarded to an RPC for sequencing.</span>
+<span class="term-fg31">-                  - Historical calls can be forwarded to a legacy node.</span>
+<span class="term-fg31">-                  - The tx pool propagation can be enabled&#47;disabled.</span>
+<span class="term-fg31">-                  - The Optimism bedrock fork activation can be changed for testing.</span>
+<span class="term-fg31">-              globs:</span>
+<span class="term-fg31">-                - &quot;cmd&#47;utils&#47;flags.go&quot;</span>
+<span class="term-fg31">-                - &quot;cmd&#47;geth&#47;main.go&quot;</span>
+<span class="term-fg31">-                - &quot;internal&#47;flags&#47;categories.go&quot;</span>
+<span class="term-fg31">-                - &quot;cmd&#47;geth&#47;config.go&quot;</span>
+<span class="term-fg31">-            - title: &quot;Versioning&quot;</span>
+<span class="term-fg31">-              description: List the op-geth and upstream go-ethereum versions.</span>
+<span class="term-fg31">-              globs:</span>
+<span class="term-fg31">-                - &quot;cmd&#47;geth&#47;misccmd.go&quot;</span>
+<span class="term-fg31">-                - &quot;params&#47;version.go&quot;</span>
+<span class="term-fg31">-                - &quot;build&#47;ci.go&quot;</span>
+<span class="term-fg31">-        - title: Node config</span>
+<span class="term-fg31">-          globs:</span>
+<span class="term-fg31">-            - &quot;eth&#47;ethconfig&#47;config.go&quot;</span>
+<span class="term-fg31">-        - title: Tx gossip disable option</span>
+<span class="term-fg31">-          globs:</span>
+<span class="term-fg31">-            - &quot;eth&#47;handler.go&quot;</span>
+<span class="term-fg31">-            - &quot;eth&#47;handler_eth.go&quot;</span>
+<span class="term-fg31">-    - title: &quot;User API enhancements&quot;</span>
+<span class="term-fg31">-      description: &quot;Encode the Deposit Tx properties, the L1 costs, and daisy-chain RPC-calls for pre-Bedrock historical data&quot;</span>
+<span class="term-fg31">-      sub:</span>
+<span class="term-fg31">-        - title: &quot;Receipts metadata&quot;</span>
+<span class="term-fg31">-          description: |</span>
+<span class="term-fg31">-            Pre-Bedrock L1-cost receipt data is loaded from the database if available, and post-Bedrock the L1-cost </span>
+<span class="term-fg31">-            metadata is hydrated on-the-fly based on the L1 fee information in the corresponding block.</span>
+<span class="term-fg31">-          globs:</span>
+<span class="term-fg31">-            - &quot;core&#47;types&#47;receipt.go&quot;</span>
+<span class="term-fg31">-            - &quot;core&#47;types&#47;gen_receipt_json.go&quot;</span>
+<span class="term-fg31">-        - title: &quot;API Backend&quot;</span>
+<span class="term-fg31">-          description: |</span>
+<span class="term-fg31">-            Forward transactions to the sequencer if configured.</span>
+<span class="term-fg31">-          globs:</span>
+<span class="term-fg31">-            - &quot;eth&#47;api_backend.go&quot;</span>
+<span class="term-fg31">-            - &quot;eth&#47;backend.go&quot;</span>
+<span class="term-fg31">-            - &quot;internal&#47;ethapi&#47;backend.go&quot;</span>
+<span class="term-fg31">-        - title: &quot;Apply L1 cost in API responses&quot;</span>
+<span class="term-fg31">-          globs:</span>
+<span class="term-fg31">-            - &quot;eth&#47;state_accessor.go&quot;</span>
+<span class="term-fg31">-        - title: API frontend</span>
+<span class="term-fg31">-          description: Format deposit and L1-cost data in transaction responses. Add `debug_chainConfig` API.</span>
+<span class="term-fg31">-          globs:</span>
+<span class="term-fg31">-            - &quot;internal&#47;ethapi&#47;api.go&quot;</span>
+<span class="term-fg31">-            - &quot;rpc&#47;errors.go&quot;</span>
+<span class="term-fg31">-        - title: Tracer RPC daisy-chain</span>
+<span class="term-fg31">-          description: Forward pre-bedrock tracing calls to legacy node.</span>
+<span class="term-fg31">-          globs:</span>
+<span class="term-fg31">-            - &quot;eth&#47;tracers&#47;api.go&quot;</span>
+<span class="term-fg31">-        - title: &quot;Light Ethereum Subprotocol (LES) RPC&quot;</span>
+<span class="term-fg31">-          description: Match the RPC changes in the LES RPC</span>
+<span class="term-fg31">-          globs:</span>
+<span class="term-fg31">-            - &quot;les&#47;*&quot;</span>
+<span class="term-fg31">-        - title: &quot;Daisy Chain tests&quot;</span>
+<span class="term-fg31">-          globs:</span>
+<span class="term-fg31">-            - &quot;internal&#47;ethapi&#47;transaction_args_test.go&quot;</span>
+<span class="term-fg31">-            - &quot;ethclient&#47;ethclient_test.go&quot;</span>
+<span class="term-fg31">-            - &quot;eth&#47;tracers&#47;api_test.go&quot;</span>
+<span class="term-fg31">-    - title: &quot;Geth extras&quot;</span>
+<span class="term-fg31">-      description: Extend the tools available in geth to improve external testing and tooling.</span>
+<span class="term-fg31">-      sub:</span>
+<span class="term-fg31">-        - title: Simulated Backend</span>
+<span class="term-fg31">-          globs:</span>
+<span class="term-fg31">-            - &quot;accounts&#47;abi&#47;bind&#47;backends&#47;simulated.go&quot;</span>
+<span class="term-fg31">-        - title: diff-included testing testing</span>
+<span class="term-fg31">-          description: |</span>
+<span class="term-fg31">-            Most of the op-geth changes are tested in the Optimism Monorepo and not part of the geth diff,</span>
+<span class="term-fg31">-            but some testing like the Deposit TX encoding and API interactions are embedded in the op-geth diff instead.</span>
+<span class="term-fg31">-          globs:</span>
+<span class="term-fg31">-            - &quot;core&#47;types&#47;transaction_marshalling_test.go&quot;</span>
+<span class="term-fg31">-            - &quot;internal&#47;ethapi&#47;api_test.go&quot;</span>
+&nbsp;
+ # ignored globally, does not count towards line count
+ ignore:</div>
+    </div>
+
+            
+        </div>
+        <div>
+            
+        </div>
+    </div>
+</div>
+
+                    </div>
+                
+            </div>
+        </main>
+    </div>
+
+    <footer class="col-xl-10 col-xxl-8 mx-auto px-3 pt-5 my-5 text-muted border-top">
+        <p>Fork-diff overview of changes made in <a href="https://github.com/celo-org/op-geth">Celo&rsquo;s <code>op-geth</code></a>,
+a fork of <a href="https://github.com/ethereum-optimism/op-geth">Optimism&rsquo;s <code>op-geth</code></a>.</p>
+
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js" integrity="sha384-oBqDVmMz9ATKxIep9tiCxS/Z9fNfEXiDAYTujMAeBAsjFuCZSmKbSSUnQlmh/jp3" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js" integrity="sha384-mQ93GR66B00ZXjt0YO5KlohRA5SY2XofN4zfuZxLkoj1gXtW8ANNCe9d5Y3eG5eD" crossorigin="anonymous"></script>
+    <script type="text/javascript">
+        const storedTheme = localStorage.getItem('theme')
+
+        // Get the preferred theme from the user's OS
+        const getPreferredTheme = () => {
+            if (storedTheme) {
+                return storedTheme
+            }
+
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+        }
+
+        // Set the bootstrap theme
+        const setTheme = function (theme) {
+            document.documentElement.setAttribute('data-bs-theme', theme)
+            if (theme === 'dark') {
+                document.getElementById('dark-mode-toggle').setAttribute('checked', true)
+                document.getElementById('dark-mode-icon').classList.replace('bi-brightness-high-fill', 'bi-brightness-low')
+            } else {
+                document.getElementById('dark-mode-toggle').setAttribute('checked', false)
+                document.getElementById('dark-mode-icon').classList.replace('bi-brightness-low', 'bi-brightness-high-fill')
+            }
+        }
+
+        // Returns true if the current theme is dark
+        const isDark = () => {
+            return document.documentElement.getAttribute('data-bs-theme') === 'dark'
+        }
+
+        // Toggles dark mode
+        const toggleDarkMode = () => {
+            const newTheme = isDark() ? 'light' : 'dark'
+            setTheme(newTheme)
+            localStorage.setItem('theme', newTheme)
+        }
+
+        // Set the preferred theme on page load
+        window.onload = () => {
+            // Set preferred theme
+            setTheme(getPreferredTheme());
+            // Initialize tooltips
+            const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]')
+            const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
+        }
+
+        // Toggle dark mode when the toggle button is clicked
+        addEventListener("click", (event) => {
+            if (event.target.id === 'dark-mode-toggle') {
+                toggleDarkMode();
+                // De-focus the toggle
+                document.activeElement.blur()
+            }
+        });
+    </script>
+</body>
+</html>
