@@ -26,8 +26,6 @@ def:
           description: "The Celo token is both the native token and ERC-20 compatible."
           globs:
             - "common/celo-types/*"
-            # TODO: this should be updated to reflect the changes in the token duality implementation
-            # TODO EN: ticket for this or comment on Karl's ticket
         - title: "Chain config"
           description: ""
           globs:
