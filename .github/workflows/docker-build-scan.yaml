@@ -7,5 +7,4 @@ jobs:
   Build-Scan-Container:
     uses: celo-org/reusable-workflows/.github/workflows/container-cicd-local.yaml@main
     with:
-      context: .
-      directory: docker/web/Dockerfile
+      directory: .
