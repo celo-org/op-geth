@@ -2,7 +2,7 @@ name: Docker Build Push
 on:
   push:
     branches:
-    - main
+    - celo1
   pull_request:
   workflow_dispatch:
 
