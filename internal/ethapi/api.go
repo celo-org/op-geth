@@ -1090,6 +1090,9 @@ type RPCTransaction struct {
 	IsSystemTx *bool        `json:"isSystemTx,omitempty"`
 	// deposit-tx post-Canyon only
 	DepositReceiptVersion *hexutil.Uint64 `json:"depositReceiptVersion,omitempty"`
+
+	// Celo
+	FeeCurrency *common.Address `json:"feeCurrency,omitempty"`
 }
 
 // newRPCTransaction returns a transaction that will serialize to the RPC
@@ -1111,6 +1114,8 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 		V:        (*hexutil.Big)(v),
 		R:        (*hexutil.Big)(r),
 		S:        (*hexutil.Big)(s),
+		// Celo
+		FeeCurrency: tx.FeeCurrency(),
 	}
 	if blockHash != (common.Hash{}) {
 		result.BlockHash = &blockHash
@@ -1152,7 +1157,7 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 		result.ChainID = (*hexutil.Big)(tx.ChainId())
 		result.YParity = &yparity
 
-	case types.DynamicFeeTxType:
+	case types.DynamicFeeTxType, types.CeloDynamicFeeTxV2Type:
 		al := tx.AccessList()
 		yparity := hexutil.Uint64(v.Sign())
 		result.Accesses = &al
@@ -1161,9 +1166,8 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 		result.GasFeeCap = (*hexutil.Big)(tx.GasFeeCap())
 		result.GasTipCap = (*hexutil.Big)(tx.GasTipCap())
 		// if the transaction has been mined, compute the effective gas price
-		if baseFee != nil && blockHash != (common.Hash{}) {
-			// price = min(gasTipCap + baseFee, gasFeeCap)
-			result.GasPrice = (*hexutil.Big)(effectiveGasPrice(tx, baseFee))
+		if receipt != nil {
+			result.GasPrice = (*hexutil.Big)(receipt.EffectiveGasPrice)
 		} else {
 			result.GasPrice = (*hexutil.Big)(tx.GasFeeCap())
 		}

@@ -64,6 +64,13 @@ type txJSON struct {
 
 	// Only used for encoding:
 	Hash common.Hash `json:"hash"`
+
+	// Celo specific fields
+	FeeCurrency         *common.Address `json:"feeCurrency,omitempty"` // nil means native currency
+	MaxFeeInFeeCurrency *hexutil.Big    `json:"maxFeeInFeeCurrency,omitempty"`
+	EthCompatible       *bool           `json:"ethCompatible,omitempty"`
+	GatewayFee          *hexutil.Big    `json:"gatewayFee,omitempty"`
+	GatewayFeeRecipient *common.Address `json:"gatewayFeeRecipient,omitempty"`
 }
 
 // yParityValue returns the YParity value from JSON. For backwards-compatibility reasons,
@@ -88,6 +95,9 @@ func (tx *txJSON) yParityValue() (*big.Int, error) {
 
 // MarshalJSON marshals as JSON with a hash.
 func (tx *Transaction) MarshalJSON() ([]byte, error) {
+	if marshalled, isCelo, err := celoTransactionMarshal(tx); isCelo {
+		return marshalled, err
+	}
 	var enc txJSON
 	// These are set for all tx types.
 	enc.Hash = tx.Hash()
@@ -219,6 +229,12 @@ func (tx *Transaction) UnmarshalJSON(input []byte) error {
 
 	// Decode / verify fields according to transaction type.
 	var inner TxData
+
+	if isCelo, err := celoTransactionUnmarshal(dec, &inner); isCelo {
+		tx.setDecoded(inner, 0)
+		return err
+	}
+
 	switch dec.Type {
 	case LegacyTxType:
 		var itx LegacyTx
