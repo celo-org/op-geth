@@ -94,3 +94,5 @@ func (tx *DepositTx) rawSignatureValues() (v, r, s *big.Int) {
 func (tx *DepositTx) setSignatureValues(chainID, v, r, s *big.Int) {
 	// this is a noop for deposit transactions
 }
+
+func (tx *DepositTx) feeCurrency() *common.Address { return nil }

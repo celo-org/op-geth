@@ -131,3 +131,5 @@ func (tx *BlobTx) setSignatureValues(chainID, v, r, s *big.Int) {
 	tx.R.SetFromBig(r)
 	tx.S.SetFromBig(s)
 }
+
+func (tx *BlobTx) feeCurrency() *common.Address { return nil }
