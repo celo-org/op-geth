@@ -47,6 +47,8 @@ const (
 	AccessListTxType = 0x01
 	DynamicFeeTxType = 0x02
 	BlobTxType       = 0x03
+	// CeloDynamicFeeTxType = 0x7c  old Celo tx type with gateway fee
+	CeloDynamicFeeTxType = 0x7b
 )
 
 // Transaction is an Ethereum transaction.
@@ -102,6 +104,9 @@ type TxData interface {
 	// copy of the computed value, i.e. callers are allowed to mutate the result.
 	// Method implementations can use 'dst' to store the result.
 	effectiveGasPrice(dst *big.Int, baseFee *big.Int) *big.Int
+
+	// Celo specific fields
+	feeCurrency() *common.Address
 }
 
 // EncodeRLP implements rlp.Encoder
@@ -199,6 +204,10 @@ func (tx *Transaction) decodeTyped(b []byte) (TxData, error) {
 		return &inner, err
 	case DynamicFeeTxType:
 		var inner DynamicFeeTx
+		err := rlp.DecodeBytes(b[1:], &inner)
+		return &inner, err
+	case CeloDynamicFeeTxType:
+		var inner CeloDynamicFeeTx
 		err := rlp.DecodeBytes(b[1:], &inner)
 		return &inner, err
 	case BlobTxType:
@@ -517,6 +526,11 @@ func (tx *Transaction) WithSignature(signer Signer, sig []byte) (*Transaction, e
 	cpy := tx.inner.copy()
 	cpy.setSignatureValues(signer.ChainID(), v, r, s)
 	return &Transaction{inner: cpy, time: tx.time}, nil
+}
+
+// FeeCurrency returns the fee currency of the transaction. Nil implies paying in CELO.
+func (tx *Transaction) FeeCurrency() *common.Address {
+	return copyAddressPtr(tx.inner.feeCurrency())
 }
 
 // Transactions implements DerivableList for transactions.
