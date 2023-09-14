@@ -224,3 +224,5 @@ func (tx *SetCodeTx) encode(b *bytes.Buffer) error {
 func (tx *SetCodeTx) decode(input []byte) error {
 	return rlp.DecodeBytes(input, tx)
 }
+
+func (tx *SetCodeTx) feeCurrency() *common.Address { return nil }
