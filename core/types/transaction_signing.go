@@ -42,6 +42,8 @@ func MakeSigner(config *params.ChainConfig, blockNumber *big.Int, blockTime uint
 	switch {
 	case config.IsCancun(blockNumber, blockTime) && !config.IsOptimism():
 		signer = NewCancunSigner(config.ChainID)
+	case config.IsCel2(blockTime):
+		signer = NewCel2Signer(config.ChainID)
 	case config.IsLondon(blockNumber):
 		signer = NewLondonSigner(config.ChainID)
 	case config.IsBerlin(blockNumber):
@@ -69,6 +71,8 @@ func LatestSigner(config *params.ChainConfig) Signer {
 		switch {
 		case config.CancunTime != nil && !config.IsOptimism():
 			signer = NewCancunSigner(config.ChainID)
+		case config.Cel2Time != nil:
+			signer = NewCel2Signer(config.ChainID)
 		case config.LondonBlock != nil:
 			signer = NewLondonSigner(config.ChainID)
 		case config.BerlinBlock != nil:
