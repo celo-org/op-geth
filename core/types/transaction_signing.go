@@ -40,6 +40,10 @@ type sigCache struct {
 func MakeSigner(config *params.ChainConfig, blockNumber *big.Int, blockTime uint64) Signer {
 	var signer Signer
 	switch {
+	// TODO: When in Optimism mode, this shouldn't use the Cancun signer.
+	// See the Cancun config below.
+	case config.IsCel2(blockTime):
+		signer = NewCel2Signer(config.ChainID)
 	case config.IsCancun(blockNumber, blockTime) && !config.IsOptimism():
 		signer = NewCancunSigner(config.ChainID)
 	case config.IsLondon(blockNumber):
@@ -65,6 +69,11 @@ func MakeSigner(config *params.ChainConfig, blockNumber *big.Int, blockTime uint
 // have the current block number available, use MakeSigner instead.
 func LatestSigner(config *params.ChainConfig) Signer {
 	if config.ChainID != nil {
+		// TODO: When in Optimism mode, this shouldn't use the Cancun signer.
+		// See the Cancun config below.
+		if config.Cel2Time != nil {
+			return NewCel2Signer(config.ChainID)
+		}
 		if config.CancunTime != nil && !config.IsOptimism() {
 			return NewCancunSigner(config.ChainID)
 		}
@@ -92,7 +101,7 @@ func LatestSignerForChainID(chainID *big.Int) Signer {
 	if chainID == nil {
 		return HomesteadSigner{}
 	}
-	return NewCancunSigner(chainID)
+	return NewCel2Signer(chainID)
 }
 
 // SignTx signs the transaction using the given signer and private key.
