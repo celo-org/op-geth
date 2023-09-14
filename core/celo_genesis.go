@@ -7,7 +7,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	contracts "github.com/ethereum/go-ethereum/contracts/celo"
-	contracts_config "github.com/ethereum/go-ethereum/contracts/config"
 )
 
 // Decode 0x prefixed hex string from file (including trailing newline)
