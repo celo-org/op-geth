@@ -69,6 +69,7 @@ var (
 		utils.OverrideVerkle,
 		utils.OverrideOptimismCanyon,
 		utils.OverrideOptimismInterop,
+		utils.OverrideOptimismCel2,
 		utils.EnablePersonal,
 		utils.TxPoolLocalsFlag,
 		utils.TxPoolNoLocalsFlag,
