@@ -72,6 +72,7 @@ var (
 		utils.OverrideOptimismHolocene,
 		utils.OverrideOptimismInterop,
 		utils.OverrideOptimismIsthmus,
+		utils.OverrideOptimismCel2,
 		utils.EnablePersonal, // deprecated
 		utils.TxPoolLocalsFlag,
 		utils.TxPoolNoLocalsFlag,
