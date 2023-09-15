@@ -171,6 +171,7 @@ type Config struct {
 	OverrideVerkle *uint64 `toml:",omitempty"`
 
 	OverrideOptimismCanyon *uint64 `toml:",omitempty"`
+	OverrideOptimismCel2   *uint64 `toml:",omitempty"`
 
 	// ApplySuperchainUpgrades requests the node to load chain-configuration from the superchain-registry.
 	ApplySuperchainUpgrades bool `toml:",omitempty"`
