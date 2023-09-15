@@ -273,6 +273,8 @@ type ChainOverrides struct {
 	OverrideOptimismEcotone *uint64
 	ApplySuperchainUpgrades bool
 	OverrideOptimismInterop *uint64
+	// celo
+	OverrideOptimismCel2 *uint64
 }
 
 // SetupGenesisBlock writes or updates the genesis block in db.
@@ -338,6 +340,9 @@ func SetupGenesisBlockWithOverride(db ethdb.Database, triedb *trie.Database, gen
 			}
 			if overrides != nil && overrides.OverrideOptimismInterop != nil {
 				config.InteropTime = overrides.OverrideOptimismInterop
+			}
+			if overrides != nil && overrides.OverrideOptimismCel2 != nil {
+				config.Cel2Time = overrides.OverrideOptimismCel2
 			}
 		}
 	}
