@@ -208,6 +208,7 @@ var (
 		ArrowGlacierBlock:             big.NewInt(0),
 		GrayGlacierBlock:              big.NewInt(0),
 		ShanghaiTime:                  newUint64(0),
+		Cel2Time:                      newUint64(0),
 		TerminalTotalDifficulty:       big.NewInt(0),
 		TerminalTotalDifficultyPassed: true,
 	}
@@ -266,6 +267,7 @@ var (
 		CancunTime:                    nil,
 		PragueTime:                    nil,
 		VerkleTime:                    nil,
+		Cel2Time:                      newUint64(0),
 		TerminalTotalDifficulty:       nil,
 		TerminalTotalDifficultyPassed: false,
 		Ethash:                        new(EthashConfig),
