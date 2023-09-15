@@ -162,6 +162,7 @@ var (
 		GrayGlacierBlock:        big.NewInt(0),
 		ShanghaiTime:            newUint64(0),
 		CancunTime:              newUint64(0),
+		Cel2Time:                newUint64(0),
 		TerminalTotalDifficulty: big.NewInt(0),
 		PragueTime:              newUint64(0),
 	}
@@ -219,6 +220,7 @@ var (
 		CancunTime:              nil,
 		PragueTime:              nil,
 		VerkleTime:              nil,
+		Cel2Time:                newUint64(0),
 		TerminalTotalDifficulty: big.NewInt(math.MaxInt64),
 		Ethash:                  new(EthashConfig),
 		Clique:                  nil,
@@ -347,6 +349,8 @@ type ChainConfig struct {
 	IsthmusTime  *uint64 `json:"isthmusTime,omitempty"`  // Isthmus switch time (nil = no fork, 0 = already on Optimism Isthmus)
 
 	InteropTime *uint64 `json:"interopTime,omitempty"` // Interop switch time (nil = no fork, 0 = already on optimism interop)
+
+	Cel2Time *uint64 `json:"cel2Time,omitempty"` // Cel2 switch time (nil = no fork, 0 = already on optimism cel2)
 
 	// TerminalTotalDifficulty is the amount of total difficulty reached by
 	// the network that triggers the consensus upgrade.
@@ -503,6 +507,9 @@ func (c *ChainConfig) Description() string {
 	}
 	if c.InteropTime != nil {
 		banner += fmt.Sprintf(" - Interop:                     @%-10v\n", *c.InteropTime)
+	}
+	if c.Cel2Time != nil {
+		banner += fmt.Sprintf(" - Cel2:                        @%-10v\n", *c.Cel2Time)
 	}
 	return banner
 }
@@ -1091,6 +1098,7 @@ type Rules struct {
 	IsOptimismCanyon, IsOptimismFjord                       bool
 	IsOptimismGranite, IsOptimismHolocene                   bool
 	IsOptimismIsthmus                                       bool
+	IsCel2                                                  bool
 }
 
 // Rules ensures c's ChainID is not nil.
@@ -1129,9 +1137,15 @@ func (c *ChainConfig) Rules(num *big.Int, isMerge bool, timestamp uint64) Rules 
 		IsOptimismGranite:  isMerge && c.IsOptimismGranite(timestamp),
 		IsOptimismHolocene: isMerge && c.IsOptimismHolocene(timestamp),
 		IsOptimismIsthmus:  isMerge && c.IsOptimismIsthmus(timestamp),
+		// Celo,
+		IsCel2: c.IsCel2(timestamp),
 	}
 }
 
 func (c *ChainConfig) HasOptimismWithdrawalsRoot(blockTime uint64) bool {
 	return c.IsOptimismIsthmus(blockTime)
+}
+
+func (c *ChainConfig) IsCel2(time uint64) bool {
+	return isTimestampForked(c.Cel2Time, time)
 }
