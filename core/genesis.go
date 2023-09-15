@@ -276,6 +276,7 @@ type ChainOverrides struct {
 	// optimism
 	OverrideOptimismBedrock  *big.Int
 	OverrideOptimismRegolith *uint64
+	OverrideOptimismCel2     *uint64
 	OverrideOptimism         *bool
 }
 
@@ -318,6 +319,9 @@ func SetupGenesisBlockWithOverride(db ethdb.Database, triedb *trie.Database, gen
 			}
 			if overrides != nil && overrides.OverrideOptimismRegolith != nil {
 				config.RegolithTime = overrides.OverrideOptimismRegolith
+			}
+			if overrides != nil && overrides.OverrideOptimismCel2 != nil {
+				config.Cel2Time = overrides.OverrideOptimismCel2
 			}
 			if overrides != nil && overrides.OverrideOptimism != nil {
 				if *overrides.OverrideOptimism {
