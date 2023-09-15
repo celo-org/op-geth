@@ -250,6 +250,9 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	if config.OverrideOptimismInterop != nil {
 		overrides.OverrideOptimismInterop = config.OverrideOptimismInterop
 	}
+	if config.OverrideOptimismCel2 != nil {
+		overrides.OverrideOptimismCel2 = config.OverrideOptimismCel2
+	}
 	overrides.ApplySuperchainUpgrades = config.ApplySuperchainUpgrades
 
 	eth.blockchain, err = core.NewBlockChain(chainDb, cacheConfig, config.Genesis, &overrides, eth.engine, vmConfig, &config.TransactionHistory)

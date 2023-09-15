@@ -287,6 +287,8 @@ type ChainOverrides struct {
 	OverrideOptimismIsthmus  *uint64
 	OverrideOptimismInterop  *uint64
 	ApplySuperchainUpgrades  bool
+	// celo
+	OverrideOptimismCel2 *uint64
 }
 
 // apply applies the chain overrides on the supplied chain config.
@@ -357,6 +359,9 @@ func (o *ChainOverrides) apply(cfg *params.ChainConfig) (*params.ChainConfig, er
 	}
 	if o.OverrideOptimismInterop != nil {
 		cpy.InteropTime = o.OverrideOptimismInterop
+	}
+	if o.OverrideOptimismCel2 != nil {
+		cpy.Cel2Time = o.OverrideOptimismCel2
 	}
 
 	if err := cpy.CheckConfigForkOrder(); err != nil {
