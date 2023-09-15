@@ -68,6 +68,7 @@ var (
 		utils.EnablePersonal,
 		utils.OverrideOptimismBedrock,
 		utils.OverrideOptimismRegolith,
+		utils.OverrideOptimismCel2,
 		utils.OverrideOptimism,
 		utils.TxPoolLocalsFlag,
 		utils.TxPoolNoLocalsFlag,
