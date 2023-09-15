@@ -74,6 +74,9 @@ func (c *ChainConfig) opDescription() string {
 	if c.InteropTime != nil {
 		banner += fmt.Sprintf(" - Interop:                     @%-10v\n", *c.InteropTime)
 	}
+	if c.Cel2Time != nil {
+		banner += fmt.Sprintf(" - Cel2:                        @%-10v\n", *c.Cel2Time)
+	}
 	banner += "\nAll op fork specifications can be found at https://specs.optimism.io/\n"
 	return banner
 }
