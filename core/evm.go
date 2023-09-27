@@ -63,14 +63,17 @@ func NewEVMBlockContext(header *types.Header, chain ChainContext, author *common
 	}
 
 	// Set goldTokenAddress
-	caller := &CeloBackend{config, statedb.Copy()}
-	registry, err := abigen.NewRegistryCaller(contracts_config.RegistrySmartContractAddress, caller)
-	if err != nil {
-		log.Error("Failed to access registry!", "err", err)
-	}
-	goldTokenAddress, err := registry.GetAddressForOrDie(&bind.CallOpts{}, contracts_config.GoldTokenRegistryId)
-	if err != nil {
-		log.Error("Failed to get address for GoldToken!", "err", err)
+	var goldTokenAddress common.Address
+	if config.IsCel2(header.Time) {
+		caller := &CeloBackend{config, statedb.Copy()}
+		registry, err := abigen.NewRegistryCaller(contracts_config.RegistrySmartContractAddress, caller)
+		if err != nil {
+			log.Error("Failed to access registry!", "err", err)
+		}
+		goldTokenAddress, err = registry.GetAddressForOrDie(&bind.CallOpts{}, contracts_config.GoldTokenRegistryId)
+		if err != nil {
+			log.Error("Failed to get address for GoldToken!", "err", err)
+		}
 	}
 
 	return vm.BlockContext{
