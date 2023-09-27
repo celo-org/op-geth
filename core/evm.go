@@ -19,15 +19,11 @@ package core
 import (
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/contracts/celo/abigen"
-	contracts_config "github.com/ethereum/go-ethereum/contracts/config"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 )
 
@@ -62,18 +58,7 @@ func NewEVMBlockContext(header *types.Header, chain ChainContext, author *common
 		random = &header.MixDigest
 	}
 
-	// Set goldTokenAddress
-	caller := &CeloBackend{config, statedb.Copy()}
-	registry, err := abigen.NewRegistryCaller(contracts_config.RegistrySmartContractAddress, caller)
-	if err != nil {
-		log.Error("Failed to access registry!", "err", err)
-	}
-	goldTokenAddress, err := registry.GetAddressForOrDie(&bind.CallOpts{}, contracts_config.GoldTokenRegistryId)
-	if err != nil {
-		log.Error("Failed to get address for GoldToken!", "err", err)
-	}
-
-	return vm.BlockContext{
+	blockContext := vm.BlockContext{
 		CanTransfer:   CanTransfer,
 		Transfer:      Transfer,
 		GetHash:       GetHashFn(header, chain),
@@ -86,9 +71,11 @@ func NewEVMBlockContext(header *types.Header, chain ChainContext, author *common
 		Random:        random,
 		ExcessBlobGas: header.ExcessBlobGas,
 		L1CostFunc:    types.NewL1CostFunc(config, statedb),
-		// Celo specific parameters
-		GoldTokenAddress: goldTokenAddress,
 	}
+
+	setCeloFieldsInBlockContext(&blockContext, header, config, statedb)
+
+	return blockContext
 }
 
 // NewEVMTxContext creates a new transaction context for a single transaction.
