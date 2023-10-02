@@ -34,6 +34,7 @@ func CalcMapAddr(slot common.Hash, key common.Hash) common.Hash {
 var DevPrivateKey, _ = crypto.HexToECDSA("2771aff413cac48d9f8c114fabddd9195a2129f3c2c436caa07e27bb7f58ead5")
 var DevAddr = common.BytesToAddress(DevAddr32.Bytes())
 var DevAddr32 = common.HexToHash("0x42cf1bbc38BaAA3c4898ce8790e21eD2738c6A4a")
+var FaucetAddr = common.HexToAddress("0xfcf982bb4015852e706100b14e21f947a5bb718e")
 
 func celoGenesisAccounts() map[common.Address]GenesisAccount {
 	// As defined in ERC-1967: Proxy Storage Slots (https://eips.ethereum.org/EIPS/eip-1967)
@@ -78,6 +79,10 @@ func celoGenesisAccounts() map[common.Address]GenesisAccount {
 	devBalance.FillBytes(devBalance32[:])
 	if !ok {
 		panic("Could not set devBalance!")
+	}
+	faucetBalance, ok := new(big.Int).SetString("500000000000000000000000000", 10) // 500M
+	if !ok {
+		panic("Couldn not set faucet balance!")
 	}
 	return map[common.Address]GenesisAccount{
 		contracts.RegistryAddress: { // Registry Proxy
@@ -134,6 +139,9 @@ func celoGenesisAccounts() map[common.Address]GenesisAccount {
 		},
 		DevAddr: {
 			Balance: devBalance,
+		},
+		FaucetAddr: {
+			Balance: faucetBalance,
 		},
 	}
 }
