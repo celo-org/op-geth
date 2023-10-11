@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bytes"
 	"encoding/hex"
 	"fmt"
 	"math/big"
@@ -25,6 +26,11 @@ func DecodeHex(hexbytes []byte) ([]byte, error) {
 	return bytes, nil
 }
 
+// Calculate address in evm mapping: keccak(key ++ mapping_slot)
+func CalcMapAddr(slot common.Hash, key common.Hash) common.Hash {
+	return crypto.Keccak256Hash(append(key.Bytes(), slot.Bytes()...))
+}
+
 var DevPrivateKey, _ = crypto.HexToECDSA("2771aff413cac48d9f8c114fabddd9195a2129f3c2c436caa07e27bb7f58ead5")
 var DevAddr = common.BytesToAddress(DevAddr32.Bytes())
 var DevAddr32 = common.HexToHash("0x42cf1bbc38BaAA3c4898ce8790e21eD2738c6A4a")
@@ -36,6 +42,7 @@ func celoGenesisAccounts() map[common.Address]GenesisAccount {
 		proxy_implementation_slot = common.HexToHash("0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc")
 	)
 
+	// Initialize Bytecodes
 	registryBytecode, err := DecodeHex(contracts.RegistryBytecodeRaw)
 	if err != nil {
 		panic(err)
@@ -48,7 +55,27 @@ func celoGenesisAccounts() map[common.Address]GenesisAccount {
 	if err != nil {
 		panic(err)
 	}
+	sortedOraclesBytecodeLinked := bytes.Replace(contracts.SortedOraclesBytecodeRaw, []byte("__$c0b499b413513d0c67e2a6a17d90846cb3$__"), []byte("000000000000000000000000000000000000ce17"), -1)
+	sortedOraclesBytecode, err := DecodeHex(sortedOraclesBytecodeLinked)
+	if err != nil {
+		panic(err)
+	}
+	feeCurrencyWhitelistBytecode, err := DecodeHex(contracts.FeeCurrencyWhitelistBytecodeRaw)
+	if err != nil {
+		panic(err)
+	}
+	feeCurrencyBytecode, err := DecodeHex(contracts.FeeCurrencyBytecodeRaw)
+	if err != nil {
+		panic(err)
+	}
+	addressSortedLinkedListWithMedian, err := DecodeHex(contracts.AddressSortedLinkedListWithMedianBytecodeRaw)
+	if err != nil {
+		panic(err)
+	}
+
 	devBalance, ok := new(big.Int).SetString("100000000000000000000", 10)
+	var devBalance32 common.Hash
+	devBalance.FillBytes(devBalance32[:])
 	if !ok {
 		panic("Could not set devBalance!")
 	}
@@ -76,6 +103,33 @@ func celoGenesisAccounts() map[common.Address]GenesisAccount {
 		},
 		common.HexToAddress("0xce13"): { // GoldToken Implementation
 			Code:    goldTokenBytecode,
+			Balance: big.NewInt(0),
+		},
+		contracts.FeeCurrencyWhitelistAddress: {
+			Code:    feeCurrencyWhitelistBytecode,
+			Balance: big.NewInt(0),
+			Storage: map[common.Hash]common.Hash{
+				common.HexToHash("0x1"):                               common.HexToHash("0x1"),    // array length 1
+				crypto.Keccak256Hash(common.HexToHash("0x1").Bytes()): common.HexToHash("0xce16"), // FeeCurrency
+			},
+		},
+		contracts.SortedOraclesAddress: {
+			Code: sortedOraclesBytecode,
+			Storage: map[common.Hash]common.Hash{
+				common.HexToHash("0x0"): DevAddr32, // _owner
+			},
+			Balance: big.NewInt(0),
+		},
+		common.HexToAddress("0xce16"): {
+			Code:    feeCurrencyBytecode,
+			Balance: big.NewInt(0),
+			Storage: map[common.Hash]common.Hash{
+				CalcMapAddr(common.HexToHash("0x0"), DevAddr32): devBalance32, // _balances[DevAddr]
+				common.HexToHash("0x2"):                         devBalance32, // _totalSupply
+			},
+		},
+		common.HexToAddress("0xce17"): {
+			Code:    addressSortedLinkedListWithMedian,
 			Balance: big.NewInt(0),
 		},
 		DevAddr: {
