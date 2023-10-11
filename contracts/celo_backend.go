@@ -62,7 +62,7 @@ func (b *CeloBackend) CallContract(ctx context.Context, call ethereum.CallMsg, b
 // This is usually the case when executing functions that modify state.
 func (b *CeloBackend) NewEVM() *vm.EVM {
 	blockCtx := vm.BlockContext{BlockNumber: new(big.Int), Time: 0,
-		Transfer: func(state vm.StateDB, from common.Address, to common.Address, value *uint256.Int, _ *params.Rules) {
+		Transfer: func(state vm.StateDB, from common.Address, to common.Address, value *uint256.Int, rules *params.Rules) {
 			if value.Cmp(common.U2560) != 0 {
 				panic("Non-zero transfers not implemented, yet.")
 			}
