@@ -91,6 +91,9 @@ type BlockContext struct {
 	BaseFee     *big.Int       // Provides information for BASEFEE
 	BlobBaseFee *big.Int       // Provides information for BLOBBASEFEE
 	Random      *common.Hash   // Provides information for PREVRANDAO
+
+	// Celo specific information
+	ExchangeRates map[common.Address]*big.Rat
 }
 
 // TxContext provides the EVM with information about a transaction.
