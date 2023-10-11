@@ -1488,6 +1488,9 @@ func (pool *LegacyPool) promoteExecutables(accounts []common.Address) []*types.T
 				balance = new(big.Int).Sub(balance, l1Cost) // negative big int is fine
 			}
 		}
+		// CELO: drop all transactions that no longer have a whitelisted currency
+		var fcv txpool.FeeCurrencyValidator = nil // TODO: create proper instance
+		celoFilterWhitelisted(pool.currentHead.Load().Number, list, pool.all, fcv)
 		// Drop all transactions that are too costly (low balance or out of gas)
 		drops, _ := list.Filter(balance, gasLimit)
 		for _, tx := range drops {

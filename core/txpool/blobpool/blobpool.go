@@ -1035,8 +1035,7 @@ func (p *BlobPool) validateTx(tx *types.Transaction) error {
 		MaxSize:   txMaxSize,
 		MinTip:    p.gasTip.ToBig(),
 	}
-	var fcv txpool.FeeCurrencyValidator = nil // TODO: create with proper value
-	if err := txpool.CeloValidateTransaction(tx, p.head, p.signer, baseOpts, p.state, fcv); err != nil {
+	if err := txpool.CeloValidateTransaction(tx, p.head, p.signer, baseOpts, p.state, p.feeCurrencyValidator); err != nil {
 		return err
 	}
 	// Ensure the transaction adheres to the stateful pool filters (nonce, balance)
