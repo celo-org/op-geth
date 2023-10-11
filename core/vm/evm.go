@@ -94,6 +94,7 @@ type BlockContext struct {
 
 	// Celo specific information
 	GoldTokenAddress common.Address
+	ExchangeRates    map[common.Address]*big.Rat
 }
 
 // TxContext provides the EVM with information about a transaction.
