@@ -89,6 +89,9 @@ type BlockContext struct {
 	BlobBaseFee *big.Int       // Provides information for BLOBBASEFEE (0 if vm runs with NoBaseFee flag and 0 blob gas price)
 	Random      *common.Hash   // Provides information for PREVRANDAO
 	SlotNum     uint64         // Provides information for SLOTNUM
+
+	// Celo specific information
+	ExchangeRates map[common.Address]*big.Rat
 }
 
 // TxContext provides the EVM with information about a transaction.
