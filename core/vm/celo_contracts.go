@@ -6,6 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
+	contracts "github.com/ethereum/go-ethereum/contracts/celo"
 	"github.com/ethereum/go-ethereum/params"
 )
 
@@ -45,7 +46,7 @@ func celoPrecompileAddress(index byte) common.Address {
 }
 
 func (ctx *celoPrecompileContext) IsCallerGoldToken() (bool, error) {
-	return ctx.BlockContext.GoldTokenAddress == ctx.caller, nil
+	return contracts.GoldTokenAddress == ctx.caller, nil
 }
 
 // Native transfer contract to make Celo Gold ERC20 compatible.
