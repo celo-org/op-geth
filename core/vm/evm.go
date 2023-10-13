@@ -93,8 +93,7 @@ type BlockContext struct {
 	ExcessBlobGas *uint64        // ExcessBlobGas field in the header, needed to compute the data
 
 	// Celo specific information
-	GoldTokenAddress common.Address
-	ExchangeRates    map[common.Address]*big.Rat
+	ExchangeRates map[common.Address]*big.Rat
 }
 
 // TxContext provides the EVM with information about a transaction.

@@ -8,7 +8,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	contracts "github.com/ethereum/go-ethereum/contracts/celo"
-	contracts_config "github.com/ethereum/go-ethereum/contracts/config"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -81,7 +80,7 @@ func celoGenesisAccounts() map[common.Address]GenesisAccount {
 		panic("Could not set devBalance!")
 	}
 	return map[common.Address]GenesisAccount{
-		contracts_config.RegistrySmartContractAddress: { // Registry Proxy
+		contracts.RegistryAddress: { // Registry Proxy
 			Code: proxyBytecode,
 			Storage: map[common.Hash]common.Hash{
 				common.HexToHash("0x0"):   DevAddr32, // `_owner` slot in Registry contract
@@ -94,7 +93,7 @@ func celoGenesisAccounts() map[common.Address]GenesisAccount {
 			Code:    registryBytecode,
 			Balance: big.NewInt(0),
 		},
-		common.HexToAddress("0xce12"): { // GoldToken Proxy
+		contracts.GoldTokenAddress: { // GoldToken Proxy
 			Code: proxyBytecode,
 			Storage: map[common.Hash]common.Hash{
 				proxy_implementation_slot: common.HexToHash("0xce13"),
@@ -106,7 +105,7 @@ func celoGenesisAccounts() map[common.Address]GenesisAccount {
 			Code:    goldTokenBytecode,
 			Balance: big.NewInt(0),
 		},
-		common.HexToAddress("0xce14"): {
+		contracts.FeeCurrencyWhitelistAddress: {
 			Code:    feeCurrencyWhitelistBytecode,
 			Balance: big.NewInt(0),
 			Storage: map[common.Hash]common.Hash{
@@ -114,7 +113,7 @@ func celoGenesisAccounts() map[common.Address]GenesisAccount {
 				crypto.Keccak256Hash(common.HexToHash("0x1").Bytes()): common.HexToHash("0xce16"), // FeeCurrency
 			},
 		},
-		common.HexToAddress("0xce15"): {
+		contracts.SortedOraclesAddress: {
 			Code: sortedOraclesBytecode,
 			Storage: map[common.Hash]common.Hash{
 				common.HexToHash("0x0"): DevAddr32, // _owner
