@@ -1491,7 +1491,7 @@ func (pool *LegacyPool) promoteExecutables(accounts []common.Address) []*types.T
 			l1Cost = pool.l1CostFn(el.RollupDataGas())
 		}
 		// Drop all transactions that are too costly (low balance or out of gas), and queue any invalids back for later
-		drops, _ := celoFilterBalance(l1Cost, gasLimit, list,
+		drops, _ := celoFilterBalance(pool.currentState, addr, list, l1Cost, gasLimit,
 			pool.feeCurrencyValidator)
 		for _, tx := range drops {
 			hash := tx.Hash()
@@ -1703,7 +1703,7 @@ func (pool *LegacyPool) demoteUnexecutables() {
 			l1Cost = pool.l1CostFn(el.RollupDataGas())
 		}
 		// Drop all transactions that are too costly (low balance or out of gas), and queue any invalids back for later
-		drops, invalids := celoFilterBalance(l1Cost, gasLimit, list,
+		drops, invalids := celoFilterBalance(pool.currentState, addr, list, l1Cost, gasLimit,
 			pool.feeCurrencyValidator)
 		for _, tx := range drops {
 			hash := tx.Hash()

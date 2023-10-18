@@ -19,6 +19,9 @@ type FeeCurrencyValidator interface {
 	// Balance returns the feeCurrency balance of the address specified, in the given state.
 	// If feeCurrency is nil, the native currency balance has to be returned.
 	Balance(st *state.StateDB, address common.Address, feeCurrency *common.Address) *big.Int
+
+	// ToCurrencyValue
+	ToCurrencyValue(st *state.StateDB, fromNativeValue *big.Int, toFeeCurrency *common.Address) *big.Int
 }
 
 func NewFeeCurrencyValidator() FeeCurrencyValidator {
