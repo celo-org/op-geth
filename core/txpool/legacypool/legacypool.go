@@ -223,12 +223,12 @@ type LegacyPool struct {
 	locals  *accountSet // Set of local transaction to exempt from eviction rules
 	journal *journal    // Journal of local transaction to back up to disk
 
-	reserve txpool.AddressReserver       // Address reserver to ensure exclusivity across subpools
-	pending map[common.Address]*list     // All currently processable transactions
-	queue   map[common.Address]*list     // Queued but non-processable transactions
-	beats   map[common.Address]time.Time // Last heartbeat from each known account
-	all     *lookup                      // All transactions to allow lookups
-	priced  *pricedList                  // All transactions sorted by price
+	reserve txpool.AddressReserver        // Address reserver to ensure exclusivity across subpools
+	pending map[common.Address]*celo_list // All currently processable transactions
+	queue   map[common.Address]*celo_list // Queued but non-processable transactions
+	beats   map[common.Address]time.Time  // Last heartbeat from each known account
+	all     *lookup                       // All transactions to allow lookups
+	priced  *pricedList                   // All transactions sorted by price
 
 	reqResetCh      chan *txpoolResetRequest
 	reqPromoteCh    chan *accountSet
@@ -919,7 +919,7 @@ func (pool *LegacyPool) journalTx(from common.Address, tx *types.Transaction) {
 func (pool *LegacyPool) promoteTx(addr common.Address, hash common.Hash, tx *types.Transaction) bool {
 	// Try to insert the transaction into the pending queue
 	if pool.pending[addr] == nil {
-		pool.pending[addr] = newList(true)
+		pool.pending[addr] = newCeloList(true)
 	}
 	list := pool.pending[addr]
 
@@ -1481,7 +1481,7 @@ func (pool *LegacyPool) promoteExecutables(accounts []common.Address) []*types.T
 		}
 		log.Trace("Removed old queued transactions", "count", len(forwards))
 		// CELO: drop all transactions that no longer have a whitelisted currency
-		celoFilterWhitelisted(pool.currentHead.Load().Number, list, pool.all, pool.feeCurrencyValidator)
+		list.FilterWhitelisted(pool.currentHead.Load().Number, pool.all, pool.feeCurrencyValidator)
 		// Drop all transactions that are too costly (low balance or out of gas)
 
 		var l1Cost *big.Int
@@ -1491,7 +1491,7 @@ func (pool *LegacyPool) promoteExecutables(accounts []common.Address) []*types.T
 			l1Cost = pool.l1CostFn(el.RollupDataGas())
 		}
 		// Drop all transactions that are too costly (low balance or out of gas), and queue any invalids back for later
-		drops, _ := celoFilterBalance(pool.currentState, addr, list, l1Cost, gasLimit,
+		drops, _ := list.FilterBalance(pool.currentState, addr, l1Cost, gasLimit,
 			pool.feeCurrencyValidator)
 		for _, tx := range drops {
 			hash := tx.Hash()
@@ -1693,8 +1693,7 @@ func (pool *LegacyPool) demoteUnexecutables() {
 			log.Trace("Removed old pending transaction", "hash", hash)
 		}
 		// CELO: drop all transactions that no longer have a whitelisted currency
-		var fcv txpool.FeeCurrencyValidator = nil // TODO: create proper instance
-		celoFilterWhitelisted(pool.currentHead.Load().Number, list, pool.all, fcv)
+		list.FilterWhitelisted(pool.currentHead.Load().Number, pool.all, pool.feeCurrencyValidator)
 
 		var l1Cost *big.Int
 		if !list.Empty() && pool.l1CostFn != nil {
@@ -1703,7 +1702,7 @@ func (pool *LegacyPool) demoteUnexecutables() {
 			l1Cost = pool.l1CostFn(el.RollupDataGas())
 		}
 		// Drop all transactions that are too costly (low balance or out of gas), and queue any invalids back for later
-		drops, invalids := celoFilterBalance(pool.currentState, addr, list, l1Cost, gasLimit,
+		drops, invalids := list.FilterBalance(pool.currentState, addr, l1Cost, gasLimit,
 			pool.feeCurrencyValidator)
 		for _, tx := range drops {
 			hash := tx.Hash()
