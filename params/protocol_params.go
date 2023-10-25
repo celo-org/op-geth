@@ -20,11 +20,12 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	contracts "github.com/ethereum/go-ethereum/contracts/celo"
 )
 
 var (
 	// The base fee portion of the transaction fee accumulates at this predeploy
-	OptimismBaseFeeRecipient = common.HexToAddress("0x4200000000000000000000000000000000000019")
+	OptimismBaseFeeRecipient = contracts.FeeHandlerAddress
 	// The L1 portion of the transaction fee accumulates at this predeploy
 	OptimismL1FeeRecipient = common.HexToAddress("0x420000000000000000000000000000000000001A")
 )
