@@ -472,3 +472,5 @@ func (d *Decimal) UnmarshalJSON(input []byte) error {
 		return err
 	}
 }
+
+type ExchangeRates = map[Address]*big.Rat
