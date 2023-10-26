@@ -14,14 +14,14 @@ import (
 // CeloBackend provide a partial ContractBackend implementation, so that we can
 // access core contracts during block processing.
 type CeloBackend struct {
-	chainConfig *params.ChainConfig
-	state       *state.StateDB
+	ChainConfig *params.ChainConfig
+	State       *state.StateDB
 }
 
 // ContractCaller implementation
 
 func (b *CeloBackend) CodeAt(ctx context.Context, contract common.Address, blockNumber *big.Int) ([]byte, error) {
-	return b.state.GetCode(contract), nil
+	return b.State.GetCode(contract), nil
 }
 
 func (b *CeloBackend) CallContract(ctx context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error) {
@@ -44,7 +44,7 @@ func (b *CeloBackend) CallContract(ctx context.Context, call ethereum.CallMsg, b
 	txCtx := vm.TxContext{}
 	vmConfig := vm.Config{}
 
-	evm := vm.NewEVM(blockCtx, txCtx, b.state, b.chainConfig, vmConfig)
+	evm := vm.NewEVM(blockCtx, txCtx, b.State, b.ChainConfig, vmConfig)
 	ret, _, err := evm.StaticCall(vm.AccountRef(evm.Origin), *call.To, call.Data, call.Gas)
 
 	return ret, err
