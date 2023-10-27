@@ -125,6 +125,11 @@ func (c *celo_list) FilterBalance(st *state.StateDB, addr common.Address, l1Cost
 
 // Forwarded methods
 
+// Get retrieves the current transactions associated with the given nonce.
+func (c *celo_list) Get(nonce uint64) *types.Transaction {
+	return c.list.txs.Get(nonce)
+}
+
 // Contains returns whether the  list contains a transaction
 // with the provided nonce.
 func (c *celo_list) Contains(nonce uint64) bool {

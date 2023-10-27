@@ -653,7 +653,7 @@ func (pool *LegacyPool) validateTx(tx *types.Transaction, local bool) error {
 		},
 		ExistingCost: func(addr common.Address, nonce uint64) *big.Int {
 			if list := pool.pending[addr]; list != nil {
-				if tx := list.txs.Get(nonce); tx != nil {
+				if tx := list.Get(nonce); tx != nil {
 					cost := tx.Cost()
 					if pool.l1CostFn != nil {
 						if l1Cost := pool.l1CostFn(tx.RollupDataGas()); l1Cost != nil { // add rollup cost
@@ -1072,9 +1072,9 @@ func (pool *LegacyPool) Status(hash common.Hash) txpool.TxStatus {
 	pool.mu.RLock()
 	defer pool.mu.RUnlock()
 
-	if txList := pool.pending[from]; txList != nil && txList.txs.items[tx.Nonce()] != nil {
+	if txList := pool.pending[from]; txList != nil && txList.Get(tx.Nonce()) != nil {
 		return txpool.TxStatusPending
-	} else if txList := pool.queue[from]; txList != nil && txList.txs.items[tx.Nonce()] != nil {
+	} else if txList := pool.queue[from]; txList != nil && txList.Get(tx.Nonce()) != nil {
 		return txpool.TxStatusQueued
 	}
 	return txpool.TxStatusUnknown
@@ -1723,7 +1723,7 @@ func (pool *LegacyPool) demoteUnexecutables() {
 			localGauge.Dec(int64(len(olds) + len(drops) + len(invalids)))
 		}
 		// If there's a gap in front, alert (should never happen) and postpone all transactions
-		if list.Len() > 0 && list.txs.Get(nonce) == nil {
+		if list.Len() > 0 && list.Get(nonce) == nil {
 			gapped := list.Cap(0)
 			for _, tx := range gapped {
 				hash := tx.Hash()
