@@ -11,12 +11,48 @@ import (
 )
 
 type celo_list struct {
-	list *list
+	list      *list
+	totalCost map[common.Address]*big.Int
 }
 
 func newCeloList(strict bool) *celo_list {
 	return &celo_list{
-		list: newList(strict),
+		list:      newList(strict),
+		totalCost: make(map[common.Address]*big.Int),
+	}
+}
+
+// TotalCost Returns the total cost for transactions with the same fee currency.
+func (c *celo_list) TotalCost(tx *types.Transaction) *big.Int {
+	if !txpool.IsFeeCurrencyTx(tx) {
+		return c.list.totalcost
+	}
+	if tc, ok := c.totalCost[*tx.FeeCurrency()]; ok {
+		return tc
+	}
+	return new(big.Int)
+}
+
+func (c *celo_list) addTotalCost(tx *types.Transaction) {
+	if txpool.IsFeeCurrencyTx(tx) {
+		feeCurrency := tx.FeeCurrency()
+		if _, ok := c.totalCost[*feeCurrency]; !ok {
+			c.totalCost[*feeCurrency] = big.NewInt(0)
+		}
+		c.totalCost[*feeCurrency].Add(c.totalCost[*feeCurrency], tx.Cost())
+	} else {
+		c.list.totalcost.Add(c.list.totalcost, tx.Cost())
+	}
+}
+
+func (c *celo_list) subTotalCost(txs types.Transactions) {
+	for _, tx := range txs {
+		if txpool.IsFeeCurrencyTx(tx) {
+			feeCurrency := tx.FeeCurrency()
+			c.totalCost[*feeCurrency].Sub(c.totalCost[*feeCurrency], tx.Cost())
+		} else {
+			c.list.totalcost.Sub(c.list.totalcost, tx.Cost())
+		}
 	}
 }
 
@@ -29,6 +65,7 @@ func (c *celo_list) FilterWhitelisted(st *state.StateDB, all *lookup, fcv txpool
 	removed := c.list.txs.Filter(func(tx *types.Transaction) bool {
 		return txpool.IsFeeCurrencyTx(tx) && fcv.IsWhitelisted(st, tx.FeeCurrency())
 	})
+	c.subTotalCost(removed)
 	for _, tx := range removed {
 		hash := tx.Hash()
 		all.Remove(hash)
@@ -54,7 +91,7 @@ func (c *celo_list) FilterBalance(st *state.StateDB, addr common.Address, l1Cost
 	removed := c.list.txs.Filter(func(tx *types.Transaction) bool {
 		var feeCurrency *common.Address = nil
 		var costLimit *big.Int = nil
-		if txpool.IsFeeCurrencyTx(tx) && tx.FeeCurrency() != nil {
+		if txpool.IsFeeCurrencyTx(tx) {
 			feeCurrency = tx.FeeCurrency()
 			if _, ok := balances[*feeCurrency]; !ok {
 				balances[*feeCurrency] = balanceMinusL1Cost(st, l1Cost, feeCurrency, addr, fcv)
@@ -80,8 +117,8 @@ func (c *celo_list) FilterBalance(st *state.StateDB, addr common.Address, l1Cost
 		invalids = c.list.txs.filter(func(tx *types.Transaction) bool { return tx.Nonce() > lowest })
 	}
 	// Reset total cost
-	c.list.subTotalCost(removed)
-	c.list.subTotalCost(invalids)
+	c.subTotalCost(removed)
+	c.subTotalCost(invalids)
 	c.list.txs.reheap()
 	return removed, invalids
 }
@@ -100,14 +137,36 @@ func (c *celo_list) Contains(nonce uint64) bool {
 // If the new transaction is accepted into the list, the lists' cost and gas
 // thresholds are also potentially updated.
 func (c *celo_list) Add(tx *types.Transaction, priceBump uint64, l1CostFn txpool.L1CostFunc) (bool, *types.Transaction) {
-	return c.list.Add(tx, priceBump, l1CostFn)
+	oldNativeTotalCost := big.NewInt(0).Set(c.list.totalcost)
+	added, oldTx := c.list.Add(tx, priceBump, l1CostFn)
+	if !added {
+		return false, nil
+	}
+	if !txpool.IsFeeCurrencyTx(tx) && oldTx != nil && !txpool.IsFeeCurrencyTx(oldTx) {
+		// both the tx and the replacement are native currency, nothing to do
+		return true, oldTx
+	}
+	// undo change in native totalcost
+	c.list.totalcost.Set(oldNativeTotalCost)
+	// Recalculate
+	c.addTotalCost(tx)
+	// TODO: Add rollup cost, translated to the feecurrency of the tx
+
+	// Remove replaced tx cost
+	if oldTx != nil {
+		c.subTotalCost(types.Transactions{oldTx})
+	}
+	return added, oldTx
+
 }
 
 // Forward removes all transactions from the list with a nonce lower than the
 // provided threshold. Every removed transaction is returned for any post-removal
 // maintenance.
 func (c *celo_list) Forward(threshold uint64) types.Transactions {
-	return c.list.Forward(threshold)
+	txs := c.list.txs.Forward(threshold)
+	c.subTotalCost(txs)
+	return txs
 }
 
 // Filter removes all transactions from the list with a cost or gas limit higher
@@ -147,8 +206,8 @@ func (c *celo_list) Filter(costLimit *big.Int, gasLimit uint64) (types.Transacti
 		invalids = c.list.txs.filter(func(tx *types.Transaction) bool { return tx.Nonce() > lowest })
 	}
 	// Reset total cost
-	c.list.subTotalCost(removed)
-	c.list.subTotalCost(invalids)
+	c.subTotalCost(removed)
+	c.subTotalCost(invalids)
 	c.list.txs.reheap()
 	return removed, invalids
 }
@@ -156,9 +215,8 @@ func (c *celo_list) Filter(costLimit *big.Int, gasLimit uint64) (types.Transacti
 // Cap places a hard limit on the number of items, returning all transactions
 // exceeding that limit.
 func (c *celo_list) Cap(threshold int) types.Transactions {
-
 	txs := c.list.txs.Cap(threshold)
-	c.list.subTotalCost(txs)
+	c.subTotalCost(txs)
 	return txs
 }
 
