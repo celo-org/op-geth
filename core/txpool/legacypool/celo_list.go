@@ -116,14 +116,14 @@ func (c *celo_list) Forward(threshold uint64) types.Transactions {
 // the newly invalidated transactions.
 func (c *celo_list) Filter(costLimit *big.Int, gasLimit uint64) (types.Transactions, types.Transactions) {
 	// If all transactions are below the threshold, short circuit
-	if l.costcap.Cmp(costLimit) <= 0 && l.gascap <= gasLimit {
+	if c.list.costcap.Cmp(costLimit) <= 0 && c.list.gascap <= gasLimit {
 		return nil, nil
 	}
-	l.costcap = new(big.Int).Set(costLimit) // Lower the caps to the thresholds
-	l.gascap = gasLimit
+	c.list.costcap = new(big.Int).Set(costLimit) // Lower the caps to the thresholds
+	c.list.gascap = gasLimit
 
 	// Filter out all the transactions above the account's funds
-	removed := l.txs.Filter(func(tx *types.Transaction) bool {
+	removed := c.list.txs.Filter(func(tx *types.Transaction) bool {
 		return tx.Gas() > gasLimit || tx.Cost().Cmp(costLimit) > 0
 	})
 
@@ -132,27 +132,28 @@ func (c *celo_list) Filter(costLimit *big.Int, gasLimit uint64) (types.Transacti
 	}
 	var invalids types.Transactions
 	// If the list was strict, filter anything above the lowest nonce
-	if l.strict {
+	if c.list.strict {
 		lowest := uint64(math.MaxUint64)
 		for _, tx := range removed {
 			if nonce := tx.Nonce(); lowest > nonce {
 				lowest = nonce
 			}
 		}
-		invalids = l.txs.filter(func(tx *types.Transaction) bool { return tx.Nonce() > lowest })
+		invalids = c.list.txs.filter(func(tx *types.Transaction) bool { return tx.Nonce() > lowest })
 	}
 	// Reset total cost
-	l.subTotalCost(removed)
-	l.subTotalCost(invalids)
-	l.txs.reheap()
+	c.list.subTotalCost(removed)
+	c.list.subTotalCost(invalids)
+	c.list.txs.reheap()
 	return removed, invalids
 }
 
 // Cap places a hard limit on the number of items, returning all transactions
 // exceeding that limit.
 func (c *celo_list) Cap(threshold int) types.Transactions {
-	txs := l.txs.Cap(threshold)
-	l.subTotalCost(txs)
+
+	txs := c.list.txs.Cap(threshold)
+	c.list.subTotalCost(txs)
 	return txs
 }
 
