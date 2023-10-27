@@ -6,8 +6,8 @@ set -x
 source shared.sh
 
 # Add our account as oracle and submit value
-cast send --private-key $ACC_PRIVKEY $SORTED_ORACLES_ADDR 'function addOracle(address token, address oracleAddress) external' $FEE_CURRENCY $ACC_ADDR
-cast send --private-key $ACC_PRIVKEY $SORTED_ORACLES_ADDR 'function report(address token, uint256 value, address lesserKey, address greaterKey) external' $FEE_CURRENCY $FIXIDITY_1 $ZERO_ADDRESS $ZERO_ADDRESS
+cast send --private-key $ACC_PRIVKEY $SORTED_ORACLES_ADDR 'addOracle(address token, address oracleAddress)' $FEE_CURRENCY $ACC_ADDR
+cast send --private-key $ACC_PRIVKEY $SORTED_ORACLES_ADDR 'report(address token, uint256 value, address lesserKey, address greaterKey)' $FEE_CURRENCY $FIXIDITY_1 $ZERO_ADDRESS $ZERO_ADDRESS
 
 # Debug suggestions:
 # cast call $FEE_CURRENCY_WHITELIST_ADDR 'function getWhitelist() external view returns (address[] memory)'
