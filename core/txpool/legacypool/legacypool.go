@@ -1481,13 +1481,13 @@ func (pool *LegacyPool) promoteExecutables(accounts []common.Address) []*types.T
 		}
 		log.Trace("Removed old queued transactions", "count", len(forwards))
 		// CELO: drop all transactions that no longer have a whitelisted currency
-		list.FilterWhitelisted(pool.currentHead.Load().Number, pool.all, pool.feeCurrencyValidator)
+		list.FilterWhitelisted(pool.currentState, pool.all, pool.feeCurrencyValidator)
 		// Drop all transactions that are too costly (low balance or out of gas)
 
 		var l1Cost *big.Int
 		if !list.Empty() && pool.l1CostFn != nil {
 			// Reduce the cost-cap by L1 rollup cost of the first tx if necessary. Other txs will get filtered out afterwards.
-			el := list.txs.FirstElement()
+			el := list.FirstElement()
 			l1Cost = pool.l1CostFn(el.RollupDataGas())
 		}
 		// Drop all transactions that are too costly (low balance or out of gas), and queue any invalids back for later
@@ -1693,12 +1693,12 @@ func (pool *LegacyPool) demoteUnexecutables() {
 			log.Trace("Removed old pending transaction", "hash", hash)
 		}
 		// CELO: drop all transactions that no longer have a whitelisted currency
-		list.FilterWhitelisted(pool.currentHead.Load().Number, pool.all, pool.feeCurrencyValidator)
+		list.FilterWhitelisted(pool.currentState, pool.all, pool.feeCurrencyValidator)
 
 		var l1Cost *big.Int
 		if !list.Empty() && pool.l1CostFn != nil {
 			// Reduce the cost-cap by L1 rollup cost of the first tx if necessary. Other txs will get filtered out afterwards.
-			el := list.txs.FirstElement()
+			el := list.FirstElement()
 			l1Cost = pool.l1CostFn(el.RollupDataGas())
 		}
 		// Drop all transactions that are too costly (low balance or out of gas), and queue any invalids back for later

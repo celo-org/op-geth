@@ -20,9 +20,14 @@ func newCeloList(strict bool) *celo_list {
 	}
 }
 
-func (c *celo_list) FilterWhitelisted(blockNumber *big.Int, all *lookup, fcv txpool.FeeCurrencyValidator) {
+// FirstElement Returns the first element from the list, that is, the lowest nonce.
+func (c *celo_list) FirstElement() *types.Transaction {
+	return c.list.txs.FirstElement()
+}
+
+func (c *celo_list) FilterWhitelisted(st *state.StateDB, all *lookup, fcv txpool.FeeCurrencyValidator) {
 	removed := c.list.txs.Filter(func(tx *types.Transaction) bool {
-		return txpool.IsFeeCurrencyTx(tx) && fcv.IsWhitelisted(tx.FeeCurrency(), blockNumber)
+		return txpool.IsFeeCurrencyTx(tx) && fcv.IsWhitelisted(st, tx.FeeCurrency())
 	})
 	for _, tx := range removed {
 		hash := tx.Hash()
