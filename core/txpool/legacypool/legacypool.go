@@ -1072,9 +1072,9 @@ func (pool *LegacyPool) Status(hash common.Hash) txpool.TxStatus {
 	pool.mu.RLock()
 	defer pool.mu.RUnlock()
 
-	if txList := pool.pending[from]; txList != nil && txList.txs.Get(tx.Nonce()) != nil {
+	if txList := pool.pending[from]; txList != nil && txList.txs.items[tx.Nonce()] != nil {
 		return txpool.TxStatusPending
-	} else if txList := pool.queue[from]; txList != nil && txList.txs.Get(tx.Nonce()) != nil {
+	} else if txList := pool.queue[from]; txList != nil && txList.txs.items[tx.Nonce()] != nil {
 		return txpool.TxStatusQueued
 	}
 	return txpool.TxStatusUnknown
@@ -1488,7 +1488,7 @@ func (pool *LegacyPool) promoteExecutables(accounts []common.Address) []*types.T
 			el := list.FirstElement()
 			l1Cost = pool.l1CostFn(el.RollupDataGas())
 		}
-		// Drop all transactions that are too costly (low balance or out of gas), and queue any invalids back for later
+		// Drop all transactions that are too costly (low balance or out of gas)
 		drops, _ := pool.filter(list, addr, l1Cost, gasLimit)
 		for _, tx := range drops {
 			hash := tx.Hash()
