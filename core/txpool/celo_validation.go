@@ -85,7 +85,7 @@ func CeloValidateTransaction(tx *types.Transaction, head *types.Header,
 		return err
 	}
 	if IsFeeCurrencyTx(tx) {
-		if !fcv.IsWhitelisted(st, tx.FeeCurrency()) {
+		if !fcv.IsWhitelisted(st, tx.FeeCurrency()) { // TODO: change to celoContext
 			return NonWhitelistedFeeCurrencyError
 		}
 	}

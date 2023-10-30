@@ -174,49 +174,6 @@ func (c *celo_list) Forward(threshold uint64) types.Transactions {
 	return txs
 }
 
-// Filter removes all transactions from the list with a cost or gas limit higher
-// than the provided thresholds. Every removed transaction is returned for any
-// post-removal maintenance. Strict-mode invalidated transactions are also
-// returned.
-//
-// This method uses the cached costcap and gascap to quickly decide if there's even
-// a point in calculating all the costs or if the balance covers all. If the threshold
-// is lower than the costgas cap, the caps will be reset to a new high after removing
-// the newly invalidated transactions.
-func (c *celo_list) Filter(costLimit *big.Int, gasLimit uint64) (types.Transactions, types.Transactions) {
-	// If all transactions are below the threshold, short circuit
-	if c.list.costcap.Cmp(costLimit) <= 0 && c.list.gascap <= gasLimit {
-		return nil, nil
-	}
-	c.list.costcap = new(big.Int).Set(costLimit) // Lower the caps to the thresholds
-	c.list.gascap = gasLimit
-
-	// Filter out all the transactions above the account's funds
-	removed := c.list.txs.Filter(func(tx *types.Transaction) bool {
-		return tx.Gas() > gasLimit || tx.Cost().Cmp(costLimit) > 0
-	})
-
-	if len(removed) == 0 {
-		return nil, nil
-	}
-	var invalids types.Transactions
-	// If the list was strict, filter anything above the lowest nonce
-	if c.list.strict {
-		lowest := uint64(math.MaxUint64)
-		for _, tx := range removed {
-			if nonce := tx.Nonce(); lowest > nonce {
-				lowest = nonce
-			}
-		}
-		invalids = c.list.txs.filter(func(tx *types.Transaction) bool { return tx.Nonce() > lowest })
-	}
-	// Reset total cost
-	c.subTotalCost(removed)
-	c.subTotalCost(invalids)
-	c.list.txs.reheap()
-	return removed, invalids
-}
-
 // Cap places a hard limit on the number of items, returning all transactions
 // exceeding that limit.
 func (c *celo_list) Cap(threshold int) types.Transactions {
