@@ -482,6 +482,9 @@ func (l *list) subTotalCost(txs []*types.Transaction) {
 type priceHeap struct {
 	baseFee *big.Int // heap should always be re-sorted after baseFee is changed
 	list    []*types.Transaction
+
+	// Celo currency comparator
+	txComparator TxComparator
 }
 
 func (h *priceHeap) Len() int      { return len(h.list) }
@@ -505,12 +508,13 @@ func (h *priceHeap) cmp(a, b *types.Transaction) int {
 			return c
 		}
 	}
+	// Celo modification, using a txComparator (which uses currency exchange rates)
 	// Compare fee caps if baseFee is not specified or effective tips are equal
-	if c := a.GasFeeCapCmp(b); c != 0 {
+	if c := h.txComparator.GasFeeCapCmp(a, b); c != 0 {
 		return c
 	}
 	// Compare tips if effective tips and fee caps are equal
-	return a.GasTipCapCmp(b)
+	return h.txComparator.GasTipCapCmp(a, b)
 }
 
 func (h *priceHeap) Push(x interface{}) {
@@ -554,10 +558,13 @@ const (
 )
 
 // newPricedList creates a new price-sorted transaction heap.
-func newPricedList(all *lookup) *pricedList {
-	return &pricedList{
+func newPricedList(all *lookup, txComparator TxComparator) *pricedList {
+	ret := &pricedList{
 		all: all,
 	}
+	ret.urgent.txComparator = txComparator
+	ret.floating.txComparator = txComparator
+	return ret
 }
 
 // Put inserts a new transaction into the heap.

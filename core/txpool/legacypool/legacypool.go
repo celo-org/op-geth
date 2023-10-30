@@ -244,6 +244,7 @@ type LegacyPool struct {
 
 	// Celo
 	feeCurrencyValidator txpool.FeeCurrencyValidator
+	txComparator         TxComparator
 }
 
 type txpoolResetRequest struct {
@@ -281,7 +282,7 @@ func New(config Config, chain BlockChain) *LegacyPool {
 		log.Info("Setting new local account", "address", addr)
 		pool.locals.add(addr)
 	}
-	pool.priced = newPricedList(pool.all)
+	pool.priced = newPricedList(pool.all, pool.txComparator)
 
 	if (!config.NoLocals || config.JournalRemote) && config.Journal != "" {
 		pool.journal = newTxJournal(config.Journal)

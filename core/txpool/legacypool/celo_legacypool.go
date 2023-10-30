@@ -7,6 +7,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
+// filter Filters transactions from the given list, according to remaining balance (per currency, minus l1Cost)
+// and gasLimit. Returns drops and invalid txs.
 func (pool *LegacyPool) filter(list *celo_list, addr common.Address, l1Cost *big.Int, gasLimit uint64) (types.Transactions, types.Transactions) {
 	st := pool.currentState
 	fcv := pool.feeCurrencyValidator

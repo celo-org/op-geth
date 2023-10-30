@@ -10,6 +10,11 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
+type TxComparator interface {
+	GasFeeCapCmp(*types.Transaction, *types.Transaction) int
+	GasTipCapCmp(*types.Transaction, *types.Transaction) int
+}
+
 type celo_list struct {
 	list      *list
 	totalCost map[common.Address]*big.Int
