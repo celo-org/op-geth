@@ -1485,7 +1485,7 @@ func (pool *LegacyPool) promoteExecutables(accounts []common.Address) []*types.T
 		var l1Cost *big.Int
 		if !list.Empty() && pool.l1CostFn != nil {
 			// Reduce the cost-cap by L1 rollup cost of the first tx if necessary. Other txs will get filtered out afterwards.
-			el := list.FirstElement()
+			el := list.txs.FirstElement()
 			l1Cost = pool.l1CostFn(el.RollupDataGas())
 		}
 		// Drop all transactions that are too costly (low balance or out of gas)
@@ -1692,7 +1692,7 @@ func (pool *LegacyPool) demoteUnexecutables() {
 		var l1Cost *big.Int
 		if !list.Empty() && pool.l1CostFn != nil {
 			// Reduce the cost-cap by L1 rollup cost of the first tx if necessary. Other txs will get filtered out afterwards.
-			el := list.FirstElement()
+			el := list.txs.FirstElement()
 			l1Cost = pool.l1CostFn(el.RollupDataGas())
 		}
 		// Drop all transactions that are too costly (low balance or out of gas), and queue any invalids back for later

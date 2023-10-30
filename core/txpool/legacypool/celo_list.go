@@ -72,11 +72,6 @@ func (c *celo_list) subTotalCost(txs types.Transactions) {
 	}
 }
 
-// FirstElement Returns the first element from the list, that is, the lowest nonce.
-func (c *celo_list) FirstElement() *types.Transaction {
-	return c.list.txs.FirstElement()
-}
-
 func (c *celo_list) FilterWhitelisted(st *state.StateDB, all *lookup, fcv txpool.FeeCurrencyValidator) types.Transactions {
 	removed := c.list.txs.Filter(func(tx *types.Transaction) bool {
 		return txpool.IsFeeCurrencyTx(tx) && fcv.IsWhitelisted(st, tx.FeeCurrency())
@@ -137,14 +132,6 @@ func (c *celo_list) FilterBalance(st *state.StateDB, addr common.Address, l1Cost
 	c.subTotalCost(invalids)
 	c.list.txs.reheap()
 	return removed, invalids
-}
-
-// Forwarded methods
-
-// Contains returns whether the  list contains a transaction
-// with the provided nonce.
-func (c *celo_list) Contains(nonce uint64) bool {
-	return c.list.Contains(nonce)
 }
 
 // Add tries to insert a new transaction into the list, returning whether the
@@ -229,6 +216,14 @@ func (c *celo_list) Ready(start uint64) types.Transactions {
 	c.subTotalCost(txs)
 	return txs
 }
+
+// Contains returns whether the  list contains a transaction
+// with the provided nonce.
+func (c *celo_list) Contains(nonce uint64) bool {
+	return c.list.Contains(nonce)
+}
+
+// *** Forwarded Methods ***
 
 // Len returns the length of the transaction list.
 func (c *celo_list) Len() int {
