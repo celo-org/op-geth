@@ -13,13 +13,29 @@ import (
 type celo_list struct {
 	list      *list
 	totalCost map[common.Address]*big.Int
+
+	// Pointer reference to inner list
+	txs *sortedMap
 }
 
 func newCeloList(strict bool) *celo_list {
+	inner_list := newList(strict)
 	return &celo_list{
-		list:      newList(strict),
+		list:      inner_list,
 		totalCost: make(map[common.Address]*big.Int),
+
+		txs: inner_list.txs,
 	}
+}
+
+func (c *celo_list) TotalCostFor(feeCurrency *common.Address) *big.Int {
+	if feeCurrency == nil {
+		return c.list.totalcost
+	}
+	if tc, ok := c.totalCost[*feeCurrency]; ok {
+		return tc
+	}
+	return new(big.Int)
 }
 
 // TotalCost Returns the total cost for transactions with the same fee currency.
