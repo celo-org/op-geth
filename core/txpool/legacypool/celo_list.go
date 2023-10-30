@@ -77,15 +77,12 @@ func (c *celo_list) FirstElement() *types.Transaction {
 	return c.list.txs.FirstElement()
 }
 
-func (c *celo_list) FilterWhitelisted(st *state.StateDB, all *lookup, fcv txpool.FeeCurrencyValidator) {
+func (c *celo_list) FilterWhitelisted(st *state.StateDB, all *lookup, fcv txpool.FeeCurrencyValidator) types.Transactions {
 	removed := c.list.txs.Filter(func(tx *types.Transaction) bool {
 		return txpool.IsFeeCurrencyTx(tx) && fcv.IsWhitelisted(st, tx.FeeCurrency())
 	})
 	c.subTotalCost(removed)
-	for _, tx := range removed {
-		hash := tx.Hash()
-		all.Remove(hash)
-	}
+	return removed
 }
 
 func balanceMinusL1Cost(st *state.StateDB, l1Cost *big.Int,
@@ -96,6 +93,9 @@ func balanceMinusL1Cost(st *state.StateDB, l1Cost *big.Int,
 	return new(big.Int).Sub(balance, currencyL1Cost)
 }
 
+// FilterBalance executes the same filter as legacypool.list.Filter(costcap, gascap). Since
+// celo_list has txs of multiple currencies, the costcap is not sent, but calculated
+// for every balance of different fees.
 func (c *celo_list) FilterBalance(st *state.StateDB, addr common.Address, l1Cost *big.Int,
 	gasLimit uint64,
 	fcv txpool.FeeCurrencyValidator) (types.Transactions, types.Transactions) {
