@@ -141,11 +141,6 @@ func (c *celo_list) FilterBalance(st *state.StateDB, addr common.Address, l1Cost
 
 // Forwarded methods
 
-// Get retrieves the current transactions associated with the given nonce.
-func (c *celo_list) Get(nonce uint64) *types.Transaction {
-	return c.list.txs.Get(nonce)
-}
-
 // Contains returns whether the  list contains a transaction
 // with the provided nonce.
 func (c *celo_list) Contains(nonce uint64) bool {
@@ -186,6 +181,7 @@ func (c *celo_list) Add(tx *types.Transaction, priceBump uint64, l1CostFn txpool
 // maintenance.
 func (c *celo_list) Forward(threshold uint64) types.Transactions {
 	txs := c.list.txs.Forward(threshold)
+	// Goes through celo_list subtotalcost to remove currency specific balances.
 	c.subTotalCost(txs)
 	return txs
 }
@@ -194,6 +190,7 @@ func (c *celo_list) Forward(threshold uint64) types.Transactions {
 // exceeding that limit.
 func (c *celo_list) Cap(threshold int) types.Transactions {
 	txs := c.list.txs.Cap(threshold)
+	// Goes through celo_list subtotalcost to remove currency specific balances.
 	c.subTotalCost(txs)
 	return txs
 }
@@ -202,7 +199,21 @@ func (c *celo_list) Cap(threshold int) types.Transactions {
 // transaction was found, and also returning any transaction invalidated due to
 // the deletion (strict mode only).
 func (c *celo_list) Remove(tx *types.Transaction) (bool, types.Transactions) {
-	return c.list.Remove(tx)
+	// Remove the transaction from the set
+	nonce := tx.Nonce()
+	if removed := c.txs.Remove(nonce); !removed {
+		return false, nil
+	}
+	// Goes through celo_list subtotalcost to remove currency specific balances.
+	c.subTotalCost([]*types.Transaction{tx})
+	// In strict mode, filter out non-executable transactions
+	if c.list.strict {
+		txs := c.txs.Filter(func(tx *types.Transaction) bool { return tx.Nonce() > nonce })
+		// Goes through celo_list subtotalcost to remove currency specific balances.
+		c.subTotalCost(txs)
+		return true, txs
+	}
+	return true, nil
 }
 
 // Ready retrieves a sequentially increasing list of transactions starting at the
@@ -213,7 +224,10 @@ func (c *celo_list) Remove(tx *types.Transaction) (bool, types.Transactions) {
 // prevent getting into and invalid state. This is not something that should ever
 // happen but better to be self correcting than failing!
 func (c *celo_list) Ready(start uint64) types.Transactions {
-	return c.list.Ready(start)
+	txs := c.txs.Ready(start)
+	// Goes through celo_list subtotalcost to remove currency specific balances.
+	c.subTotalCost(txs)
+	return txs
 }
 
 // Len returns the length of the transaction list.
