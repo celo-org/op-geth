@@ -13,6 +13,7 @@ import (
 type TxComparator interface {
 	GasFeeCapCmp(*types.Transaction, *types.Transaction) int
 	GasTipCapCmp(*types.Transaction, *types.Transaction) int
+	EffectiveGasTipCmp(*types.Transaction, *types.Transaction, *big.Int) int
 }
 
 type celo_list struct {
