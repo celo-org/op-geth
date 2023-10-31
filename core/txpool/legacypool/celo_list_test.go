@@ -1,12 +1,14 @@
 package legacypool
 
 import (
+	"container/heap"
 	"math/big"
 	"math/rand"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/stretchr/testify/assert"
 )
 
 // Tests that transactions can be added to strict lists and list contents and
@@ -53,4 +55,43 @@ func BenchmarkCeloListAdd(b *testing.B) {
 			list.list.Filter(priceLimit, DefaultConfig.PriceBump) // TODO: change to actual celo_list benchmark
 		}
 	}
+}
+
+// Priceheap tests
+
+func legacytx(price int) *types.Transaction {
+	return types.NewTx(&types.LegacyTx{GasPrice: big.NewInt(int64(price))})
+}
+
+type testNominalTxComparator struct{}
+
+func (t *testNominalTxComparator) GasFeeCapCmp(a *types.Transaction, b *types.Transaction) int {
+	return a.GasFeeCapCmp(b)
+}
+
+func (t *testNominalTxComparator) GasTipCapCmp(a *types.Transaction, b *types.Transaction) int {
+	return a.GasTipCapCmp(b)
+}
+
+func (t *testNominalTxComparator) EffectiveGasTipCmp(a *types.Transaction, b *types.Transaction, baseFee *big.Int) int {
+	return a.EffectiveGasTipCmp(b, baseFee)
+}
+
+func newTestPriceHeap() *priceHeap {
+	return &priceHeap{
+		txComparator: &testNominalTxComparator{},
+	}
+}
+
+func TestLegacyPushes(t *testing.T) {
+	m := newTestPriceHeap()
+	heap.Push(m, legacytx(100))
+	heap.Push(m, legacytx(50))
+	heap.Push(m, legacytx(200))
+	heap.Push(m, legacytx(75))
+	assert.Equal(t, 4, m.Len())
+	v := heap.Pop(m)
+	tm, _ := v.(*types.Transaction)
+	assert.Equal(t, big.NewInt(50), tm.GasPrice())
+	assert.Equal(t, 3, m.Len())
 }
