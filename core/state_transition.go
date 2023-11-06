@@ -65,7 +65,7 @@ func (result *ExecutionResult) Revert() []byte {
 }
 
 // IntrinsicGas computes the 'intrinsic gas' for a message with the given data.
-func IntrinsicGas(data []byte, accessList types.AccessList, isContractCreation bool, isHomestead, isEIP2028 bool, isEIP3860 bool) (uint64, error) {
+func IntrinsicGas(data []byte, accessList types.AccessList, isContractCreation bool, isHomestead, isEIP2028 bool, isEIP3860 bool, feeCurrency *common.Address, gasForAlternativeCurrency uint64) (uint64, error) {
 	// Set the starting gas for the raw transaction
 	var gas uint64
 	if isContractCreation && isHomestead {
@@ -107,6 +107,24 @@ func IntrinsicGas(data []byte, accessList types.AccessList, isContractCreation b
 			gas += lenWords * params.InitCodeWordGas
 		}
 	}
+
+	// This gas is used for charging user for one `debitFrom` transaction to deduct their balance in
+	// non-native currency and two `creditTo` transactions, one covers for the miner fee in
+	// non-native currency at the end and the other covers for the user refund at the end.
+	// A user might or might not have a gas refund at the end and even if they do the gas refund might
+	// be smaller than maxGasForDebitAndCreditTransactions. We still decide to deduct and do the refund
+	// since it makes the mining fee more consistent with respect to the gas fee. Otherwise, we would
+	// have to expect the user to estimate the mining fee right or else end up losing
+	// `min(gas sent - gas charged, maxGasForDebitAndCreditTransactions)` extra.
+	// In this case, however, the user always ends up paying `maxGasForDebitAndCreditTransactions`
+	// keeping it consistent.
+	if feeCurrency != nil {
+		if (math.MaxUint64 - gas) < gasForAlternativeCurrency {
+			return 0, ErrGasUintOverflow
+		}
+		gas += gasForAlternativeCurrency
+	}
+
 	if accessList != nil {
 		gas += uint64(len(accessList)) * params.TxAccessListAddressGas
 		gas += uint64(accessList.StorageKeys()) * params.TxAccessListStorageKeyGas
@@ -444,8 +462,13 @@ func (st *StateTransition) innerTransitionDb() (*ExecutionResult, error) {
 		contractCreation = msg.To == nil
 	)
 
+	// If the fee currency is nil, do not retrieve the intrinsic gas adjustment from the chain state, as it will not be used.
+	gasForAlternativeCurrency := uint64(0)
+	if msg.FeeCurrency != nil {
+		gasForAlternativeCurrency = contracts.IntrinsicGasForAlternativeFeeCurrency
+	}
 	// Check clauses 4-5, subtract intrinsic gas if everything is correct
-	gas, err := IntrinsicGas(msg.Data, msg.AccessList, contractCreation, rules.IsHomestead, rules.IsIstanbul, rules.IsShanghai)
+	gas, err := IntrinsicGas(msg.Data, msg.AccessList, contractCreation, rules.IsHomestead, rules.IsIstanbul, rules.IsShanghai, msg.FeeCurrency, gasForAlternativeCurrency)
 	if err != nil {
 		return nil, err
 	}
