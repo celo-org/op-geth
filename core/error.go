@@ -107,4 +107,11 @@ var (
 
 	// ErrSystemTxNotSupported is returned for any deposit tx with IsSystemTx=true after the Regolith fork
 	ErrSystemTxNotSupported = errors.New("system tx not supported")
+
+	// ErrNonWhitelistedFeeCurrency is returned if the currency specified to use for the fees
+	// isn't one of the currencies whitelisted for that purpose.
+	ErrNonWhitelistedFeeCurrency = errors.New("non-whitelisted fee currency address")
+
+	// ErrCel2NotEnabled is returned if a feature requires the Cel2 fork, but that is not enabled.
+	ErrCel2NotEnabled = errors.New("required cel2 fork not enabled")
 )
