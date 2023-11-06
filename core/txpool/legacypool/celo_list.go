@@ -157,7 +157,8 @@ func (c *celo_list) Add(tx *types.Transaction, priceBump uint64, l1CostFn txpool
 	// Recalculate
 	c.addTotalCost(tx)
 	// TODO: Add rollup cost, translated to the feecurrency of the tx
-
+	// TODO(hbandura): op-geth impl doesn't remove the l1cost from the removed tx
+	// is this intentional?
 	// Remove replaced tx cost
 	if oldTx != nil {
 		c.subTotalCost(types.Transactions{oldTx})
