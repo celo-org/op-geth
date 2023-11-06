@@ -47,12 +47,9 @@ func (c *celo_list) TotalCostFor(feeCurrency *common.Address) *big.Int {
 // TotalCost Returns the total cost for transactions with the same fee currency.
 func (c *celo_list) TotalCost(tx *types.Transaction) *big.Int {
 	if !txpool.IsFeeCurrencyTx(tx) {
-		return c.list.totalcost
+		return c.TotalCostFor(nil)
 	}
-	if tc, ok := c.totalCost[*tx.FeeCurrency()]; ok {
-		return tc
-	}
-	return new(big.Int)
+	return c.TotalCostFor(tx.FeeCurrency())
 }
 
 func (c *celo_list) addTotalCost(tx *types.Transaction) {
