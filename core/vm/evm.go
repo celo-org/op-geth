@@ -104,6 +104,16 @@ type BlockContext struct {
 	ExchangeRates map[common.Address]*big.Rat
 }
 
+func (bc BlockContext) IsCurrencyWhitelisted(feeCurrency *common.Address) bool {
+	if feeCurrency == nil {
+		return true
+	}
+
+	// Check if fee currency is registered
+	_, ok := bc.ExchangeRates[*feeCurrency]
+	return ok
+}
+
 // TxContext provides the EVM with information about a transaction.
 // All fields can change between transactions.
 type TxContext struct {
