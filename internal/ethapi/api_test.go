@@ -1240,7 +1240,7 @@ func TestRPCGetBlockOrHeader(t *testing.T) {
 		acc1Addr   = crypto.PubkeyToAddress(acc1Key.PublicKey)
 		acc2Addr   = crypto.PubkeyToAddress(acc2Key.PublicKey)
 		genesis    = &core.Genesis{
-			Config: params.TestChainConfig,
+			Config: params.TestChainConfigNoCel2,
 			Alloc: core.GenesisAlloc{
 				acc1Addr: {Balance: big.NewInt(params.Ether)},
 				acc2Addr: {Balance: big.NewInt(params.Ether)},
@@ -1485,7 +1485,7 @@ func TestRPCGetBlockOrHeader(t *testing.T) {
 }
 
 func setupReceiptBackend(t *testing.T, genBlocks int) (*testBackend, []common.Hash) {
-	config := *params.TestChainConfig
+	config := *params.TestChainConfigNoCel2
 	config.ShanghaiTime = new(uint64)
 	config.CancunTime = new(uint64)
 	var (
