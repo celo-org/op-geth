@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contracts/celo/abigen"
+	"github.com/ethereum/go-ethereum/core/state"
 )
 
 var (
@@ -21,6 +22,21 @@ func IsWhitelisted(exchangeRates common.ExchangeRates, feeCurrency *common.Addre
 	}
 	_, ok := exchangeRates[*feeCurrency]
 	return ok
+}
+
+func TranslateValue(exchangeRates common.ExchangeRates, val *big.Int, fromFeeCurrency, toFeeCurrency *common.Address) (*big.Int, error) {
+	// TODO: implement me
+	return val, nil
+}
+
+func CurrencyBaseFee(exchangeRates common.ExchangeRates, feeCurrency *common.Address) *big.Int {
+	// TODO: implement me
+	return nil
+}
+
+func CurrencyBaseFeeAt(st *state.StateDB, feeCurrency *common.Address) *big.Int {
+	var exchangeRates common.ExchangeRates
+	return CurrencyBaseFee(exchangeRates, feeCurrency)
 }
 
 // Compares values in different currencies
@@ -71,6 +87,21 @@ func CompareValue(exchangeRates common.ExchangeRates, val1 *big.Int, feeCurrency
 	)
 
 	return leftSide.Cmp(rightSide), nil
+}
+
+func CompareValueAt(st *state.StateDB, val1 *big.Int, curr1 *common.Address, val2 *big.Int, curr2 *common.Address) int {
+	// TODO: Get exchangeRates from statedb
+	var exchangeRates common.ExchangeRates
+	ret, err := CompareValue(exchangeRates, val1, curr1, val2, curr2)
+	// Err should not be possible if the pruning of non whitelisted currencies
+	// was made properly (and exchange rates are available)
+	if err != nil {
+		// TODO: LOG
+		// Compare with no currencies (Panic could be an option too)
+		r2, _ := CompareValue(exchangeRates, val1, nil, val2, nil)
+		return r2
+	}
+	return ret
 }
 
 func areEqualAddresses(addr1, addr2 *common.Address) bool {

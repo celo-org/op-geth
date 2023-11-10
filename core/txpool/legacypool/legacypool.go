@@ -1447,6 +1447,7 @@ func (pool *LegacyPool) reset(oldHead, newHead *types.Header) {
 	}
 	pool.currentHead.Store(newHead)
 	pool.currentState = statedb
+	pool.txComparator.UpdateState(pool.currentState)
 	pool.pendingNonces = newNoncer(statedb)
 
 	costFn := types.NewL1CostFunc(pool.chainconfig, statedb)

@@ -14,6 +14,34 @@ type TxComparator interface {
 	GasFeeCapCmp(*types.Transaction, *types.Transaction) int
 	GasTipCapCmp(*types.Transaction, *types.Transaction) int
 	EffectiveGasTipCmp(*types.Transaction, *types.Transaction, *big.Int) int
+	UpdateState(st *state.StateDB)
+}
+
+type txcomp struct {
+	// Comparisons take place in the context of a state
+	st *state.StateDB
+}
+
+func (t *txcomp) UpdateState(st *state.StateDB) {
+	t.st = st
+}
+
+func (t *txcomp) GasFeeCapCmp(tx *types.Transaction, other *types.Transaction) int {
+	// Excessive copying of inner values during reheap. TODO: modify to user the inner value directly.
+	return CompareValueAt(t.st, tx.GasFeeCap(), tx.FeeCurrency(), other.GasFeeCap(), other.FeeCurrency())
+}
+func (t *txcomp) GasTipCapCmp(tx *types.Transaction, other *types.Transaction) int {
+	return CompareValueAt(t.st, tx.GasTipCap(), tx.FeeCurrency(), other.GasTipCap(), other.FeeCurrency())
+}
+func (t *txcomp) EffectiveGasTipCmp(tx *types.Transaction, other *types.Transaction, baseFee *big.Int) int {
+	if baseFee == nil {
+		return t.GasTipCapCmp(tx, other)
+	}
+	baseFee1 := CurrencyBaseFeeAt(t.st, tx.FeeCurrency())
+	baseFee2 := CurrencyBaseFeeAt(t.st, other.FeeCurrency())
+	effectiveTip1 := tx.EffectiveGasTipValue(baseFee1)
+	effectiveTip2 := other.EffectiveGasTipValue(baseFee2)
+	return CompareValueAt(t.st, effectiveTip1, tx.FeeCurrency(), effectiveTip2, other.FeeCurrency())
 }
 
 type celo_list struct {
