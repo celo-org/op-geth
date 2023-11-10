@@ -53,6 +53,7 @@ func BenchmarkCeloListAdd(b *testing.B) {
 		list := newCeloList(true)
 		for _, v := range rand.Perm(len(txs)) {
 			list.Add(txs[v], DefaultConfig.PriceBump, nil)
+			// Filter is invalid from celo_list since it does not work with costcap
 			list.list.Filter(priceLimit, DefaultConfig.PriceBump) // TODO: change to actual celo_list benchmark
 		}
 	}

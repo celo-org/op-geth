@@ -98,6 +98,8 @@ func (c *celo_list) FilterBalance(st *state.StateDB, addr common.Address, l1Cost
 	gasLimit uint64,
 	fcv txpool.FeeCurrencyValidator) (types.Transactions, types.Transactions) {
 
+	// costcap && gascap are not used in celo_list.
+
 	balanceNative := balanceMinusL1Cost(st, l1Cost, nil, addr, fcv)
 	balances := make(map[common.Address]*big.Int)
 
