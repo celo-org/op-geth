@@ -7,6 +7,7 @@ import _ "embed"
 //go:generate go run ../../cmd/abigen --pkg abigen --out abigen/SortedOracles.go --abi compiled/SortedOracles.abi --type SortedOracles
 //go:generate go run ../../cmd/abigen --pkg abigen --out abigen/FeeCurrencyWhitelist.go --abi compiled/FeeCurrencyWhitelist.abi --type FeeCurrencyWhitelist
 //go:generate go run ../../cmd/abigen --pkg abigen --out abigen/FeeCurrency.go --abi compiled/FeeCurrency.abi --type FeeCurrency
+//go:generate go run ../../cmd/abigen --pkg abigen --out abigen/MockSortedOracles.go --abi compiled/MockSortedOracles.abi --type MockSortedOracles
 
 //go:embed compiled/CeloRegistry.bin-runtime
 var RegistryBytecodeRaw []byte
@@ -19,6 +20,9 @@ var ProxyBytecodeRaw []byte
 
 //go:embed compiled/SortedOracles.bin-runtime
 var SortedOraclesBytecodeRaw []byte
+
+//go:embed compiled/MockSortedOracles.bin-runtime
+var MockSortedOraclesBytecodeRaw []byte
 
 //go:embed compiled/FeeCurrencyWhitelist.bin-runtime
 var FeeCurrencyWhitelistBytecodeRaw []byte
