@@ -311,6 +311,9 @@ type BlobPool struct {
 	eventScope event.SubscriptionScope // Event scope to track and mass unsubscribe on termination
 
 	lock sync.RWMutex // Mutex protecting the pool during reorg handling
+
+	// Celo
+	feeCurrencyValidator txpool.FeeCurrencyValidator
 }
 
 // New creates a new blob transaction pool to gather, sort and filter inbound
@@ -327,6 +330,8 @@ func New(config Config, chain BlockChain) *BlobPool {
 		lookup: make(map[common.Hash]uint64),
 		index:  make(map[common.Address][]*blobTxMeta),
 		spent:  make(map[common.Address]*uint256.Int),
+
+		feeCurrencyValidator: txpool.NewFeeCurrencyValidator(),
 	}
 }
 
@@ -1024,17 +1029,18 @@ func (p *BlobPool) SetGasTip(tip *big.Int) {
 func (p *BlobPool) validateTx(tx *types.Transaction) error {
 	// Ensure the transaction adheres to basic pool filters (type, size, tip) and
 	// consensus rules
-	baseOpts := &txpool.ValidationOptions{
-		Config:  p.chain.Config(),
-		Accept:  1 << types.BlobTxType,
-		MaxSize: txMaxSize,
-		MinTip:  p.gasTip.ToBig(),
+	baseOpts := &txpool.CeloValidationOptions{
+		Config:    p.chain.Config(),
+		AcceptMap: txpool.NewAcceptMap(types.BlobTxType),
+		MaxSize:   txMaxSize,
+		MinTip:    p.gasTip.ToBig(),
 	}
-	if err := txpool.ValidateTransaction(tx, p.head, p.signer, baseOpts); err != nil {
+	var fcv txpool.FeeCurrencyValidator = nil // TODO: create with proper value
+	if err := txpool.CeloValidateTransaction(tx, p.head, p.signer, baseOpts, fcv); err != nil {
 		return err
 	}
 	// Ensure the transaction adheres to the stateful pool filters (nonce, balance)
-	stateOpts := &txpool.ValidationOptionsWithState{
+	stateOpts := &txpool.CeloValidationOptionsWithState{
 		State: p.state,
 
 		FirstNonceGap: func(addr common.Address) uint64 {
@@ -1063,6 +1069,7 @@ func (p *BlobPool) validateTx(tx *types.Transaction) error {
 			}
 			return nil
 		},
+		FeeCurrencyValidator: p.feeCurrencyValidator,
 	}
 	if err := txpool.ValidateTransactionWithState(tx, p.signer, stateOpts); err != nil {
 		return err

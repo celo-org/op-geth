@@ -241,6 +241,9 @@ type LegacyPool struct {
 	changesSinceReorg int // A counter for how many drops we've performed in-between reorg.
 
 	l1CostFn txpool.L1CostFunc // To apply L1 costs as rollup, optional field, may be nil.
+
+	// Celo
+	feeCurrencyValidator txpool.FeeCurrencyValidator
 }
 
 type txpoolResetRequest struct {
@@ -269,6 +272,9 @@ func New(config Config, chain BlockChain) *LegacyPool {
 		reorgDoneCh:     make(chan chan struct{}),
 		reorgShutdownCh: make(chan struct{}),
 		initDoneCh:      make(chan struct{}),
+
+		// CELO fields
+		feeCurrencyValidator: txpool.NewFeeCurrencyValidator(),
 	}
 	pool.locals = newAccountSet(pool.signer)
 	for _, addr := range config.Locals {
@@ -603,19 +609,20 @@ func (pool *LegacyPool) local() map[common.Address]types.Transactions {
 // This check is meant as an early check which only needs to be performed once,
 // and does not require the pool mutex to be held.
 func (pool *LegacyPool) validateTxBasics(tx *types.Transaction, local bool) error {
-	opts := &txpool.ValidationOptions{
+	opts := &txpool.CeloValidationOptions{
 		Config: pool.chainconfig,
-		Accept: 0 |
-			1<<types.LegacyTxType |
-			1<<types.AccessListTxType |
-			1<<types.DynamicFeeTxType,
+		AcceptMap: txpool.NewAcceptMap(
+			types.LegacyTxType,
+			types.AccessListTxType,
+			types.DynamicFeeTxType,
+			types.CeloDynamicFeeTxType),
 		MaxSize: txMaxSize,
 		MinTip:  pool.gasTip.Load(),
 	}
 	if local {
 		opts.MinTip = new(big.Int)
 	}
-	if err := txpool.ValidateTransaction(tx, pool.currentHead.Load(), pool.signer, opts); err != nil {
+	if err := txpool.CeloValidateTransaction(tx, pool.currentHead.Load(), pool.signer, opts, pool.feeCurrencyValidator); err != nil {
 		return err
 	}
 	return nil
@@ -624,7 +631,7 @@ func (pool *LegacyPool) validateTxBasics(tx *types.Transaction, local bool) erro
 // validateTx checks whether a transaction is valid according to the consensus
 // rules and adheres to some heuristic limits of the local node (price and size).
 func (pool *LegacyPool) validateTx(tx *types.Transaction, local bool) error {
-	opts := &txpool.ValidationOptionsWithState{
+	opts := &txpool.CeloValidationOptionsWithState{
 		State: pool.currentState,
 
 		FirstNonceGap: nil, // Pool allows arbitrary arrival order, don't invalidate nonce gaps
@@ -658,7 +665,8 @@ func (pool *LegacyPool) validateTx(tx *types.Transaction, local bool) error {
 			}
 			return nil
 		},
-		L1CostFn: pool.l1CostFn,
+		L1CostFn:             pool.l1CostFn,
+		FeeCurrencyValidator: pool.feeCurrencyValidator,
 	}
 	if err := txpool.ValidateTransactionWithState(tx, pool.signer, opts); err != nil {
 		return err
