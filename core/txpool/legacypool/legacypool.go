@@ -611,7 +611,7 @@ func (pool *LegacyPool) local() map[common.Address]types.Transactions {
 func (pool *LegacyPool) validateTxBasics(tx *types.Transaction, local bool) error {
 	opts := &txpool.CeloValidationOptions{
 		Config: pool.chainconfig,
-		AcceptMap: txpool.NewAcceptMap(
+		AcceptSet: txpool.NewAcceptSet(
 			types.LegacyTxType,
 			types.AccessListTxType,
 			types.DynamicFeeTxType,
@@ -631,7 +631,7 @@ func (pool *LegacyPool) validateTxBasics(tx *types.Transaction, local bool) erro
 // validateTx checks whether a transaction is valid according to the consensus
 // rules and adheres to some heuristic limits of the local node (price and size).
 func (pool *LegacyPool) validateTx(tx *types.Transaction, local bool) error {
-	opts := &txpool.CeloValidationOptionsWithState{
+	opts := &txpool.ValidationOptionsWithState{
 		State: pool.currentState,
 
 		FirstNonceGap: nil, // Pool allows arbitrary arrival order, don't invalidate nonce gaps
@@ -665,10 +665,16 @@ func (pool *LegacyPool) validateTx(tx *types.Transaction, local bool) error {
 			}
 			return nil
 		},
-		L1CostFn:             pool.l1CostFn,
-		FeeCurrencyValidator: pool.feeCurrencyValidator,
+		L1CostFn: pool.l1CostFn,
 	}
-	if err := txpool.ValidateTransactionWithState(tx, pool.signer, opts); err != nil {
+
+	// Adapt to celo validation options
+	celoOpts := &txpool.CeloValidationOptionsWithState{
+		ValidationOptionsWithState: *opts,
+		FeeCurrencyValidator:       pool.feeCurrencyValidator,
+	}
+
+	if err := txpool.ValidateTransactionWithState(tx, pool.signer, celoOpts); err != nil {
 		return err
 	}
 	return nil

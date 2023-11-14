@@ -38,8 +38,8 @@ func (f *feeval) Balance(st *state.StateDB, address common.Address, feeCurrency 
 	return st.GetBalance(address)
 }
 
-// AcceptMap is a set of accepted transaction types for a transaction subpool.
-type AcceptMap = map[uint8]struct{}
+// AcceptSet is a set of accepted transaction types for a transaction subpool.
+type AcceptSet = map[uint8]struct{}
 
 // CeloValidationOptions define certain differences between transaction validation
 // across the different pools without having to duplicate those checks.
@@ -48,14 +48,23 @@ type AcceptMap = map[uint8]struct{}
 type CeloValidationOptions struct {
 	Config *params.ChainConfig // Chain configuration to selectively validate based on current fork rules
 
-	AcceptMap AcceptMap // Map of transaction types that should be accepted for the calling pool
+	AcceptSet AcceptSet // Set of transaction types that should be accepted for the calling pool
 	MaxSize   uint64    // Maximum size of a transaction that the caller can meaningfully handle
 	MinTip    *big.Int  // Minimum gas tip needed to allow a transaction into the caller pool
 }
 
+// NewAcceptSet creates a new AcceptSet with the types provided.
+func NewAcceptSet(types ...uint8) AcceptSet {
+	m := make(AcceptSet, len(types))
+	for _, t := range types {
+		m[t] = struct{}{}
+	}
+	return m
+}
+
 // Accepts returns true iff txType is accepted by this CeloValidationOptions.
 func (cvo *CeloValidationOptions) Accepts(txType uint8) bool {
-	_, ok := cvo.AcceptMap[txType]
+	_, ok := cvo.AcceptSet[txType]
 	return ok
 }
 
@@ -79,15 +88,6 @@ func CeloValidateTransaction(tx *types.Transaction, head *types.Header,
 	return nil
 }
 
-// NewAcceptMap creates a new AcceptMap with the types provided as keys.
-func NewAcceptMap(types ...uint8) AcceptMap {
-	m := make(AcceptMap, len(types))
-	for _, t := range types {
-		m[t] = struct{}{}
-	}
-	return m
-}
-
 // FeeCurrencyTxType returns true if and only if the transaction type
 // given can handle custom gas fee currencies.
 func FeeCurrencyTxType(t uint8) bool {
@@ -102,31 +102,7 @@ func FeeCurrencyTx(tx *types.Transaction) bool {
 
 // See: txpool.ValidationOptionsWithState
 type CeloValidationOptionsWithState struct {
-	State *state.StateDB // State database to check nonces and balances against
-
-	// FirstNonceGap is an optional callback to retrieve the first nonce gap in
-	// the list of pooled transactions of a specific account. If this method is
-	// set, nonce gaps will be checked and forbidden. If this method is not set,
-	// nonce gaps will be ignored and permitted.
-	FirstNonceGap func(addr common.Address) uint64
-
-	// UsedAndLeftSlots is a mandatory callback to retrieve the number of tx slots
-	// used and the number still permitted for an account. New transactions will
-	// be rejected once the number of remaining slots reaches zero.
-	UsedAndLeftSlots func(addr common.Address) (int, int)
-
-	// ExistingExpenditure is a mandatory callback to retrieve the cummulative
-	// cost of the already pooled transactions to check for overdrafts.
-	ExistingExpenditure func(addr common.Address) *big.Int
-
-	// ExistingCost is a mandatory callback to retrieve an already pooled
-	// transaction's cost with the given nonce to check for overdrafts.
-	ExistingCost func(addr common.Address, nonce uint64) *big.Int
-
-	// L1CostFn is an optional extension, to validate L1 rollup costs of a tx
-	L1CostFn L1CostFunc
-
-	// Celo
+	ValidationOptionsWithState
 
 	// FeeCurrencyValidator allows for balance check of non native fee currencies.
 	FeeCurrencyValidator FeeCurrencyValidator
