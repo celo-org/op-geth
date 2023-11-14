@@ -66,15 +66,15 @@ func (cvo *CeloValidationOptions) Accepts(txType uint8) bool {
 // This check is public to allow different transaction pools to check the basic
 // rules without duplicating code and running the risk of missed updates.
 func CeloValidateTransaction(tx *types.Transaction, head *types.Header,
-	signer types.Signer, opts *CeloValidationOptions, fcv FeeCurrencyValidator) error {
+	signer types.Signer, opts *CeloValidationOptions, st *state.StateDB, fcv FeeCurrencyValidator) error {
 
 	if err := ValidateTransaction(tx, head, signer, opts); err != nil {
 		return err
 	}
 	if FeeCurrencyTx(tx) {
-		// if !fcv.IsWhitelisted(tx.FeeCurrency(), head.Number) { // TODO: change to celoContext
-		// 	return NonWhitelistedFeeCurrencyError
-		// }
+		if !fcv.IsWhitelisted(st, tx.FeeCurrency()) {
+			return NonWhitelistedFeeCurrencyError
+		}
 	}
 	return nil
 }

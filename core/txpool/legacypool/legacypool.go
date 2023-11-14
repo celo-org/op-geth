@@ -622,7 +622,7 @@ func (pool *LegacyPool) validateTxBasics(tx *types.Transaction, local bool) erro
 	if local {
 		opts.MinTip = new(big.Int)
 	}
-	if err := txpool.CeloValidateTransaction(tx, pool.currentHead.Load(), pool.signer, opts, pool.feeCurrencyValidator); err != nil {
+	if err := txpool.CeloValidateTransaction(tx, pool.currentHead.Load(), pool.signer, opts, pool.currentState, pool.feeCurrencyValidator); err != nil {
 		return err
 	}
 	return nil
