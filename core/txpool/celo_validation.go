@@ -30,7 +30,9 @@ type feeval struct {
 
 func (f *feeval) IsWhitelisted(st *state.StateDB, feeCurrency *common.Address) bool {
 	// TODO: implement proper validation for all currencies
-	return feeCurrency == nil
+	// Hardcoded for the moment
+	return true
+	//return feeCurrency == nil
 }
 
 func (f *feeval) Balance(st *state.StateDB, address common.Address, feeCurrency *common.Address) *big.Int {
@@ -80,7 +82,7 @@ func CeloValidateTransaction(tx *types.Transaction, head *types.Header,
 	if err := ValidateTransaction(tx, head, signer, opts); err != nil {
 		return err
 	}
-	if FeeCurrencyTx(tx) {
+	if IsFeeCurrencyTx(tx) {
 		if !fcv.IsWhitelisted(st, tx.FeeCurrency()) {
 			return NonWhitelistedFeeCurrencyError
 		}
@@ -88,16 +90,16 @@ func CeloValidateTransaction(tx *types.Transaction, head *types.Header,
 	return nil
 }
 
-// FeeCurrencyTxType returns true if and only if the transaction type
+// IsFeeCurrencyTxType returns true if and only if the transaction type
 // given can handle custom gas fee currencies.
-func FeeCurrencyTxType(t uint8) bool {
+func IsFeeCurrencyTxType(t uint8) bool {
 	return t == types.CeloDynamicFeeTxType
 }
 
-// FeeCurrencyTx returns true if this transaction specifies a custom
+// IsFeeCurrencyTx returns true if this transaction specifies a custom
 // gas fee currency.
-func FeeCurrencyTx(tx *types.Transaction) bool {
-	return FeeCurrencyTxType(tx.Type()) && tx.FeeCurrency() != nil
+func IsFeeCurrencyTx(tx *types.Transaction) bool {
+	return IsFeeCurrencyTxType(tx.Type()) && tx.FeeCurrency() != nil
 }
 
 // See: txpool.ValidationOptionsWithState
