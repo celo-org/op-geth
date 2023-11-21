@@ -78,7 +78,6 @@ func (cvo *CeloValidationOptions) Accepts(txType uint8) bool {
 // rules without duplicating code and running the risk of missed updates.
 func CeloValidateTransaction(tx *types.Transaction, head *types.Header,
 	signer types.Signer, opts *CeloValidationOptions, st *state.StateDB, fcv FeeCurrencyValidator) error {
-
 	if err := ValidateTransaction(tx, head, signer, opts); err != nil {
 		return err
 	}
