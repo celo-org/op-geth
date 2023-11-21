@@ -279,6 +279,9 @@ type LegacyPool struct {
 	ingressFilters []txpool.IngressFilter // Filters to apply to incoming transactions
 	filterCtx      context.Context        // Filters may use this context with external resources
 	filterCancel   context.CancelFunc     // Cancel function for the filter context
+
+	// Celo
+	feeCurrencyValidator txpool.FeeCurrencyValidator
 }
 
 type txpoolResetRequest struct {
@@ -307,6 +310,9 @@ func New(config Config, chain BlockChain) *LegacyPool {
 		reorgDoneCh:     make(chan chan struct{}),
 		reorgShutdownCh: make(chan struct{}),
 		initDoneCh:      make(chan struct{}),
+
+		// CELO fields
+		feeCurrencyValidator: txpool.NewFeeCurrencyValidator(),
 	}
 	pool.priced = newPricedList(pool.all)
 
@@ -317,7 +323,7 @@ func New(config Config, chain BlockChain) *LegacyPool {
 // pool, specifically, whether it is a Legacy, AccessList or Dynamic transaction.
 func (pool *LegacyPool) Filter(tx *types.Transaction) bool {
 	switch tx.Type() {
-	case types.LegacyTxType, types.AccessListTxType, types.DynamicFeeTxType, types.SetCodeTxType:
+	case types.LegacyTxType, types.AccessListTxType, types.DynamicFeeTxType, types.SetCodeTxType, types.CeloDynamicFeeTxV2Type:
 		return true
 	default:
 		return false
@@ -645,19 +651,20 @@ func (pool *LegacyPool) Pending(filter txpool.PendingFilter) map[common.Address]
 // This check is meant as an early check which only needs to be performed once,
 // and does not require the pool mutex to be held.
 func (pool *LegacyPool) ValidateTxBasics(tx *types.Transaction) error {
-	opts := &txpool.ValidationOptions{
+	opts := &txpool.CeloValidationOptions{
 		Config: pool.chainconfig,
-		Accept: 0 |
-			1<<types.LegacyTxType |
-			1<<types.AccessListTxType |
-			1<<types.DynamicFeeTxType |
-			1<<types.SetCodeTxType,
+		AcceptSet: txpool.NewAcceptSet(
+			types.LegacyTxType,
+			types.AccessListTxType,
+			types.DynamicFeeTxType,
+			types.SetCodeTxType,
+			types.CeloDynamicFeeTxV2Type),
 		MaxSize:          txMaxSize,
 		MinTip:           pool.gasTip.Load().ToBig(),
 		EffectiveGasCeil: pool.config.EffectiveGasCeil,
 		MaxTxGasLimit:    pool.config.MaxTxGasLimit,
 	}
-	return txpool.ValidateTransaction(tx, pool.currentHead.Load(), pool.signer, opts)
+	return txpool.CeloValidateTransaction(tx, pool.currentHead.Load(), pool.signer, opts, pool.currentState, pool.feeCurrencyValidator)
 }
 
 // validateTx checks whether a transaction is valid according to the consensus
@@ -687,7 +694,14 @@ func (pool *LegacyPool) validateTx(tx *types.Transaction) error {
 		},
 		RollupCostFn: pool.rollupCostFn,
 	}
-	if err := txpool.ValidateTransactionWithState(tx, pool.signer, opts); err != nil {
+
+	// Adapt to celo validation options
+	celoOpts := &txpool.CeloValidationOptionsWithState{
+		ValidationOptionsWithState: *opts,
+		FeeCurrencyValidator:       pool.feeCurrencyValidator,
+	}
+
+	if err := txpool.ValidateTransactionWithState(tx, pool.signer, celoOpts); err != nil {
 		return err
 	}
 	return pool.validateAuth(tx)
