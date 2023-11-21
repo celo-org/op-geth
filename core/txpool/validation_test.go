@@ -78,9 +78,9 @@ func TestValidateTransactionMaxTxGasLimit(t *testing.T) {
 			}
 
 			// Create minimal validation options
-			opts := &ValidationOptions{
+			opts := &CeloValidationOptions{
 				Config:        params.TestChainConfig,
-				Accept:        1 << types.LegacyTxType,
+				AcceptSet:     NewAcceptSet(types.LegacyTxType),
 				MaxSize:       32 * 1024,
 				MinTip:        big.NewInt(0),
 				MaxTxGasLimit: test.maxTxGasLimit,
