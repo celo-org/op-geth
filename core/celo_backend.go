@@ -6,7 +6,6 @@ import (
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
 )
@@ -15,7 +14,7 @@ import (
 // access core contracts during block processing.
 type CeloBackend struct {
 	chainConfig *params.ChainConfig
-	state       *state.StateDB
+	state       vm.StateDB
 }
 
 // ContractCaller implementation
