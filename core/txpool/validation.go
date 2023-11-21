@@ -71,7 +71,7 @@ func ValidateTransaction(tx *types.Transaction, head *types.Header, signer types
 		return core.ErrTxTypeNotSupported
 	}
 	// Ensure transactions not implemented by the calling pool are rejected
-	if opts.Accepts(tx.Type()) {
+	if !opts.Accepts(tx.Type()) {
 		return fmt.Errorf("%w: tx type %v not supported by this pool", core.ErrTxTypeNotSupported, tx.Type())
 	}
 	// Before performing any expensive validations, sanity check that the tx is
