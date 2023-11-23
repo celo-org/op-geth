@@ -19,6 +19,9 @@ type FeeCurrencyValidator interface {
 	// Balance returns the feeCurrency balance of the address specified, in the given state.
 	// If feeCurrency is nil, the native currency balance has to be returned.
 	Balance(st *state.StateDB, address common.Address, feeCurrency *common.Address) *big.Int
+
+	// ToCurrencyValue
+	ToCurrencyValue(st *state.StateDB, fromNativeValue *big.Int, toFeeCurrency *common.Address) *big.Int
 }
 
 func NewFeeCurrencyValidator() FeeCurrencyValidator {
@@ -38,6 +41,11 @@ func (f *feeval) IsWhitelisted(st *state.StateDB, feeCurrency *common.Address) b
 func (f *feeval) Balance(st *state.StateDB, address common.Address, feeCurrency *common.Address) *big.Int {
 	// TODO: implement proper balance retrieval for fee currencies
 	return st.GetBalance(address)
+}
+
+func (f *feeval) ToCurrencyValue(st *state.StateDB, fromNativeValue *big.Int, toFeeCurrency *common.Address) *big.Int {
+	// TODO: implement proper currency exchange
+	return fromNativeValue
 }
 
 // AcceptSet is a set of accepted transaction types for a transaction subpool.
@@ -82,7 +90,7 @@ func CeloValidateTransaction(tx *types.Transaction, head *types.Header,
 		return err
 	}
 	if IsFeeCurrencyTx(tx) {
-		if !fcv.IsWhitelisted(st, tx.FeeCurrency()) {
+		if !fcv.IsWhitelisted(st, tx.FeeCurrency()) { // TODO: change to celoContext
 			return NonWhitelistedFeeCurrencyError
 		}
 	}

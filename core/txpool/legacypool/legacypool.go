@@ -223,12 +223,12 @@ type LegacyPool struct {
 	locals  *accountSet // Set of local transaction to exempt from eviction rules
 	journal *journal    // Journal of local transaction to back up to disk
 
-	reserve txpool.AddressReserver       // Address reserver to ensure exclusivity across subpools
-	pending map[common.Address]*list     // All currently processable transactions
-	queue   map[common.Address]*list     // Queued but non-processable transactions
-	beats   map[common.Address]time.Time // Last heartbeat from each known account
-	all     *lookup                      // All transactions to allow lookups
-	priced  *pricedList                  // All transactions sorted by price
+	reserve txpool.AddressReserver        // Address reserver to ensure exclusivity across subpools
+	pending map[common.Address]*celo_list // All currently processable transactions
+	queue   map[common.Address]*celo_list // Queued but non-processable transactions
+	beats   map[common.Address]time.Time  // Last heartbeat from each known account
+	all     *lookup                       // All transactions to allow lookups
+	priced  *pricedList                   // All transactions sorted by price
 
 	reqResetCh      chan *txpoolResetRequest
 	reqPromoteCh    chan *accountSet
@@ -262,8 +262,8 @@ func New(config Config, chain BlockChain) *LegacyPool {
 		chain:           chain,
 		chainconfig:     chain.Config(),
 		signer:          types.LatestSigner(chain.Config()),
-		pending:         make(map[common.Address]*list),
-		queue:           make(map[common.Address]*list),
+		pending:         make(map[common.Address]*celo_list),
+		queue:           make(map[common.Address]*celo_list),
 		beats:           make(map[common.Address]time.Time),
 		all:             newLookup(),
 		reqResetCh:      make(chan *txpoolResetRequest),
@@ -647,7 +647,7 @@ func (pool *LegacyPool) validateTx(tx *types.Transaction, local bool) error {
 		},
 		ExistingExpenditure: func(addr common.Address) *big.Int {
 			if list := pool.pending[addr]; list != nil {
-				return list.totalcost
+				return list.TotalCost(tx)
 			}
 			return new(big.Int)
 		},
@@ -867,7 +867,7 @@ func (pool *LegacyPool) enqueueTx(hash common.Hash, tx *types.Transaction, local
 	// Try to insert the transaction into the future queue
 	from, _ := types.Sender(pool.signer, tx) // already validated
 	if pool.queue[from] == nil {
-		pool.queue[from] = newList(false)
+		pool.queue[from] = newCeloList(false)
 	}
 	inserted, old := pool.queue[from].Add(tx, pool.config.PriceBump, pool.l1CostFn)
 	if !inserted {
@@ -919,7 +919,7 @@ func (pool *LegacyPool) journalTx(from common.Address, tx *types.Transaction) {
 func (pool *LegacyPool) promoteTx(addr common.Address, hash common.Hash, tx *types.Transaction) bool {
 	// Try to insert the transaction into the pending queue
 	if pool.pending[addr] == nil {
-		pool.pending[addr] = newList(true)
+		pool.pending[addr] = newCeloList(true)
 	}
 	list := pool.pending[addr]
 
@@ -1480,16 +1480,15 @@ func (pool *LegacyPool) promoteExecutables(accounts []common.Address) []*types.T
 			pool.all.Remove(hash)
 		}
 		log.Trace("Removed old queued transactions", "count", len(forwards))
-		balance := pool.currentState.GetBalance(addr)
+		// Drop all transactions that are too costly (low balance or out of gas)
+		var l1Cost *big.Int
 		if !list.Empty() && pool.l1CostFn != nil {
 			// Reduce the cost-cap by L1 rollup cost of the first tx if necessary. Other txs will get filtered out afterwards.
 			el := list.txs.FirstElement()
-			if l1Cost := pool.l1CostFn(el.RollupDataGas()); l1Cost != nil {
-				balance = new(big.Int).Sub(balance, l1Cost) // negative big int is fine
-			}
+			l1Cost = pool.l1CostFn(el.RollupDataGas())
 		}
 		// Drop all transactions that are too costly (low balance or out of gas)
-		drops, _ := list.Filter(balance, gasLimit)
+		drops, _ := pool.filter(list, addr, l1Cost, gasLimit)
 		for _, tx := range drops {
 			hash := tx.Hash()
 			pool.all.Remove(hash)
@@ -1689,16 +1688,14 @@ func (pool *LegacyPool) demoteUnexecutables() {
 			pool.all.Remove(hash)
 			log.Trace("Removed old pending transaction", "hash", hash)
 		}
-		balance := pool.currentState.GetBalance(addr)
+		var l1Cost *big.Int
 		if !list.Empty() && pool.l1CostFn != nil {
 			// Reduce the cost-cap by L1 rollup cost of the first tx if necessary. Other txs will get filtered out afterwards.
 			el := list.txs.FirstElement()
-			if l1Cost := pool.l1CostFn(el.RollupDataGas()); l1Cost != nil {
-				balance = new(big.Int).Sub(balance, l1Cost) // negative big int is fine
-			}
+			l1Cost = pool.l1CostFn(el.RollupDataGas())
 		}
 		// Drop all transactions that are too costly (low balance or out of gas), and queue any invalids back for later
-		drops, invalids := list.Filter(balance, gasLimit)
+		drops, invalids := pool.filter(list, addr, l1Cost, gasLimit)
 		for _, tx := range drops {
 			hash := tx.Hash()
 			log.Trace("Removed unpayable pending transaction", "hash", hash)
