@@ -345,10 +345,10 @@ func (st *StateTransition) canPayFee(checkAmount *big.Int) error {
 		}
 	} else {
 		backend := &CeloBackend{
-			chainConfig: st.evm.ChainConfig(),
-			state:       st.state,
+			ChainConfig: st.evm.ChainConfig(),
+			State:       st.state,
 		}
-		balance, err := fee_currencies.GetBalanceOf(backend, st.msg.From, *st.msg.FeeCurrency)
+		balance, err := backend.GetBalanceERC20(st.msg.From, *st.msg.FeeCurrency)
 		if err != nil {
 			return err
 		}
@@ -440,7 +440,7 @@ func (st *StateTransition) preCheck() error {
 		if !st.evm.ChainConfig().IsCel2(st.evm.Context.Time) {
 			return ErrCel2NotEnabled
 		} else {
-			isWhiteListed := st.evm.Context.IsCurrencyWhitelisted(msg.FeeCurrency)
+			isWhiteListed := common.IsCurrencyWhitelisted(st.evm.Context.ExchangeRates, msg.FeeCurrency)
 			if !isWhiteListed {
 				log.Trace("fee currency not whitelisted", "fee currency address", msg.FeeCurrency)
 				return fee_currencies.ErrNonWhitelistedFeeCurrency
