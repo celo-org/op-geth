@@ -30,42 +30,40 @@ func newCeloList(strict bool) *celo_list {
 
 func (c *celo_list) TotalCostFor(feeCurrency *common.Address) *big.Int {
 	if feeCurrency == nil {
-		return c.list.totalcost
+		return new(big.Int).Set(c.list.totalcost)
 	}
 	if tc, ok := c.totalCost[*feeCurrency]; ok {
-		return tc
+		return new(big.Int).Set(tc)
 	}
 	return new(big.Int)
 }
 
 // TotalCost Returns the total cost for transactions with the same fee currency.
 func (c *celo_list) TotalCost(tx *types.Transaction) *big.Int {
-	if !txpool.IsFeeCurrencyTx(tx) {
-		return c.TotalCostFor(nil)
-	}
 	return c.TotalCostFor(tx.FeeCurrency())
 }
 
-func (c *celo_list) addTotalCost(tx *types.Transaction) {
-	if txpool.IsFeeCurrencyTx(tx) {
-		feeCurrency := tx.FeeCurrency()
-		if _, ok := c.totalCost[*feeCurrency]; !ok {
-			c.totalCost[*feeCurrency] = big.NewInt(0)
-		}
-		c.totalCost[*feeCurrency].Add(c.totalCost[*feeCurrency], tx.Cost())
-	} else {
-		c.list.totalcost.Add(c.list.totalcost, tx.Cost())
+func (c *celo_list) totalCostVar(feeCurrency *common.Address) *big.Int {
+	if feeCurrency == nil {
+		return c.list.totalcost
 	}
+	if tc, ok := c.totalCost[*feeCurrency]; ok {
+		return tc
+	}
+	newTc := big.NewInt(0)
+	c.totalCost[*feeCurrency] = newTc
+	return newTc
+}
+
+func (c *celo_list) addTotalCost(tx *types.Transaction) {
+	tc := c.totalCostVar(tx.FeeCurrency())
+	tc.Add(tc, tx.Cost())
 }
 
 func (c *celo_list) subTotalCost(txs types.Transactions) {
 	for _, tx := range txs {
-		if txpool.IsFeeCurrencyTx(tx) {
-			feeCurrency := tx.FeeCurrency()
-			c.totalCost[*feeCurrency].Sub(c.totalCost[*feeCurrency], tx.Cost())
-		} else {
-			c.list.totalcost.Sub(c.list.totalcost, tx.Cost())
-		}
+		tc := c.totalCostVar(tx.FeeCurrency())
+		tc.Sub(tc, tx.Cost())
 	}
 }
 
