@@ -82,7 +82,7 @@ func balanceMinusL1Cost(st *state.StateDB, l1Cost *big.Int,
 	if l1Cost == nil {
 		return balance
 	}
-	currencyL1Cost := fcv.ToCurrencyValue(st, l1Cost, feeCurrency)
+	currencyL1Cost := fcv.DenominateInCurrency(st, l1Cost, feeCurrency)
 	return new(big.Int).Sub(balance, currencyL1Cost)
 }
 

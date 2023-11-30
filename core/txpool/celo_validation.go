@@ -20,8 +20,9 @@ type FeeCurrencyValidator interface {
 	// If feeCurrency is nil, the native currency balance has to be returned.
 	Balance(st *state.StateDB, address common.Address, feeCurrency *common.Address) *big.Int
 
-	// ToCurrencyValue
-	ToCurrencyValue(st *state.StateDB, fromNativeValue *big.Int, toFeeCurrency *common.Address) *big.Int
+	// DenominateInCurrency returns the given value expressed in a different currency, according
+	// to the exchange rate at the state tree presented.
+	DenominateInCurrency(st *state.StateDB, fromNativeValue *big.Int, toFeeCurrency *common.Address) *big.Int
 }
 
 func NewFeeCurrencyValidator() FeeCurrencyValidator {
@@ -43,7 +44,7 @@ func (f *feeval) Balance(st *state.StateDB, address common.Address, feeCurrency 
 	return st.GetBalance(address)
 }
 
-func (f *feeval) ToCurrencyValue(st *state.StateDB, fromNativeValue *big.Int, toFeeCurrency *common.Address) *big.Int {
+func (f *feeval) DenominateInCurrency(st *state.StateDB, fromNativeValue *big.Int, toFeeCurrency *common.Address) *big.Int {
 	// TODO: implement proper currency exchange
 	return fromNativeValue
 }
