@@ -216,13 +216,13 @@ func (c *celo_list) Ready(start uint64) types.Transactions {
 	return txs
 }
 
+// *** Forwarded Methods ***
+
 // Contains returns whether the  list contains a transaction
 // with the provided nonce.
 func (c *celo_list) Contains(nonce uint64) bool {
 	return c.list.Contains(nonce)
 }
-
-// *** Forwarded Methods ***
 
 // Len returns the length of the transaction list.
 func (c *celo_list) Len() int {
