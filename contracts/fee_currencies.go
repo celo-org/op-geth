@@ -81,9 +81,11 @@ func CreditFees(
 	from common.Address,
 	feeRecipient common.Address,
 	feeHandler common.Address,
+	l1DataFeeReceiver common.Address,
 	refund *big.Int,
 	tipTxFee *big.Int,
 	baseTxFee *big.Int,
+	l1DataFee *big.Int,
 	feeCurrency *common.Address) error {
 	caller := vm.AccountRef(tmpAddress)
 	leftoverGas := maxGasForCreditGasFeesTransactions
@@ -120,6 +122,17 @@ func CreditFees(
 			return err
 		}
 		_, leftoverGas, err = evm.Call(caller, *feeCurrency, transfer3Data, leftoverGas, big.NewInt(0))
+		if err != nil {
+			return err
+		}
+	}
+
+	if l1DataFee != nil {
+		transfer4Data, err := abi.Pack("transfer", l1DataFeeReceiver, l1DataFee)
+		if err != nil {
+			return err
+		}
+		_, leftoverGas, err = evm.Call(caller, *feeCurrency, transfer4Data, leftoverGas, big.NewInt(0))
 		if err != nil {
 			return err
 		}
