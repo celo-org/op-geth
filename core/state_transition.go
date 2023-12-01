@@ -684,23 +684,31 @@ func (st *StateTransition) distributeTxFees() error {
 	log.Trace("distributeTxFees", "from", from, "refund", refund, "feeCurrency", st.msg.FeeCurrency,
 		"coinbaseFeeRecipient", st.evm.Context.Coinbase, "coinbaseFee", tipTxFee,
 		"feeHandler", feeHandlerAddress, "communityFundFee", baseTxFee)
+
+	var l1Cost *big.Int
+	// Check that we are post bedrock to enable op-geth to be able to create pseudo pre-bedrock blocks (these are pre-bedrock, but don't follow l2 geth rules)
+	// Note optimismConfig will not be nil if rules.IsOptimismBedrock is true
+	if optimismConfig := st.evm.ChainConfig().Optimism; optimismConfig != nil &&
+		st.evm.ChainConfig().IsOptimismBedrock(st.evm.Context.BlockNumber) {
+		l1Cost = st.evm.Context.L1CostFunc(st.evm.Context.BlockNumber.Uint64(), st.evm.Context.Time, st.msg.RollupDataGas, st.msg.IsDepositTx)
+	}
+
 	if feeCurrency == nil {
 		st.state.AddBalance(st.evm.Context.Coinbase, tipTxFee)
 		st.state.AddBalance(from, refund)
 
-		// Check that we are post bedrock to enable op-geth to be able to create pseudo pre-bedrock blocks (these are pre-bedrock, but don't follow l2 geth rules)
-		// Note optimismConfig will not be nil if rules.IsOptimismBedrock is true
-		if optimismConfig := st.evm.ChainConfig().Optimism; optimismConfig != nil &&
-			st.evm.ChainConfig().IsOptimismBedrock(st.evm.Context.BlockNumber) &&
-			st.evm.ChainConfig().IsCel2(st.evm.Context.Time) {
+		if st.evm.ChainConfig().IsCel2(st.evm.Context.Time) {
 			st.state.AddBalance(feeHandlerAddress, baseTxFee)
-			if cost := st.evm.Context.L1CostFunc(st.evm.Context.BlockNumber.Uint64(), st.evm.Context.Time, st.msg.RollupDataGas, st.msg.IsDepositTx); cost != nil {
-				st.state.AddBalance(params.OptimismL1FeeRecipient, cost)
-			}
+		}
+
+		if l1Cost != nil {
+			st.state.AddBalance(params.OptimismL1FeeRecipient, l1Cost)
 		}
 	} else {
-		// TODO: Send L1 to `OptimismL1FeeRecipient`
-		if err := fee_currencies.CreditFees(st.evm, from, st.evm.Context.Coinbase, feeHandlerAddress, refund, tipTxFee, baseTxFee, feeCurrency); err != nil {
+		if l1Cost != nil {
+			l1Cost, _ = fee_currencies.ConvertGoldToCurrency(st.evm.Context.ExchangeRates, feeCurrency, l1Cost)
+		}
+		if err := fee_currencies.CreditFees(st.evm, from, st.evm.Context.Coinbase, feeHandlerAddress, params.OptimismL1FeeRecipient, refund, tipTxFee, baseTxFee, l1Cost, feeCurrency); err != nil {
 			log.Error("Error crediting", "from", from, "coinbase", st.evm.Context.Coinbase, "feeHandler", feeHandlerAddress)
 			return err
 		}
