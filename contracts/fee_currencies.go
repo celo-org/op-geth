@@ -1,6 +1,7 @@
 package contracts
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 
@@ -24,6 +25,10 @@ const (
 
 var (
 	tmpAddress = common.HexToAddress("0xce106a5")
+
+	// ErrNonWhitelistedFeeCurrency is returned if the currency specified to use for the fees
+	// isn't one of the currencies whitelisted for that purpose.
+	ErrNonWhitelistedFeeCurrency = errors.New("non-whitelisted fee currency address")
 )
 
 // GetBalanceOf returns an account's balance on a given ERC20 currency
@@ -37,14 +42,16 @@ func GetBalanceOf(caller bind.ContractCaller, accountOwner common.Address, contr
 	if err != nil {
 		return nil, err
 	}
-	log.Trace("GetBalanceOf() Called", "accountOwner", accountOwner.Hex(), "contractAddress", contractAddress)
 
 	return balance, nil
 }
 
-func ConvertGoldToCurrency(exchangeRates map[common.Address]*big.Rat, feeCurrency *common.Address, goldAmount *big.Int) *big.Int {
-	er := exchangeRates[*feeCurrency]
-	return new(big.Int).Div(new(big.Int).Mul(goldAmount, er.Num()), er.Denom())
+func ConvertGoldToCurrency(exchangeRates map[common.Address]*big.Rat, feeCurrency *common.Address, goldAmount *big.Int) (*big.Int, error) {
+	exchangeRate, ok := exchangeRates[*feeCurrency]
+	if !ok {
+		return nil, ErrNonWhitelistedFeeCurrency
+	}
+	return new(big.Int).Div(new(big.Int).Mul(goldAmount, exchangeRate.Num()), exchangeRate.Denom()), nil
 }
 
 func DebitFees(evm *vm.EVM, address common.Address, amount *big.Int, feeCurrency *common.Address) error {

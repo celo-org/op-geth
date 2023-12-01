@@ -183,7 +183,7 @@ type Message struct {
 }
 
 // TransactionToMessage converts a transaction into a Message.
-func TransactionToMessage(tx *types.Transaction, s types.Signer, baseFee *big.Int) (*Message, error) {
+func TransactionToMessage(tx *types.Transaction, s types.Signer, baseFee *big.Int, exchangeRates map[common.Address]*big.Rat) (*Message, error) {
 	msg := &Message{
 		Nonce:         tx.Nonce(),
 		GasLimit:      tx.Gas(),
@@ -207,6 +207,13 @@ func TransactionToMessage(tx *types.Transaction, s types.Signer, baseFee *big.In
 	}
 	// If baseFee provided, set gasPrice to effectiveGasPrice.
 	if baseFee != nil {
+		if msg.FeeCurrency != nil {
+			var err error
+			baseFee, err = fee_currencies.ConvertGoldToCurrency(exchangeRates, msg.FeeCurrency, baseFee)
+			if err != nil {
+				return nil, err
+			}
+		}
 		msg.GasPrice = cmath.BigMin(msg.GasPrice.Add(msg.GasTipCap, baseFee), msg.GasFeeCap)
 	}
 	var err error
@@ -286,7 +293,7 @@ func (st *StateTransition) buyGas() error {
 		// L1 data fee needs to be converted in fee currency
 		if st.msg.FeeCurrency != nil && l1Cost != nil {
 			// Existence of the fee currency has been checked in `preCheck`
-			l1Cost = fee_currencies.ConvertGoldToCurrency(st.evm.Context.ExchangeRates, st.msg.FeeCurrency, l1Cost)
+			l1Cost, _ = fee_currencies.ConvertGoldToCurrency(st.evm.Context.ExchangeRates, st.msg.FeeCurrency, l1Cost)
 		}
 	}
 	if l1Cost != nil {
@@ -435,8 +442,8 @@ func (st *StateTransition) preCheck() error {
 		} else {
 			isWhiteListed := st.evm.Context.IsCurrencyWhitelisted(msg.FeeCurrency)
 			if !isWhiteListed {
-				log.Trace("Fee currency not whitelisted", "fee currency address", msg.FeeCurrency)
-				return ErrNonWhitelistedFeeCurrency
+				log.Trace("fee currency not whitelisted", "fee currency address", msg.FeeCurrency)
+				return fee_currencies.ErrNonWhitelistedFeeCurrency
 			}
 		}
 	}
@@ -713,7 +720,7 @@ func (st *StateTransition) calculateBaseFee() *big.Int {
 
 	if st.msg.FeeCurrency != nil {
 		// Existence of the fee currency has been checked in `preCheck`
-		baseFee = fee_currencies.ConvertGoldToCurrency(st.evm.Context.ExchangeRates, st.msg.FeeCurrency, baseFee)
+		baseFee, _ = fee_currencies.ConvertGoldToCurrency(st.evm.Context.ExchangeRates, st.msg.FeeCurrency, baseFee)
 	}
 
 	return baseFee

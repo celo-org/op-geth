@@ -104,6 +104,11 @@ func testNativeTransferWithFeeCurrency(t *testing.T, scheme string) {
 		chainConfig: chain.chainConfig,
 		state:       state,
 	}
+	exchangeRates, err := getExchangeRates(&backend)
+	if err != nil {
+		t.Fatal("could not get exchange rates")
+	}
+	baseFeeInFeeCurrency, _ := fee_currencies.ConvertGoldToCurrency(exchangeRates, &FeeCurrencyAddr, block.BaseFee())
 	actual, _ := fee_currencies.GetBalanceOf(&backend, block.Coinbase(), FeeCurrencyAddr)
 
 	// 3: Ensure that miner received only the tx's tip.
@@ -115,14 +120,14 @@ func testNativeTransferWithFeeCurrency(t *testing.T, scheme string) {
 	// 4: Ensure the tx sender paid for the gasUsed * (tip + block baseFee).
 	actual, _ = fee_currencies.GetBalanceOf(&backend, addr1, FeeCurrencyAddr)
 	actual = new(big.Int).Sub(funds, actual)
-	expected = new(big.Int).SetUint64(block.GasUsed() * (block.Transactions()[0].GasTipCap().Uint64() + block.BaseFee().Uint64()))
+	expected = new(big.Int).SetUint64(block.GasUsed() * (block.Transactions()[0].GasTipCap().Uint64() + baseFeeInFeeCurrency.Uint64()))
 	if actual.Cmp(expected) != 0 {
 		t.Fatalf("sender balance incorrect: expected %d, got %d", expected, actual)
 	}
 
-	// 5; Check that base fee has been moved to fee handler.
+	// 5: Check that base fee has been moved to the fee handler.
 	actual, _ = fee_currencies.GetBalanceOf(&backend, contracts.FeeHandlerAddress, FeeCurrencyAddr)
-	expected = new(big.Int).SetUint64(block.GasUsed() * block.BaseFee().Uint64())
+	expected = new(big.Int).SetUint64(block.GasUsed() * baseFeeInFeeCurrency.Uint64())
 	if actual.Cmp(expected) != 0 {
 		t.Fatalf("fee handler balance incorrect: expected %d, got %d", expected, actual)
 	}
