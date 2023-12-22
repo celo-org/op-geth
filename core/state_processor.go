@@ -21,11 +21,13 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/exchange"
 	"github.com/ethereum/go-ethereum/consensus/misc"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 )
 
@@ -179,6 +181,17 @@ func MakeReceipt(evm *vm.EVM, result *ExecutionResult, statedb *state.StateDB, b
 			receipt.DepositReceiptVersion = new(uint64)
 			*receipt.DepositReceiptVersion = types.CanyonDepositReceiptVersion
 		}
+	}
+	if tx.Type() == types.CeloDynamicFeeTxType {
+		alternativeBaseFee := evm.Context.BaseFee
+		if tx.FeeCurrency() != nil {
+			var err error
+			alternativeBaseFee, err = exchange.ConvertCeloToCurrency(evm.Context.ExchangeRates, tx.FeeCurrency(), evm.Context.BaseFee)
+			if err != nil {
+				log.Error("Can't calc base fee in currency for receipt", "err", err)
+			}
+		}
+		receipt.BaseFee = new(big.Int).Set(alternativeBaseFee)
 	}
 	if tx.Type() == types.BlobTxType {
 		receipt.BlobGasUsed = uint64(len(tx.BlobHashes()) * params.BlobTxBlobGasPerBlob)
