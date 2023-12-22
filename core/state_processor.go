@@ -22,6 +22,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/exchange"
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/consensus/misc"
 	"github.com/ethereum/go-ethereum/core/state"
@@ -151,6 +152,16 @@ func applyTransaction(msg *Message, config *params.ChainConfig, gp *GasPool, sta
 			receipt.DepositReceiptVersion = new(uint64)
 			*receipt.DepositReceiptVersion = types.CanyonDepositReceiptVersion
 		}
+	}
+	if tx.Type() == types.CeloDynamicFeeTxType {
+		alternativeBaseFee := evm.Context.BaseFee
+		if msg.FeeCurrency != nil {
+			alternativeBaseFee, err = exchange.ConvertCeloToCurrency(evm.Context.ExchangeRates, msg.FeeCurrency, evm.Context.BaseFee)
+			if err != nil {
+				return nil, err
+			}
+		}
+		receipt.BaseFee = new(big.Int).Set(alternativeBaseFee)
 	}
 	if tx.Type() == types.BlobTxType {
 		receipt.BlobGasUsed = uint64(len(tx.BlobHashes()) * params.BlobTxBlobGasPerBlob)
