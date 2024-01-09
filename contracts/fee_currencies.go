@@ -105,7 +105,7 @@ func CreditFees(
 		return fmt.Errorf("call transfer base fee: %w", err)
 	}
 
-	if tipTxFee.Cmp(common.Big0) == 1 {
+	if feeRecipient != common.ZeroAddress && tipTxFee.Cmp(common.Big0) == 1 {
 		transfer2Data, err := abi.Pack("transfer", feeRecipient, tipTxFee)
 		if err != nil {
 			return fmt.Errorf("pack transfer tip: %w", err)
