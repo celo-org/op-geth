@@ -709,7 +709,7 @@ func (st *StateTransition) distributeTxFees() error {
 			l1Cost, _ = fee_currencies.ConvertGoldToCurrency(st.evm.Context.ExchangeRates, feeCurrency, l1Cost)
 		}
 		if err := fee_currencies.CreditFees(st.evm, from, st.evm.Context.Coinbase, feeHandlerAddress, params.OptimismL1FeeRecipient, refund, tipTxFee, baseTxFee, l1Cost, feeCurrency); err != nil {
-			log.Error("Error crediting", "from", from, "coinbase", st.evm.Context.Coinbase, "feeHandler", feeHandlerAddress)
+			log.Error("Error crediting", "from", from, "coinbase", st.evm.Context.Coinbase, "feeHandler", feeHandlerAddress, "err", err)
 			return err
 		}
 	}

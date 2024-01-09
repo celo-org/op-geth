@@ -98,32 +98,32 @@ func CreditFees(
 	// Solidity: function transfer(address to, uint256 amount) returns(bool)
 	transfer1Data, err := abi.Pack("transfer", feeHandler, baseTxFee)
 	if err != nil {
-		return err
+		return fmt.Errorf("pack transfer base fee: %w", err)
 	}
 	_, leftoverGas, err = evm.Call(caller, *feeCurrency, transfer1Data, leftoverGas, big.NewInt(0))
 	if err != nil {
-		return err
+		return fmt.Errorf("call transfer base fee: %w", err)
 	}
 
 	if tipTxFee.Cmp(common.Big0) == 1 {
 		transfer2Data, err := abi.Pack("transfer", feeRecipient, tipTxFee)
 		if err != nil {
-			return err
+			return fmt.Errorf("pack transfer tip: %w", err)
 		}
 		_, leftoverGas, err = evm.Call(caller, *feeCurrency, transfer2Data, leftoverGas, big.NewInt(0))
 		if err != nil {
-			return err
+			return fmt.Errorf("call transfer tip: %w", err)
 		}
 	}
 
 	if refund.Cmp(common.Big0) == 1 {
 		transfer3Data, err := abi.Pack("transfer", from, refund)
 		if err != nil {
-			return err
+			return fmt.Errorf("pack transfer refund: %w", err)
 		}
 		_, leftoverGas, err = evm.Call(caller, *feeCurrency, transfer3Data, leftoverGas, big.NewInt(0))
 		if err != nil {
-			return err
+			return fmt.Errorf("call transfer refund: %w", err)
 		}
 	}
 
