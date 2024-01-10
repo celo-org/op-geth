@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contracts/celo/abigen"
@@ -54,6 +55,7 @@ func ConvertGoldToCurrency(exchangeRates map[common.Address]*big.Rat, feeCurrenc
 	return new(big.Int).Div(new(big.Int).Mul(goldAmount, exchangeRate.Num()), exchangeRate.Denom()), nil
 }
 
+// Debits transaction fees from the transaction sender and stores them in the temporary address
 func DebitFees(evm *vm.EVM, address common.Address, amount *big.Int, feeCurrency *common.Address) error {
 	if amount.Cmp(big.NewInt(0)) == 0 {
 		return nil
@@ -76,17 +78,17 @@ func DebitFees(evm *vm.EVM, address common.Address, amount *big.Int, feeCurrency
 	return err
 }
 
+// Credits fees to the respective parties
+// - the base fee goes to the fee handler
+// - the transaction tip goes to the miner
+// - the l1 data fee goes the the data fee receiver, is the node runs in rollup mode
+// - remaining funds are refunded to the transaction sender
 func CreditFees(
 	evm *vm.EVM,
-	from common.Address,
-	feeRecipient common.Address,
-	feeHandler common.Address,
-	l1DataFeeReceiver common.Address,
-	refund *big.Int,
-	tipTxFee *big.Int,
-	baseTxFee *big.Int,
-	l1DataFee *big.Int,
-	feeCurrency *common.Address) error {
+	feeCurrency *common.Address,
+	txSender, tipReceiver, baseFeeReceiver, l1DataFeeReceiver common.Address,
+	refund, feeTip, baseFee, l1DataFee *big.Int,
+) error {
 	caller := vm.AccountRef(tmpAddress)
 	leftoverGas := maxGasForCreditGasFeesTransactions
 
@@ -95,50 +97,61 @@ func CreditFees(
 		return err
 	}
 
-	// Solidity: function transfer(address to, uint256 amount) returns(bool)
-	transfer1Data, err := abi.Pack("transfer", feeHandler, baseTxFee)
+	leftoverGas, err = transferErc20(evm, abi, caller, feeCurrency, baseFeeReceiver, baseFee, leftoverGas)
 	if err != nil {
-		return fmt.Errorf("pack transfer base fee: %w", err)
+		return fmt.Errorf("base fee: %w", err)
 	}
-	_, leftoverGas, err = evm.Call(caller, *feeCurrency, transfer1Data, leftoverGas, big.NewInt(0))
+
+	// If the tip is non-zero, but the coinbase of the miner is not set, send the tip back to the tx sender
+	unusedFee, leftoverGas, err := creditFee(evm, abi, caller, feeCurrency, tipReceiver, feeTip, leftoverGas, "fee tip")
 	if err != nil {
-		return fmt.Errorf("call transfer base fee: %w", err)
+		return err
 	}
+	refund.Add(refund, unusedFee)
 
-	if feeRecipient != common.ZeroAddress && tipTxFee.Cmp(common.Big0) == 1 {
-		transfer2Data, err := abi.Pack("transfer", feeRecipient, tipTxFee)
-		if err != nil {
-			return fmt.Errorf("pack transfer tip: %w", err)
-		}
-		_, leftoverGas, err = evm.Call(caller, *feeCurrency, transfer2Data, leftoverGas, big.NewInt(0))
-		if err != nil {
-			return fmt.Errorf("call transfer tip: %w", err)
-		}
+	// If the data fee is non-zero, but the data fee receiver is not set, send the tip back to the tx sender
+	unusedFee, leftoverGas, err = creditFee(evm, abi, caller, feeCurrency, l1DataFeeReceiver, l1DataFee, leftoverGas, "l1 data fee")
+	if err != nil {
+		return err
 	}
+	refund.Add(refund, unusedFee)
 
-	if refund.Cmp(common.Big0) == 1 {
-		transfer3Data, err := abi.Pack("transfer", from, refund)
-		if err != nil {
-			return fmt.Errorf("pack transfer refund: %w", err)
-		}
-		_, leftoverGas, err = evm.Call(caller, *feeCurrency, transfer3Data, leftoverGas, big.NewInt(0))
-		if err != nil {
-			return fmt.Errorf("call transfer refund: %w", err)
-		}
+	unusedFee, leftoverGas, err = creditFee(evm, abi, caller, feeCurrency, txSender, refund, leftoverGas, "refund")
+	if err != nil {
+		return err
 	}
-
-	if l1DataFee != nil {
-		transfer4Data, err := abi.Pack("transfer", l1DataFeeReceiver, l1DataFee)
-		if err != nil {
-			return err
-		}
-		_, leftoverGas, err = evm.Call(caller, *feeCurrency, transfer4Data, leftoverGas, big.NewInt(0))
-		if err != nil {
-			return err
-		}
+	if unusedFee.Cmp(common.Big0) != 0 {
+		return errors.New("could not refund remaining fees to sender")
 	}
 
 	gasUsed := maxGasForCreditGasFeesTransactions - leftoverGas
 	log.Trace("creditFees called", "feeCurrency", *feeCurrency, "gasUsed", gasUsed)
 	return nil
+}
+
+func creditFee(evm *vm.EVM, abi *abi.ABI, caller vm.AccountRef, feeCurrency *common.Address, receiver common.Address, amount *big.Int, gasLimit uint64, action string) (*big.Int, uint64, error) {
+	if amount != nil && amount.Cmp(common.Big0) == 1 {
+		if receiver != common.ZeroAddress {
+			leftoverGas, err := transferErc20(evm, abi, caller, feeCurrency, receiver, amount, gasLimit)
+			if err != nil {
+				return common.Big0, leftoverGas, fmt.Errorf("%s: %w", action, err)
+			}
+		} else {
+			return amount, gasLimit, nil
+		}
+	}
+	return common.Big0, gasLimit, nil
+}
+
+func transferErc20(evm *vm.EVM, abi *abi.ABI, caller vm.AccountRef, feeCurrency *common.Address, receiver common.Address, amount *big.Int, gasLimit uint64) (uint64, error) {
+	// Solidity: function transfer(address to, uint256 amount) returns(bool)
+	transferData, err := abi.Pack("transfer", receiver, amount)
+	if err != nil {
+		return 0, fmt.Errorf("pack transfer: %w", err)
+	}
+	_, leftoverGas, err := evm.Call(caller, *feeCurrency, transferData, gasLimit, big.NewInt(0))
+	if err != nil {
+		return 0, fmt.Errorf("call transfer: %w", err)
+	}
+	return leftoverGas, nil
 }
