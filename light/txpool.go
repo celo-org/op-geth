@@ -385,10 +385,8 @@ func (pool *TxPool) validateTx(ctx context.Context, tx *types.Transaction) error
 		return core.ErrInsufficientFunds
 	}
 
-	// TODO(pl): Add correct intrinsic gas
 	// Should supply enough intrinsic gas
-	gasForAlternativeCurrency := uint64(0)
-	gas, err := core.IntrinsicGas(tx.Data(), tx.AccessList(), tx.To() == nil, true, pool.istanbul, pool.shanghai, tx.FeeCurrency(), gasForAlternativeCurrency)
+	gas, err := core.IntrinsicGas(tx.Data(), tx.AccessList(), tx.To() == nil, true, pool.istanbul, pool.shanghai, tx.FeeCurrency())
 	if err != nil {
 		return err
 	}

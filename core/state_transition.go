@@ -68,7 +68,7 @@ func (result *ExecutionResult) Revert() []byte {
 }
 
 // IntrinsicGas computes the 'intrinsic gas' for a message with the given data.
-func IntrinsicGas(data []byte, accessList types.AccessList, isContractCreation bool, isHomestead, isEIP2028 bool, isEIP3860 bool, feeCurrency *common.Address, gasForAlternativeCurrency uint64) (uint64, error) {
+func IntrinsicGas(data []byte, accessList types.AccessList, isContractCreation bool, isHomestead, isEIP2028 bool, isEIP3860 bool, feeCurrency *common.Address) (uint64, error) {
 	// Set the starting gas for the raw transaction
 	var gas uint64
 	if isContractCreation && isHomestead {
@@ -126,10 +126,10 @@ func IntrinsicGas(data []byte, accessList types.AccessList, isContractCreation b
 	// In this case, however, the user always ends up paying `maxGasForDebitAndCreditTransactions`
 	// keeping it consistent.
 	if feeCurrency != nil {
-		if (math.MaxUint64 - gas) < gasForAlternativeCurrency {
+		if (math.MaxUint64 - gas) < fee_currencies.IntrinsicGasForAlternativeFeeCurrency {
 			return 0, ErrGasUintOverflow
 		}
-		gas += gasForAlternativeCurrency
+		gas += fee_currencies.IntrinsicGasForAlternativeFeeCurrency
 	}
 
 	if accessList != nil {
@@ -545,13 +545,8 @@ func (st *StateTransition) innerTransitionDb() (*ExecutionResult, error) {
 		contractCreation = msg.To == nil
 	)
 
-	// If the fee currency is nil, do not retrieve the intrinsic gas adjustment from the chain state, as it will not be used.
-	gasForAlternativeCurrency := uint64(0)
-	if msg.FeeCurrency != nil {
-		gasForAlternativeCurrency = fee_currencies.IntrinsicGasForAlternativeFeeCurrency
-	}
 	// Check clauses 4-5, subtract intrinsic gas if everything is correct
-	gas, err := IntrinsicGas(msg.Data, msg.AccessList, contractCreation, rules.IsHomestead, rules.IsIstanbul, rules.IsShanghai, msg.FeeCurrency, gasForAlternativeCurrency)
+	gas, err := IntrinsicGas(msg.Data, msg.AccessList, contractCreation, rules.IsHomestead, rules.IsIstanbul, rules.IsShanghai, msg.FeeCurrency)
 	if err != nil {
 		return nil, err
 	}
