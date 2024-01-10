@@ -368,7 +368,7 @@ func (st *StateTransition) subFees(effectiveFee *big.Int) (err error) {
 		st.state.SubBalance(st.msg.From, effectiveFee)
 		return nil
 	} else {
-		return fee_currencies.DebitFees(st.evm, st.msg.From, effectiveFee, st.msg.FeeCurrency)
+		return fee_currencies.DebitFees(st.evm, st.msg.FeeCurrency, st.msg.From, effectiveFee)
 	}
 }
 

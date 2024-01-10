@@ -56,7 +56,7 @@ func ConvertGoldToCurrency(exchangeRates map[common.Address]*big.Rat, feeCurrenc
 }
 
 // Debits transaction fees from the transaction sender and stores them in the temporary address
-func DebitFees(evm *vm.EVM, address common.Address, amount *big.Int, feeCurrency *common.Address) error {
+func DebitFees(evm *vm.EVM, feeCurrency *common.Address, address common.Address, amount *big.Int) error {
 	if amount.Cmp(big.NewInt(0)) == 0 {
 		return nil
 	}
