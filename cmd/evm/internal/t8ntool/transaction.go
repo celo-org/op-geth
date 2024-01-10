@@ -141,7 +141,7 @@ func Transaction(ctx *cli.Context) error {
 		// Check intrinsic gas
 		// TODO(pl): Adapt fee currency
 		if gas, err := core.IntrinsicGas(tx.Data(), tx.AccessList(), tx.To() == nil,
-			chainConfig.IsHomestead(new(big.Int)), chainConfig.IsIstanbul(new(big.Int)), chainConfig.IsShanghai(new(big.Int), 0), nil, 0); err != nil {
+			chainConfig.IsHomestead(new(big.Int)), chainConfig.IsIstanbul(new(big.Int)), chainConfig.IsShanghai(new(big.Int), 0), nil); err != nil {
 			r.Error = err
 			results = append(results, r)
 			continue
