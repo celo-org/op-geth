@@ -37,7 +37,7 @@ do
 		echo "FAIL $f ❌"
 		((failures++)) || true
 	fi
-	tput init || true
+	tput sgr0 || true
 	((tests++)) || true
 done
 
@@ -51,5 +51,5 @@ else
 	tput setaf 1 || true
 	echo $failures/$tests failed.
 fi
-tput init || true
+tput sgr0 || true
 exit $failures
