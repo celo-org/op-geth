@@ -26,10 +26,25 @@ def:
         - title: "Celo token duality"
           description: "The Celo token is both the native token and ERC-20 compatible."
           globs:
-            - "core/evm.go"
             - "core/vm/celo_contracts*.go"
             - "core/vm/contracts*.go"
             - "core/vm/evm.go"
+        - title: "Celo fee currencies"
+          description: "Fee currencies allow to pay transaction fees with ERC20 tokens."
+          globs:
+            - "core/evm.go"
+            - "contracts/fee_currencies.go"
+            - "core/blockchain_celo_test.go"
+            - "core/celo_evm.go"
+            - "core/state_processor.go"
+            - "core/state_transition.go"
+            - "core/types/celo_dynamic_fee_tx.go"
+            - "core/types/celo_transaction_signing.go"
+            - core/txpool/*
+            - core/txpool/*/*
+            - core/types/receipt*.go
+            - core/types/transaction*.go
+            - core/types/tx*.go
         - title: "Celo contracts"
           description: |
             Contract bindings are necessary for token duality and gas currencies.
@@ -46,6 +61,10 @@ def:
             - "params/config.go"
             - "params/protocol_params.go"
             - "core/genesis.go"
+        - title: "E2E tests"
+          globs:
+            - "e2e_test/*"
+            - "e2e_test/*/*"
 
 # ignored globally, does not count towards line count
 ignore:
