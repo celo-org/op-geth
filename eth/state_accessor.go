@@ -254,7 +254,7 @@ func (eth *Ethereum) stateAtTransaction(ctx context.Context, block *types.Block,
 			return tx, context, statedb, release, nil
 		}
 		// Assemble the transaction call message and return if the requested offset
-		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee())
+		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee(), evm.Context.ExchangeRates)
 
 		// Not yet the searched for transaction, execute on top of the current state
 		statedb.SetTxContext(tx.Hash(), idx)
