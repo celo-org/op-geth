@@ -92,10 +92,11 @@ func (p *statePrefetcher) Prefetch(block *types.Block, statedb *state.StateDB, c
 				}
 			}
 			// Execute the message to preload the implicit touched states
-			evm := vm.NewEVM(NewEVMBlockContext(header, p.chain, nil, p.config, stateCpy), stateCpy, p.config, cfg)
+			blockContext := NewEVMBlockContext(header, p.chain, nil, p.config, stateCpy)
+			evm := vm.NewEVM(blockContext, stateCpy, p.config, cfg)
 
 			// Convert the transaction into an executable message and pre-cache its sender
-			msg, err := TransactionToMessage(tx, signer, header.BaseFee)
+			msg, err := TransactionToMessage(tx, signer, header.BaseFee, blockContext.ExchangeRates)
 			if err != nil {
 				fails.Add(1)
 				return nil // Also invalid block, bail out
