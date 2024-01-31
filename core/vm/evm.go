@@ -91,7 +91,8 @@ type BlockContext struct {
 	SlotNum     uint64         // Provides information for SLOTNUM
 
 	// Celo specific information
-	ExchangeRates map[common.Address]*big.Rat
+	ExchangeRates   common.ExchangeRates
+	GasUsedForDebit uint64
 }
 
 // TxContext provides the EVM with information about a transaction.
