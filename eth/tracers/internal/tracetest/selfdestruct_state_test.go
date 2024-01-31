@@ -265,7 +265,8 @@ func TestSelfdestructStateTracer(t *testing.T) {
 	// Factory with balance checking: creates contract, calls it, checks balances
 	// See selfdestruct_test_contracts/factorySelfDestructBalanceCheck.yul
 	var (
-		factorySelfDestructBalanceCheck     = common.HexToAddress("0x00000000000000000000000000000000000000fd")
+		// Avoid 0x...fd: Celo reserves it for the native transfer precompile.
+		factorySelfDestructBalanceCheck     = common.HexToAddress("0x00000000000000000000000000000000000000fe")
 		factorySelfDestructBalanceCheckCode = common.Hex2Bytes("6e6002600d60003960026000f3fe30ff600052600f60116064f0600080808080855af150803160005560008080806032855af1503160015500")
 		createdContractAddrSelfBalanceCheck = crypto.CreateAddress(factorySelfDestructBalanceCheck, 0)
 	)
@@ -614,7 +615,7 @@ func TestSelfdestructStateTracer(t *testing.T) {
 
 			tracer := newSelfdestructStateTracer()
 			hookedState := state.NewHookedState(statedb, tracer.Hooks())
-			msg, err := core.TransactionToMessage(tx, signer, nil)
+			msg, err := core.TransactionToMessage(tx, signer, nil, nil)
 			if err != nil {
 				t.Fatalf("failed to prepare transaction for tracing: %v", err)
 			}

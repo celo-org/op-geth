@@ -504,9 +504,12 @@ func TestCeloSigner_SignAndRecovery(t *testing.T) {
 		require.NoError(t, err)
 
 		v, r, s := signedTx.RawSignatureValues()
-		assert.Equal(t, expectedV, v)
-		assert.Equal(t, expectedR, r)
-		assert.Equal(t, expectedS, s)
+		// Use Cmp for big.Int equality: signing returns big.NewInt(0) (abs:nil)
+		// while fixtures use SetString (abs:empty); reflect.DeepEqual sees these
+		// as unequal even though both represent 0.
+		assert.Zero(t, expectedV.Cmp(v), "expected V %s, got %s", expectedV, v)
+		assert.Zero(t, expectedR.Cmp(r), "expected R %s, got %s", expectedR, r)
+		assert.Zero(t, expectedS.Cmp(s), "expected S %s, got %s", expectedS, s)
 
 		// Make sure the generated signature can be recovered correctly
 		sender, err := signer.Sender(signedTx)
