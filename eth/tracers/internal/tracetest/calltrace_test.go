@@ -128,7 +128,7 @@ func testCallTracer(tracerName string, dirPath string, t *testing.T) {
 			if tracer.Hooks != nil {
 				logState = state.NewHookedState(st.StateDB, tracer.Hooks)
 			}
-			msg, err := core.TransactionToMessage(tx, signer, context.BaseFee)
+			msg, err := core.TransactionToMessage(tx, signer, context.BaseFee, context.ExchangeRates)
 			if err != nil {
 				t.Fatalf("failed to prepare transaction for tracing: %v", err)
 			}
@@ -206,7 +206,7 @@ func benchTracer(tracerName string, test *callTracerTest, b *testing.B) {
 	}
 	signer := types.MakeSigner(test.Genesis.Config, new(big.Int).SetUint64(uint64(test.Context.Number)), uint64(test.Context.Time))
 	context := test.Context.toBlockContext(test.Genesis)
-	msg, err := core.TransactionToMessage(tx, signer, context.BaseFee)
+	msg, err := core.TransactionToMessage(tx, signer, context.BaseFee, context.ExchangeRates)
 	if err != nil {
 		b.Fatalf("failed to prepare transaction for tracing: %v", err)
 	}
@@ -373,7 +373,7 @@ func TestInternals(t *testing.T) {
 				t.Fatalf("test %v: failed to sign transaction: %v", tc.name, err)
 			}
 			evm := vm.NewEVM(context, logState, config, vm.Config{Tracer: tc.tracer.Hooks})
-			msg, err := core.TransactionToMessage(tx, signer, big.NewInt(0))
+			msg, err := core.TransactionToMessage(tx, signer, big.NewInt(0), nil)
 			if err != nil {
 				t.Fatalf("test %v: failed to create message: %v", tc.name, err)
 			}
