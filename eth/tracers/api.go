@@ -276,7 +276,7 @@ func (api *API) traceChain(start, end *types.Block, config *TraceConfig, closed 
 				)
 				// Trace all the transactions contained within
 				for i, tx := range task.block.Transactions() {
-					msg, _ := core.TransactionToMessage(tx, signer, task.block.BaseFee())
+					msg, _ := core.TransactionToMessage(tx, signer, task.block.BaseFee(), blockCtx.ExchangeRates)
 					txctx := &Context{
 						BlockHash:   task.block.Hash(),
 						BlockNumber: task.block.Number(),
@@ -580,7 +580,7 @@ func (api *API) IntermediateRoots(ctx context.Context, hash common.Hash, config 
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee())
+		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee(), vmctx.ExchangeRates)
 		statedb.SetTxContext(tx.Hash(), i)
 		if _, err := core.ApplyMessage(evm, msg, nil); err != nil {
 			log.Warn("Tracing intermediate roots did not complete", "txindex", i, "txhash", tx.Hash(), "err", err)
@@ -658,7 +658,7 @@ func (api *API) traceBlock(ctx context.Context, block *types.Block, config *Trac
 	)
 	for i, tx := range txs {
 		// Generate the next state snapshot fast without tracing
-		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee())
+		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee(), blockCtx.ExchangeRates)
 		txctx := &Context{
 			BlockHash:   blockHash,
 			BlockNumber: block.Number(),
@@ -690,6 +690,7 @@ func (api *API) traceBlockParallel(ctx context.Context, block *types.Block, stat
 	if threads > len(txs) {
 		threads = len(txs)
 	}
+	exchangeRates := core.GetExchangeRates(block.Header(), api.backend.ChainConfig(), statedb)
 	jobs := make(chan *txTraceTask, threads)
 	for th := 0; th < threads; th++ {
 		pend.Add(1)
@@ -697,7 +698,7 @@ func (api *API) traceBlockParallel(ctx context.Context, block *types.Block, stat
 			defer pend.Done()
 			// Fetch and execute the next transaction trace tasks
 			for task := range jobs {
-				msg, _ := core.TransactionToMessage(txs[task.index], signer, block.BaseFee())
+				msg, _ := core.TransactionToMessage(txs[task.index], signer, block.BaseFee(), exchangeRates)
 				txctx := &Context{
 					BlockHash:   blockHash,
 					BlockNumber: block.Number(),
@@ -736,7 +737,7 @@ txloop:
 		}
 
 		// Generate the next state snapshot fast without tracing
-		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee())
+		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee(), blockCtx.ExchangeRates)
 		statedb.SetTxContext(tx.Hash(), i)
 		if _, err := core.ApplyMessage(evm, msg, nil); err != nil {
 			failed = err
@@ -820,7 +821,7 @@ func (api *API) standardTraceBlockToFile(ctx context.Context, block *types.Block
 	}
 	for i, tx := range block.Transactions() {
 		// Prepare the transaction for un-traced execution
-		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee())
+		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee(), vmctx.ExchangeRates)
 		if txHash != (common.Hash{}) && tx.Hash() != txHash {
 			// Process the tx to update state, but don't trace it.
 			_, err := core.ApplyMessage(evm, msg, nil)
@@ -934,8 +935,8 @@ func (api *API) TraceTransaction(ctx context.Context, hash common.Hash, config *
 		return nil, err
 	}
 	defer release()
-
-	msg, err := core.TransactionToMessage(tx, types.MakeSigner(api.backend.ChainConfig(), block.Number(), block.Time()), block.BaseFee())
+	exchangeRates := core.GetExchangeRates(block.Header(), api.backend.ChainConfig(), statedb)
+	msg, err := core.TransactionToMessage(tx, types.MakeSigner(api.backend.ChainConfig(), block.Number(), block.Time()), block.BaseFee(), exchangeRates)
 	if err != nil {
 		return nil, err
 	}
