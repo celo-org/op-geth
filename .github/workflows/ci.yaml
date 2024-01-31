@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - celo*
+      - palango/*
 
   pull_request:
     branches:
