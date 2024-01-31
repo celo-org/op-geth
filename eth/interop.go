@@ -37,12 +37,12 @@ func (s *Ethereum) SimLogs(tx *types.Transaction) ([]*types.Log, error) {
 	}
 	var vmConf vm.Config
 	signer := types.MakeSigner(chainConfig, header.Number, header.Time)
-	message, err := core.TransactionToMessage(tx, signer, header.BaseFee)
+	chainCtx := ethapi.NewChainContext(context.Background(), s.APIBackend)
+	blockCtx := core.NewEVMBlockContext(header, chainCtx, &header.Coinbase, chainConfig, state)
+	message, err := core.TransactionToMessage(tx, signer, header.BaseFee, blockCtx.ExchangeRates)
 	if err != nil {
 		return nil, fmt.Errorf("cannot convert tx to message for log simulation: %w", err)
 	}
-	chainCtx := ethapi.NewChainContext(context.Background(), s.APIBackend)
-	blockCtx := core.NewEVMBlockContext(header, chainCtx, &header.Coinbase, chainConfig, state)
 	txCtx := core.NewEVMTxContext(message)
 	vmenv := vm.NewEVM(blockCtx, txCtx, state, chainConfig, vmConf)
 	state.SetTxContext(tx.Hash(), 0)

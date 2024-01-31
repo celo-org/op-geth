@@ -84,7 +84,7 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 	}
 	// Iterate over and process the individual transactions
 	for i, tx := range block.Transactions() {
-		msg, err := TransactionToMessage(tx, signer, header.BaseFee)
+		msg, err := TransactionToMessage(tx, signer, header.BaseFee, context.ExchangeRates)
 		if err != nil {
 			return nil, fmt.Errorf("could not apply tx %d [%v]: %w", i, tx.Hash().Hex(), err)
 		}
@@ -218,15 +218,15 @@ type ApplyTransactionOpts struct {
 }
 
 func ApplyTransactionExtended(config *params.ChainConfig, bc ChainContext, author *common.Address, gp *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *uint64, cfg vm.Config, extraOpts *ApplyTransactionOpts) (*types.Receipt, error) {
-	msg, err := TransactionToMessage(tx, types.MakeSigner(config, header.Number, header.Time), header.BaseFee)
+	// Create a new context to be used in the EVM environment
+	blockContext := NewEVMBlockContext(header, bc, author, config, statedb)
+	msg, err := TransactionToMessage(tx, types.MakeSigner(config, header.Number, header.Time), header.BaseFee, blockContext.ExchangeRates)
 	if err != nil {
 		return nil, err
 	}
 	if extraOpts != nil {
 		msg.PostValidation = extraOpts.PostValidation
 	}
-	// Create a new context to be used in the EVM environment
-	blockContext := NewEVMBlockContext(header, bc, author, config, statedb)
 	txContext := NewEVMTxContext(msg)
 	vmenv := vm.NewEVM(blockContext, txContext, statedb, config, cfg)
 	return ApplyTransactionWithEVM(msg, config, gp, statedb, header.Number, header.Hash(), tx, usedGas, vmenv)
