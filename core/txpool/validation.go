@@ -132,7 +132,7 @@ func ValidateTransaction(tx *types.Transaction, head *types.Header, signer types
 	}
 	// Ensure the transaction has more gas than the bare minimum needed to cover
 	// the transaction metadata
-	intrGas, err := core.IntrinsicGas(tx.Data(), tx.AccessList(), tx.To() == nil, true, opts.Config.IsIstanbul(head.Number), opts.Config.IsShanghai(head.Number, head.Time))
+	intrGas, err := core.IntrinsicGas(tx.Data(), tx.AccessList(), tx.To() == nil, true, opts.Config.IsIstanbul(head.Number), opts.Config.IsShanghai(head.Number, head.Time), tx.FeeCurrency())
 	if err != nil {
 		return err
 	}
@@ -254,6 +254,9 @@ func ValidateTransactionWithState(tx *types.Transaction, signer types.Signer, op
 		balance = opts.State.GetBalance(from).ToBig()
 		cost    = tx.Cost()
 	)
+	if feeCurrencyBalance == nil {
+		return fmt.Errorf("feeCurrencyBalance is nil for FeeCurrency %x", tx.FeeCurrency())
+	}
 	if opts.L1CostFn != nil {
 		if l1Cost := opts.L1CostFn(tx.RollupCostData()); l1Cost != nil { // add rollup cost
 			cost = cost.Add(cost, l1Cost)
