@@ -83,7 +83,11 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 	}
 	// Iterate over and process the individual transactions
 	for i, tx := range block.Transactions() {
-		msg, err := TransactionToMessage(tx, signer, header.BaseFee, context.ExchangeRates)
+		baseFee, err := BaseFeeToFeeCurrency(header.BaseFee, tx.FeeCurrency(), context.ExchangeRates)
+		if err != nil {
+			return nil, nil, 0, fmt.Errorf("could not apply tx %d [%v]: %w", i, tx.Hash().Hex(), err)
+		}
+		msg, err := TransactionToMessage(tx, signer, baseFee)
 		if err != nil {
 			return nil, nil, 0, fmt.Errorf("could not apply tx %d [%v]: %w", i, tx.Hash().Hex(), err)
 		}
@@ -189,7 +193,11 @@ func applyTransaction(msg *Message, config *params.ChainConfig, gp *GasPool, sta
 func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *common.Address, gp *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *uint64, cfg vm.Config) (*types.Receipt, error) {
 	// Create a new context to be used in the EVM environment
 	blockContext := NewEVMBlockContext(header, bc, author, config, statedb)
-	msg, err := TransactionToMessage(tx, types.MakeSigner(config, header.Number, header.Time), header.BaseFee, blockContext.ExchangeRates)
+	baseFee, err := BaseFeeToFeeCurrency(header.BaseFee, tx.FeeCurrency(), blockContext.ExchangeRates)
+	if err != nil {
+		return nil, err
+	}
+	msg, err := TransactionToMessage(tx, types.MakeSigner(config, header.Number, header.Time), baseFee)
 	if err != nil {
 		return nil, err
 	}

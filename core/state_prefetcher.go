@@ -62,8 +62,13 @@ func (p *statePrefetcher) Prefetch(block *types.Block, statedb *state.StateDB, c
 		if interrupt != nil && interrupt.Load() {
 			return
 		}
+		// Convert basefee to fee currency if necessary
+		baseFee, err := BaseFeeToFeeCurrency(header.BaseFee, tx.FeeCurrency(), blockContext.ExchangeRates)
+		if err != nil {
+			return // invalid fee currency
+		}
 		// Convert the transaction into an executable message and pre-cache its sender
-		msg, err := TransactionToMessage(tx, signer, header.BaseFee, blockContext.ExchangeRates)
+		msg, err := TransactionToMessage(tx, signer, baseFee)
 		if err != nil {
 			return // Also invalid block, bail out
 		}

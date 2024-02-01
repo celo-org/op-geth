@@ -182,8 +182,16 @@ type Message struct {
 	FeeCurrency *common.Address
 }
 
+func BaseFeeToFeeCurrency(baseFee *big.Int, feeCurrency *common.Address, exchangeRates map[common.Address]*big.Rat) (*big.Int, error) {
+	if feeCurrency == nil {
+		return baseFee, nil
+	}
+	return fee_currencies.ConvertGoldToCurrency(exchangeRates, feeCurrency, baseFee)
+}
+
 // TransactionToMessage converts a transaction into a Message.
-func TransactionToMessage(tx *types.Transaction, s types.Signer, baseFee *big.Int, exchangeRates map[common.Address]*big.Rat) (*Message, error) {
+// Celo: the passed basefee mast be expressed in the fee currency already
+func TransactionToMessage(tx *types.Transaction, s types.Signer, baseFee *big.Int) (*Message, error) {
 	msg := &Message{
 		Nonce:          tx.Nonce(),
 		GasLimit:       tx.Gas(),
@@ -207,13 +215,6 @@ func TransactionToMessage(tx *types.Transaction, s types.Signer, baseFee *big.In
 	}
 	// If baseFee provided, set gasPrice to effectiveGasPrice.
 	if baseFee != nil {
-		if msg.FeeCurrency != nil {
-			var err error
-			baseFee, err = fee_currencies.ConvertGoldToCurrency(exchangeRates, msg.FeeCurrency, baseFee)
-			if err != nil {
-				return nil, err
-			}
-		}
 		msg.GasPrice = cmath.BigMin(msg.GasPrice.Add(msg.GasTipCap, baseFee), msg.GasFeeCap)
 	}
 	var err error

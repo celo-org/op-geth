@@ -110,7 +110,7 @@ func flatCallTracerTestRunner(tracerName string, filename string, dirPath string
 	}
 	evm := vm.NewEVM(context, txContext, statedb, test.Genesis.Config, vm.Config{Tracer: tracer})
 
-	msg, err := core.TransactionToMessage(tx, signer, nil, context.ExchangeRates)
+	msg, err := core.TransactionToMessage(tx, signer, nil)
 	if err != nil {
 		return fmt.Errorf("failed to prepare transaction for tracing: %v", err)
 	}

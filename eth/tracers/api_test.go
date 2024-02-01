@@ -253,7 +253,8 @@ func (b *testBackend) StateAtTransaction(ctx context.Context, block *types.Block
 	signer := types.MakeSigner(b.chainConfig, block.Number(), block.Time())
 	for idx, tx := range block.Transactions() {
 		context := core.NewEVMBlockContext(block.Header(), b.chain, nil, b.chainConfig, statedb)
-		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee(), context.ExchangeRates)
+		baseFee, _ := core.BaseFeeToFeeCurrency(block.BaseFee(), tx.FeeCurrency(), context.ExchangeRates)
+		msg, _ := core.TransactionToMessage(tx, signer, baseFee)
 		txContext := core.NewEVMTxContext(msg)
 		if idx == txIndex {
 			return msg, context, statedb, release, nil

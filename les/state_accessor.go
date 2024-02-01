@@ -61,7 +61,8 @@ func (leth *LightEthereum) stateAtTransaction(ctx context.Context, block *types.
 	for idx, tx := range block.Transactions() {
 		context := core.NewEVMBlockContext(block.Header(), leth.blockchain, nil, leth.blockchain.Config(), statedb)
 		// Assemble the transaction call message and return if the requested offset
-		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee(), context.ExchangeRates)
+		baseFee, _ := core.BaseFeeToFeeCurrency(block.BaseFee(), tx.FeeCurrency(), context.ExchangeRates)
+		msg, _ := core.TransactionToMessage(tx, signer, baseFee)
 		txContext := core.NewEVMTxContext(msg)
 		statedb.SetTxContext(tx.Hash(), idx)
 		if idx == txIndex {
