@@ -694,6 +694,8 @@ func (st *StateTransition) distributeTxFees() error {
 
 		if st.evm.ChainConfig().IsCel2(st.evm.Context.Time) {
 			st.state.AddBalance(feeHandlerAddress, baseTxFee)
+		} else if st.evm.ChainConfig().Optimism != nil {
+			st.state.AddBalance(params.OptimismBaseFeeRecipient, baseTxFee)
 		}
 
 		if l1Cost != nil {
