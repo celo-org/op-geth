@@ -709,6 +709,8 @@ func (st *StateTransition) distributeTxFees() error {
 
 		if rules.IsCel2 {
 			st.state.AddBalance(feeHandlerAddress, baseTxFee)
+		} else if st.evm.ChainConfig().Optimism != nil {
+			st.state.AddBalance(params.OptimismBaseFeeRecipient, baseTxFee)
 		}
 
 		if l1Cost != nil {
