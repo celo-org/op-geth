@@ -25,33 +25,7 @@ const (
 
 var (
 	tmpAddress = common.HexToAddress("0xce106a5")
-
-	// ErrNonWhitelistedFeeCurrency is returned if the currency specified to use for the fees
-	// isn't one of the currencies whitelisted for that purpose.
-	ErrNonWhitelistedFeeCurrency = errors.New("non-whitelisted fee currency address")
 )
-
-func ConvertCurrencyToGold(exchangeRates common.ExchangeRates, currencyAmount *big.Int, feeCurrency *common.Address) (*big.Int, error) {
-	if feeCurrency == nil {
-		return currencyAmount, nil
-	}
-	exchangeRate, ok := exchangeRates[*feeCurrency]
-	if !ok {
-		return nil, ErrNonWhitelistedFeeCurrency
-	}
-	return new(big.Int).Div(new(big.Int).Mul(currencyAmount, exchangeRate.Denom()), exchangeRate.Num()), nil
-}
-
-func ConvertGoldToCurrency(exchangeRates common.ExchangeRates, feeCurrency *common.Address, goldAmount *big.Int) (*big.Int, error) {
-	if feeCurrency == nil {
-		return goldAmount, nil
-	}
-	exchangeRate, ok := exchangeRates[*feeCurrency]
-	if !ok {
-		return nil, ErrNonWhitelistedFeeCurrency
-	}
-	return new(big.Int).Div(new(big.Int).Mul(goldAmount, exchangeRate.Num()), exchangeRate.Denom()), nil
-}
 
 // Debits transaction fees from the transaction sender and stores them in the temporary address
 func DebitFees(evm *vm.EVM, feeCurrency *common.Address, address common.Address, amount *big.Int) error {

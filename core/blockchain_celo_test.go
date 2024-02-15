@@ -21,8 +21,8 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/exchange"
 	"github.com/ethereum/go-ethereum/consensus/ethash"
-	fee_currencies "github.com/ethereum/go-ethereum/contracts"
 	contracts "github.com/ethereum/go-ethereum/contracts/celo"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -108,7 +108,7 @@ func testNativeTransferWithFeeCurrency(t *testing.T, scheme string) {
 	if err != nil {
 		t.Fatal("could not get exchange rates")
 	}
-	baseFeeInFeeCurrency, _ := fee_currencies.ConvertGoldToCurrency(exchangeRates, &FeeCurrencyAddr, block.BaseFee())
+	baseFeeInFeeCurrency, _ := exchange.ConvertGoldToCurrency(exchangeRates, &FeeCurrencyAddr, block.BaseFee())
 	actual, _ := backend.GetBalanceERC20(block.Coinbase(), FeeCurrencyAddr)
 
 	// 3: Ensure that miner received only the tx's tip.

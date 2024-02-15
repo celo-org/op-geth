@@ -5,8 +5,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/contracts"
-	"github.com/ethereum/go-ethereum/core/txpool"
+	"github.com/ethereum/go-ethereum/common/exchange"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
@@ -124,14 +123,14 @@ func (p *pricedList) compareWithRates(a, b *types.Transaction, goldBaseFee *big.
 	if goldBaseFee != nil {
 		tipA := effectiveTip(p.rates, goldBaseFee, a)
 		tipB := effectiveTip(p.rates, goldBaseFee, b)
-		result, _ := txpool.CompareValue(p.rates, tipA, a.FeeCurrency(), tipB, b.FeeCurrency())
+		result, _ := exchange.CompareValue(p.rates, tipA, a.FeeCurrency(), tipB, b.FeeCurrency())
 		return result
 	}
 
 	// Compare fee caps if baseFee is not specified or effective tips are equal
 	feeA := a.GasFeeCap()
 	feeB := b.GasFeeCap()
-	c, _ := txpool.CompareValue(p.rates, feeA, a.FeeCurrency(), feeB, b.FeeCurrency())
+	c, _ := exchange.CompareValue(p.rates, feeA, a.FeeCurrency(), feeB, b.FeeCurrency())
 	if c != 0 {
 		return c
 	}
@@ -139,14 +138,14 @@ func (p *pricedList) compareWithRates(a, b *types.Transaction, goldBaseFee *big.
 	// Compare tips if effective tips and fee caps are equal
 	tipCapA := a.GasTipCap()
 	tipCapB := b.GasTipCap()
-	result, _ := txpool.CompareValue(p.rates, tipCapA, a.FeeCurrency(), tipCapB, b.FeeCurrency())
+	result, _ := exchange.CompareValue(p.rates, tipCapA, a.FeeCurrency(), tipCapB, b.FeeCurrency())
 	return result
 }
 
 func baseFeeInCurrency(rates common.ExchangeRates, goldBaseFee *big.Int, feeCurrency *common.Address) *big.Int {
 	// can ignore the whitelist error since txs with non whitelisted currencies
 	// are pruned
-	baseFee, _ := contracts.ConvertGoldToCurrency(rates, feeCurrency, goldBaseFee)
+	baseFee, _ := exchange.ConvertGoldToCurrency(rates, feeCurrency, goldBaseFee)
 	return baseFee
 }
 

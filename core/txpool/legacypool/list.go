@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/exchange"
 	"github.com/ethereum/go-ethereum/core/txpool"
 	"github.com/ethereum/go-ethereum/core/types"
 )
@@ -330,8 +331,8 @@ func (l *list) Add(tx *types.Transaction, priceBump uint64, _ txpool.L1CostFunc,
 		var thresholdFeeCapInCurrency = thresholdFeeCap
 		var thresholdTipInCurrency = thresholdTip
 		if tx.FeeCurrency() != old.FeeCurrency() {
-			thresholdFeeCapInCurrency = txpool.ConvertCurrency(rates, thresholdFeeCap, old.FeeCurrency(), tx.FeeCurrency())
-			thresholdTipInCurrency = txpool.ConvertCurrency(rates, thresholdTip, old.FeeCurrency(), tx.FeeCurrency())
+			thresholdFeeCapInCurrency = exchange.ConvertCurrency(rates, thresholdFeeCap, old.FeeCurrency(), tx.FeeCurrency())
+			thresholdTipInCurrency = exchange.ConvertCurrency(rates, thresholdTip, old.FeeCurrency(), tx.FeeCurrency())
 		}
 		// We have to ensure that both the new fee cap and tip are higher than the
 		// old ones as well as checking the percentage threshold to ensure that
