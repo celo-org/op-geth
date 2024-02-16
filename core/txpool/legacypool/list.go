@@ -18,7 +18,6 @@ package legacypool
 
 import (
 	"container/heap"
-	"math"
 	"math/big"
 	"sort"
 	"sync"
@@ -26,6 +25,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/exchange"
 	"github.com/ethereum/go-ethereum/core/txpool"
 	"github.com/ethereum/go-ethereum/core/types"
 )
@@ -281,9 +281,11 @@ type list struct {
 	strict bool       // Whether nonces are strictly continuous or not
 	txs    *sortedMap // Heap indexed sorted hash map of the transactions
 
-	costcap   *big.Int // Price of the highest costing transaction (reset only if exceeds balance)
-	gascap    uint64   // Gas limit of the highest spending transaction (reset only if exceeds block limit)
-	totalcost *big.Int // Total cost of all transactions in the list
+	costCap map[common.Address]*big.Int // Price of the highest costing transaction per currency (reset only if exceeds balance)
+	gascap  uint64                      // Gas limit of the highest spending transaction (reset only if exceeds block limit)
+
+	// Celo additions for multi currency
+	totalCost map[common.Address]*big.Int // Total cost of all transactions in the list (by currency)
 }
 
 // newList create a new transaction list for maintaining nonce-indexable fast,
@@ -292,8 +294,8 @@ func newList(strict bool) *list {
 	return &list{
 		strict:    strict,
 		txs:       newSortedMap(),
-		costcap:   new(big.Int),
-		totalcost: new(big.Int),
+		costCap:   make(map[common.Address]*big.Int),
+		totalCost: make(map[common.Address]*big.Int),
 	}
 }
 
@@ -308,11 +310,12 @@ func (l *list) Contains(nonce uint64) bool {
 //
 // If the new transaction is accepted into the list, the lists' cost and gas
 // thresholds are also potentially updated.
-func (l *list) Add(tx *types.Transaction, priceBump uint64, l1CostFn txpool.L1CostFunc) (bool, *types.Transaction) {
+func (l *list) Add(tx *types.Transaction, priceBump uint64, _ txpool.L1CostFunc, rates common.ExchangeRates) (bool, *types.Transaction) {
 	// If there's an older better transaction, abort
 	old := l.txs.Get(tx.Nonce())
 	if old != nil {
-		if old.GasFeeCapCmp(tx) >= 0 || old.GasTipCapCmp(tx) >= 0 {
+		// Short circuit when it's clear that the new tx is worse
+		if common.AreSameAddress(old.FeeCurrency(), tx.FeeCurrency()) && (old.GasFeeCapCmp(tx) >= 0 || old.GasTipCapCmp(tx) >= 0) {
 			return false, nil
 		}
 		// thresholdFeeCap = oldFC  * (100 + priceBump) / 100
@@ -325,27 +328,33 @@ func (l *list) Add(tx *types.Transaction, priceBump uint64, l1CostFn txpool.L1Co
 		thresholdFeeCap := aFeeCap.Div(aFeeCap, b)
 		thresholdTip := aTip.Div(aTip, b)
 
+		var thresholdFeeCapInCurrency = thresholdFeeCap
+		var thresholdTipInCurrency = thresholdTip
+		if tx.FeeCurrency() != old.FeeCurrency() {
+			thresholdFeeCapInCurrency = exchange.ConvertCurrency(rates, thresholdFeeCap, old.FeeCurrency(), tx.FeeCurrency())
+			thresholdTipInCurrency = exchange.ConvertCurrency(rates, thresholdTip, old.FeeCurrency(), tx.FeeCurrency())
+		}
 		// We have to ensure that both the new fee cap and tip are higher than the
 		// old ones as well as checking the percentage threshold to ensure that
 		// this is accurate for low (Wei-level) gas price replacements.
-		if tx.GasFeeCapIntCmp(thresholdFeeCap) < 0 || tx.GasTipCapIntCmp(thresholdTip) < 0 {
+		if tx.GasFeeCapIntCmp(thresholdFeeCapInCurrency) < 0 || tx.GasTipCapIntCmp(thresholdTipInCurrency) < 0 {
 			return false, nil
 		}
 		// Old is being replaced, subtract old cost
 		l.subTotalCost([]*types.Transaction{old})
 	}
 	// Add new tx cost to totalcost
-	l.totalcost.Add(l.totalcost, tx.Cost())
-	if l1CostFn != nil {
-		if l1Cost := l1CostFn(tx.RollupDataGas()); l1Cost != nil { // add rollup cost
-			l.totalcost.Add(l.totalcost, l1Cost)
-		}
-	}
+	tc := l.totalCostVar(tx.FeeCurrency())
+	tc.Add(tc, tx.Cost())
+	// TODO: manage l1 cost
+	// if l1CostFn != nil {
+	// 	if l1Cost := l1CostFn(tx.RollupDataGas()); l1Cost != nil { // add rollup cost
+	// 		tc.Add(tc, l1Cost)
+	// 	}
+	// }
 	// Otherwise overwrite the old transaction with the current one
 	l.txs.Put(tx)
-	if cost := tx.Cost(); l.costcap.Cmp(cost) < 0 {
-		l.costcap = cost
-	}
+	l.updateCostCapFor(tx.FeeCurrency(), tx.Cost())
 	if gas := tx.Gas(); l.gascap < gas {
 		l.gascap = gas
 	}
@@ -370,33 +379,24 @@ func (l *list) Forward(threshold uint64) types.Transactions {
 // a point in calculating all the costs or if the balance covers all. If the threshold
 // is lower than the costgas cap, the caps will be reset to a new high after removing
 // the newly invalidated transactions.
-func (l *list) Filter(costLimit *big.Int, gasLimit uint64) (types.Transactions, types.Transactions) {
+func (l *list) Filter(costLimits map[common.Address]*big.Int, gasLimit uint64) (types.Transactions, types.Transactions) {
 	// If all transactions are below the threshold, short circuit
-	if l.costcap.Cmp(costLimit) <= 0 && l.gascap <= gasLimit {
+	if l.costCapsLowerThan(costLimits) && l.gascap <= gasLimit {
 		return nil, nil
 	}
-	l.costcap = new(big.Int).Set(costLimit) // Lower the caps to the thresholds
+	l.setCapsTo(costLimits) // Lower the caps to the thresholds
 	l.gascap = gasLimit
 
 	// Filter out all the transactions above the account's funds
 	removed := l.txs.Filter(func(tx *types.Transaction) bool {
-		return tx.Gas() > gasLimit || tx.Cost().Cmp(costLimit) > 0
+		return tx.Gas() > gasLimit || tx.Cost().Cmp(l.costCapFor(tx.FeeCurrency())) > 0
 	})
 
 	if len(removed) == 0 {
 		return nil, nil
 	}
-	var invalids types.Transactions
-	// If the list was strict, filter anything above the lowest nonce
-	if l.strict {
-		lowest := uint64(math.MaxUint64)
-		for _, tx := range removed {
-			if nonce := tx.Nonce(); lowest > nonce {
-				lowest = nonce
-			}
-		}
-		invalids = l.txs.filter(func(tx *types.Transaction) bool { return tx.Nonce() > lowest })
-	}
+
+	invalids := l.dropInvalidsAfterRemovalAndReheap(removed)
 	// Reset total cost
 	l.subTotalCost(removed)
 	l.subTotalCost(invalids)
@@ -471,7 +471,8 @@ func (l *list) LastElement() *types.Transaction {
 // total cost of all transactions.
 func (l *list) subTotalCost(txs []*types.Transaction) {
 	for _, tx := range txs {
-		l.totalcost.Sub(l.totalcost, tx.Cost())
+		tc := l.totalCostVar(tx.FeeCurrency())
+		tc.Sub(tc, tx.Cost())
 	}
 }
 
@@ -482,6 +483,8 @@ func (l *list) subTotalCost(txs []*types.Transaction) {
 type priceHeap struct {
 	baseFee *big.Int // heap should always be re-sorted after baseFee is changed
 	list    []*types.Transaction
+
+	txComparator TxComparator
 }
 
 func (h *priceHeap) Len() int      { return len(h.list) }
@@ -499,18 +502,7 @@ func (h *priceHeap) Less(i, j int) bool {
 }
 
 func (h *priceHeap) cmp(a, b *types.Transaction) int {
-	if h.baseFee != nil {
-		// Compare effective tips if baseFee is specified
-		if c := a.EffectiveGasTipCmp(b, h.baseFee); c != 0 {
-			return c
-		}
-	}
-	// Compare fee caps if baseFee is not specified or effective tips are equal
-	if c := a.GasFeeCapCmp(b); c != 0 {
-		return c
-	}
-	// Compare tips if effective tips and fee caps are equal
-	return a.GasTipCapCmp(b)
+	return h.txComparator(a, b, h.baseFee)
 }
 
 func (h *priceHeap) Push(x interface{}) {
@@ -545,6 +537,9 @@ type pricedList struct {
 	all              *lookup    // Pointer to the map of all transactions
 	urgent, floating priceHeap  // Heaps of prices of all the stored **remote** transactions
 	reheapMu         sync.Mutex // Mutex asserts that only one routine is reheaping the list
+
+	// Celo specific
+	rates common.ExchangeRates // current exchange rates
 }
 
 const (
@@ -553,11 +548,13 @@ const (
 	floatingRatio = 1
 )
 
-// newPricedList creates a new price-sorted transaction heap.
 func newPricedList(all *lookup) *pricedList {
-	return &pricedList{
+	p := &pricedList{
 		all: all,
 	}
+	p.floating.txComparator = p.compareWithRates
+	p.urgent.txComparator = p.compareWithRates
+	return p
 }
 
 // Put inserts a new transaction into the heap.
@@ -684,9 +681,10 @@ func (l *pricedList) Reheap() {
 	reheapTimer.Update(time.Since(start))
 }
 
-// SetBaseFee updates the base fee and triggers a re-heap. Note that Removed is not
+// SetBaseFeeAndRates updates the base fee and triggers a re-heap. Note that Removed is not
 // necessary to call right before SetBaseFee when processing a new block.
-func (l *pricedList) SetBaseFee(baseFee *big.Int) {
+func (l *pricedList) SetBaseFeeAndRates(baseFee *big.Int, rates common.ExchangeRates) {
 	l.urgent.baseFee = baseFee
+	l.rates = rates
 	l.Reheap()
 }
