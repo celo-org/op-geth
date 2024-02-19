@@ -484,7 +484,8 @@ type priceHeap struct {
 	baseFee *big.Int // heap should always be re-sorted after baseFee is changed
 	list    []*types.Transaction
 
-	txComparator TxComparator
+	// Celo specific
+	ratesAndFees *exchange.RatesAndFees // current exchange rates and basefees
 }
 
 func (h *priceHeap) Len() int      { return len(h.list) }
@@ -502,7 +503,7 @@ func (h *priceHeap) Less(i, j int) bool {
 }
 
 func (h *priceHeap) cmp(a, b *types.Transaction) int {
-	return h.txComparator(a, b, h.baseFee)
+	return types.CompareWithRates(a, b, h.baseFee, h.ratesAndFees)
 }
 
 func (h *priceHeap) Push(x interface{}) {
@@ -537,9 +538,6 @@ type pricedList struct {
 	all              *lookup    // Pointer to the map of all transactions
 	urgent, floating priceHeap  // Heaps of prices of all the stored **remote** transactions
 	reheapMu         sync.Mutex // Mutex asserts that only one routine is reheaping the list
-
-	// Celo specific
-	rates common.ExchangeRates // current exchange rates
 }
 
 const (
@@ -552,8 +550,6 @@ func newPricedList(all *lookup) *pricedList {
 	p := &pricedList{
 		all: all,
 	}
-	p.floating.txComparator = p.compareWithRates
-	p.urgent.txComparator = p.compareWithRates
 	return p
 }
 
@@ -684,7 +680,11 @@ func (l *pricedList) Reheap() {
 // SetBaseFeeAndRates updates the base fee and triggers a re-heap. Note that Removed is not
 // necessary to call right before SetBaseFee when processing a new block.
 func (l *pricedList) SetBaseFeeAndRates(baseFee *big.Int, rates common.ExchangeRates) {
+	ratesAndFees := exchange.NewRatesAndFees(rates, baseFee)
 	l.urgent.baseFee = baseFee
-	l.rates = rates
+	// Since the urgent & floating reheaps and comparisons are not multithreaded, they can share
+	// the ratesAndFees instance.
+	l.urgent.ratesAndFees = ratesAndFees
+	l.floating.ratesAndFees = ratesAndFees
 	l.Reheap()
 }
