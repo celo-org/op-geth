@@ -22,7 +22,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-type cel2Signer struct{ cancunSigner }
+type cel2Signer struct{ londonSigner }
 
 // NewCel2Signer returns a signer that accepts
 // - CIP-64 celo dynamic fee transaction (v2)
@@ -32,12 +32,12 @@ type cel2Signer struct{ cancunSigner }
 // - EIP-155 replay protected transactions, and
 // - legacy Homestead transactions.
 func NewCel2Signer(chainId *big.Int) Signer {
-	return cel2Signer{cancunSigner{londonSigner{eip2930Signer{NewEIP155Signer(chainId)}}}}
+	return cel2Signer{londonSigner{eip2930Signer{NewEIP155Signer(chainId)}}}
 }
 
 func (s cel2Signer) Sender(tx *Transaction) (common.Address, error) {
 	if tx.Type() != CeloDynamicFeeTxType {
-		return s.cancunSigner.Sender(tx)
+		return s.londonSigner.Sender(tx)
 	}
 	V, R, S := tx.RawSignatureValues()
 	// DynamicFee txs are defined to use 0 and 1 as their recovery
@@ -57,7 +57,7 @@ func (s cel2Signer) Equal(s2 Signer) bool {
 func (s cel2Signer) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big.Int, err error) {
 	txdata, ok := tx.inner.(*CeloDynamicFeeTx)
 	if !ok {
-		return s.cancunSigner.SignatureValues(tx, sig)
+		return s.londonSigner.SignatureValues(tx, sig)
 	}
 	// Check that chain ID of tx matches the signer. We also accept ID zero here,
 	// because it indicates that the chain ID was not specified in the tx.
@@ -88,5 +88,5 @@ func (s cel2Signer) Hash(tx *Transaction) common.Hash {
 				tx.FeeCurrency(),
 			})
 	}
-	return s.cancunSigner.Hash(tx)
+	return s.londonSigner.Hash(tx)
 }
