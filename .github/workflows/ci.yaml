@@ -6,6 +6,7 @@ on:
       - master
       - celo*
       - palango/*
+      - karlb/celo*
 
   pull_request:
     branches:
