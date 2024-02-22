@@ -120,6 +120,16 @@ func NewRatesAndFees(rates common.ExchangeRates, nativeBaseFee *big.Int) *RatesA
 	}
 }
 
+// HasBaseFee returns if the basefee is set.
+func (rf *RatesAndFees) HasBaseFee() bool {
+	return rf.nativeBaseFee != nil
+}
+
+// GetNativeBaseFee returns the basefee in celo currency.
+func (rf *RatesAndFees) GetNativeBaseFee() *big.Int {
+	return rf.nativeBaseFee
+}
+
 // GetBaseFeeIn returns the basefee expressed in the specified currency. Returns nil
 // if the currency is not whitelisted.
 func (rf *RatesAndFees) GetBaseFeeIn(currency *common.Address) *big.Int {

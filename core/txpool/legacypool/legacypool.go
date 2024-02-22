@@ -547,7 +547,7 @@ func (pool *LegacyPool) Pending(enforceTips bool) map[common.Address][]*txpool.L
 		// If the miner requests tip enforcement, cap the lists now
 		if enforceTips && !pool.locals.contains(addr) {
 			for i, tx := range txs {
-				if tx.EffectiveGasTipIntCmp(pool.gasTip.Load(), pool.priced.urgent.baseFee) < 0 {
+				if tx.EffectiveGasTipIntCmp(pool.gasTip.Load(), pool.priced.urgent.ratesAndFees.GetNativeBaseFee()) < 0 {
 					txs = txs[:i]
 					break
 				}

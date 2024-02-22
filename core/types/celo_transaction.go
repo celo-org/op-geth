@@ -1,14 +1,12 @@
 package types
 
 import (
-	"math/big"
-
 	"github.com/ethereum/go-ethereum/common/exchange"
 )
 
 // CompareWithRates compares the effective gas price of two transactions according to the exchange rates and
 // the base fees in the transactions currencies.
-func CompareWithRates(a, b *Transaction, goldBaseFee *big.Int, ratesAndFees *exchange.RatesAndFees) int {
+func CompareWithRates(a, b *Transaction, ratesAndFees *exchange.RatesAndFees) int {
 	if ratesAndFees == nil {
 		// During node startup the ratesAndFees might not be yet setup, compare nominally
 		feeCapCmp := a.GasFeeCapCmp(b)
@@ -18,11 +16,11 @@ func CompareWithRates(a, b *Transaction, goldBaseFee *big.Int, ratesAndFees *exc
 		return a.GasTipCapCmp(b)
 	}
 	rates := ratesAndFees.Rates
-	if goldBaseFee != nil {
+	if ratesAndFees.HasBaseFee() {
 		tipA := a.EffectiveGasTipValue(ratesAndFees.GetBaseFeeIn(a.inner.feeCurrency()))
 		tipB := b.EffectiveGasTipValue(ratesAndFees.GetBaseFeeIn(b.inner.feeCurrency()))
-		result, _ := exchange.CompareValue(rates, tipA, a.inner.feeCurrency(), tipB, b.inner.feeCurrency())
-		return result
+		c, _ := exchange.CompareValue(rates, tipA, a.inner.feeCurrency(), tipB, b.inner.feeCurrency())
+		return c
 	}
 
 	// Compare fee caps if baseFee is not specified or effective tips are equal
@@ -36,6 +34,6 @@ func CompareWithRates(a, b *Transaction, goldBaseFee *big.Int, ratesAndFees *exc
 	// Compare tips if effective tips and fee caps are equal
 	tipCapA := a.inner.gasTipCap()
 	tipCapB := b.inner.gasTipCap()
-	result, _ := exchange.CompareValue(rates, tipCapA, a.inner.feeCurrency(), tipCapB, b.inner.feeCurrency())
-	return result
+	c2, _ := exchange.CompareValue(rates, tipCapA, a.inner.feeCurrency(), tipCapB, b.inner.feeCurrency())
+	return c2
 }

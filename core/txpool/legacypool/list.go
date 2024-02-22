@@ -481,11 +481,11 @@ func (l *list) subTotalCost(txs []*types.Transaction) {
 // then the heap is sorted based on the effective tip based on the given base fee.
 // If baseFee is nil then the sorting is based on gasFeeCap.
 type priceHeap struct {
-	baseFee *big.Int // heap should always be re-sorted after baseFee is changed
-	list    []*types.Transaction
+	list []*types.Transaction
 
 	// Celo specific
 	ratesAndFees *exchange.RatesAndFees // current exchange rates and basefees
+	// heap should always be re-sorted after baseFee is changed
 }
 
 func (h *priceHeap) Len() int      { return len(h.list) }
@@ -503,7 +503,7 @@ func (h *priceHeap) Less(i, j int) bool {
 }
 
 func (h *priceHeap) cmp(a, b *types.Transaction) int {
-	return types.CompareWithRates(a, b, h.baseFee, h.ratesAndFees)
+	return types.CompareWithRates(a, b, h.ratesAndFees)
 }
 
 func (h *priceHeap) Push(x interface{}) {
@@ -680,11 +680,7 @@ func (l *pricedList) Reheap() {
 // SetBaseFeeAndRates updates the base fee and triggers a re-heap. Note that Removed is not
 // necessary to call right before SetBaseFee when processing a new block.
 func (l *pricedList) SetBaseFeeAndRates(baseFee *big.Int, rates common.ExchangeRates) {
-	ratesAndFees := exchange.NewRatesAndFees(rates, baseFee)
-	l.urgent.baseFee = baseFee
-	// Since the urgent & floating reheaps and comparisons are not multithreaded, they can share
-	// the ratesAndFees instance.
-	l.urgent.ratesAndFees = ratesAndFees
-	l.floating.ratesAndFees = ratesAndFees
+	l.urgent.ratesAndFees = exchange.NewRatesAndFees(rates, baseFee)
+	l.floating.ratesAndFees = exchange.NewRatesAndFees(rates, nil)
 	l.Reheap()
 }
