@@ -17,7 +17,6 @@
 package legacypool
 
 import (
-	"math/big"
 	"math/rand"
 	"testing"
 
@@ -38,7 +37,7 @@ func TestStrictListAdd(t *testing.T) {
 	// Insert the transactions in a random order
 	list := newList(true)
 	for _, v := range rand.Perm(len(txs)) {
-		list.Add(txs[v], DefaultConfig.PriceBump, nil)
+		list.Add(txs[v], DefaultConfig.PriceBump, nil, nil)
 	}
 	// Verify internal state
 	if len(list.txs.items) != len(txs) {
@@ -60,13 +59,11 @@ func BenchmarkListAdd(b *testing.B) {
 		txs[i] = transaction(uint64(i), 0, key)
 	}
 	// Insert the transactions in a random order
-	priceLimit := big.NewInt(int64(DefaultConfig.PriceLimit))
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		list := newList(true)
 		for _, v := range rand.Perm(len(txs)) {
-			list.Add(txs[v], DefaultConfig.PriceBump, nil)
-			list.Filter(priceLimit, DefaultConfig.PriceBump)
+			list.Add(txs[v], DefaultConfig.PriceBump, nil, nil)
 		}
 	}
 }

@@ -199,8 +199,8 @@ func validatePoolInternals(pool *LegacyPool) error {
 		if nonce := pool.pendingNonces.get(addr); nonce != last+1 {
 			return fmt.Errorf("pending nonce mismatch: have %v, want %v", nonce, last+1)
 		}
-		if txs.totalcost.Cmp(common.Big0) < 0 {
-			return fmt.Errorf("totalcost went negative: %v", txs.totalcost)
+		if txs.TotalCostFor(nil).Cmp(common.Big0) < 0 {
+			return fmt.Errorf("totalcost went negative: %v", txs.TotalCostFor(nil))
 		}
 	}
 	return nil
@@ -2075,7 +2075,7 @@ func TestDualHeapEviction(t *testing.T) {
 
 	add(false)
 	for baseFee = 0; baseFee <= 1000; baseFee += 100 {
-		pool.priced.SetBaseFee(big.NewInt(int64(baseFee)))
+		pool.priced.SetBaseFeeAndRates(big.NewInt(int64(baseFee)), nil)
 		add(true)
 		check(highCap, "fee cap")
 		add(false)
