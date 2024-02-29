@@ -115,3 +115,11 @@ func (c *list) setCapsTo(caps map[common.Address]*big.Int) {
 		}
 	}
 }
+
+// GetNativeBaseFee returns the base fee for this priceHeap
+func (h *priceHeap) GetNativeBaseFee() *big.Int {
+	if h.ratesAndFees == nil {
+		return nil
+	}
+	return h.ratesAndFees.GetNativeBaseFee()
+}
