@@ -34,6 +34,6 @@ func CompareWithRates(a, b *Transaction, ratesAndFees *exchange.RatesAndFees) in
 	// Compare tips if effective tips and fee caps are equal
 	tipCapA := a.inner.gasTipCap()
 	tipCapB := b.inner.gasTipCap()
-	c2, _ := exchange.CompareValue(rates, tipCapA, a.inner.feeCurrency(), tipCapB, b.inner.feeCurrency())
-	return c2
+	c, _ = exchange.CompareValue(rates, tipCapA, a.inner.feeCurrency(), tipCapB, b.inner.feeCurrency())
+	return c
 }
