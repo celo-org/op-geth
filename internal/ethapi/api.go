@@ -800,6 +800,7 @@ func decodeHash(s string) (h common.Hash, inputLength int, err error) {
 	return common.BytesToHash(b), len(b), nil
 }
 
+// TODO(Alec)
 // GetHeaderByNumber returns the requested canonical block header.
 //   - When blockNr is -1 the chain pending header is returned.
 //   - When blockNr is -2 the chain latest header is returned.
@@ -820,6 +821,7 @@ func (s *BlockChainAPI) GetHeaderByNumber(ctx context.Context, number rpc.BlockN
 	return nil, err
 }
 
+// TODO(Alec)
 // GetHeaderByHash returns the requested header by hash.
 func (s *BlockChainAPI) GetHeaderByHash(ctx context.Context, hash common.Hash) map[string]interface{} {
 	header, _ := s.b.HeaderByHash(ctx, hash)
@@ -829,6 +831,7 @@ func (s *BlockChainAPI) GetHeaderByHash(ctx context.Context, hash common.Hash) m
 	return nil
 }
 
+// TODO(Alec)
 // GetBlockByNumber returns the requested canonical block.
 //   - When blockNr is -1 the chain pending block is returned.
 //   - When blockNr is -2 the chain latest block is returned.
@@ -851,6 +854,7 @@ func (s *BlockChainAPI) GetBlockByNumber(ctx context.Context, number rpc.BlockNu
 	return nil, err
 }
 
+// TODO(Alec)
 // GetBlockByHash returns the requested block. When fullTx is true all transactions in the block are returned in full
 // detail, otherwise only the transaction hash is returned.
 func (s *BlockChainAPI) GetBlockByHash(ctx context.Context, hash common.Hash, fullTx bool) (map[string]interface{}, error) {
@@ -860,6 +864,8 @@ func (s *BlockChainAPI) GetBlockByHash(ctx context.Context, hash common.Hash, fu
 	}
 	return nil, err
 }
+
+// TODO(Alec) double check we don't need to worry about uncles
 
 // GetUncleByBlockNumberAndIndex returns the uncle block for the given block hash and index.
 func (s *BlockChainAPI) GetUncleByBlockNumberAndIndex(ctx context.Context, blockNr rpc.BlockNumber, index hexutil.Uint) (map[string]interface{}, error) {
@@ -985,6 +991,7 @@ func headerByNumberOrHash(ctx context.Context, b Backend, blockNrOrHash rpc.Bloc
 	return header, err
 }
 
+// TODO(Alec)
 // GetBlockReceipts returns the block receipts for the given block hash or number or tag.
 func (s *BlockChainAPI) GetBlockReceipts(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) ([]map[string]interface{}, error) {
 	block, err := s.b.BlockByNumberOrHash(ctx, blockNrOrHash)
@@ -1134,6 +1141,7 @@ func (context *ChainContext) Engine() consensus.Engine {
 	return context.b.Engine()
 }
 
+// TODO(Alec) is this a problem?
 func (context *ChainContext) GetHeader(hash common.Hash, number uint64) *types.Header {
 	// This method is called to get the hash for a block number when executing the BLOCKHASH
 	// opcode. Hence no need to search for non-canonical blocks.
@@ -1856,6 +1864,7 @@ func NewTransactionAPI(b Backend, nonceLock *AddrLocker) *TransactionAPI {
 	return &TransactionAPI{b, nonceLock, signer}
 }
 
+// TODO(Alec)
 // GetBlockTransactionCountByNumber returns the number of transactions in the block with the given block number.
 func (s *TransactionAPI) GetBlockTransactionCountByNumber(ctx context.Context, blockNr rpc.BlockNumber) *hexutil.Uint {
 	if block, _ := s.b.BlockByNumber(ctx, blockNr); block != nil {
@@ -1865,6 +1874,7 @@ func (s *TransactionAPI) GetBlockTransactionCountByNumber(ctx context.Context, b
 	return nil
 }
 
+// TODO(Alec)
 // GetBlockTransactionCountByHash returns the number of transactions in the block with the given hash.
 func (s *TransactionAPI) GetBlockTransactionCountByHash(ctx context.Context, blockHash common.Hash) *hexutil.Uint {
 	if block, _ := s.b.BlockByHash(ctx, blockHash); block != nil {
@@ -1874,6 +1884,7 @@ func (s *TransactionAPI) GetBlockTransactionCountByHash(ctx context.Context, blo
 	return nil
 }
 
+// TODO(Alec)
 // GetTransactionByBlockNumberAndIndex returns the transaction for the given block number and index.
 func (s *TransactionAPI) GetTransactionByBlockNumberAndIndex(ctx context.Context, blockNr rpc.BlockNumber, index hexutil.Uint) *RPCTransaction {
 	if block, _ := s.b.BlockByNumber(ctx, blockNr); block != nil {
@@ -1882,6 +1893,7 @@ func (s *TransactionAPI) GetTransactionByBlockNumberAndIndex(ctx context.Context
 	return nil
 }
 
+// TODO(Alec)
 // GetTransactionByBlockHashAndIndex returns the transaction for the given block hash and index.
 func (s *TransactionAPI) GetTransactionByBlockHashAndIndex(ctx context.Context, blockHash common.Hash, index hexutil.Uint) *RPCTransaction {
 	if block, _ := s.b.BlockByHash(ctx, blockHash); block != nil {
@@ -1890,6 +1902,7 @@ func (s *TransactionAPI) GetTransactionByBlockHashAndIndex(ctx context.Context, 
 	return nil
 }
 
+// TODO(Alec)
 // GetRawTransactionByBlockNumberAndIndex returns the bytes of the transaction for the given block number and index.
 func (s *TransactionAPI) GetRawTransactionByBlockNumberAndIndex(ctx context.Context, blockNr rpc.BlockNumber, index hexutil.Uint) hexutil.Bytes {
 	if block, _ := s.b.BlockByNumber(ctx, blockNr); block != nil {
@@ -1944,6 +1957,7 @@ func (s *TransactionAPI) GetTransactionCount(ctx context.Context, address common
 	return (*hexutil.Uint64)(&nonce), state.Error()
 }
 
+// TODO(Alec)
 // GetTransactionByHash returns the transaction for the given hash
 func (s *TransactionAPI) GetTransactionByHash(ctx context.Context, hash common.Hash) (*RPCTransaction, error) {
 	// Try to return an already finalized transaction
@@ -1968,6 +1982,7 @@ func (s *TransactionAPI) GetTransactionByHash(ctx context.Context, hash common.H
 	return nil, nil
 }
 
+// TODO(Alec)
 // GetRawTransactionByHash returns the bytes of the transaction for the given hash.
 func (s *TransactionAPI) GetRawTransactionByHash(ctx context.Context, hash common.Hash) (hexutil.Bytes, error) {
 	// Retrieve a finalized transaction, or a pooled otherwise
@@ -1985,6 +2000,7 @@ func (s *TransactionAPI) GetRawTransactionByHash(ctx context.Context, hash commo
 	return tx.MarshalBinary()
 }
 
+// TODO(Alec)
 // GetTransactionReceipt returns the transaction receipt for the given transaction hash.
 func (s *TransactionAPI) GetTransactionReceipt(ctx context.Context, hash common.Hash) (map[string]interface{}, error) {
 	tx, blockHash, blockNumber, index, err := s.b.GetTransaction(ctx, hash)
@@ -2321,6 +2337,7 @@ func NewDebugAPI(b Backend) *DebugAPI {
 	return &DebugAPI{b: b}
 }
 
+// TODO(Alec)
 // GetRawHeader retrieves the RLP encoding for a single header.
 func (api *DebugAPI) GetRawHeader(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
 	var hash common.Hash
@@ -2340,6 +2357,7 @@ func (api *DebugAPI) GetRawHeader(ctx context.Context, blockNrOrHash rpc.BlockNu
 	return rlp.EncodeToBytes(header)
 }
 
+// TODO(Alec)
 // GetRawBlock retrieves the RLP encoded for a single block.
 func (api *DebugAPI) GetRawBlock(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
 	var hash common.Hash
@@ -2359,6 +2377,7 @@ func (api *DebugAPI) GetRawBlock(ctx context.Context, blockNrOrHash rpc.BlockNum
 	return rlp.EncodeToBytes(block)
 }
 
+// TODO(Alec)
 // GetRawReceipts retrieves the binary-encoded receipts of a single block.
 func (api *DebugAPI) GetRawReceipts(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) ([]hexutil.Bytes, error) {
 	var hash common.Hash
@@ -2386,6 +2405,7 @@ func (api *DebugAPI) GetRawReceipts(ctx context.Context, blockNrOrHash rpc.Block
 	return result, nil
 }
 
+// TODO(Alec)
 // GetRawTransaction returns the bytes of the transaction for the given hash.
 func (s *DebugAPI) GetRawTransaction(ctx context.Context, hash common.Hash) (hexutil.Bytes, error) {
 	// Retrieve a finalized transaction, or a pooled otherwise
@@ -2402,6 +2422,7 @@ func (s *DebugAPI) GetRawTransaction(ctx context.Context, hash common.Hash) (hex
 	return tx.MarshalBinary()
 }
 
+// TODO(Alec)
 // PrintBlock retrieves a block and returns its pretty printed form.
 func (api *DebugAPI) PrintBlock(ctx context.Context, number uint64) (string, error) {
 	block, _ := api.b.BlockByNumber(ctx, rpc.BlockNumber(number))

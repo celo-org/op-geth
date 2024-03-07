@@ -250,6 +250,8 @@ func (m *mockHistoricalBackend) EstimateGas(ctx context.Context, args ethapi.Tra
 	return 0, ethereum.NotFound
 }
 
+// TODO(Alec)
+
 func newMockHistoricalBackend(t *testing.T) string {
 	s := rpc.NewServer()
 	err := node.RegisterApis([]rpc.API{
@@ -354,6 +356,7 @@ func generateTestChain(consensusEngine consensus.Engine, genesis *core.Genesis, 
 	return append([]*types.Block{genesis.ToBlock()}, blocks...)
 }
 
+// TODO(Alec)
 func TestEthClientHistoricalBackend(t *testing.T) {
 	backend, _ := newTestBackend(t, true)
 	client := backend.Attach()
@@ -857,6 +860,7 @@ func testEstimateGas(t *testing.T, client *rpc.Client) {
 	}
 }
 
+// TODO(Alec)
 func testHistoricalRPC(t *testing.T, client *rpc.Client) {
 	ec := NewClient(client)
 
