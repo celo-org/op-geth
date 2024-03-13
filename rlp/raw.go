@@ -150,6 +150,10 @@ func CountValues(b []byte) (int, error) {
 	return i, nil
 }
 
+func ReadKind(buf []byte) (k Kind, tagsize, contentsize uint64, err error) {
+	return readKind(buf)
+}
+
 func readKind(buf []byte) (k Kind, tagsize, contentsize uint64, err error) {
 	if len(buf) == 0 {
 		return 0, 0, 0, io.ErrUnexpectedEOF
