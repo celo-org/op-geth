@@ -54,8 +54,8 @@ func (r *ReadOnlyStateDB) SetCode(common.Address, []byte) {
 	panic("not implemented")
 }
 
-func (r *ReadOnlyStateDB) GetCodeSize(common.Address) int {
-	panic("not implemented")
+func (r *ReadOnlyStateDB) GetCodeSize(a common.Address) int {
+	return r.StateDB.GetCodeSize(a)
 }
 
 func (r *ReadOnlyStateDB) AddRefund(uint64) {
@@ -102,8 +102,8 @@ func (r *ReadOnlyStateDB) Exist(common.Address) bool {
 	panic("not implemented")
 }
 
-func (r *ReadOnlyStateDB) Empty(common.Address) bool {
-	panic("not implemented")
+func (r *ReadOnlyStateDB) Empty(a common.Address) bool {
+	return r.StateDB.Empty(a)
 }
 
 func (r *ReadOnlyStateDB) AddressInAccessList(addr common.Address) bool {
