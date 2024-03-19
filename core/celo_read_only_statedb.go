@@ -4,6 +4,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/params"
@@ -55,7 +56,13 @@ func (r *ReadOnlyStateDB) SetCode(common.Address, []byte) {
 }
 
 func (r *ReadOnlyStateDB) GetCodeSize(a common.Address) int {
-	return r.StateDB.GetCodeSize(a)
+	st := r.StateDB.(*state.StateDB)
+	before := st.IntermediateRoot(true)
+	result := r.StateDB.GetCodeSize(a)
+	if before != st.IntermediateRoot(true) {
+		panic("change made during getcodesize")
+	}
+	return result
 }
 
 func (r *ReadOnlyStateDB) AddRefund(uint64) {
@@ -103,7 +110,13 @@ func (r *ReadOnlyStateDB) Exist(common.Address) bool {
 }
 
 func (r *ReadOnlyStateDB) Empty(a common.Address) bool {
-	return r.StateDB.Empty(a)
+	st := r.StateDB.(*state.StateDB)
+	before := st.IntermediateRoot(true)
+	result := r.StateDB.Empty(a)
+	if before != st.IntermediateRoot(true) {
+		panic("change made during empty")
+	}
+	return result
 }
 
 func (r *ReadOnlyStateDB) AddressInAccessList(addr common.Address) bool {
