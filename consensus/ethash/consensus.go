@@ -482,7 +482,7 @@ func (ethash *Ethash) Prepare(chain consensus.ChainHeaderReader, header *types.H
 	if parent == nil {
 		return consensus.ErrUnknownAncestor
 	}
-	header.Difficulty = ethash.CalcDifficulty(chain, header.Time, parent)
+	//header.Difficulty = ethash.CalcDifficulty(chain, header.Time, parent)
 	return nil
 }
 
