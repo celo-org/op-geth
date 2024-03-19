@@ -66,6 +66,7 @@ type Backend interface {
 
 	CurrentHeader() *types.Header
 	ChainConfig() *params.ChainConfig
+	HistoricalRPCService() *rpc.Client
 	SubscribeNewTxsEvent(chan<- core.NewTxsEvent) event.Subscription
 	SubscribeChainEvent(ch chan<- core.ChainEvent) event.Subscription
 	SubscribeRemovedLogsEvent(ch chan<- core.RemovedLogsEvent) event.Subscription

@@ -54,6 +54,11 @@ type testBackend struct {
 	pendingReceipts types.Receipts
 }
 
+// HistoricalRPCService implements Backend.
+func (b *testBackend) HistoricalRPCService() *rpc.Client {
+	panic("unimplemented")
+}
+
 func (b *testBackend) ChainConfig() *params.ChainConfig {
 	return params.TestChainConfig
 }

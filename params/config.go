@@ -621,6 +621,19 @@ func (c *ChainConfig) IsBedrock(num *big.Int) bool {
 	return isBlockForked(c.BedrockBlock, num)
 }
 
+func (c *ChainConfig) IsCel2(num *big.Int) bool {
+	return isBlockForked(c.Cel2Block(), num)
+}
+
+func (c *ChainConfig) IsPreCel2(num *big.Int) bool {
+	return !c.IsCel2(num)
+}
+
+func (c *ChainConfig) Cel2Block() *big.Int {
+	// return big.NewInt(9507834) // TODO(Alec) figure out how to add this to config
+	return big.NewInt(9000010) // TODO(Alec) figure out how to add this to config
+}
+
 func (c *ChainConfig) IsRegolith(time uint64) bool {
 	return isTimestampForked(c.RegolithTime, time)
 }

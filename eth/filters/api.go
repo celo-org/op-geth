@@ -29,6 +29,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/internal/ethapi"
 	"github.com/ethereum/go-ethereum/rpc"
 )
@@ -336,6 +337,30 @@ func (api *FilterAPI) NewFilter(crit FilterCriteria) (rpc.ID, error) {
 	return logsSub.ID, nil
 }
 
+func (api *FilterAPI) getLogsFromHistoricalService(ctx context.Context, crit FilterCriteria) ([]*types.Log, error) {
+	if api.sys.backend.HistoricalRPCService() == nil {
+		return nil, rpc.ErrNoHistoricalFallback
+	}
+	arg, err := ethclient.ToFilterArg(ethereum.FilterQuery(crit))
+	if err != nil {
+		return nil, err
+	}
+	var res []types.Log
+	err = api.sys.backend.HistoricalRPCService().CallContext(ctx, &res, "eth_getLogs", arg)
+	if err != nil {
+		return nil, fmt.Errorf("historical backend error: %w", err)
+	}
+	var logs []*types.Log
+	for i := range res {
+		logs = append(logs, &res[i])
+	}
+	// for _, log := range res {
+	// 	logs = append(logs, &log) // TODO(Alec) why didn't this work?
+	// }
+	return logs, nil
+}
+
+// TODO(Alec)
 // GetLogs returns logs matching the given argument that are stored within the state.
 func (api *FilterAPI) GetLogs(ctx context.Context, crit FilterCriteria) ([]*types.Log, error) {
 	if len(crit.Topics) > maxTopics {
@@ -343,6 +368,13 @@ func (api *FilterAPI) GetLogs(ctx context.Context, crit FilterCriteria) ([]*type
 	}
 	var filter *Filter
 	if crit.BlockHash != nil {
+		header, err := api.sys.backend.HeaderByHash(ctx, *crit.BlockHash)
+		if err != nil {
+			return nil, err
+		}
+		if header == nil || api.sys.backend.ChainConfig().IsPreCel2(header.Number) {
+			return api.getLogsFromHistoricalService(ctx, crit)
+		}
 		// Block filter requested, construct a single-shot filter
 		filter = api.sys.NewBlockFilter(*crit.BlockHash, crit.Addresses, crit.Topics)
 	} else {
@@ -360,6 +392,24 @@ func (api *FilterAPI) GetLogs(ctx context.Context, crit FilterCriteria) ([]*type
 		}
 		// Construct the range filter
 		filter = api.sys.NewRangeFilter(begin, end, crit.Addresses, crit.Topics)
+		if api.sys.backend.ChainConfig().IsPreCel2(big.NewInt(begin)) {
+			if api.sys.backend.ChainConfig().IsPreCel2(big.NewInt(end)) {
+				return api.getLogsFromHistoricalService(ctx, crit)
+			}
+			// Need to merge
+			crit.ToBlock.Sub(api.sys.backend.ChainConfig().Cel2Block(), common.Big1)
+			preMigrationLogs, err := api.getLogsFromHistoricalService(ctx, crit)
+			if err != nil {
+				return nil, err
+			}
+			begin = api.sys.backend.ChainConfig().Cel2Block().Int64()
+			filter = api.sys.NewRangeFilter(begin, end, crit.Addresses, crit.Topics)
+			logs, err := filter.Logs(ctx)
+			if err != nil {
+				return nil, err
+			}
+			return returnLogs(append(preMigrationLogs, logs...)), err
+		}
 	}
 	// Run the filter and return all the logs
 	logs, err := filter.Logs(ctx)
@@ -384,6 +434,7 @@ func (api *FilterAPI) UninstallFilter(id rpc.ID) bool {
 	return found
 }
 
+// TODO(Alec)
 // GetFilterLogs returns the logs for the filter with the given id.
 // If the filter could not be found an empty array of logs is returned.
 func (api *FilterAPI) GetFilterLogs(ctx context.Context, id rpc.ID) ([]*types.Log, error) {
@@ -395,29 +446,7 @@ func (api *FilterAPI) GetFilterLogs(ctx context.Context, id rpc.ID) ([]*types.Lo
 		return nil, errFilterNotFound
 	}
 
-	var filter *Filter
-	if f.crit.BlockHash != nil {
-		// Block filter requested, construct a single-shot filter
-		filter = api.sys.NewBlockFilter(*f.crit.BlockHash, f.crit.Addresses, f.crit.Topics)
-	} else {
-		// Convert the RPC block numbers into internal representations
-		begin := rpc.LatestBlockNumber.Int64()
-		if f.crit.FromBlock != nil {
-			begin = f.crit.FromBlock.Int64()
-		}
-		end := rpc.LatestBlockNumber.Int64()
-		if f.crit.ToBlock != nil {
-			end = f.crit.ToBlock.Int64()
-		}
-		// Construct the range filter
-		filter = api.sys.NewRangeFilter(begin, end, f.crit.Addresses, f.crit.Topics)
-	}
-	// Run the filter and return all the logs
-	logs, err := filter.Logs(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return returnLogs(logs), nil
+	return api.GetLogs(ctx, f.crit) // TODO(Alec) will probably want to revert this factoring to reduce upstream diff
 }
 
 // GetFilterChanges returns the logs for the filter with the given id since
