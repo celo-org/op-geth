@@ -518,10 +518,10 @@ func (c *ChainConfig) Description() string {
 
 	banner += "Post-Merge migration hard forks (block based):\n"
 	if c.BedrockBlock != nil {
-		banner += fmt.Sprintf(" - Bedrock:                        @%-10v\n", *c.BedrockBlock)
+		banner += fmt.Sprintf(" - Bedrock:                         #%-8v\n", c.BedrockBlock)
 	}
 	if c.Cel2Block != nil {
-		banner += fmt.Sprintf(" - Cel2:                        @%-10v\n", *c.Cel2Block)
+		banner += fmt.Sprintf(" - Cel2:                         #%-8v\n", c.Cel2Block)
 	}
 
 	return banner
