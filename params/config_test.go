@@ -156,3 +156,22 @@ func TestConfigRulesRegolith(t *testing.T) {
 		t.Errorf("expected %v to be regolith", stamp)
 	}
 }
+
+func TestConfigRulesCel2(t *testing.T) {
+	c := &ChainConfig{
+		Cel2Block: big.NewInt(500),
+		Optimism:  &OptimismConfig{},
+	}
+	var num *big.Int
+	if r := c.Rules(num, true, 0); r.IsCel2 {
+		t.Errorf("expected %v to not be Cel2", num)
+	}
+	num = big.NewInt(500)
+	if r := c.Rules(num, true, 0); !r.IsCel2 {
+		t.Errorf("expected %v to be Cel2", num)
+	}
+	num = big.NewInt(math.MaxInt64)
+	if r := c.Rules(num, true, 0); !r.IsCel2 {
+		t.Errorf("expected %v to be Cel2", num)
+	}
+}

@@ -355,8 +355,10 @@ type ChainConfig struct {
 	VerkleTime   *uint64 `json:"verkleTime,omitempty"`   // Verkle switch time (nil = no fork, 0 = already on verkle)
 
 	BedrockBlock *big.Int `json:"bedrockBlock,omitempty"` // Bedrock switch block (nil = no fork, 0 = already on optimism bedrock)
-	RegolithTime *uint64  `json:"regolithTime,omitempty"` // Regolith switch time (nil = no fork, 0 = already on optimism regolith)
-	CanyonTime   *uint64  `json:"canyonTime,omitempty"`   // Canyon switch time (nil = no fork, 0 = already on optimism canyon)
+	Cel2Block    *big.Int `json:"cel2Block,omitempty"`    // Cel2 switch block (nil = no fork, 0 = already on optimism cel2)
+
+	RegolithTime *uint64 `json:"regolithTime,omitempty"` // Regolith switch time (nil = no fork, 0 = already on optimism regolith)
+	CanyonTime   *uint64 `json:"canyonTime,omitempty"`   // Canyon switch time (nil = no fork, 0 = already on optimism canyon)
 	// Delta: the Delta upgrade does not affect the execution-layer, and is thus not configurable in the chain config.
 	EcotoneTime *uint64 `json:"ecotoneTime,omitempty"` // Ecotone switch time (nil = no fork, 0 = already on optimism ecotone)
 
@@ -513,6 +515,15 @@ func (c *ChainConfig) Description() string {
 	if c.InteropTime != nil {
 		banner += fmt.Sprintf(" - Interop:                     @%-10v\n", *c.InteropTime)
 	}
+
+	banner += "Post-Merge migration hard forks (block based):\n"
+	if c.BedrockBlock != nil {
+		banner += fmt.Sprintf(" - Bedrock:                        @%-10v\n", *c.BedrockBlock)
+	}
+	if c.Cel2Block != nil {
+		banner += fmt.Sprintf(" - Cel2:                        @%-10v\n", *c.Cel2Block)
+	}
+
 	return banner
 }
 
@@ -621,17 +632,9 @@ func (c *ChainConfig) IsBedrock(num *big.Int) bool {
 	return isBlockForked(c.BedrockBlock, num)
 }
 
+// IsCel2 uses block number to enable more efficient routing to HistoricalRPCService
 func (c *ChainConfig) IsCel2(num *big.Int) bool {
-	return isBlockForked(c.Cel2Block(), num)
-}
-
-func (c *ChainConfig) IsPreCel2(num *big.Int) bool {
-	return !c.IsCel2(num)
-}
-
-func (c *ChainConfig) Cel2Block() *big.Int {
-	// return big.NewInt(9507834) // TODO(Alec) figure out how to add this to config
-	return big.NewInt(9000010) // TODO(Alec) figure out how to add this to config
+	return isBlockForked(c.Cel2Block, num)
 }
 
 func (c *ChainConfig) IsRegolith(time uint64) bool {
@@ -996,6 +999,7 @@ type Rules struct {
 	IsVerkle                                                bool
 	IsOptimismBedrock, IsOptimismRegolith                   bool
 	IsOptimismCanyon                                        bool
+	IsCel2                                                  bool
 }
 
 // Rules ensures c's ChainID is not nil.
@@ -1025,5 +1029,7 @@ func (c *ChainConfig) Rules(num *big.Int, isMerge bool, timestamp uint64) Rules 
 		IsOptimismBedrock:  c.IsOptimismBedrock(num),
 		IsOptimismRegolith: c.IsOptimismRegolith(timestamp),
 		IsOptimismCanyon:   c.IsOptimismCanyon(timestamp),
+		// Celo
+		IsCel2: c.IsCel2(num),
 	}
 }
