@@ -632,9 +632,13 @@ func (c *ChainConfig) IsBedrock(num *big.Int) bool {
 	return isBlockForked(c.BedrockBlock, num)
 }
 
+func (c *ChainConfig) Cel2BlockNum() *big.Int {
+	return big.NewInt(9000010)
+}
+
 // IsCel2 uses block number to enable more efficient routing to HistoricalRPCService
 func (c *ChainConfig) IsCel2(num *big.Int) bool {
-	return isBlockForked(c.Cel2Block, num)
+	return isBlockForked(c.Cel2BlockNum(), num)
 }
 
 func (c *ChainConfig) IsRegolith(time uint64) bool {

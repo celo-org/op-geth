@@ -394,12 +394,12 @@ func (api *FilterAPI) GetLogs(ctx context.Context, crit FilterCriteria) ([]*type
 				return api.getLogsFromHistoricalService(ctx, crit)
 			}
 			// Need to merge
-			crit.ToBlock.Sub(api.sys.backend.ChainConfig().Cel2Block, common.Big1)
+			crit.ToBlock.Sub(api.sys.backend.ChainConfig().Cel2BlockNum(), common.Big1)
 			preMigrationLogs, err := api.getLogsFromHistoricalService(ctx, crit)
 			if err != nil {
 				return nil, err
 			}
-			begin = api.sys.backend.ChainConfig().Cel2Block.Int64()
+			begin = api.sys.backend.ChainConfig().Cel2BlockNum().Int64()
 			filter = api.sys.NewRangeFilter(begin, end, crit.Addresses, crit.Topics)
 			logs, err := filter.Logs(ctx)
 			if err != nil {

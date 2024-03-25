@@ -92,7 +92,7 @@ func NewHeaderChain(chainDb ethdb.Database, config *params.ChainConfig, engine c
 		rand:          mrand.New(mrand.NewSource(seed.Int64())),
 		engine:        engine,
 	}
-	hc.genesisHeader = hc.GetHeaderByNumber(0)
+	hc.genesisHeader = hc.GetHeaderByNumber(9000010) // TODO(Alec)
 	if hc.genesisHeader == nil {
 		return nil, ErrNoGenesis
 	}

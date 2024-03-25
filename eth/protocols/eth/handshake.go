@@ -104,9 +104,10 @@ func (p *Peer) readStatus(network uint64, status *StatusPacket, genesis common.H
 	if status.Genesis != genesis {
 		return fmt.Errorf("%w: %x (!= %x)", errGenesisMismatch, status.Genesis, genesis)
 	}
-	if err := forkFilter(status.ForkID); err != nil {
-		return fmt.Errorf("%w: %v", errForkIDRejected, err)
-	}
+	// TODO(Alec)
+	// if err := forkFilter(status.ForkID); err != nil {
+	// 	return fmt.Errorf("%w: %v", errForkIDRejected, err)
+	// }
 	return nil
 }
 

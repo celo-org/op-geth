@@ -77,7 +77,7 @@ type Genesis struct {
 
 func ReadGenesis(db ethdb.Database) (*Genesis, error) {
 	var genesis Genesis
-	stored := rawdb.ReadCanonicalHash(db, 0)
+	stored := rawdb.ReadCanonicalHash(db, 9000010) // TODO(Alec)
 	if (stored == common.Hash{}) {
 		return nil, fmt.Errorf("invalid genesis hash in database: %x", stored)
 	}
@@ -94,7 +94,7 @@ func ReadGenesis(db ethdb.Database) (*Genesis, error) {
 	if genesis.Config == nil {
 		return nil, errors.New("genesis config missing from db")
 	}
-	genesisBlock := rawdb.ReadBlock(db, stored, 0)
+	genesisBlock := rawdb.ReadBlock(db, stored, 9000010) // TODO(Alec)
 	if genesisBlock == nil {
 		return nil, errors.New("genesis block missing from db")
 	}
@@ -294,6 +294,8 @@ func SetupGenesisBlock(db ethdb.Database, triedb *trie.Database, genesis *Genesi
 }
 
 func SetupGenesisBlockWithOverride(db ethdb.Database, triedb *trie.Database, genesis *Genesis, overrides *ChainOverrides) (*params.ChainConfig, common.Hash, error) {
+	genesis.Number = 9000010 // TODO(Alec)
+
 	if genesis != nil && genesis.Config == nil {
 		return params.AllEthashProtocolChanges, common.Hash{}, errGenesisNoConfig
 	}
@@ -346,7 +348,7 @@ func SetupGenesisBlockWithOverride(db ethdb.Database, triedb *trie.Database, gen
 		}
 	}
 	// Just commit the new block if there is no stored genesis block.
-	stored := rawdb.ReadCanonicalHash(db, 0)
+	stored := rawdb.ReadCanonicalHash(db, genesis.Number) // TODO(Alec)
 	if (stored == common.Hash{}) {
 		if genesis == nil {
 			log.Info("Writing default main-net genesis block")
@@ -369,7 +371,7 @@ func SetupGenesisBlockWithOverride(db ethdb.Database, triedb *trie.Database, gen
 	// In this case the genesis state may not be in the state database (e.g. op-geth is performing a snap
 	// sync without an existing datadir) & even if it were, would not be useful as op-geth is not able to
 	// execute the pre-bedrock STF.
-	header := rawdb.ReadHeader(db, stored, 0)
+	header := rawdb.ReadHeader(db, stored, genesis.Number) // TODO(Alec)
 	transitionedNetwork := genesis != nil && genesis.Config != nil && genesis.Config.BedrockBlock != nil && genesis.Config.BedrockBlock.Uint64() != 0
 	if header.Root != types.EmptyRootHash && !triedb.Initialized(header.Root) && !transitionedNetwork {
 		if genesis == nil {
@@ -440,7 +442,7 @@ func LoadChainConfig(db ethdb.Database, genesis *Genesis) (*params.ChainConfig, 
 	// Load the stored chain config from the database. It can be nil
 	// in case the database is empty. Notably, we only care about the
 	// chain config corresponds to the canonical chain.
-	stored := rawdb.ReadCanonicalHash(db, 0)
+	stored := rawdb.ReadCanonicalHash(db, genesis.Number) // TODO(Alec)
 	if stored != (common.Hash{}) {
 		storedcfg := rawdb.ReadChainConfig(db, stored)
 		if storedcfg != nil {
@@ -558,9 +560,10 @@ func (g *Genesis) ToBlock() *types.Block {
 // The block is committed as the canonical head block.
 func (g *Genesis) Commit(db ethdb.Database, triedb *trie.Database) (*types.Block, error) {
 	block := g.ToBlock()
-	if block.Number().Sign() != 0 {
-		return nil, errors.New("can't commit genesis block with number > 0")
-	}
+	// TODO(Alec)
+	// if block.Number().Sign() != 0 {
+	// 	return nil, errors.New("can't commit genesis block with number > 0")
+	// }
 	config := g.Config
 	if config == nil {
 		config = params.AllEthashProtocolChanges

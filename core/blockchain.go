@@ -318,7 +318,7 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, genesis *Genesis
 	if err != nil {
 		return nil, err
 	}
-	bc.genesisBlock = bc.GetBlockByNumber(0)
+	bc.genesisBlock = bc.GetBlockByNumber(9000010)
 	if bc.genesisBlock == nil {
 		return nil, ErrNoGenesis
 	}
