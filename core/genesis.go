@@ -77,7 +77,7 @@ type Genesis struct {
 
 func ReadGenesis(db ethdb.Database) (*Genesis, error) {
 	var genesis Genesis
-	stored := rawdb.ReadCanonicalHash(db, 9000010) // TODO(Alec)
+	stored := rawdb.ReadCanonicalHash(db, 1) // TODO(Alec)
 	if (stored == common.Hash{}) {
 		return nil, fmt.Errorf("invalid genesis hash in database: %x", stored)
 	}
@@ -94,7 +94,7 @@ func ReadGenesis(db ethdb.Database) (*Genesis, error) {
 	if genesis.Config == nil {
 		return nil, errors.New("genesis config missing from db")
 	}
-	genesisBlock := rawdb.ReadBlock(db, stored, 9000010) // TODO(Alec)
+	genesisBlock := rawdb.ReadBlock(db, stored, 1) // TODO(Alec)
 	if genesisBlock == nil {
 		return nil, errors.New("genesis block missing from db")
 	}
@@ -294,11 +294,12 @@ func SetupGenesisBlock(db ethdb.Database, triedb *trie.Database, genesis *Genesi
 }
 
 func SetupGenesisBlockWithOverride(db ethdb.Database, triedb *trie.Database, genesis *Genesis, overrides *ChainOverrides) (*params.ChainConfig, common.Hash, error) {
-	genesis.Number = 9000010 // TODO(Alec)
-
 	if genesis != nil && genesis.Config == nil {
 		return params.AllEthashProtocolChanges, common.Hash{}, errGenesisNoConfig
 	}
+
+	genesis.Number = genesis.Config.Cel2BlockNum().Uint64() // TODO(Alec)
+
 	applyOverrides := func(config *params.ChainConfig) {
 		if config != nil {
 			// If applying the superchain-registry to a known OP-Stack chain,

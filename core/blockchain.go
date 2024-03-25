@@ -318,7 +318,7 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, genesis *Genesis
 	if err != nil {
 		return nil, err
 	}
-	bc.genesisBlock = bc.GetBlockByNumber(9000010)
+	bc.genesisBlock = bc.GetBlockByNumber(bc.chainConfig.Cel2BlockNum().Uint64())
 	if bc.genesisBlock == nil {
 		return nil, ErrNoGenesis
 	}
@@ -345,7 +345,7 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, genesis *Genesis
 	// if there is no available state, waiting for state sync.
 	head := bc.CurrentBlock()
 	if !bc.HasState(head.Root) {
-		if head.Number.Uint64() == 0 {
+		if head.Number.Uint64() == bc.Genesis().NumberU64() {
 			// The genesis state is missing, which is only possible in the path-based
 			// scheme. This situation occurs when the initial state sync is not finished
 			// yet, or the chain head is rewound below the pivot point. In both scenarios,
@@ -858,7 +858,7 @@ func (bc *BlockChain) Reset() error {
 // specified genesis state.
 func (bc *BlockChain) ResetWithGenesisBlock(genesis *types.Block) error {
 	// Dump the entire block chain and purge the caches
-	if err := bc.SetHead(0); err != nil {
+	if err := bc.SetHead(genesis.NumberU64()); err != nil {
 		return err
 	}
 	if !bc.chainmu.TryLock() {
@@ -888,7 +888,7 @@ func (bc *BlockChain) ResetWithGenesisBlock(genesis *types.Block) error {
 
 // Export writes the active chain to the given writer.
 func (bc *BlockChain) Export(w io.Writer) error {
-	return bc.ExportN(w, uint64(0), bc.CurrentBlock().Number.Uint64())
+	return bc.ExportN(w, bc.Genesis().NumberU64(), bc.CurrentBlock().Number.Uint64())
 }
 
 // ExportN writes a subset of the active chain to the given writer.
