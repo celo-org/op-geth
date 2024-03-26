@@ -56,6 +56,7 @@ func testSetupGenesis(t *testing.T, scheme string) {
 			Alloc: GenesisAlloc{
 				{1}: {Balance: big.NewInt(1), Storage: map[common.Hash]common.Hash{{1}: {1}}},
 			},
+			Number: uint64(common.Cel2Block),
 		}
 		oldcustomg = customg
 	)

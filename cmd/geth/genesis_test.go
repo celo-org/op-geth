@@ -22,6 +22,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"testing"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 var customGenesisTests = []struct {
@@ -45,7 +47,7 @@ var customGenesisTests = []struct {
 				"terminalTotalDifficultyPassed": true
 			}
 		}`,
-		query:  "eth.getBlock(0).nonce",
+		query:  fmt.Sprintf("eth.getBlock(%d).nonce", common.Cel2Block), // TODO(Alec)
 		result: "0x0000000000001338",
 	},
 	// Genesis file with specific chain configurations
@@ -67,7 +69,7 @@ var customGenesisTests = []struct {
 				"terminalTotalDifficultyPassed" : true
 			}
 		}`,
-		query:  "eth.getBlock(0).nonce",
+		query:  fmt.Sprintf("eth.getBlock(%d).nonce", common.Cel2Block), // TODO(Alec)
 		result: "0x0000000000001339",
 	},
 }
@@ -143,7 +145,7 @@ func TestCustomBackend(t *testing.T) {
 			args := append(tt.execArgs, "--networkid", "1337", "--syncmode=full", "--cache", "16",
 				"--datadir", datadir, "--maxpeers", "0", "--port", "0", "--authrpc.port", "0",
 				"--nodiscover", "--nat", "none", "--ipcdisable",
-				"--exec", "eth.getBlock(0).nonce", "console")
+				"--exec", fmt.Sprintf("eth.getBlock(%d).nonce", common.Cel2Block), "console") // TODO(Alec)
 			geth := runGeth(t, args...)
 			geth.ExpectRegexp(tt.execExpect)
 			geth.ExpectExit()

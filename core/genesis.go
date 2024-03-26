@@ -77,7 +77,7 @@ type Genesis struct {
 
 func ReadGenesis(db ethdb.Database) (*Genesis, error) {
 	var genesis Genesis
-	stored := rawdb.ReadCanonicalHash(db, common.Cel2Block.Uint64()) // TODO(Alec)
+	stored := rawdb.ReadCanonicalHash(db, uint64(common.Cel2Block)) // TODO(Alec)
 	if (stored == common.Hash{}) {
 		return nil, fmt.Errorf("invalid genesis hash in database: %x", stored)
 	}
@@ -94,7 +94,7 @@ func ReadGenesis(db ethdb.Database) (*Genesis, error) {
 	if genesis.Config == nil {
 		return nil, errors.New("genesis config missing from db")
 	}
-	genesisBlock := rawdb.ReadBlock(db, stored, common.Cel2Block.Uint64()) // TODO(Alec)
+	genesisBlock := rawdb.ReadBlock(db, stored, uint64(common.Cel2Block)) // TODO(Alec)
 	if genesisBlock == nil {
 		return nil, errors.New("genesis block missing from db")
 	}
@@ -298,7 +298,11 @@ func SetupGenesisBlockWithOverride(db ethdb.Database, triedb *trie.Database, gen
 		return params.AllEthashProtocolChanges, common.Hash{}, errGenesisNoConfig
 	}
 
-	genesis.Number = genesis.Config.Cel2BlockNum().Uint64() // TODO(Alec)
+	// // genesis.Number = genesis.Config.Cel2BlockNum().Uint64()
+	// // genesis.Number = uint64(common.Cel2Block) // TODO(Alec)
+	// // genesis.Number = 0
+	// fmt.Printf("%v", genesis)
+	// fmt.Printf("%d", genesis.Number)
 
 	applyOverrides := func(config *params.ChainConfig) {
 		if config != nil {
@@ -349,7 +353,7 @@ func SetupGenesisBlockWithOverride(db ethdb.Database, triedb *trie.Database, gen
 		}
 	}
 	// Just commit the new block if there is no stored genesis block.
-	stored := rawdb.ReadCanonicalHash(db, genesis.Number) // TODO(Alec)
+	stored := rawdb.ReadCanonicalHash(db, uint64(common.Cel2Block)) // TODO(Alec)
 	if (stored == common.Hash{}) {
 		if genesis == nil {
 			log.Info("Writing default main-net genesis block")
@@ -358,6 +362,7 @@ func SetupGenesisBlockWithOverride(db ethdb.Database, triedb *trie.Database, gen
 			log.Info("Writing custom genesis block")
 		}
 		applyOverrides(genesis.Config)
+		genesis.Number = uint64(common.Cel2Block)
 		block, err := genesis.Commit(db, triedb)
 		if err != nil {
 			return genesis.Config, common.Hash{}, err
@@ -372,7 +377,7 @@ func SetupGenesisBlockWithOverride(db ethdb.Database, triedb *trie.Database, gen
 	// In this case the genesis state may not be in the state database (e.g. op-geth is performing a snap
 	// sync without an existing datadir) & even if it were, would not be useful as op-geth is not able to
 	// execute the pre-bedrock STF.
-	header := rawdb.ReadHeader(db, stored, genesis.Number) // TODO(Alec)
+	header := rawdb.ReadHeader(db, stored, uint64(common.Cel2Block)) // TODO(Alec)
 	transitionedNetwork := genesis != nil && genesis.Config != nil && genesis.Config.BedrockBlock != nil && genesis.Config.BedrockBlock.Uint64() != 0
 	if header.Root != types.EmptyRootHash && !triedb.Initialized(header.Root) && !transitionedNetwork {
 		if genesis == nil {
@@ -380,6 +385,7 @@ func SetupGenesisBlockWithOverride(db ethdb.Database, triedb *trie.Database, gen
 		}
 		applyOverrides(genesis.Config)
 		// Ensure the stored genesis matches with the given one.
+		genesis.Number = uint64(common.Cel2Block) // TODO(Alec)
 		hash := genesis.ToBlock().Hash()
 		if hash != stored {
 			return genesis.Config, hash, &GenesisMismatchError{stored, hash}
@@ -443,6 +449,8 @@ func LoadChainConfig(db ethdb.Database, genesis *Genesis) (*params.ChainConfig, 
 	// Load the stored chain config from the database. It can be nil
 	// in case the database is empty. Notably, we only care about the
 	// chain config corresponds to the canonical chain.
+	fmt.Printf("%v", genesis.Number)
+	fmt.Printf("%d", genesis.Number)
 	stored := rawdb.ReadCanonicalHash(db, genesis.Number) // TODO(Alec)
 	if stored != (common.Hash{}) {
 		storedcfg := rawdb.ReadChainConfig(db, stored)
