@@ -77,7 +77,7 @@ type Genesis struct {
 
 func ReadGenesis(db ethdb.Database) (*Genesis, error) {
 	var genesis Genesis
-	stored := rawdb.ReadCanonicalHash(db, 1) // TODO(Alec)
+	stored := rawdb.ReadCanonicalHash(db, common.Cel2Block.Uint64()) // TODO(Alec)
 	if (stored == common.Hash{}) {
 		return nil, fmt.Errorf("invalid genesis hash in database: %x", stored)
 	}
@@ -94,7 +94,7 @@ func ReadGenesis(db ethdb.Database) (*Genesis, error) {
 	if genesis.Config == nil {
 		return nil, errors.New("genesis config missing from db")
 	}
-	genesisBlock := rawdb.ReadBlock(db, stored, 1) // TODO(Alec)
+	genesisBlock := rawdb.ReadBlock(db, stored, common.Cel2Block.Uint64()) // TODO(Alec)
 	if genesisBlock == nil {
 		return nil, errors.New("genesis block missing from db")
 	}

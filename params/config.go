@@ -633,7 +633,7 @@ func (c *ChainConfig) IsBedrock(num *big.Int) bool {
 }
 
 func (c *ChainConfig) Cel2BlockNum() *big.Int {
-	return big.NewInt(1)
+	return common.Cel2Block
 }
 
 // IsCel2 uses block number to enable more efficient routing to HistoricalRPCService
