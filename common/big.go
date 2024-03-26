@@ -27,5 +27,5 @@ var (
 	Big32     = big.NewInt(32)
 	Big256    = big.NewInt(256)
 	Big257    = big.NewInt(257)
-	Cel2Block = big.NewInt(1) // TODO(Alec) adding this here to make it easier to test different values
+	Cel2Block = big.NewInt(0) // TODO(Alec) adding this here to make it easier to test different values
 )
