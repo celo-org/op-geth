@@ -1,16 +1,43 @@
 package core
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"math/big"
 
 	"github.com/ethereum-optimism/superchain-registry/superchain"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 )
 
+var newMainnetOpGenesis = `{
+   "baseFeePerGas" : "0x3b9aca00",
+   "difficulty" : "0x0",
+   "extraData" : "0x424544524f434b",
+   "gasLimit" : "0x1c9c380",
+   "gasUsed" : "0x0",
+   "logsBloom" : "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+   "miner" : "0x4200000000000000000000000000000000000011",
+   "mixHash" : "0x0000000000000000000000000000000000000000000000000000000000000000",
+   "nonce" : "0x0000000000000000",
+   "number" : "0x645c277",
+   "parentHash" : "0x21a168dfa5e727926063a28ba16fd5ee84c814e847c81a699c7a0ea551e4ca50",
+   "receiptsRoot" : "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+   "sealFields" : [],
+   "sha3Uncles" : "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+   "stateRoot" : "0x920314c198da844a041d63bf6cbe8b59583165fd2229d1b3f599da812fd424cb",
+   "timestamp" : "0x647f5ea7",
+   "totalDifficulty" : "0x0",
+   "transactions" : [],
+   "transactionsRoot" : "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+   "uncles" : []
+}`
+
 func LoadOPStackGenesis(chainID uint64) (*Genesis, error) {
+
 	chConfig, ok := superchain.OPChains[chainID]
 	if !ok {
 		return nil, fmt.Errorf("unknown chain ID: %d", chainID)
@@ -25,8 +52,9 @@ func LoadOPStackGenesis(chainID uint64) (*Genesis, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to load genesis definition for chain %d: %w", chainID, err)
 	}
+	var genesis *Genesis
 
-	genesis := &Genesis{
+	genesis = &Genesis{
 		Config:     cfg,
 		Nonce:      gen.Nonce,
 		Timestamp:  gen.Timestamp,
@@ -76,6 +104,32 @@ func LoadOPStackGenesis(chainID uint64) (*Genesis, error) {
 		genesis.StateHash = (*common.Hash)(gen.StateHash)
 	}
 
+	if chainID == 10 {
+		h := types.Header{}
+		if err := json.NewDecoder(bytes.NewBufferString(newMainnetOpGenesis)).Decode(&h); err != nil {
+			return nil, fmt.Errorf("failed to decode genesis allocation of %d: %w", chainID, err)
+		}
+		genesis = &Genesis{
+			Config:      cfg,
+			Nonce:       h.Nonce.Uint64(),
+			Timestamp:   h.Time,
+			ExtraData:   h.Extra,
+			GasLimit:    h.GasLimit,
+			Difficulty:  h.Difficulty,
+			Mixhash:     h.MixDigest,
+			Coinbase:    h.Coinbase,
+			Alloc:       nil,
+			Number:      h.Number.Uint64(),
+			GasUsed:     h.GasUsed,
+			ParentHash:  h.ParentHash,
+			BaseFee:     h.BaseFee,
+			UncleHash:   h.UncleHash,
+			TxHash:      h.TxHash,
+			ReceiptHash: h.ReceiptHash,
+			Bloom:       h.Bloom,
+			StateHash:   &h.Root,
+		}
+	}
 	genesisBlock := genesis.ToBlock()
 	genesisBlockHash := genesisBlock.Hash()
 	expectedHash := common.Hash([32]byte(chConfig.Genesis.L2.Hash))
