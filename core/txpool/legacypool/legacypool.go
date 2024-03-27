@@ -700,7 +700,18 @@ func (pool *LegacyPool) validateTx(tx *types.Transaction) error {
 	if err := txpool.ValidateTransactionWithState(tx, pool.signer, opts); err != nil {
 		return err
 	}
-	return pool.validateAuth(tx)
+	if err := pool.validateAuth(tx); err != nil {
+		return err
+	}
+	if tx.FeeCurrency() != nil {
+		from, err := pool.signer.Sender(tx) // already validated (and cached), but cleaner to check
+		if err != nil {
+			log.Error("Transaction sender recovery failed", "err", err)
+			return err
+		}
+		return contracts.TryDebitFees(tx, from, pool.celoBackend)
+	}
+	return nil
 }
 
 // checkDelegationLimit determines if the tx sender is delegated or has a
