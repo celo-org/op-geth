@@ -449,9 +449,7 @@ func LoadChainConfig(db ethdb.Database, genesis *Genesis) (*params.ChainConfig, 
 	// Load the stored chain config from the database. It can be nil
 	// in case the database is empty. Notably, we only care about the
 	// chain config corresponds to the canonical chain.
-	fmt.Printf("%v", genesis.Number)
-	fmt.Printf("%d", genesis.Number)
-	stored := rawdb.ReadCanonicalHash(db, genesis.Number) // TODO(Alec)
+	stored := rawdb.ReadCanonicalHash(db, uint64(common.Cel2Block)) // TODO(Alec)
 	if stored != (common.Hash{}) {
 		storedcfg := rawdb.ReadChainConfig(db, stored)
 		if storedcfg != nil {
