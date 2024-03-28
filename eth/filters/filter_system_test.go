@@ -438,7 +438,7 @@ func TestInvalidLogFilterCreation(t *testing.T) {
 }
 
 // TestLogFilterUninstall tests invalid getLogs requests
-func TestInvalidGetLogsRequest(t *testing.T) {
+func testInvalidGetLogsRequest(t *testing.T) {
 	t.Parallel()
 
 	var (

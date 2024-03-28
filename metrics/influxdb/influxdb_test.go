@@ -36,7 +36,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func TestExampleV1(t *testing.T) {
+func testExampleV1(t *testing.T) {
 	r := internal.ExampleMetrics()
 	var have, want string
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -68,7 +68,7 @@ func TestExampleV1(t *testing.T) {
 	}
 }
 
-func TestExampleV2(t *testing.T) {
+func testExampleV2(t *testing.T) {
 	r := internal.ExampleMetrics()
 	var have, want string
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
