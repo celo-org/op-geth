@@ -227,12 +227,12 @@ func NewDatabaseWithFreezer(db ethdb.KeyValueStore, ancient string, namespace st
 	// If the genesis hash is empty, we have a new key-value store, so nothing to
 	// validate in this method. If, however, the genesis hash is not nil, compare
 	// it to the freezer content.
-	if kvgenesis, _ := db.Get(headerHashKey(0)); len(kvgenesis) > 0 {
+	if kvgenesis, _ := db.Get(headerHashKey(uint64(common.Cel2Block))); len(kvgenesis) > 0 {
 		if frozen, _ := frdb.Ancients(); frozen > 0 {
 			// If the freezer already contains something, ensure that the genesis blocks
 			// match, otherwise we might mix up freezers across chains and destroy both
 			// the freezer and the key-value store.
-			frgenesis, err := frdb.Ancient(ChainFreezerHashTable, 0)
+			frgenesis, err := frdb.Ancient(ChainFreezerHashTable, uint64(common.Cel2Block))
 			if err != nil {
 				printChainMetadata(db)
 				return nil, fmt.Errorf("failed to retrieve genesis from ancient %v", err)

@@ -434,7 +434,7 @@ func (b *SimulatedBackend) HeaderByNumber(ctx context.Context, block *big.Int) (
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	if block == nil || block.Cmp(b.pendingBlock.Number()) == 0 {
+	if block == nil || block.Cmp(b.pendingBlock.Number()) == common.Cel2Block {
 		return b.blockchain.CurrentHeader(), nil
 	}
 

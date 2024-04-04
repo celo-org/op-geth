@@ -92,7 +92,7 @@ func NewHeaderChain(chainDb ethdb.Database, config *params.ChainConfig, engine c
 		rand:          mrand.New(mrand.NewSource(seed.Int64())),
 		engine:        engine,
 	}
-	hc.genesisHeader = hc.GetHeaderByNumber(config.Cel2BlockNum().Uint64()) // TODO(Alec)
+	hc.genesisHeader = hc.GetHeaderByNumber(uint64(common.Cel2Block)) // TODO(Alec)
 	if hc.genesisHeader == nil {
 		return nil, ErrNoGenesis
 	}
@@ -422,7 +422,7 @@ func (hc *HeaderChain) GetAncestor(hash common.Hash, number, ancestor uint64, ma
 func (hc *HeaderChain) GetTd(hash common.Hash, number uint64) *big.Int {
 	// Short circuit if the td's already in the cache, retrieve otherwise
 	if cached, ok := hc.tdCache.Get(hash); ok {
-		return cached
+		return cached // TODO(Alec) It's not finding the genesis in the tdCache
 	}
 	td := rawdb.ReadTd(hc.chainDb, hash, number)
 	if td == nil {

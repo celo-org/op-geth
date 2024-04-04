@@ -1584,7 +1584,7 @@ func (bc *BlockChain) InsertChain(chain types.Blocks) (int, error) {
 		return 0, errChainStopped
 	}
 	defer bc.chainmu.Unlock()
-	return bc.insertChain(chain, true)
+	return bc.insertChain(chain, true) // The
 }
 
 // insertChain is the internal implementation of InsertChain, which assumes that

@@ -852,7 +852,7 @@ func (d *Downloader) findAncestor(p *peerConnection, remoteHeader *types.Header)
 	// all headers before that point will be missing.
 	if mode == LightSync {
 		// If we don't know the current CHT position, find it
-		if d.genesis == 0 {
+		if d.genesis == uint64(common.Cel2Block) {
 			header := d.lightchain.CurrentHeader()
 			for header != nil {
 				d.genesis = header.Number.Uint64()

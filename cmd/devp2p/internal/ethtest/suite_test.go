@@ -145,6 +145,7 @@ func setupGeth(stack *node.Node, dir string) error {
 	if err := catalyst.Register(stack, backend); err != nil {
 		return fmt.Errorf("failed to register catalyst service: %v", err)
 	}
-	_, err = backend.BlockChain().InsertChain(chain.blocks[1:])
+	// TODO(Alec): The "parentHash" field on the first block header we're trying to insert here does not match the genesis block hash, so the TD is not being found in the cache and we get an 'unknown ancestor' error
+	_, err = backend.BlockChain().InsertChain(chain.blocks[(common.Cel2Block + 1):])
 	return err
 }

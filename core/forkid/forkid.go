@@ -286,7 +286,7 @@ func gatherForks(config *params.ChainConfig, genesis uint64) ([]uint64, []uint64
 		}
 	}
 	// Skip any forks in block 0, that's the genesis ruleset
-	if len(forksByBlock) > 0 && forksByBlock[0] == 0 {
+	if len(forksByBlock) > 0 && forksByBlock[0] == 0 { // TODO(Alec) genesis is hardcoded here
 		forksByBlock = forksByBlock[1:]
 	}
 	// Skip any forks before genesis.
