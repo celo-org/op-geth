@@ -20,7 +20,7 @@ type blockTransactions struct {
 }
 
 func TestCompatibilityOfChain(t *testing.T) {
-	dumpOutput := true
+	dumpOutput := false
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	c, err := rpc.DialContext(ctx, "http://localhost:8545")
@@ -59,6 +59,7 @@ func TestCompatibilityOfChain(t *testing.T) {
 	var logs []*types.Log
 	err = json.Unmarshal(res, &logs)
 	require.NoError(t, err)
+	require.Equal(t, len(incrementalLogs), len(logs))
 	require.Equal(t, incrementalLogs, logs)
 }
 
