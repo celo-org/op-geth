@@ -14,19 +14,25 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type blockTransactions struct {
+	Transactions []*types.Transaction `json:"transactions"`
+}
+
 func TestCompatibilityOfChain(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	c, err := rpc.DialContext(ctx, "http://localhost:8545")
 	require.NoError(t, err)
-	for i := uint64(2800); i < 2800+100; i++ {
+	startBlock := uint64(2800)
+	for i := startBlock; i < startBlock+100; i++ {
 		res, err := rpcCall(c, "eth_getBlockByNumber", hexutil.EncodeUint64(i), true)
 		require.NoError(t, err)
-		b := types.Block{}
-		err = json.Unmarshal(res, &b)
+		txs := blockTransactions{}
+		err = json.Unmarshal(res, &txs)
 		require.NoError(t, err)
-		for _, tx := range b.Transactions() {
+		for _, tx := range txs.Transactions {
 			rpcCall(c, "eth_getTransactionByHash", tx.Hash())
+			rpcCall(c, "eth_getTransactionReceipt", tx.Hash())
 		}
 	}
 
