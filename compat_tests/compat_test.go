@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -26,6 +27,7 @@ func TestCompatibilityOfChain(t *testing.T) {
 	require.NoError(t, err)
 	startBlock := uint64(2800)
 	amount := uint64(1000)
+	incrementalLogs := make([]*types.Log, 0)
 	for i := startBlock; i < startBlock+amount; i++ {
 		res, err := rpcCall(c, dumpOutput, "eth_getBlockByNumber", hexutil.EncodeUint64(i), true)
 		require.NoError(t, err)
@@ -37,23 +39,35 @@ func TestCompatibilityOfChain(t *testing.T) {
 			require.NoError(t, err)
 			res, err = rpcCall(c, dumpOutput, "eth_getTransactionReceipt", tx.Hash())
 			require.NoError(t, err)
+			r := types.Receipt{}
+			err = json.Unmarshal(res, &r)
+			require.NoError(t, err)
+			incrementalLogs = append(incrementalLogs, r.Logs...)
 		}
 	}
 
-	// // h := common.HexToHash("0xe1ee23cfb65ca96e96b68f22ddafd73f0f285f61afb980bc71532f2534815f54")
-	// // try getting some logs
-	// ctx, cancel = context.WithTimeout(context.Background(), time.Second*5)
-	// defer cancel()
-	// logs, err := c.FilterLogs(ctx, celo.FilterQuery{
-	// 	// FromBlock: big.NewInt(0),
-	// 	// ToBlock:   big.NewInt(30000),
-	// 	FromBlock: big.NewInt(2937),
-	// 	ToBlock:   big.NewInt(2939),
-	// 	// BlockHash: &h,
-	// })
-	// require.NoError(t, err)
-	// fmt.Printf("num logs %d\n", len(logs))
+	// Get all logs for the range and compare with the logs extracted from receipts.
+	ctx, cancel = context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	from := rpc.BlockNumber(startBlock)
+	to := rpc.BlockNumber(amount + startBlock)
+	res, err := rpcCall(c, dumpOutput, "eth_getLogs", filterQuery{
+		FromBlock: &from,
+		ToBlock:   &to,
+	})
+	require.NoError(t, err)
+	var logs []*types.Log
+	err = json.Unmarshal(res, &logs)
+	require.NoError(t, err)
+	require.Equal(t, incrementalLogs, logs)
+}
 
+type filterQuery struct {
+	BlockHash *common.Hash     `json:"blockHash"`
+	FromBlock *rpc.BlockNumber `json:"fromBlock"`
+	ToBlock   *rpc.BlockNumber `json:"toBlock"`
+	Addresses interface{}      `json:"address"`
+	Topics    []interface{}    `json:"topics"`
 }
 
 func rpcCall(c *rpc.Client, dumpOutput bool, method string, args ...interface{}) (json.RawMessage, error) {
