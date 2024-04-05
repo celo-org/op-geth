@@ -19,20 +19,23 @@ type blockTransactions struct {
 }
 
 func TestCompatibilityOfChain(t *testing.T) {
+	dumpOutput := true
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
 	c, err := rpc.DialContext(ctx, "http://localhost:8545")
 	require.NoError(t, err)
 	startBlock := uint64(2800)
 	for i := startBlock; i < startBlock+100; i++ {
-		res, err := rpcCall(c, "eth_getBlockByNumber", hexutil.EncodeUint64(i), true)
+		res, err := rpcCall(c, dumpOutput, "eth_getBlockByNumber", hexutil.EncodeUint64(i), true)
 		require.NoError(t, err)
 		txs := blockTransactions{}
 		err = json.Unmarshal(res, &txs)
 		require.NoError(t, err)
 		for _, tx := range txs.Transactions {
-			rpcCall(c, "eth_getTransactionByHash", tx.Hash())
-			rpcCall(c, "eth_getTransactionReceipt", tx.Hash())
+			_, err = rpcCall(c, dumpOutput, "eth_getTransactionByHash", tx.Hash())
+			require.NoError(t, err)
+			res, err = rpcCall(c, dumpOutput, "eth_getTransactionReceipt", tx.Hash())
+			require.NoError(t, err)
 		}
 	}
 
@@ -52,20 +55,22 @@ func TestCompatibilityOfChain(t *testing.T) {
 
 }
 
-func rpcCall(c *rpc.Client, method string, args ...interface{}) (json.RawMessage, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Hour*1)
+func rpcCall(c *rpc.Client, dumpOutput bool, method string, args ...interface{}) (json.RawMessage, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*1)
 	defer cancel()
 	var m json.RawMessage
 	err := c.CallContext(ctx, &m, method, args...)
 	if err != nil {
 		return nil, err
 	}
-	dst := &bytes.Buffer{}
-	err = json.Indent(dst, m, "", "  ")
-	if err != nil {
-		return nil, err
+	if dumpOutput {
+		dst := &bytes.Buffer{}
+		err = json.Indent(dst, m, "", "  ")
+		if err != nil {
+			return nil, err
+		}
+		fmt.Printf("%v\n%v\n", method, dst.String())
 	}
-	fmt.Printf("%v\n%v\n", method, dst.String())
 	return m, nil
 }
 
