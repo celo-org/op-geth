@@ -49,8 +49,7 @@ func TestCompatibilityOfChain(t *testing.T) {
 func rpcCall(c *rpc.Client, method string, args ...interface{}) (json.RawMessage, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Hour*1)
 	defer cancel()
-	// var m json.RawMessage
-	m := make([]byte, 0)
+	var m json.RawMessage
 	err := c.CallContext(ctx, &m, method, args...)
 	if err != nil {
 		return nil, err
@@ -60,7 +59,7 @@ func rpcCall(c *rpc.Client, method string, args ...interface{}) (json.RawMessage
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("%v\n%v\n", method, (dst.Bytes()))
+	fmt.Printf("%v\n%v\n", method, dst.String())
 	return m, nil
 }
 
