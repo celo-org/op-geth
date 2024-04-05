@@ -25,7 +25,8 @@ func TestCompatibilityOfChain(t *testing.T) {
 	c, err := rpc.DialContext(ctx, "http://localhost:8545")
 	require.NoError(t, err)
 	startBlock := uint64(2800)
-	for i := startBlock; i < startBlock+100; i++ {
+	amount := uint64(1000)
+	for i := startBlock; i < startBlock+amount; i++ {
 		res, err := rpcCall(c, dumpOutput, "eth_getBlockByNumber", hexutil.EncodeUint64(i), true)
 		require.NoError(t, err)
 		txs := blockTransactions{}
