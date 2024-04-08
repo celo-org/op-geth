@@ -41,6 +41,7 @@ func TestCompatibilityOfChain(t *testing.T) {
 		txs := blockTransactions{}
 		err = json.Unmarshal(res, &txs)
 		require.NoError(t, err)
+		incrementalBlockReceipts := types.Receipts{}
 		for _, tx := range txs.Transactions {
 			_, err = rpcCall(c, dumpOutput, "eth_getTransactionByHash", tx.Hash())
 			require.NoError(t, err)
@@ -49,6 +50,7 @@ func TestCompatibilityOfChain(t *testing.T) {
 			r := types.Receipt{}
 			err = json.Unmarshal(res, &r)
 			require.NoError(t, err)
+			incrementalBlockReceipts = append(incrementalBlockReceipts, &r)
 			incrementalLogs = append(incrementalLogs, r.Logs...)
 		}
 		// Get the Celo block receipt. See https://docs.celo.org/developer/migrate/from-ethereum#core-contract-calls
@@ -58,43 +60,16 @@ func TestCompatibilityOfChain(t *testing.T) {
 			r := types.Receipt{}
 			err = json.Unmarshal(res, &r)
 			require.NoError(t, err)
+			incrementalBlockReceipts = append(incrementalBlockReceipts, &r)
 			incrementalLogs = append(incrementalLogs, r.Logs...)
 		}
-	}
 
-	// Get all logs for the range and compare with the logs extracted from receipts.
-	from := rpc.BlockNumber(startBlock)
-	to := rpc.BlockNumber(amount + startBlock)
-	res, err := rpcCall(c, dumpOutput, "eth_getLogs", filterQuery{
-		FromBlock: &from,
-		ToBlock:   &to,
-	})
-	require.NoError(t, err)
-	var logs []*types.Log
-	err = json.Unmarshal(res, &logs)
-	require.NoError(t, err)
-	require.Equal(t, len(incrementalLogs), len(logs))
-	require.Equal(t, incrementalLogs, logs)
-}
-
-func TestCompatibilityOfChain2(t *testing.T) {
-	dumpOutput := false
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
-	c, err := rpc.DialContext(ctx, "http://localhost:8545")
-	require.NoError(t, err)
-	startBlock := uint64(2800)
-	amount := uint64(1000)
-	incrementalLogs := make([]*types.Log, 0)
-	for i := startBlock; i <= startBlock+amount; i++ {
 		blockReceipts := types.Receipts{}
-		res, err := rpcCall(c, dumpOutput, "eth_getBlockReceipts", hexutil.EncodeUint64(i))
+		res, err = rpcCall(c, dumpOutput, "eth_getBlockReceipts", hexutil.EncodeUint64(i))
 		require.NoError(t, err)
 		err = json.Unmarshal(res, &blockReceipts)
 		require.NoError(t, err)
-		for _, r := range blockReceipts {
-			incrementalLogs = append(incrementalLogs, r.Logs...)
-		}
+		require.Equal(t, incrementalBlockReceipts, blockReceipts)
 	}
 
 	// Get all logs for the range and compare with the logs extracted from receipts.
