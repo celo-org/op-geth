@@ -35,6 +35,8 @@ func TestCompatibilityOfChain(t *testing.T) {
 	for i := startBlock; i <= startBlock+amount; i++ {
 		res, err := rpcCall(c, dumpOutput, "eth_getBlockByNumber", hexutil.EncodeUint64(i), true)
 		require.NoError(t, err)
+		// Check we got a block
+		require.NotEqual(t, "null", string(res), "block %d should not be null", i)
 		blockHash := blockHash{}
 		err = json.Unmarshal(res, &blockHash)
 		require.NoError(t, err)
