@@ -19,6 +19,10 @@ type blockTransactions struct {
 	Transactions []*types.Transaction `json:"transactions"`
 }
 
+type blockHash struct {
+	Hash common.Hash `json:"hash"`
+}
+
 func TestCompatibilityOfChain(t *testing.T) {
 	dumpOutput := false
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
@@ -28,12 +32,18 @@ func TestCompatibilityOfChain(t *testing.T) {
 	startBlock := uint64(2800)
 	amount := uint64(1000)
 	incrementalLogs := make([]*types.Log, 0)
-	for i := startBlock; i < startBlock+amount; i++ {
+	for i := startBlock; i <= startBlock+amount; i++ {
 		res, err := rpcCall(c, dumpOutput, "eth_getBlockByNumber", hexutil.EncodeUint64(i), true)
+		require.NoError(t, err)
+		// Check we got a block
+		require.NotEqual(t, "null", string(res), "block %d should not be null", i)
+		blockHash := blockHash{}
+		err = json.Unmarshal(res, &blockHash)
 		require.NoError(t, err)
 		txs := blockTransactions{}
 		err = json.Unmarshal(res, &txs)
 		require.NoError(t, err)
+		incrementalBlockReceipts := types.Receipts{}
 		for _, tx := range txs.Transactions {
 			_, err = rpcCall(c, dumpOutput, "eth_getTransactionByHash", tx.Hash())
 			require.NoError(t, err)
@@ -42,13 +52,35 @@ func TestCompatibilityOfChain(t *testing.T) {
 			r := types.Receipt{}
 			err = json.Unmarshal(res, &r)
 			require.NoError(t, err)
+			incrementalBlockReceipts = append(incrementalBlockReceipts, &r)
 			incrementalLogs = append(incrementalLogs, r.Logs...)
 		}
+		// Get the Celo block receipt. See https://docs.celo.org/developer/migrate/from-ethereum#core-contract-calls
+		res, err = rpcCall(c, dumpOutput, "eth_getBlockReceipt", blockHash.Hash)
+		require.NoError(t, err)
+		if string(res) != "null" {
+			r := types.Receipt{}
+			err = json.Unmarshal(res, &r)
+			require.NoError(t, err)
+			if len(r.Logs) > 0 {
+				// eth_getBlockReceipt generates an empty receipt when there
+				// are no logs, we want to avoid adding these here since the
+				// same is not done in eth_gethBlockReceipts, the output of
+				// which we will later compare against.
+				incrementalBlockReceipts = append(incrementalBlockReceipts, &r)
+			}
+			incrementalLogs = append(incrementalLogs, r.Logs...)
+		}
+
+		blockReceipts := types.Receipts{}
+		res, err = rpcCall(c, dumpOutput, "eth_getBlockReceipts", hexutil.EncodeUint64(i))
+		require.NoError(t, err)
+		err = json.Unmarshal(res, &blockReceipts)
+		require.NoError(t, err)
+		require.Equal(t, incrementalBlockReceipts, blockReceipts)
 	}
 
 	// Get all logs for the range and compare with the logs extracted from receipts.
-	ctx, cancel = context.WithTimeout(context.Background(), time.Second*5)
-	defer cancel()
 	from := rpc.BlockNumber(startBlock)
 	to := rpc.BlockNumber(amount + startBlock)
 	res, err := rpcCall(c, dumpOutput, "eth_getLogs", filterQuery{
