@@ -59,3 +59,4 @@ profile.cov
 logs/
 
 tests/spec-tests/
+e2e_test/debug-fee-currency/*.log
