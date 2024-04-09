@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/stretchr/testify/require"
 )
@@ -29,6 +30,14 @@ func TestCompatibilityOfChain(t *testing.T) {
 	defer cancel()
 	c, err := rpc.DialContext(ctx, "http://localhost:8545")
 	require.NoError(t, err)
+
+	ec := ethclient.NewClient(c)
+	ctx, cancel = context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	id, err := ec.ChainID(ctx)
+	require.NoError(t, err)
+	require.Greater(t, id.Uint64(), uint64(0))
+
 	startBlock := uint64(2800)
 	amount := uint64(1000)
 	incrementalLogs := make([]*types.Log, 0)
