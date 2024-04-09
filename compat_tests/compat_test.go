@@ -38,11 +38,12 @@ func TestCompatibilityOfChain(t *testing.T) {
 	require.NoError(t, err)
 	require.Greater(t, id.Uint64(), uint64(0))
 
+	var res json.RawMessage
 	startBlock := uint64(2800)
 	amount := uint64(1000)
 	incrementalLogs := make([]*types.Log, 0)
 	for i := startBlock; i <= startBlock+amount; i++ {
-		res, err := rpcCall(c, dumpOutput, "eth_getBlockByNumber", hexutil.EncodeUint64(i), true)
+		res, err = rpcCall(c, dumpOutput, "eth_getBlockByNumber", hexutil.EncodeUint64(i), true)
 		require.NoError(t, err)
 		// Check we got a block
 		require.NotEqual(t, "null", string(res), "block %d should not be null", i)
@@ -92,7 +93,7 @@ func TestCompatibilityOfChain(t *testing.T) {
 	// Get all logs for the range and compare with the logs extracted from receipts.
 	from := rpc.BlockNumber(startBlock)
 	to := rpc.BlockNumber(amount + startBlock)
-	res, err := rpcCall(c, dumpOutput, "eth_getLogs", filterQuery{
+	res, err = rpcCall(c, dumpOutput, "eth_getLogs", filterQuery{
 		FromBlock: &from,
 		ToBlock:   &to,
 	})
