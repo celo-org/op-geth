@@ -56,13 +56,19 @@ func TestCompatibilityOfChain(t *testing.T) {
 			incrementalLogs = append(incrementalLogs, r.Logs...)
 		}
 		// Get the Celo block receipt. See https://docs.celo.org/developer/migrate/from-ethereum#core-contract-calls
-		res, err = rpcCall(c, dumpOutput, "eth_getTransactionReceipt", blockHash.Hash)
+		res, err = rpcCall(c, dumpOutput, "eth_getBlockReceipt", blockHash.Hash)
 		require.NoError(t, err)
 		if string(res) != "null" {
 			r := types.Receipt{}
 			err = json.Unmarshal(res, &r)
 			require.NoError(t, err)
-			incrementalBlockReceipts = append(incrementalBlockReceipts, &r)
+			if len(r.Logs) > 0 {
+				// eth_getBlockReceipt generates an empty receipt when there
+				// are no logs, we want to avoid adding these here since the
+				// same is not done in eth_gethBlockReceipts, the output of
+				// which we will later compare against.
+				incrementalBlockReceipts = append(incrementalBlockReceipts, &r)
+			}
 			incrementalLogs = append(incrementalLogs, r.Logs...)
 		}
 

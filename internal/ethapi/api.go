@@ -1009,7 +1009,7 @@ func (s *BlockChainAPI) GetBlockReceipts(ctx context.Context, blockNrOrHash rpc.
 	result := make([]map[string]interface{}, len(receipts))
 	for i, receipt := range receipts {
 		if i == len(txs) {
-			result[i] = marshalBlockReceipt(receipt, block.Hash(), block.NumberU64(), signer, i, s.b.ChainConfig())
+			result[i] = marshalBlockReceipt(receipt, block.Hash(), block.NumberU64(), i)
 		} else {
 			result[i] = marshalReceipt(receipt, block.Hash(), block.NumberU64(), signer, txs[i], i, s.b.ChainConfig())
 		}
@@ -1993,24 +1993,6 @@ func (s *TransactionAPI) GetRawTransactionByHash(ctx context.Context, hash commo
 func (s *TransactionAPI) GetTransactionReceipt(ctx context.Context, hash common.Hash) (map[string]interface{}, error) {
 	tx, blockHash, blockNumber, index, err := s.b.GetTransaction(ctx, hash)
 	if tx == nil || err != nil {
-		block, err := s.b.BlockByHash(ctx, hash)
-		if err != nil {
-			return nil, err
-		}
-		if block != nil {
-			// User is attempting to fetch a celo block receipt. See https://docs.celo.org/developer/migrate/from-ethereum#core-contract-calls
-			receipts, err := s.b.GetReceipts(ctx, hash)
-			if err != nil {
-				return nil, err
-			}
-			if len(receipts) > 0 {
-				i := len(receipts) - 1
-				if len(receipts[i].Logs) > 0 && receipts[i].Logs[0].TxHash == hash {
-					signer := types.MakeSigner(s.b.ChainConfig(), block.Number(), block.Time())
-					return marshalBlockReceipt(receipts[i], hash, block.NumberU64(), signer, i, s.b.ChainConfig()), nil
-				}
-			}
-		}
 		// When the transaction doesn't exist, the RPC method should return JSON null
 		// as per specification.
 		return nil, nil
@@ -2087,34 +2069,6 @@ func marshalReceipt(receipt *types.Receipt, blockHash common.Hash, blockNumber u
 	if receipt.ContractAddress != (common.Address{}) {
 		fields["contractAddress"] = receipt.ContractAddress
 	}
-	return fields
-}
-
-// marshalBlockReceipt marshals a Celo block receipt into a JSON object. See https://docs.celo.org/developer/migrate/from-ethereum#core-contract-calls
-func marshalBlockReceipt(receipt *types.Receipt, blockHash common.Hash, blockNumber uint64, signer types.Signer, index int, chainConfig *params.ChainConfig) map[string]interface{} {
-
-	fields := map[string]interface{}{
-		"blockHash":         blockHash,
-		"blockNumber":       hexutil.Uint64(blockNumber),
-		"transactionHash":   blockHash,
-		"transactionIndex":  hexutil.Uint64(index),
-		"gasUsed":           hexutil.Uint64(receipt.GasUsed),
-		"cumulativeGasUsed": hexutil.Uint64(receipt.CumulativeGasUsed),
-		"logs":              receipt.Logs,
-		"logsBloom":         receipt.Bloom,
-		"effectiveGasPrice": (*hexutil.Big)(receipt.EffectiveGasPrice),
-	}
-
-	// Assign receipt status or post state.
-	if len(receipt.PostState) > 0 {
-		fields["root"] = hexutil.Bytes(receipt.PostState)
-	} else {
-		fields["status"] = hexutil.Uint(receipt.Status)
-	}
-	if receipt.Logs == nil {
-		fields["logs"] = []*types.Log{}
-	}
-
 	return fields
 }
 
