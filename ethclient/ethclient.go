@@ -28,6 +28,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
@@ -150,7 +151,7 @@ func (ec *Client) getBlock(ctx context.Context, method string, args ...interface
 	if head.UncleHash == types.EmptyUncleHash && len(body.UncleHashes) > 0 {
 		return nil, errors.New("server returned non-empty uncle list but block header indicates no uncles")
 	}
-	if head.UncleHash != types.EmptyUncleHash && len(body.UncleHashes) == 0 {
+	if head.Number.Uint64() >= params.CEL2StartBlock && head.UncleHash != types.EmptyUncleHash && len(body.UncleHashes) == 0 {
 		return nil, errors.New("server returned empty uncle list but block header indicates uncles")
 	}
 	if head.TxHash == types.EmptyTxsHash && len(body.Transactions) > 0 {
