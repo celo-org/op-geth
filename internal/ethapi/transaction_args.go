@@ -59,6 +59,9 @@ type TransactionArgs struct {
 	// Introduced by EIP-4844.
 	BlobFeeCap *hexutil.Big  `json:"maxFeePerBlobGas"`
 	BlobHashes []common.Hash `json:"blobVersionedHashes,omitempty"`
+
+	// Celo specific (CIP-64)
+	FeeCurrency *common.Address `json:"feeCurrency,omitempty"`
 }
 
 // from retrieves the transaction sender address.
@@ -336,6 +339,7 @@ func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int) (*
 		BlobGasFeeCap:     blobFeeCap,
 		BlobHashes:        args.BlobHashes,
 		SkipAccountChecks: true,
+		FeeCurrency:       args.FeeCurrency,
 	}
 	return msg, nil
 }
