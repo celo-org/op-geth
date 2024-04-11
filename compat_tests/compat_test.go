@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Jeffail/gabs"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -234,6 +235,24 @@ func rpcCall(c *rpc.Client, dumpOutput bool, method string, args ...interface{})
 			return nil, err
 		}
 		fmt.Printf("%v\n%v\n", method, dst.String())
+	}
+
+	parsed, err := gabs.ParseJSON(m)
+	if err != nil {
+		return nil, err
+	}
+	// Check to see if this is a block
+	if parsed.Exists("parentHash") && parsed.Exists("totalDifficulty") {
+		// If so delete fields we don't want to compare
+		parsed.DeleteP("gasLimit")
+		parsed.DeleteP("randomness")
+		parsed.DeleteP("uncles")
+		parsed.DeleteP("sha3Uncles")
+		parsed.DeleteP("size")
+		parsed.DeleteP("epochSnarkData")
+		parsed.DeleteP("mixHash")
+		parsed.DeleteP("nonce")
+		return parsed.Bytes(), nil
 	}
 	return m, nil
 }
