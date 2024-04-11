@@ -28,17 +28,22 @@ type blockHash struct {
 
 func TestCompatibilityOfChain(t *testing.T) {
 	dumpOutput := false
+	failOnFirstMismatch := true
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	c, err := rpc.DialContext(ctx, "http://localhost:8545")
-	require.NoError(t, err)
 
-	ec := ethclient.NewClient(c)
+	// celo-blockchain
+	c1, err := rpc.DialContext(ctx, "http://localhost:9545")
+
+	// op-geth
+	c2, err := rpc.DialContext(ctx, "http://localhost:8545")
+	require.NoError(t, err)
+	ec := ethclient.NewClient(c2)
 	ctx, cancel = context.WithTimeout(context.Background(), time.Minute*5)
 	defer cancel()
-	id, err := ec.ChainID(ctx)
+	id2, err := ec.ChainID(ctx)
 	require.NoError(t, err)
-	require.Greater(t, id.Uint64(), uint64(0))
+	require.Greater(t, id2.Uint64(), uint64(0))
 
 	var res json.RawMessage
 	startBlock := uint64(2800)
@@ -81,7 +86,7 @@ func TestCompatibilityOfChain(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, bbMarshalled, b2bMarshalled)
 
-		res, err = rpcCall(c, dumpOutput, "eth_getBlockByNumber", hexutil.EncodeUint64(i), true)
+		res, err = rpcCallCompare(t, c1, c2, dumpOutput, failOnFirstMismatch, "eth_getBlockByNumber", hexutil.EncodeUint64(i), true)
 		require.NoError(t, err)
 		// Check we got a block
 		require.NotEqual(t, "null", string(res), "block %d should not be null", i)
@@ -105,9 +110,9 @@ func TestCompatibilityOfChain(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, tx.Hash(), tx2.Hash())
 
-			_, err = rpcCall(c, dumpOutput, "eth_getTransactionByHash", tx.Hash())
+			_, err = rpcCallCompare(t, c1, c2, dumpOutput, failOnFirstMismatch, "eth_getTransactionByHash", tx.Hash())
 			require.NoError(t, err)
-			res, err = rpcCall(c, dumpOutput, "eth_getTransactionReceipt", tx.Hash())
+			res, err = rpcCallCompare(t, c1, c2, dumpOutput, failOnFirstMismatch, "eth_getTransactionReceipt", tx.Hash())
 			require.NoError(t, err)
 			r := types.Receipt{}
 			err = json.Unmarshal(res, &r)
@@ -122,7 +127,7 @@ func TestCompatibilityOfChain(t *testing.T) {
 			incrementalLogs = append(incrementalLogs, r.Logs...)
 		}
 		// Get the Celo block receipt. See https://docs.celo.org/developer/migrate/from-ethereum#core-contract-calls
-		res, err = rpcCall(c, dumpOutput, "eth_getBlockReceipt", blockHash.Hash)
+		res, err = rpcCallCompare(t, c1, c2, dumpOutput, failOnFirstMismatch, "eth_getBlockReceipt", blockHash.Hash)
 		require.NoError(t, err)
 		if string(res) != "null" {
 			r := types.Receipt{}
@@ -139,7 +144,7 @@ func TestCompatibilityOfChain(t *testing.T) {
 		}
 
 		blockReceipts := types.Receipts{}
-		res, err = rpcCall(c, dumpOutput, "eth_getBlockReceipts", hexutil.EncodeUint64(i))
+		res, err = rpcCallCompare(t, c1, c2, dumpOutput, failOnFirstMismatch, "eth_getBlockReceipts", hexutil.EncodeUint64(i))
 		require.NoError(t, err)
 		err = json.Unmarshal(res, &blockReceipts)
 		require.NoError(t, err)
@@ -149,7 +154,7 @@ func TestCompatibilityOfChain(t *testing.T) {
 	// Get all logs for the range and compare with the logs extracted from receipts.
 	from := rpc.BlockNumber(startBlock)
 	to := rpc.BlockNumber(amount + startBlock)
-	res, err = rpcCall(c, dumpOutput, "eth_getLogs", filterQuery{
+	res, err = rpcCallCompare(t, c1, c2, dumpOutput, failOnFirstMismatch, "eth_getLogs", filterQuery{
 		FromBlock: &from,
 		ToBlock:   &to,
 	})
@@ -179,6 +184,39 @@ type filterQuery struct {
 	ToBlock   *rpc.BlockNumber `json:"toBlock"`
 	Addresses interface{}      `json:"address"`
 	Topics    []interface{}    `json:"topics"`
+}
+
+// TODO (Alec)
+func rpcCallCompare(t *testing.T, c1, c2 *rpc.Client, dumpOutput, failOnFirstMismatch bool, method string, args ...interface{}) (json.RawMessage, error) {
+
+	res1, err := rpcCall(c1, dumpOutput, method, args...)
+	if err != nil {
+		return nil, err
+	}
+	res2, err := rpcCall(c2, dumpOutput, method, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	dst1 := &bytes.Buffer{}
+	err = json.Indent(dst1, res1, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	dst2 := &bytes.Buffer{}
+	err = json.Indent(dst2, res2, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+
+	if dst1.String() != dst2.String() {
+		fmt.Printf("\nmethod: %v\nexpected (c1):\n%v,\nactual (c2):\n%v\n", method, dst1.String(), dst2.String())
+		if failOnFirstMismatch {
+			require.JSONEq(t, dst1.String(), dst2.String())
+		}
+	}
+
+	return res2, nil
 }
 
 func rpcCall(c *rpc.Client, dumpOutput bool, method string, args ...interface{}) (json.RawMessage, error) {
