@@ -7,7 +7,6 @@ import (
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 )
 
@@ -64,17 +63,4 @@ func (b *CeloBackend) NewEVM() *vm.EVM {
 	txCtx := vm.TxContext{}
 	vmConfig := vm.Config{}
 	return vm.NewEVM(blockCtx, txCtx, b.State, b.ChainConfig, vmConfig)
-}
-
-// GetFeeBalance returns the account's balance from the specified feeCurrency
-// (if feeCurrency is nil or ZeroAddress, native currency balance is returned).
-func (b *CeloBackend) GetFeeBalance(account common.Address, feeCurrency *common.Address) *big.Int {
-	if feeCurrency == nil || *feeCurrency == common.ZeroAddress {
-		return b.State.GetBalance(account)
-	}
-	balance, err := GetBalanceERC20(b, account, *feeCurrency)
-	if err != nil {
-		log.Error("Error while trying to get ERC20 balance:", "cause", err, "contract", feeCurrency.Hex(), "account", account.Hex())
-	}
-	return balance
 }
