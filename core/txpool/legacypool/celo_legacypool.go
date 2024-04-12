@@ -25,7 +25,7 @@ func (pool *LegacyPool) filter(list *list, addr common.Address, gasLimit uint64)
 func (pool *LegacyPool) getBalances(address common.Address, currencies []common.Address) map[common.Address]*big.Int {
 	balances := make(map[common.Address]*big.Int, len(currencies))
 	for _, curr := range currencies {
-		balances[curr] = pool.celoBackend.GetFeeBalance(address, &curr)
+		balances[curr] = contracts.GetFeeBalance(pool.celoBackend, address, &curr)
 	}
 	return balances
 }
@@ -35,7 +35,7 @@ func (pool *LegacyPool) recreateCeloProperties() {
 		ChainConfig: pool.chainconfig,
 		State:       pool.currentState,
 	}
-	currentRates, err := pool.celoBackend.GetExchangeRates()
+	currentRates, err := contracts.GetExchangeRates(pool.celoBackend)
 	if err != nil {
 		log.Error("Error trying to get exchange rates in txpool.", "cause", err)
 	}
