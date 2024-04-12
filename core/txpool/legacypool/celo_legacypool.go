@@ -35,7 +35,7 @@ func (pool *LegacyPool) recreateCeloProperties() {
 		ChainConfig: pool.chainconfig,
 		State:       pool.currentState,
 	}
-	currentRates, err := pool.celoBackend.GetExchangeRates()
+	currentRates, err := contracts.GetExchangeRates(pool.celoBackend)
 	if err != nil {
 		log.Error("Error trying to get exchange rates in txpool.", "cause", err)
 	}

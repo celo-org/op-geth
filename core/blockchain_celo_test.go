@@ -115,7 +115,7 @@ func testNativeTransferWithFeeCurrency(t *testing.T, scheme string, feeCurrencyA
 		ChainConfig: chain.chainConfig,
 		State:       state,
 	}
-	exchangeRates, err := backend.GetExchangeRates()
+	exchangeRates, err := contracts.GetExchangeRates(&backend)
 	if err != nil {
 		t.Fatal("could not get exchange rates")
 	}

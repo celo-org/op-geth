@@ -1,9 +1,11 @@
 package contracts
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/contracts/celo/abigen"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -102,4 +104,36 @@ func CreditFees(
 	gasUsed := maxGasForCreditGasFeesTransactions - leftoverGas
 	log.Trace("CreditFees called", "feeCurrency", *feeCurrency, "gasUsed", gasUsed)
 	return err
+}
+
+// GetExchangeRates returns the exchange rates for all gas currencies from CELO
+func GetExchangeRates(caller bind.ContractCaller) (common.ExchangeRates, error) {
+	exchangeRates := map[common.Address]*big.Rat{}
+	whitelist, err := abigen.NewFeeCurrencyWhitelistCaller(FeeCurrencyWhitelistAddress, caller)
+	if err != nil {
+		return exchangeRates, fmt.Errorf("Failed to access FeeCurrencyWhitelist: %w", err)
+	}
+	oracle, err := abigen.NewSortedOraclesCaller(SortedOraclesAddress, caller)
+	if err != nil {
+		return exchangeRates, fmt.Errorf("Failed to access SortedOracle: %w", err)
+	}
+
+	whitelistedTokens, err := whitelist.GetWhitelist(&bind.CallOpts{})
+	if err != nil {
+		return exchangeRates, fmt.Errorf("Failed to get whitelisted tokens: %w", err)
+	}
+	for _, tokenAddress := range whitelistedTokens {
+		numerator, denominator, err := oracle.MedianRate(&bind.CallOpts{}, tokenAddress)
+		if err != nil {
+			log.Error("Failed to get medianRate for gas currency!", "err", err, "tokenAddress", tokenAddress.Hex())
+			continue
+		}
+		if denominator.Sign() == 0 {
+			log.Error("Bad exchange rate for fee currency", "tokenAddress", tokenAddress.Hex(), "numerator", numerator, "denominator", denominator)
+			continue
+		}
+		exchangeRates[tokenAddress] = big.NewRat(numerator.Int64(), denominator.Int64())
+	}
+
+	return exchangeRates, nil
 }

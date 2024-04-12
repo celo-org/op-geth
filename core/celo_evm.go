@@ -17,7 +17,7 @@ func setCeloFieldsInBlockContext(blockContext *vm.BlockContext, header *types.He
 
 	// Add fee currency exchange rates
 	var err error
-	blockContext.ExchangeRates, err = caller.GetExchangeRates()
+	blockContext.ExchangeRates, err = contracts.GetExchangeRates(caller)
 	if err != nil {
 		log.Error("Error fetching exchange rates!", "err", err)
 	}
