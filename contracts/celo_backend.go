@@ -96,35 +96,3 @@ func (b *CeloBackend) GetFeeBalance(account common.Address, feeCurrency *common.
 	}
 	return balance
 }
-
-// GetExchangeRates returns the exchange rates for all gas currencies from CELO
-func (b *CeloBackend) GetExchangeRates() (common.ExchangeRates, error) {
-	exchangeRates := map[common.Address]*big.Rat{}
-	whitelist, err := abigen.NewFeeCurrencyWhitelistCaller(FeeCurrencyWhitelistAddress, b)
-	if err != nil {
-		return exchangeRates, fmt.Errorf("Failed to access FeeCurrencyWhitelist: %w", err)
-	}
-	oracle, err := abigen.NewSortedOraclesCaller(SortedOraclesAddress, b)
-	if err != nil {
-		return exchangeRates, fmt.Errorf("Failed to access SortedOracle: %w", err)
-	}
-
-	whitelistedTokens, err := whitelist.GetWhitelist(&bind.CallOpts{})
-	if err != nil {
-		return exchangeRates, fmt.Errorf("Failed to get whitelisted tokens: %w", err)
-	}
-	for _, tokenAddress := range whitelistedTokens {
-		numerator, denominator, err := oracle.MedianRate(&bind.CallOpts{}, tokenAddress)
-		if err != nil {
-			log.Error("Failed to get medianRate for gas currency!", "err", err, "tokenAddress", tokenAddress.Hex())
-			continue
-		}
-		if denominator.Sign() == 0 {
-			log.Error("Bad exchange rate for fee currency", "tokenAddress", tokenAddress.Hex(), "numerator", numerator, "denominator", denominator)
-			continue
-		}
-		exchangeRates[tokenAddress] = big.NewRat(numerator.Int64(), denominator.Int64())
-	}
-
-	return exchangeRates, nil
-}
