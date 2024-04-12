@@ -348,7 +348,7 @@ func (st *StateTransition) canPayFee(checkAmount *big.Int) error {
 			ChainConfig: st.evm.ChainConfig(),
 			State:       st.state,
 		}
-		balance, err := backend.GetBalanceERC20(st.msg.From, *st.msg.FeeCurrency)
+		balance, err := contracts.GetBalanceERC20(backend, st.msg.From, *st.msg.FeeCurrency)
 		if err != nil {
 			return err
 		}

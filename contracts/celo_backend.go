@@ -2,13 +2,10 @@ package contracts
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/contracts/celo/abigen"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
@@ -69,28 +66,13 @@ func (b *CeloBackend) NewEVM() *vm.EVM {
 	return vm.NewEVM(blockCtx, txCtx, b.State, b.ChainConfig, vmConfig)
 }
 
-// GetBalanceERC20 returns an account's balance on a given ERC20 currency
-func (b *CeloBackend) GetBalanceERC20(accountOwner common.Address, contractAddress common.Address) (result *big.Int, err error) {
-	token, err := abigen.NewFeeCurrencyCaller(contractAddress, b)
-	if err != nil {
-		return nil, fmt.Errorf("failed to access FeeCurrency: %w", err)
-	}
-
-	balance, err := token.BalanceOf(&bind.CallOpts{}, accountOwner)
-	if err != nil {
-		return nil, err
-	}
-
-	return balance, nil
-}
-
 // GetFeeBalance returns the account's balance from the specified feeCurrency
 // (if feeCurrency is nil or ZeroAddress, native currency balance is returned).
 func (b *CeloBackend) GetFeeBalance(account common.Address, feeCurrency *common.Address) *big.Int {
 	if feeCurrency == nil || *feeCurrency == common.ZeroAddress {
 		return b.State.GetBalance(account)
 	}
-	balance, err := b.GetBalanceERC20(account, *feeCurrency)
+	balance, err := GetBalanceERC20(b, account, *feeCurrency)
 	if err != nil {
 		log.Error("Error while trying to get ERC20 balance:", "cause", err, "contract", feeCurrency.Hex(), "account", account.Hex())
 	}

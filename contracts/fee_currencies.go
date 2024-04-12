@@ -137,3 +137,18 @@ func GetExchangeRates(caller bind.ContractCaller) (common.ExchangeRates, error) 
 
 	return exchangeRates, nil
 }
+
+// GetBalanceERC20 returns an account's balance on a given ERC20 currency
+func GetBalanceERC20(caller bind.ContractCaller, accountOwner common.Address, contractAddress common.Address) (result *big.Int, err error) {
+	token, err := abigen.NewFeeCurrencyCaller(contractAddress, caller)
+	if err != nil {
+		return nil, fmt.Errorf("failed to access FeeCurrency: %w", err)
+	}
+
+	balance, err := token.BalanceOf(&bind.CallOpts{}, accountOwner)
+	if err != nil {
+		return nil, err
+	}
+
+	return balance, nil
+}
