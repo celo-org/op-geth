@@ -103,3 +103,7 @@ func (tx *DepositTx) decode(input []byte) error {
 }
 
 func (tx *DepositTx) feeCurrency() *common.Address { return nil }
+
+func (tx *DepositTx) gatewayFeeRecipient() *common.Address { return nil }
+
+func (tx *DepositTx) gatewayFee() *big.Int { return nil }

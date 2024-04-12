@@ -130,3 +130,7 @@ func (tx *AccessListTx) decode(input []byte) error {
 }
 
 func (tx *AccessListTx) feeCurrency() *common.Address { return nil }
+
+func (tx *AccessListTx) gatewayFeeRecipient() *common.Address { return nil }
+
+func (tx *AccessListTx) gatewayFee() *big.Int { return nil }

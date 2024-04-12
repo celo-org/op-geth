@@ -247,3 +247,7 @@ func blobHash(commit *kzg4844.Commitment) common.Hash {
 }
 
 func (tx *BlobTx) feeCurrency() *common.Address { return nil }
+
+func (tx *BlobTx) gatewayFeeRecipient() *common.Address { return nil }
+
+func (tx *BlobTx) gatewayFee() *big.Int { return nil }

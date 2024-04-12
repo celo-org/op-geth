@@ -115,3 +115,7 @@ func (tx *CeloDynamicFeeTx) decode(input []byte) error {
 }
 
 func (tx *CeloDynamicFeeTx) feeCurrency() *common.Address { return tx.FeeCurrency }
+
+func (tx *CeloDynamicFeeTx) gatewayFeeRecipient() *common.Address { return nil }
+
+func (tx *CeloDynamicFeeTx) gatewayFee() *big.Int { return nil }

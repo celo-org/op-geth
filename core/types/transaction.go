@@ -107,6 +107,9 @@ type TxData interface {
 
 	// Celo specific fields
 	feeCurrency() *common.Address
+	// legacy fields
+	gatewayFeeRecipient() *common.Address
+	gatewayFee() *big.Int
 }
 
 // EncodeRLP implements rlp.Encoder
@@ -604,6 +607,16 @@ func (tx *Transaction) WithSignature(signer Signer, sig []byte) (*Transaction, e
 // FeeCurrency returns the fee currency of the transaction. Nil implies paying in CELO.
 func (tx *Transaction) FeeCurrency() *common.Address {
 	return copyAddressPtr(tx.inner.feeCurrency())
+}
+
+// GasPrice returns the gas price of the transaction.
+func (tx *Transaction) GatewayFeeRecipient() *common.Address {
+	return copyAddressPtr(tx.inner.gatewayFeeRecipient())
+}
+
+// GasPrice returns the gas price of the transaction.
+func (tx *Transaction) GatewayFee() *big.Int {
+	return new(big.Int).Set(tx.inner.gatewayFee())
 }
 
 // Transactions implements DerivableList for transactions.

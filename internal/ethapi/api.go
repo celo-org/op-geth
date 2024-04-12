@@ -1578,7 +1578,9 @@ type RPCTransaction struct {
 	DepositReceiptVersion *hexutil.Uint64 `json:"depositReceiptVersion,omitempty"`
 
 	// Celo
-	FeeCurrency *common.Address `json:"feeCurrency,omitempty"`
+	FeeCurrency         *common.Address `json:"feeCurrency,omitempty"`
+	GatewayFeeRecipient *common.Address `json:"gatewayFeeRecipient,omitempty"`
+	GatewayFee          *hexutil.Big    `json:"gatewayFee,omitempty"`
 }
 
 // newRPCTransaction returns a transaction that will serialize to the RPC
@@ -1601,7 +1603,9 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 		R:        (*hexutil.Big)(r),
 		S:        (*hexutil.Big)(s),
 		// Celo
-		FeeCurrency: tx.FeeCurrency(),
+		FeeCurrency:         tx.FeeCurrency(),
+		GatewayFeeRecipient: tx.GatewayFeeRecipient(),
+		GatewayFee:          (*hexutil.Big)(tx.GatewayFee()),
 	}
 	if blockHash != (common.Hash{}) {
 		result.BlockHash = &blockHash
