@@ -229,7 +229,7 @@ func TransactionToMessage(tx *types.Transaction, s types.Signer, baseFee *big.In
 // indicates a core error meaning that the message would always fail for that particular
 // state and would never be accepted within a block.
 func ApplyMessage(evm *vm.EVM, msg *Message, gp *GasPool) (*ExecutionResult, error) {
-	log.Trace("Applying state transition message", "from", msg.From, "nonce", msg.Nonce, "to", msg.To, "gas price", msg.GasPrice, "fee currency", msg.FeeCurrency, "gas", msg.GasLimit, "value", msg.Value, "data", msg.Data)
+	log.Trace("Applying state transition message", "from", msg.From, "nonce", msg.Nonce, "to", msg.To, "gasPrice", msg.GasPrice, "feeCurrency", msg.FeeCurrency, "gas", msg.GasLimit, "value", msg.Value, "data", msg.Data)
 	return NewStateTransition(evm, msg, gp).TransitionDb()
 }
 
