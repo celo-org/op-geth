@@ -159,7 +159,7 @@ describe("viem send tx", () => {
 		assert.equal(BigInt(block.baseFeePerGas) + maxPriorityFeePerGasNative, gasPriceNative)
 
 		// viem's getGasPrice does not expose additional request parameters,
-		// but Celos override 'chain.fees.estimateFeesPerGas' action does. 
+		// but Celo's override 'chain.fees.estimateFeesPerGas' action does. 
 		// this will call the eth_gasPrice and eth_maxPriorityFeePerGas methods
 		// with the additional feeCurrency parameter internally
 		var fees = await publicClient.estimateFeesPerGas({
