@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/exchange"
 	"github.com/ethereum/go-ethereum/contracts/celo/abigen"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
@@ -33,10 +34,17 @@ func init() {
 }
 
 // Returns nil if debit is possible, used in tx pool validation
-func TryDebitFees(tx *types.Transaction, from common.Address, backend *CeloBackend) error {
+func TryDebitFees(tx *types.Transaction, from common.Address, backend *CeloBackend, exchangeRates common.ExchangeRates) error {
 	amount := new(big.Int).SetUint64(tx.Gas())
 	amount.Mul(amount, tx.GasFeeCap())
 
+	if tx.Type() == types.CeloDenominatedTxType {
+		var err error
+		amount, err = exchange.ConvertGoldToCurrency(exchangeRates, tx.FeeCurrency(), amount)
+		if err != nil {
+			return err
+		}
+	}
 	snapshot := backend.State.Snapshot()
 	err := DebitFees(backend.NewEVM(), tx.FeeCurrency(), from, amount)
 	backend.State.RevertToSnapshot(snapshot)

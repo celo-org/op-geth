@@ -612,7 +612,22 @@ func (tx *Transaction) FeeCurrency() *common.Address {
 
 // MaxFeeInFeeCurrency returns the max fee in the fee_currency for celo denominated txs.
 func (tx *Transaction) MaxFeeInFeeCurrency() *big.Int {
-	return new(big.Int).Set(tx.inner.maxFeeInFeeCurrency())
+	maxFee := tx.inner.maxFeeInFeeCurrency()
+	if maxFee == nil {
+		return nil
+	}
+	return new(big.Int).Set(maxFee)
+}
+
+// DenominatedFeeCurrency returns in which currency the fields GasPrice, GasTipCap, GasFeeCap, etc are
+// denominated in
+func (tx *Transaction) DenominatedFeeCurrency() *common.Address {
+	// not declaring this method in TxData since it's a specific for just one type,
+	// to avoid cluttering it with more methods.
+	if tx.Type() == CeloDenominatedTxType {
+		return nil
+	}
+	return tx.FeeCurrency()
 }
 
 // Transactions implements DerivableList for transactions.

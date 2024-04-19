@@ -692,7 +692,7 @@ func (pool *LegacyPool) validateTx(tx *types.Transaction, local bool) error {
 			log.Error("Transaction sender recovery failed", "err", err)
 			return err
 		}
-		return contracts.TryDebitFees(tx, from, pool.celoBackend)
+		return contracts.TryDebitFees(tx, from, pool.celoBackend, pool.currentRates)
 	}
 	return nil
 }

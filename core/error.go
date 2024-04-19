@@ -110,4 +110,14 @@ var (
 
 	// ErrCel2NotEnabled is returned if a feature requires the Cel2 fork, but that is not enabled.
 	ErrCel2NotEnabled = errors.New("required cel2 fork not enabled")
+
+	// ErrDenominatedNoMax is returned when a transaction containing a fee currency has no maxFeeInFeeCurrency set.
+	ErrDenominatedNoMax = errors.New("CELO denominated tx has no maxFeeInFeeCurrency")
+
+	// ErrDenominatedNoCurrency is returned when a celo-denominated transaction has no fee currency set
+	ErrDenominatedNoCurrency = errors.New("CELO denominated tx has no fee currency")
+
+	// ErrDenominatedLowMaxFee is returned when a celo denominated transaction, with the current exchange rate,
+	// the MaxFeeInFeeCurrency cannot cover the tx.Fee()
+	ErrDenominatedLowMaxFee = errors.New("CELO denominated tx MaxFeeInCurrency cannot cover gas fee costs")
 )
