@@ -105,10 +105,6 @@ type TxData interface {
 
 	encode(*bytes.Buffer) error
 	decode([]byte) error
-
-	// Celo specific fields
-	feeCurrency() *common.Address
-	maxFeeInFeeCurrency() *big.Int
 }
 
 // EncodeRLP implements rlp.Encoder
@@ -622,21 +618,6 @@ func (tx *Transaction) WithSignature(signer Signer, sig []byte) (*Transaction, e
 	cpy := tx.inner.copy()
 	cpy.setSignatureValues(signer.ChainID(), v, r, s)
 	return &Transaction{inner: cpy, time: tx.time}, nil
-}
-
-// FeeCurrency returns the fee currency of the transaction. Nil implies paying in CELO.
-func (tx *Transaction) FeeCurrency() *common.Address {
-	return copyAddressPtr(tx.inner.feeCurrency())
-}
-
-// MaxFeeInFeeCurrency is only used to guard against very quickly changing exchange rates.
-// Txs must be discarded if MaxFeeInFeeCurrency is exceeded.
-func (tx *Transaction) MaxFeeInFeeCurrency() *big.Int {
-	mfifc := tx.inner.maxFeeInFeeCurrency()
-	if mfifc == nil {
-		return nil
-	}
-	return new(big.Int).Set(mfifc)
 }
 
 // Transactions implements DerivableList for transactions.
