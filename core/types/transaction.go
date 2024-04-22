@@ -50,9 +50,6 @@ const (
 	AccessListTxType = 0x01
 	DynamicFeeTxType = 0x02
 	BlobTxType       = 0x03
-	// CeloDynamicFeeTxType = 0x7c  old Celo tx type with gateway fee
-	CeloDynamicFeeTxType  = 0x7b
-	CeloDenominatedTxType = 0x7a
 )
 
 // Transaction is an Ethereum transaction.
