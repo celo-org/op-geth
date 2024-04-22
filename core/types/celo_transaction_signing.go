@@ -85,7 +85,7 @@ func (s cel2Signer) Hash(tx *Transaction) common.Hash {
 				tx.Value(),
 				tx.Data(),
 				tx.AccessList(),
-				tx.FeeCurrency(),
+				tx.inner.(*CeloDynamicFeeTx).FeeCurrency,
 			})
 	}
 	return s.londonSigner.Hash(tx)
