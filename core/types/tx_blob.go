@@ -245,5 +245,3 @@ func blobHash(commit *kzg4844.Commitment) common.Hash {
 	vhash[0] = params.BlobTxHashVersion
 	return vhash
 }
-
-func (tx *BlobTx) feeCurrency() *common.Address { return nil }
