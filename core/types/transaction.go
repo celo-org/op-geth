@@ -203,16 +203,17 @@ func (tx *Transaction) decodeTyped(b []byte) (TxData, error) {
 	if len(b) <= 1 {
 		return nil, errShortTypedTx
 	}
+
+	if inner, isCelo, err := celoDecodeTyped(b); isCelo {
+		return inner, err
+	}
+
 	var inner TxData
 	switch b[0] {
 	case AccessListTxType:
 		inner = new(AccessListTx)
 	case DynamicFeeTxType:
 		inner = new(DynamicFeeTx)
-	case CeloDynamicFeeTxType:
-		inner = new(CeloDynamicFeeTx)
-	case CeloDenominatedTxType:
-		inner = new(CeloDenominatedTx)
 	case BlobTxType:
 		inner = new(BlobTx)
 	case DepositTxType:
