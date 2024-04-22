@@ -17,16 +17,16 @@ func CompareWithRates(a, b *Transaction, ratesAndFees *exchange.RatesAndFees) in
 	}
 	rates := ratesAndFees.Rates
 	if ratesAndFees.HasBaseFee() {
-		tipA := a.EffectiveGasTipValue(ratesAndFees.GetBaseFeeIn(a.inner.feeCurrency()))
-		tipB := b.EffectiveGasTipValue(ratesAndFees.GetBaseFeeIn(b.inner.feeCurrency()))
-		c, _ := exchange.CompareValue(rates, tipA, a.inner.feeCurrency(), tipB, b.inner.feeCurrency())
+		tipA := a.EffectiveGasTipValue(ratesAndFees.GetBaseFeeIn(a.FeeCurrency()))
+		tipB := b.EffectiveGasTipValue(ratesAndFees.GetBaseFeeIn(b.FeeCurrency()))
+		c, _ := exchange.CompareValue(rates, tipA, a.FeeCurrency(), tipB, b.FeeCurrency())
 		return c
 	}
 
 	// Compare fee caps if baseFee is not specified or effective tips are equal
 	feeA := a.inner.gasFeeCap()
 	feeB := b.inner.gasFeeCap()
-	c, _ := exchange.CompareValue(rates, feeA, a.inner.feeCurrency(), feeB, b.inner.feeCurrency())
+	c, _ := exchange.CompareValue(rates, feeA, a.FeeCurrency(), feeB, b.FeeCurrency())
 	if c != 0 {
 		return c
 	}
@@ -34,6 +34,6 @@ func CompareWithRates(a, b *Transaction, ratesAndFees *exchange.RatesAndFees) in
 	// Compare tips if effective tips and fee caps are equal
 	tipCapA := a.inner.gasTipCap()
 	tipCapB := b.inner.gasTipCap()
-	c, _ = exchange.CompareValue(rates, tipCapA, a.inner.feeCurrency(), tipCapB, b.inner.feeCurrency())
+	c, _ = exchange.CompareValue(rates, tipCapA, a.FeeCurrency(), tipCapB, b.FeeCurrency())
 	return c
 }
