@@ -4,6 +4,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/exchange"
 	"github.com/ethereum/go-ethereum/contracts"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
@@ -40,4 +41,38 @@ func (pool *LegacyPool) recreateCeloProperties() {
 		log.Error("Error trying to get exchange rates in txpool.", "cause", err)
 	}
 	pool.currentRates = currentRates
+}
+
+// compareWithRates compares the effective gas price of two transactions according to the exchange rates and
+// the base fees in the transactions currencies.
+func compareWithRates(a, b *types.Transaction, ratesAndFees *exchange.RatesAndFees) int {
+	if ratesAndFees == nil {
+		// During node startup the ratesAndFees might not be yet setup, compare nominally
+		feeCapCmp := a.GasFeeCapCmp(b)
+		if feeCapCmp != 0 {
+			return feeCapCmp
+		}
+		return a.GasTipCapCmp(b)
+	}
+	rates := ratesAndFees.Rates
+	if ratesAndFees.HasBaseFee() {
+		tipA := a.EffectiveGasTipValue(ratesAndFees.GetBaseFeeIn(a.FeeCurrency()))
+		tipB := b.EffectiveGasTipValue(ratesAndFees.GetBaseFeeIn(b.FeeCurrency()))
+		c, _ := exchange.CompareValue(rates, tipA, a.FeeCurrency(), tipB, b.FeeCurrency())
+		return c
+	}
+
+	// Compare fee caps if baseFee is not specified or effective tips are equal
+	feeA := a.GasFeeCap()
+	feeB := b.GasFeeCap()
+	c, _ := exchange.CompareValue(rates, feeA, a.FeeCurrency(), feeB, b.FeeCurrency())
+	if c != 0 {
+		return c
+	}
+
+	// Compare tips if effective tips and fee caps are equal
+	tipCapA := a.GasTipCap()
+	tipCapB := b.GasTipCap()
+	c, _ = exchange.CompareValue(rates, tipCapA, a.FeeCurrency(), tipCapB, b.FeeCurrency())
+	return c
 }

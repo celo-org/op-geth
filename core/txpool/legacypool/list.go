@@ -503,7 +503,7 @@ func (h *priceHeap) Less(i, j int) bool {
 }
 
 func (h *priceHeap) cmp(a, b *types.Transaction) int {
-	return types.CompareWithRates(a, b, h.ratesAndFees)
+	return compareWithRates(a, b, h.ratesAndFees)
 }
 
 func (h *priceHeap) Push(x interface{}) {
