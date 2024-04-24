@@ -20,7 +20,22 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/params"
 )
+
+func makeCeloSigner(config *params.ChainConfig, blockNumber *big.Int, blockTime uint64) (Signer, bool) {
+	if config.IsCel2(blockTime) {
+		return NewCel2Signer(config.ChainID), true
+	}
+	return nil, false
+}
+
+func latestCeloSigner(config *params.ChainConfig) (Signer, bool) {
+	if config.ChainID != nil && config.Cel2Time != nil {
+		return NewCel2Signer(config.ChainID), true
+	}
+	return nil, false
+}
 
 type cel2Signer struct{ londonSigner }
 
