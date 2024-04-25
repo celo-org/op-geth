@@ -38,7 +38,6 @@ type sigCache struct {
 
 // MakeSigner returns a Signer based on the given chain config and block number.
 func MakeSigner(config *params.ChainConfig, blockNumber *big.Int, blockTime uint64) Signer {
-
 	if signer, isCelo := makeCeloSigner(config, blockNumber, blockTime); isCelo {
 		return signer
 	}
@@ -69,7 +68,6 @@ func MakeSigner(config *params.ChainConfig, blockNumber *big.Int, blockTime uint
 // Use this in transaction-handling code where the current block number is unknown. If you
 // have the current block number available, use MakeSigner instead.
 func LatestSigner(config *params.ChainConfig) Signer {
-
 	if signer, isCelo := latestCeloSigner(config); isCelo {
 		return signer
 	}
