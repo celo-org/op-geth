@@ -84,7 +84,7 @@ func (args *TransactionArgs) data() []byte {
 }
 
 // setDefaults fills in default values for unspecified tx fields.
-func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend) error {
+func (args *TransactionArgs) setDefaults(ctx context.Context, b CeloBackend) error {
 	if err := args.setFeeDefaults(ctx, b); err != nil {
 		return err
 	}
@@ -147,7 +147,7 @@ func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend) error {
 }
 
 // setFeeDefaults fills in default fee values for unspecified tx fields.
-func (args *TransactionArgs) setFeeDefaults(ctx context.Context, b Backend) error {
+func (args *TransactionArgs) setFeeDefaults(ctx context.Context, b CeloBackend) error {
 	// If both gasPrice and at least one of the EIP-1559 fee parameters are specified, error.
 	if args.GasPrice != nil && (args.MaxFeePerGas != nil || args.MaxPriorityFeePerGas != nil) {
 		return errors.New("both gasPrice and (maxFeePerGas or maxPriorityFeePerGas) specified")
@@ -211,7 +211,7 @@ func (args *TransactionArgs) setFeeDefaults(ctx context.Context, b Backend) erro
 }
 
 // setCancunFeeDefaults fills in reasonable default fee values for unspecified fields.
-func (args *TransactionArgs) setCancunFeeDefaults(ctx context.Context, head *types.Header, b Backend) error {
+func (args *TransactionArgs) setCancunFeeDefaults(ctx context.Context, head *types.Header, b CeloBackend) error {
 	// Set maxFeePerBlobGas if it is missing.
 	if args.BlobHashes != nil && args.BlobFeeCap == nil {
 		// ExcessBlobGas must be set for a Cancun block.
@@ -226,7 +226,7 @@ func (args *TransactionArgs) setCancunFeeDefaults(ctx context.Context, head *typ
 }
 
 // setLondonFeeDefaults fills in reasonable default fee values for unspecified fields.
-func (args *TransactionArgs) setLondonFeeDefaults(ctx context.Context, head *types.Header, b Backend) error {
+func (args *TransactionArgs) setLondonFeeDefaults(ctx context.Context, head *types.Header, b CeloBackend) error {
 	// Set maxPriorityFeePerGas if it is missing.
 	if args.MaxPriorityFeePerGas == nil {
 		tip, err := b.SuggestGasTipCap(ctx)

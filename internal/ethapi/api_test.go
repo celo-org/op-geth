@@ -562,22 +562,64 @@ func allBlobTxs(addr common.Address, config *params.ChainConfig) []txData {
 	}
 }
 
+var errCeloNotImplemented error = errors.New("Celo backend test functionality not implemented")
+
+type celoTestBackend struct {
+	*testBackend
+}
+
+func (c *celoTestBackend) GetFeeBalance(ctx context.Context, atBlock common.Hash, account common.Address, feeCurrency *common.Address) (*big.Int, error) {
+	if feeCurrency == nil {
+		header, err := c.HeaderByHash(ctx, atBlock)
+		if err != nil {
+			return nil, fmt.Errorf("retrieve header by hash in testBackend: %w", err)
+		}
+
+		state, _, err := c.StateAndHeaderByNumber(ctx, rpc.BlockNumber(header.Number.Int64()))
+		if err != nil {
+			return nil, err
+		}
+		return state.GetBalance(account), nil
+	}
+	// Celo specific backend features are currently not tested
+	return nil, errCeloNotImplemented
+}
+
+func (c *celoTestBackend) GetExchangeRates(ctx context.Context, atBlock common.Hash) (common.ExchangeRates, error) {
+	var er common.ExchangeRates
+	return er, nil
+}
+
+func (c *celoTestBackend) ConvertToCurrency(ctx context.Context, atBlock common.Hash, value *big.Int, feeCurrency *common.Address) (*big.Int, error) {
+	if feeCurrency == nil {
+		return value, nil
+	}
+	// Celo specific backend features are currently not tested
+	return nil, errCeloNotImplemented
+}
+
+func (c *celoTestBackend) ConvertToGold(ctx context.Context, atBlock common.Hash, value *big.Int, feeCurrency *common.Address) (*big.Int, error) {
+	if feeCurrency == nil {
+		return value, nil
+	}
+	// Celo specific backend features are currently not tested
+	return nil, errCeloNotImplemented
+}
+
 type testBackend struct {
 	db      ethdb.Database
 	chain   *core.BlockChain
 	pending *types.Block
 }
 
-func newTestBackend(t *testing.T, n int, gspec *core.Genesis, engine consensus.Engine, generator func(i int, b *core.BlockGen)) *testBackend {
-	var (
-		cacheConfig = &core.CacheConfig{
-			TrieCleanLimit:    256,
-			TrieDirtyLimit:    256,
-			TrieTimeLimit:     5 * time.Minute,
-			SnapshotLimit:     0,
-			TrieDirtyDisabled: true, // Archive mode
-		}
-	)
+func newTestBackend(t *testing.T, n int, gspec *core.Genesis, engine consensus.Engine, generator func(i int, b *core.BlockGen)) *celoTestBackend {
+	cacheConfig := &core.CacheConfig{
+		TrieCleanLimit:    256,
+		TrieDirtyLimit:    256,
+		TrieTimeLimit:     5 * time.Minute,
+		SnapshotLimit:     0,
+		TrieDirtyDisabled: true, // Archive mode
+	}
 	// Generate blocks for testing
 	db, blocks, _ := core.GenerateChainWithGenesis(gspec, engine, n, generator)
 	txlookupLimit := uint64(0)
@@ -590,7 +632,9 @@ func newTestBackend(t *testing.T, n int, gspec *core.Genesis, engine consensus.E
 	}
 
 	backend := &testBackend{db: db, chain: chain}
-	return backend
+	return &celoTestBackend{
+		testBackend: backend,
+	}
 }
 
 func (b *testBackend) setPendingBlock(block *types.Block) {
@@ -1568,7 +1612,7 @@ func TestRPCGetBlockOrHeader(t *testing.T) {
 	}
 }
 
-func setupReceiptBackend(t *testing.T, genBlocks int) (*testBackend, []common.Hash) {
+func setupReceiptBackend(t *testing.T, genBlocks int) (*celoTestBackend, []common.Hash) {
 	config := *params.TestChainConfigNoCel2
 	config.ShanghaiTime = new(uint64)
 	config.CancunTime = new(uint64)

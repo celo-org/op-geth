@@ -22,7 +22,7 @@ type CeloAPI struct {
 	eth    Ethereum
 }
 
-func NewCeloAPI(e Ethereum, b ethapi.Backend) *CeloAPI {
+func NewCeloAPI(e Ethereum, b ethapi.CeloBackend) *CeloAPI {
 	return &CeloAPI{
 		ethAPI: ethapi.NewEthereumAPI(b),
 		eth:    e,
