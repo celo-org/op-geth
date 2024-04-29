@@ -349,7 +349,7 @@ func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int, ex
 					var err error
 					baseFee, err = exchange.ConvertGoldToCurrency(exchangeRates, args.FeeCurrency, baseFee)
 					if err != nil {
-						return nil, err
+						return nil, fmt.Errorf("can't convert base-fee to fee-currency: %w", err)
 					}
 				}
 				gasPrice = math.BigMin(new(big.Int).Add(gasTipCap, baseFee), gasFeeCap)

@@ -1344,14 +1344,35 @@ func DoEstimateGas(ctx context.Context, b CeloBackend, args TransactionArgs, blo
 
 	// Recap the highest gas limit with account's available balance.
 	if feeCap.BitLen() != 0 {
-		balance := state.GetBalance(*args.From) // from can't be nil
-		available := new(big.Int).Set(balance)
-		if args.Value != nil {
-			if args.Value.ToInt().Cmp(available) >= 0 {
-				return 0, core.ErrInsufficientFundsForTransfer
-			}
-			available.Sub(available, args.Value.ToInt())
+		// Is given in native token when the feeCurrency is nil.
+		balance, err := b.GetFeeBalance(ctx, header.Hash(), *args.From, args.FeeCurrency) // from can't be nil
+		if err != nil {
+			return 0, err
 		}
+		available := new(big.Int).Set(balance)
+		if args.FeeCurrency != nil {
+			if !args.IsFeeCurrencyDenominated() {
+				// CIP-66, prices are given in native token.
+				// We need to check the allowance in the converted feeCurrency
+				feeCap, err = b.ConvertToCurrency(ctx, header.Hash(), feeCap, args.FeeCurrency)
+				if err != nil {
+					return 0, err
+				}
+			}
+		} else {
+			if args.Value != nil {
+				if args.Value.ToInt().Cmp(available) >= 0 {
+					return 0, core.ErrInsufficientFundsForTransfer
+				}
+				available.Sub(available, args.Value.ToInt())
+			}
+		}
+
+		// cap the available by the maxFeeInFeeCurrency
+		if args.MaxFeeInFeeCurrency != nil {
+			available = math.BigMin(available, args.MaxFeeInFeeCurrency.ToInt())
+		}
+
 		allowance := new(big.Int).Div(available, feeCap)
 
 		// If the allowance is larger than maximum uint64, skip checking
@@ -1360,8 +1381,13 @@ func DoEstimateGas(ctx context.Context, b CeloBackend, args TransactionArgs, blo
 			if transfer == nil {
 				transfer = new(hexutil.Big)
 			}
+			maxFeeInFeeCurrency := args.MaxFeeInFeeCurrency
+			if maxFeeInFeeCurrency == nil {
+				maxFeeInFeeCurrency = new(hexutil.Big)
+			}
 			log.Warn("Gas estimation capped by limited funds", "original", hi, "balance", balance,
-				"sent", transfer.ToInt(), "maxFeePerGas", feeCap, "fundable", allowance)
+				"sent", transfer.ToInt(), "maxFeePerGas", feeCap, "fundable", allowance,
+				"feeCurrency", args.FeeCurrency, "maxFeeInFeeCurrency", maxFeeInFeeCurrency.ToInt())
 			hi = allowance.Uint64()
 		}
 	}
