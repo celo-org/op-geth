@@ -52,6 +52,8 @@ import (
 	"github.com/ethereum/go-ethereum/trie"
 )
 
+var emptyExchangeRates = make(common.ExchangeRates)
+
 // EthereumAPI provides an API to access Ethereum related information.
 type EthereumAPI struct {
 	b Backend
@@ -1161,13 +1163,13 @@ func doCall(ctx context.Context, b Backend, args TransactionArgs, state *state.S
 	defer cancel()
 
 	// Get a new instance of the EVM.
-	msg, err := args.ToMessage(globalGasCap, header.BaseFee)
-	if err != nil {
-		return nil, err
-	}
 	blockCtx := core.NewEVMBlockContext(header, NewChainContext(ctx, b), nil, b.ChainConfig(), state)
 	if blockOverrides != nil {
 		blockOverrides.Apply(&blockCtx)
+	}
+	msg, err := args.ToMessage(globalGasCap, header.BaseFee, blockCtx.ExchangeRates)
+	if err != nil {
+		return nil, err
 	}
 	evm, vmError := b.GetEVM(ctx, msg, state, header, &vm.Config{NoBaseFee: true}, &blockCtx)
 
@@ -1821,7 +1823,19 @@ func AccessList(ctx context.Context, b CeloBackend, blockNrOrHash rpc.BlockNumbe
 		statedb := db.Copy()
 		// Set the accesslist to the last al
 		args.AccessList = &accessList
-		msg, err := args.ToMessage(b.RPCGasCap(), header.BaseFee)
+		baseFee := header.BaseFee
+
+		exchangeRates := emptyExchangeRates
+		if args.FeeCurrency != nil {
+			// Always use the header's parent here, since we want to create the list at the
+			// queried block, but want to use the exchange rates before (at the beginning of)
+			// the queried block
+			exchangeRates, err = b.GetExchangeRates(ctx, header.ParentHash)
+			if err != nil {
+				return nil, 0, nil, fmt.Errorf("get exchange rates for block: %v err: %w", header.Hash(), err)
+			}
+		}
+		msg, err := args.ToMessage(b.RPCGasCap(), baseFee, exchangeRates)
 		if err != nil {
 			return nil, 0, nil, err
 		}
