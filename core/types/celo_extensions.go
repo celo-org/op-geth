@@ -1,10 +1,11 @@
 package types
 
 import (
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/rlp"
 	"math/big"
 	"sync"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
 type IstanbulExtra rlp.RawValue
@@ -31,18 +32,18 @@ type beforeGingerbreadHeader struct {
 type afterGingerbreadHeader Header
 
 func (h *Header) DecodeRLP(s *rlp.Stream) error {
-	_, size, _ := s.Kind()
 	var raw rlp.RawValue
 	err := s.Decode(&raw)
 	if err != nil {
 		return err
 	}
-	headerSize := len(raw) - int(size)
-	numElems, err := rlp.CountValues(raw[headerSize:])
+
+	preGingerbread, err := isPreGingerbreadHeader(raw)
 	if err != nil {
 		return err
 	}
-	if numElems == 10 {
+
+	if preGingerbread { // Address
 		// Before gingerbread
 		decodedHeader := beforeGingerbreadHeader{}
 		err = rlp.DecodeBytes(raw, &decodedHeader)
@@ -85,4 +86,21 @@ func (h *Header) DecodeRLP(s *rlp.Stream) error {
 	}
 
 	return err
+}
+
+// isPreGingerbreadHeader introspects the header rlp to check the length of the
+// second element of the list (the first element describes the list). Pre
+// gingerbread the second element of a header is an address which is 20 bytes
+// long.
+func isPreGingerbreadHeader(buf []byte) (bool, error) {
+	var contentSize uint64
+	var err error
+	for i := 0; i < 3; i++ {
+		buf, _, _, contentSize, err = rlp.ReadNext(buf)
+		if err != nil {
+			return false, err
+		}
+	}
+
+	return contentSize == 20, nil
 }
