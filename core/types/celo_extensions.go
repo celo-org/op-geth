@@ -1,6 +1,7 @@
 package types
 
 import (
+	"io"
 	"math/big"
 	"sync"
 
@@ -86,6 +87,58 @@ func (h *Header) DecodeRLP(s *rlp.Stream) error {
 	}
 
 	return err
+}
+
+// EncodeRLP implements encodes the Header to an RLP data stream.
+func (h *Header) EncodeRLP(w io.Writer) error {
+	// We check for a pre gingerbread header by looking for (GasLimit == 0)
+	// here. We don't use Difficulty  because CopyHeader can end up setting a
+	// nil Difficulty to a zero difficulty, so testing for nil difficulty is
+	// not reliable, and also testing for base fee is not reliable because some
+	// older eth blocks had no base fee and they are used in some tests.
+	if h.GasLimit == 0 {
+		// Encode the header
+		encodedHeader := beforeGingerbreadHeader{
+			ParentHash:  h.ParentHash,
+			Coinbase:    h.Coinbase,
+			Root:        h.Root,
+			TxHash:      h.TxHash,
+			ReceiptHash: h.ReceiptHash,
+			Bloom:       h.Bloom,
+			Number:      h.Number,
+			GasUsed:     h.GasUsed,
+			Time:        h.Time,
+			Extra:       h.Extra,
+		}
+
+		return rlp.Encode(w, &encodedHeader)
+	}
+
+	// After gingerbread
+	encodedHeader := afterGingerbreadHeader{
+		ParentHash:       h.ParentHash,
+		UncleHash:        h.UncleHash,
+		Coinbase:         h.Coinbase,
+		Root:             h.Root,
+		TxHash:           h.TxHash,
+		ReceiptHash:      h.ReceiptHash,
+		Bloom:            h.Bloom,
+		Difficulty:       h.Difficulty,
+		Number:           h.Number,
+		GasLimit:         h.GasLimit,
+		GasUsed:          h.GasUsed,
+		Time:             h.Time,
+		Extra:            h.Extra,
+		MixDigest:        h.MixDigest,
+		Nonce:            h.Nonce,
+		BaseFee:          h.BaseFee,
+		WithdrawalsHash:  h.WithdrawalsHash,
+		BlobGasUsed:      h.BlobGasUsed,
+		ExcessBlobGas:    h.ExcessBlobGas,
+		ParentBeaconRoot: h.ParentBeaconRoot,
+	}
+
+	return rlp.Encode(w, &encodedHeader)
 }
 
 // isPreGingerbreadHeader introspects the header rlp to check the length of the
