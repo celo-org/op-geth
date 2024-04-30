@@ -1,6 +1,7 @@
 package types
 
 import (
+	"io"
 	"math/big"
 	"sync"
 
@@ -82,6 +83,50 @@ func (h *Header) DecodeRLP(s *rlp.Stream) error {
 	}
 
 	return err
+}
+
+// EncodeRLP implements encodes the Header to an RLP data stream.
+func (h *Header) EncodeRLP(w io.Writer) error {
+	// Before gingerbread
+	if h.BaseFee == nil {
+		// Encode the header
+		encodedHeader := beforeGingerbreadHeader{
+			ParentHash:  h.ParentHash,
+			Coinbase:    h.Coinbase,
+			Root:        h.Root,
+			TxHash:      h.TxHash,
+			ReceiptHash: h.ReceiptHash,
+			Bloom:       h.Bloom,
+			Number:      h.Number,
+			GasUsed:     h.GasUsed,
+			Time:        h.Time,
+			Extra:       h.Extra,
+		}
+
+		return rlp.Encode(w, &encodedHeader)
+	}
+
+	// After gingerbread
+	encodedHeader := afterGingerbreadHeader{
+		ParentHash:  h.ParentHash,
+		UncleHash:   h.UncleHash,
+		Coinbase:    h.Coinbase,
+		Root:        h.Root,
+		TxHash:      h.TxHash,
+		ReceiptHash: h.ReceiptHash,
+		Bloom:       h.Bloom,
+		Difficulty:  h.Difficulty,
+		Number:      h.Number,
+		GasLimit:    h.GasLimit,
+		GasUsed:     h.GasUsed,
+		Time:        h.Time,
+		Extra:       h.Extra,
+		MixDigest:   h.MixDigest,
+		Nonce:       h.Nonce,
+		BaseFee:     h.BaseFee,
+	}
+
+	return rlp.Encode(w, &encodedHeader)
 }
 
 func isGingerbreadHeader(buf []byte) (bool, error) {
