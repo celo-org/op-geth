@@ -1,10 +1,11 @@
 package types
 
 import (
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/rlp"
 	"math/big"
 	"sync"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/rlp"
 )
 
 type IstanbulExtra rlp.RawValue
@@ -31,18 +32,18 @@ type beforeGingerbreadHeader struct {
 type afterGingerbreadHeader Header
 
 func (h *Header) DecodeRLP(s *rlp.Stream) error {
-	_, size, _ := s.Kind()
 	var raw rlp.RawValue
 	err := s.Decode(&raw)
 	if err != nil {
 		return err
 	}
-	headerSize := len(raw) - int(size)
-	numElems, err := rlp.CountValues(raw[headerSize:])
+
+	gingerbread, err := isGingerbreadHeader(raw)
 	if err != nil {
 		return err
 	}
-	if numElems == 10 {
+
+	if gingerbread { // Address
 		// Before gingerbread
 		decodedHeader := beforeGingerbreadHeader{}
 		err = rlp.DecodeBytes(raw, &decodedHeader)
@@ -81,4 +82,17 @@ func (h *Header) DecodeRLP(s *rlp.Stream) error {
 	}
 
 	return err
+}
+
+func isGingerbreadHeader(buf []byte) (bool, error) {
+	var contentSize uint64
+	var err error
+	for i := 0; i < 3; i++ {
+		buf, _, _, contentSize, err = rlp.ReadNext(buf)
+		if err != nil {
+			return false, err
+		}
+	}
+
+	return contentSize == 20, nil
 }
