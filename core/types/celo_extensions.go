@@ -80,6 +80,10 @@ func (h *Header) DecodeRLP(s *rlp.Stream) error {
 		h.MixDigest = decodedHeader.MixDigest
 		h.Nonce = decodedHeader.Nonce
 		h.BaseFee = decodedHeader.BaseFee
+		h.WithdrawalsHash = decodedHeader.WithdrawalsHash
+		h.BlobGasUsed = decodedHeader.BlobGasUsed
+		h.ExcessBlobGas = decodedHeader.ExcessBlobGas
+		h.ParentBeaconRoot = decodedHeader.ParentBeaconRoot
 	}
 
 	return err
@@ -108,22 +112,26 @@ func (h *Header) EncodeRLP(w io.Writer) error {
 
 	// After gingerbread
 	encodedHeader := afterGingerbreadHeader{
-		ParentHash:  h.ParentHash,
-		UncleHash:   h.UncleHash,
-		Coinbase:    h.Coinbase,
-		Root:        h.Root,
-		TxHash:      h.TxHash,
-		ReceiptHash: h.ReceiptHash,
-		Bloom:       h.Bloom,
-		Difficulty:  h.Difficulty,
-		Number:      h.Number,
-		GasLimit:    h.GasLimit,
-		GasUsed:     h.GasUsed,
-		Time:        h.Time,
-		Extra:       h.Extra,
-		MixDigest:   h.MixDigest,
-		Nonce:       h.Nonce,
-		BaseFee:     h.BaseFee,
+		ParentHash:       h.ParentHash,
+		UncleHash:        h.UncleHash,
+		Coinbase:         h.Coinbase,
+		Root:             h.Root,
+		TxHash:           h.TxHash,
+		ReceiptHash:      h.ReceiptHash,
+		Bloom:            h.Bloom,
+		Difficulty:       h.Difficulty,
+		Number:           h.Number,
+		GasLimit:         h.GasLimit,
+		GasUsed:          h.GasUsed,
+		Time:             h.Time,
+		Extra:            h.Extra,
+		MixDigest:        h.MixDigest,
+		Nonce:            h.Nonce,
+		BaseFee:          h.BaseFee,
+		WithdrawalsHash:  h.WithdrawalsHash,
+		BlobGasUsed:      h.BlobGasUsed,
+		ExcessBlobGas:    h.ExcessBlobGas,
+		ParentBeaconRoot: h.ParentBeaconRoot,
 	}
 
 	return rlp.Encode(w, &encodedHeader)
