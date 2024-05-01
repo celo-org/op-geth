@@ -3,7 +3,6 @@ package types
 import (
 	"io"
 	"math/big"
-	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -22,11 +21,6 @@ type beforeGingerbreadHeader struct {
 	GasUsed     uint64         `json:"gasUsed"          gencodec:"required"`
 	Time        uint64         `json:"timestamp"        gencodec:"required"`
 	Extra       []byte         `json:"extraData"        gencodec:"required"`
-
-	// Used to cache deserialized istanbul extra data
-	extraLock  sync.Mutex
-	extraValue *IstanbulExtra
-	extraError error
 }
 
 // This type is required to avoid an infinite loop when decoding
