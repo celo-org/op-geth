@@ -84,7 +84,7 @@ func (tx *txJSON) yParityValue() (*big.Int, error) {
 
 // MarshalJSON marshals as JSON with a hash.
 func (tx *Transaction) MarshalJSON() ([]byte, error) {
-	if marshalled, handled, err := transactionMarshalExtension(tx); handled {
+	if marshalled, handled, err := transactionMarshalJSONExtension(tx); handled {
 		return marshalled, err
 	}
 	var enc txJSON
@@ -183,7 +183,7 @@ func (tx *Transaction) UnmarshalJSON(input []byte) error {
 	// Decode / verify fields according to transaction type.
 	var inner TxData
 
-	if handled, err := transactionUnmarshalExtension(dec, &inner); handled {
+	if handled, err := transactionUnmarshalJSONExtension(dec, &inner); handled {
 		tx.setDecoded(inner, 0)
 		return err
 	}

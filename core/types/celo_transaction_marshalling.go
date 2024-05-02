@@ -8,7 +8,11 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-func transactionMarshalExtension(tx *Transaction) ([]byte, bool, error) {
+// transactionMarshalJSONExtension is an extension point for
+// Transaction.MarshalJSON that can be used to handle new transaction types. If
+// handled is true it indicates that the transaction was marshaled and the
+// reuturned byte slice should be used.
+func transactionMarshalJSONExtension(tx *Transaction) (marshaled []byte, handled bool, err error) {
 	var enc txJSON
 	// These are set for all tx types.
 	enc.Hash = tx.Hash()
@@ -35,7 +39,11 @@ func transactionMarshalExtension(tx *Transaction) ([]byte, bool, error) {
 	return bytes, true, err
 }
 
-func transactionUnmarshalExtension(dec txJSON, inner *TxData) (bool, error) {
+// transactionUnmarshalJSONExtension is an extension point for
+// Transaction.UnmarshalJSON that can be used to handle new
+// transaction types. If handled is true it indicates that the transaction was
+// unmarshaled into inner.
+func transactionUnmarshalJSONExtension(dec txJSON, inner *TxData) (handled bool, err error) {
 	switch dec.Type {
 	case CeloDynamicFeeTxType:
 		var itx CeloDynamicFeeTx
@@ -100,7 +108,11 @@ func transactionUnmarshalExtension(dec txJSON, inner *TxData) (bool, error) {
 	return true, nil
 }
 
-func decodeTypedExtension(b []byte) (TxData, bool, error) {
+// decodeTypedExtension is an extension point for Transaction.decodeTyped that
+// allows for the decoding of custom typed transactions. If handled is true it
+// indicates that the transaction was decoded and the returned TxData should be
+// used.
+func (tx Transaction) decodeTypedExtension(b []byte) (txData TxData, handled bool, err error) {
 	var inner TxData
 	switch b[0] {
 	case CeloDynamicFeeTxType:
@@ -108,6 +120,6 @@ func decodeTypedExtension(b []byte) (TxData, bool, error) {
 	default:
 		return nil, false, nil
 	}
-	err := inner.decode(b[1:])
+	err = inner.decode(b[1:])
 	return inner, true, err
 }

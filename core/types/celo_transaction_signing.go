@@ -23,14 +23,20 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
-func makeSignerExtension(config *params.ChainConfig, blockNumber *big.Int, blockTime uint64) (Signer, bool) {
+// makeSignerExtension is an extension point for MakeSigner that can be used to extend the
+// base functionality of the system with custom signers. If handled is true it
+// indicates that a custom signer was returned and should be used.
+func makeSignerExtension(config *params.ChainConfig, blockNumber *big.Int, blockTime uint64) (signer Signer, handled bool) {
 	if config.IsCel2(blockTime) {
 		return NewCel2Signer(config.ChainID), true
 	}
 	return nil, false
 }
 
-func latestSignerExtension(config *params.ChainConfig) (Signer, bool) {
+// latestSignerExtension is an extension point for LatestSigner that can be used to extend the
+// base functionality of the system with custom signers. If handled is true it
+// indicates that a custom signer was returned and should be used.
+func latestSignerExtension(config *params.ChainConfig) (signer Signer, handled bool) {
 	if config.ChainID != nil && config.Cel2Time != nil {
 		return NewCel2Signer(config.ChainID), true
 	}
