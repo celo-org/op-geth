@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-func celoTransactionMarshal(tx *Transaction) ([]byte, bool, error) {
+func transactionMarshalExtension(tx *Transaction) ([]byte, bool, error) {
 	var enc txJSON
 	// These are set for all tx types.
 	enc.Hash = tx.Hash()
@@ -35,7 +35,7 @@ func celoTransactionMarshal(tx *Transaction) ([]byte, bool, error) {
 	return bytes, true, err
 }
 
-func celoTransactionUnmarshal(dec txJSON, inner *TxData) (bool, error) {
+func transactionUnmarshalExtension(dec txJSON, inner *TxData) (bool, error) {
 	switch dec.Type {
 	case CeloDynamicFeeTxType:
 		var itx CeloDynamicFeeTx
@@ -100,7 +100,7 @@ func celoTransactionUnmarshal(dec txJSON, inner *TxData) (bool, error) {
 	return true, nil
 }
 
-func celoDecodeTyped(b []byte) (TxData, bool, error) {
+func decodeTypedExtension(b []byte) (TxData, bool, error) {
 	var inner TxData
 	switch b[0] {
 	case CeloDynamicFeeTxType:

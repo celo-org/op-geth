@@ -201,7 +201,7 @@ func (tx *Transaction) decodeTyped(b []byte) (TxData, error) {
 		return nil, errShortTypedTx
 	}
 
-	if inner, isCelo, err := celoDecodeTyped(b); isCelo {
+	if inner, handled, err := tx.decodeTypedExtension(b); handled {
 		return inner, err
 	}
 
