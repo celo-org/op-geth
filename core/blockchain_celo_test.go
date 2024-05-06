@@ -70,7 +70,14 @@ func testNativeTransferWithFeeCurrency(t *testing.T, scheme string, feeCurrencyA
 			Alloc:  celoGenesisAccounts(addr1),
 		}
 	)
+	// A cel2 chain is marked by a non nil Cel2Time and a non nil Optimism config.
 	gspec.Config.Cel2Time = uint64ptr(0)
+	gspec.Config.Optimism = &params.OptimismConfig{
+		// Zero values in here can cause division by zero panics.
+		EIP1559Elasticity:        6,
+		EIP1559Denominator:       50,
+		EIP1559DenominatorCanyon: 250,
+	}
 
 	signer := types.LatestSigner(gspec.Config)
 
