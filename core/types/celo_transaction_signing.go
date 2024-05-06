@@ -37,8 +37,10 @@ func makeSignerExtension(config *params.ChainConfig, blockNumber *big.Int, block
 // base functionality of the system with custom signers. If handled is true it
 // indicates that a custom signer was returned and should be used.
 func latestSignerExtension(config *params.ChainConfig) (signer Signer, handled bool) {
-	if config.ChainID != nil && config.Cel2Time != nil {
-		return NewCel2Signer(config.ChainID), true
+	if config.ChainID != nil && config.IsOptimism() {
+		if config.Cel2Time != nil {
+			return NewCel2Signer(config.ChainID), true
+		}
 	}
 	return nil, false
 }

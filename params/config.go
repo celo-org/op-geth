@@ -678,7 +678,7 @@ func (c *ChainConfig) IsInterop(time uint64) bool {
 }
 
 func (c *ChainConfig) IsCel2(time uint64) bool {
-	return isTimestampForked(c.Cel2Time, time)
+	return c.IsOptimism() && isTimestampForked(c.Cel2Time, time)
 }
 
 // IsOptimism returns whether the node is an optimism node or not.
