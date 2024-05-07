@@ -75,12 +75,10 @@ type TransactionArgs struct {
 
 	// This configures whether blobs are allowed to be passed.
 	blobSidecarAllowed bool
-	// Celo specific
 
-	// CIP-64, CIP-66
-	FeeCurrency *common.Address `json:"feeCurrency,omitempty"`
-	// CIP-66
-	MaxFeeInFeeCurrency *hexutil.Big `json:"maxFeeInFeeCurrency,omitempty"`
+	// Celo specific:
+	FeeCurrency         *common.Address `json:"feeCurrency,omitempty"`         // CIP-64, CIP-66
+	MaxFeeInFeeCurrency *hexutil.Big    `json:"maxFeeInFeeCurrency,omitempty"` // CIP-66
 }
 
 // from retrieves the transaction sender address.
