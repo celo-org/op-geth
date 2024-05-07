@@ -10,6 +10,8 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 )
 
+const CeloDynamicFeeTxV2Type = 0x7b
+
 // CeloDynamicFeeTxV2 represents a CIP-64 transaction.
 type CeloDynamicFeeTxV2 struct {
 	ChainID    *big.Int
