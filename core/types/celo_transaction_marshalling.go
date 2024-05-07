@@ -103,10 +103,12 @@ func celoTransactionUnmarshal(dec txJSON, inner *TxData) (bool, error) {
 func celoDecodeTyped(b []byte) (TxData, bool, error) {
 	var inner TxData
 	switch b[0] {
-	case CeloDynamicFeeTxV2Type:
-		inner = new(CeloDynamicFeeTxV2)
 	case CeloDenominatedTxType:
 		inner = new(CeloDenominatedTx)
+	case CeloDynamicFeeTxV2Type:
+		inner = new(CeloDynamicFeeTxV2)
+	case CeloDynamicFeeTxType:
+		inner = new(CeloDynamicFeeTx)
 	default:
 		return nil, false, nil
 	}
