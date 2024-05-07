@@ -14,7 +14,7 @@ func celoTransactionMarshal(tx *Transaction) ([]byte, bool, error) {
 	enc.Hash = tx.Hash()
 	enc.Type = hexutil.Uint64(tx.Type())
 	switch itx := tx.inner.(type) {
-	case *CeloDynamicFeeTx:
+	case *CeloDynamicFeeTxV2:
 		enc.ChainID = (*hexutil.Big)(itx.ChainID)
 		enc.Nonce = (*hexutil.Uint64)(&itx.Nonce)
 		enc.To = tx.To()
@@ -37,8 +37,8 @@ func celoTransactionMarshal(tx *Transaction) ([]byte, bool, error) {
 
 func celoTransactionUnmarshal(dec txJSON, inner *TxData) (bool, error) {
 	switch dec.Type {
-	case CeloDynamicFeeTxType:
-		var itx CeloDynamicFeeTx
+	case CeloDynamicFeeTxV2Type:
+		var itx CeloDynamicFeeTxV2
 		*inner = &itx
 		if dec.ChainID == nil {
 			return true, errors.New("missing required field 'chainId' in transaction")
@@ -103,8 +103,8 @@ func celoTransactionUnmarshal(dec txJSON, inner *TxData) (bool, error) {
 func celoDecodeTyped(b []byte) (TxData, bool, error) {
 	var inner TxData
 	switch b[0] {
-	case CeloDynamicFeeTxType:
-		inner = new(CeloDynamicFeeTx)
+	case CeloDynamicFeeTxV2Type:
+		inner = new(CeloDynamicFeeTxV2)
 	default:
 		return nil, false, nil
 	}
