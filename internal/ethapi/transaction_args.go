@@ -555,16 +555,47 @@ func (args *TransactionArgs) toTransaction() *types.Transaction {
 		if args.AccessList != nil {
 			al = *args.AccessList
 		}
-		data = &types.DynamicFeeTx{
-			To:         args.To,
-			ChainID:    (*big.Int)(args.ChainID),
-			Nonce:      uint64(*args.Nonce),
-			Gas:        uint64(*args.Gas),
-			GasFeeCap:  (*big.Int)(args.MaxFeePerGas),
-			GasTipCap:  (*big.Int)(args.MaxPriorityFeePerGas),
-			Value:      (*big.Int)(args.Value),
-			Data:       args.data(),
-			AccessList: al,
+		if args.FeeCurrency != nil {
+			if args.IsFeeCurrencyDenominated() {
+				data = &types.CeloDynamicFeeTx{
+					To:          args.To,
+					ChainID:     (*big.Int)(args.ChainID),
+					Nonce:       uint64(*args.Nonce),
+					Gas:         uint64(*args.Gas),
+					GasFeeCap:   (*big.Int)(args.MaxFeePerGas),
+					GasTipCap:   (*big.Int)(args.MaxPriorityFeePerGas),
+					Value:       (*big.Int)(args.Value),
+					Data:        args.data(),
+					AccessList:  al,
+					FeeCurrency: args.FeeCurrency,
+				}
+			} else {
+				data = &types.CeloDenominatedTx{
+					To:                  args.To,
+					ChainID:             (*big.Int)(args.ChainID),
+					Nonce:               uint64(*args.Nonce),
+					Gas:                 uint64(*args.Gas),
+					GasFeeCap:           (*big.Int)(args.MaxFeePerGas),
+					GasTipCap:           (*big.Int)(args.MaxPriorityFeePerGas),
+					Value:               (*big.Int)(args.Value),
+					Data:                args.data(),
+					AccessList:          al,
+					FeeCurrency:         args.FeeCurrency,
+					MaxFeeInFeeCurrency: (*big.Int)(args.MaxFeeInFeeCurrency),
+				}
+			}
+		} else {
+			data = &types.DynamicFeeTx{
+				To:         args.To,
+				ChainID:    (*big.Int)(args.ChainID),
+				Nonce:      uint64(*args.Nonce),
+				Gas:        uint64(*args.Gas),
+				GasFeeCap:  (*big.Int)(args.MaxFeePerGas),
+				GasTipCap:  (*big.Int)(args.MaxPriorityFeePerGas),
+				Value:      (*big.Int)(args.Value),
+				Data:       args.data(),
+				AccessList: al,
+			}
 		}
 
 	case args.AccessList != nil:
