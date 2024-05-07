@@ -10,8 +10,8 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 )
 
-// CeloDynamicFeeTx represents a CIP-64 transaction.
-type CeloDynamicFeeTx struct {
+// CeloDynamicFeeTxV2 represents a CIP-64 transaction.
+type CeloDynamicFeeTxV2 struct {
 	ChainID    *big.Int
 	Nonce      uint64
 	GasTipCap  *big.Int
@@ -31,8 +31,8 @@ type CeloDynamicFeeTx struct {
 }
 
 // copy creates a deep copy of the transaction data and initializes all fields.
-func (tx *CeloDynamicFeeTx) copy() TxData {
-	cpy := &CeloDynamicFeeTx{
+func (tx *CeloDynamicFeeTxV2) copy() TxData {
+	cpy := &CeloDynamicFeeTxV2{
 		Nonce:       tx.Nonce,
 		To:          copyAddressPtr(tx.To),
 		Data:        common.CopyBytes(tx.Data),
@@ -74,20 +74,20 @@ func (tx *CeloDynamicFeeTx) copy() TxData {
 }
 
 // accessors for innerTx.
-func (tx *CeloDynamicFeeTx) txType() byte           { return CeloDynamicFeeTxType }
-func (tx *CeloDynamicFeeTx) chainID() *big.Int      { return tx.ChainID }
-func (tx *CeloDynamicFeeTx) accessList() AccessList { return tx.AccessList }
-func (tx *CeloDynamicFeeTx) data() []byte           { return tx.Data }
-func (tx *CeloDynamicFeeTx) gas() uint64            { return tx.Gas }
-func (tx *CeloDynamicFeeTx) gasFeeCap() *big.Int    { return tx.GasFeeCap }
-func (tx *CeloDynamicFeeTx) gasTipCap() *big.Int    { return tx.GasTipCap }
-func (tx *CeloDynamicFeeTx) gasPrice() *big.Int     { return tx.GasFeeCap }
-func (tx *CeloDynamicFeeTx) value() *big.Int        { return tx.Value }
-func (tx *CeloDynamicFeeTx) nonce() uint64          { return tx.Nonce }
-func (tx *CeloDynamicFeeTx) to() *common.Address    { return tx.To }
-func (tx *CeloDynamicFeeTx) isSystemTx() bool       { return false }
+func (tx *CeloDynamicFeeTxV2) txType() byte           { return CeloDynamicFeeTxV2Type }
+func (tx *CeloDynamicFeeTxV2) chainID() *big.Int      { return tx.ChainID }
+func (tx *CeloDynamicFeeTxV2) accessList() AccessList { return tx.AccessList }
+func (tx *CeloDynamicFeeTxV2) data() []byte           { return tx.Data }
+func (tx *CeloDynamicFeeTxV2) gas() uint64            { return tx.Gas }
+func (tx *CeloDynamicFeeTxV2) gasFeeCap() *big.Int    { return tx.GasFeeCap }
+func (tx *CeloDynamicFeeTxV2) gasTipCap() *big.Int    { return tx.GasTipCap }
+func (tx *CeloDynamicFeeTxV2) gasPrice() *big.Int     { return tx.GasFeeCap }
+func (tx *CeloDynamicFeeTxV2) value() *big.Int        { return tx.Value }
+func (tx *CeloDynamicFeeTxV2) nonce() uint64          { return tx.Nonce }
+func (tx *CeloDynamicFeeTxV2) to() *common.Address    { return tx.To }
+func (tx *CeloDynamicFeeTxV2) isSystemTx() bool       { return false }
 
-func (tx *CeloDynamicFeeTx) effectiveGasPrice(dst *big.Int, baseFee *big.Int) *big.Int {
+func (tx *CeloDynamicFeeTxV2) effectiveGasPrice(dst *big.Int, baseFee *big.Int) *big.Int {
 	if baseFee == nil {
 		return dst.Set(tx.GasFeeCap)
 	}
@@ -98,18 +98,18 @@ func (tx *CeloDynamicFeeTx) effectiveGasPrice(dst *big.Int, baseFee *big.Int) *b
 	return tip.Add(tip, baseFee)
 }
 
-func (tx *CeloDynamicFeeTx) rawSignatureValues() (v, r, s *big.Int) {
+func (tx *CeloDynamicFeeTxV2) rawSignatureValues() (v, r, s *big.Int) {
 	return tx.V, tx.R, tx.S
 }
 
-func (tx *CeloDynamicFeeTx) setSignatureValues(chainID, v, r, s *big.Int) {
+func (tx *CeloDynamicFeeTxV2) setSignatureValues(chainID, v, r, s *big.Int) {
 	tx.ChainID, tx.V, tx.R, tx.S = chainID, v, r, s
 }
 
-func (tx *CeloDynamicFeeTx) encode(b *bytes.Buffer) error {
+func (tx *CeloDynamicFeeTxV2) encode(b *bytes.Buffer) error {
 	return rlp.Encode(b, tx)
 }
 
-func (tx *CeloDynamicFeeTx) decode(input []byte) error {
+func (tx *CeloDynamicFeeTxV2) decode(input []byte) error {
 	return rlp.DecodeBytes(input, tx)
 }
