@@ -115,6 +115,9 @@ func (env *environment) copy() *environment {
 		gasPool := *env.gasPool
 		cpy.gasPool = &gasPool
 	}
+	if env.multiGasPool != nil {
+		cpy.multiGasPool = env.multiGasPool.Copy()
+	}
 	cpy.txs = make([]*types.Transaction, len(env.txs))
 	copy(cpy.txs, env.txs)
 

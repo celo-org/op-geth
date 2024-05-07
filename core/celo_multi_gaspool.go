@@ -64,3 +64,16 @@ func (mgp MultiGasPool) GetPool(c *FeeCurrency) *GasPool {
 	// pools have been created already in the constructor.
 	return mgp.getOrInitPool(*c, nil)
 }
+
+func (mgp MultiGasPool) Copy() *MultiGasPool {
+	pools := make(map[FeeCurrency]*GasPool, len(mgp.pools))
+	for fc, gp := range mgp.pools {
+		gpCpy := *gp
+		pools[fc] = &gpCpy
+	}
+	return &MultiGasPool{
+		pools:         pools,
+		blockGasLimit: mgp.blockGasLimit,
+		defaultLimit:  mgp.defaultLimit,
+	}
+}
