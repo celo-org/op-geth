@@ -50,7 +50,7 @@ func TestNativeTransferWithFeeCurrency(t *testing.T) {
 // when compared without currency conversion, but it must fail if the check is
 // correct.
 func TestNativeTransferWithFeeCurrencyAndTooLowGasPrice(t *testing.T) {
-	assert.PanicsWithError(t, "max fee per gas less than block base fee: address 0x71562b71999873DB5b286dF957af199Ec94617F7, maxFeePerGas: 875000000, baseFee: 1750000000",
+	assert.PanicsWithError(t, "max fee per gas less than block base fee: address 0x71562b71999873DB5b286dF957af199Ec94617F7, maxFeePerGas: 980000000, baseFee: 1960000000",
 		func() { testNativeTransferWithFeeCurrency(t, rawdb.HashScheme, DevFeeCurrencyAddr) },
 	)
 }
