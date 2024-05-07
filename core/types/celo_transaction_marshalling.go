@@ -105,6 +105,8 @@ func celoDecodeTyped(b []byte) (TxData, bool, error) {
 	switch b[0] {
 	case CeloDynamicFeeTxV2Type:
 		inner = new(CeloDynamicFeeTxV2)
+	case CeloDynamicFeeTxType:
+		inner = new(CeloDynamicFeeTx)
 	default:
 		return nil, false, nil
 	}
