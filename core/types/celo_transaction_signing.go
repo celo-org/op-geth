@@ -36,7 +36,7 @@ func NewCel2Signer(chainId *big.Int) Signer {
 }
 
 func (s cel2Signer) Sender(tx *Transaction) (common.Address, error) {
-	if tx.Type() != CeloDynamicFeeTxType && tx.Type() != CeloDenominatedTxType {
+	if tx.Type() != CeloDynamicFeeTxV2Type && tx.Type() != CeloDenominatedTxType {
 		return s.londonSigner.Sender(tx)
 	}
 	V, R, S := tx.RawSignatureValues()
@@ -55,7 +55,7 @@ func (s cel2Signer) Equal(s2 Signer) bool {
 }
 
 func (s cel2Signer) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big.Int, err error) {
-	if tx.Type() != CeloDynamicFeeTxType && tx.Type() != CeloDenominatedTxType {
+	if tx.Type() != CeloDynamicFeeTxV2Type && tx.Type() != CeloDenominatedTxType {
 		return s.londonSigner.SignatureValues(tx, sig)
 	}
 
@@ -73,7 +73,7 @@ func (s cel2Signer) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big.I
 // Hash returns the hash to be signed by the sender.
 // It does not uniquely identify the transaction.
 func (s cel2Signer) Hash(tx *Transaction) common.Hash {
-	if tx.Type() == CeloDynamicFeeTxType {
+	if tx.Type() == CeloDynamicFeeTxV2Type {
 		return prefixedRlpHash(
 			tx.Type(),
 			[]interface{}{
