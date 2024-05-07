@@ -1847,8 +1847,14 @@ func testRPCResponseWithFile(t *testing.T, testid int, result interface{}, rpc s
 }
 
 func TestCeloTransaction_RoundTripRpcJSON(t *testing.T) {
+	config := params.TestChainConfig
+	config.Optimism = &params.OptimismConfig{
+		// Zero values in here can cause division by zero panics.
+		EIP1559Elasticity:        6,
+		EIP1559Denominator:       50,
+		EIP1559DenominatorCanyon: 250,
+	}
 	var (
-		config = params.TestChainConfig
 		signer = types.LatestSigner(config)
 		key, _ = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
 		tests  = celoTransactionTypes(common.Address{0xde, 0xad}, config)
