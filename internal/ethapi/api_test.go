@@ -1142,7 +1142,6 @@ func TestCall(t *testing.T) {
 }
 
 func TestSignTransaction(t *testing.T) {
-	t.Skip("Currently failing, see https://github.com/celo-org/op-geth/issues/117")
 	t.Parallel()
 	// Initialize test accounts
 	var (
