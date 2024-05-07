@@ -1,8 +1,19 @@
 package types
 
 import (
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/exchange"
 )
+
+// Returns the fee currency of the transaction if there is one.
+func (tx *Transaction) FeeCurrency() *common.Address {
+	var feeCurrency *common.Address
+	switch t := tx.inner.(type) {
+	case *CeloDynamicFeeTxV2:
+		feeCurrency = t.FeeCurrency
+	}
+	return feeCurrency
+}
 
 // CompareWithRates compares the effective gas price of two transactions according to the exchange rates and
 // the base fees in the transactions currencies.
