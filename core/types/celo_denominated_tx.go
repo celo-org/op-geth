@@ -1,5 +1,3 @@
-// TODO: needs copyright header?
-
 package types
 
 import (
@@ -10,8 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 )
 
-// CeloDynamicFeeTx represents a CIP-64 transaction.
-type CeloDynamicFeeTx struct {
+type CeloDenominatedTx struct {
 	ChainID    *big.Int
 	Nonce      uint64
 	GasTipCap  *big.Int
@@ -22,7 +19,8 @@ type CeloDynamicFeeTx struct {
 	Data       []byte
 	AccessList AccessList
 
-	FeeCurrency *common.Address `rlp:"nil"` // nil means native currency
+	FeeCurrency         *common.Address `rlp:"nil"` // nil means native currency
+	MaxFeeInFeeCurrency *big.Int
 
 	// Signature values
 	V *big.Int `json:"v" gencodec:"required"`
@@ -31,8 +29,8 @@ type CeloDynamicFeeTx struct {
 }
 
 // copy creates a deep copy of the transaction data and initializes all fields.
-func (tx *CeloDynamicFeeTx) copy() TxData {
-	cpy := &CeloDynamicFeeTx{
+func (tx *CeloDenominatedTx) copy() TxData {
+	cpy := &CeloDenominatedTx{
 		Nonce:       tx.Nonce,
 		To:          copyAddressPtr(tx.To),
 		Data:        common.CopyBytes(tx.Data),
@@ -47,6 +45,9 @@ func (tx *CeloDynamicFeeTx) copy() TxData {
 		V:          new(big.Int),
 		R:          new(big.Int),
 		S:          new(big.Int),
+	}
+	if tx.MaxFeeInFeeCurrency != nil {
+		cpy.MaxFeeInFeeCurrency = new(big.Int).Set(tx.MaxFeeInFeeCurrency)
 	}
 	copy(cpy.AccessList, tx.AccessList)
 	if tx.Value != nil {
@@ -74,20 +75,20 @@ func (tx *CeloDynamicFeeTx) copy() TxData {
 }
 
 // accessors for innerTx.
-func (tx *CeloDynamicFeeTx) txType() byte           { return CeloDynamicFeeTxType }
-func (tx *CeloDynamicFeeTx) chainID() *big.Int      { return tx.ChainID }
-func (tx *CeloDynamicFeeTx) accessList() AccessList { return tx.AccessList }
-func (tx *CeloDynamicFeeTx) data() []byte           { return tx.Data }
-func (tx *CeloDynamicFeeTx) gas() uint64            { return tx.Gas }
-func (tx *CeloDynamicFeeTx) gasFeeCap() *big.Int    { return tx.GasFeeCap }
-func (tx *CeloDynamicFeeTx) gasTipCap() *big.Int    { return tx.GasTipCap }
-func (tx *CeloDynamicFeeTx) gasPrice() *big.Int     { return tx.GasFeeCap }
-func (tx *CeloDynamicFeeTx) value() *big.Int        { return tx.Value }
-func (tx *CeloDynamicFeeTx) nonce() uint64          { return tx.Nonce }
-func (tx *CeloDynamicFeeTx) to() *common.Address    { return tx.To }
-func (tx *CeloDynamicFeeTx) isSystemTx() bool       { return false }
+func (tx *CeloDenominatedTx) txType() byte           { return CeloDenominatedTxType }
+func (tx *CeloDenominatedTx) chainID() *big.Int      { return tx.ChainID }
+func (tx *CeloDenominatedTx) accessList() AccessList { return tx.AccessList }
+func (tx *CeloDenominatedTx) data() []byte           { return tx.Data }
+func (tx *CeloDenominatedTx) gas() uint64            { return tx.Gas }
+func (tx *CeloDenominatedTx) gasFeeCap() *big.Int    { return tx.GasFeeCap }
+func (tx *CeloDenominatedTx) gasTipCap() *big.Int    { return tx.GasTipCap }
+func (tx *CeloDenominatedTx) gasPrice() *big.Int     { return tx.GasFeeCap }
+func (tx *CeloDenominatedTx) value() *big.Int        { return tx.Value }
+func (tx *CeloDenominatedTx) nonce() uint64          { return tx.Nonce }
+func (tx *CeloDenominatedTx) to() *common.Address    { return tx.To }
+func (tx *CeloDenominatedTx) isSystemTx() bool       { return false }
 
-func (tx *CeloDynamicFeeTx) effectiveGasPrice(dst *big.Int, baseFee *big.Int) *big.Int {
+func (tx *CeloDenominatedTx) effectiveGasPrice(dst *big.Int, baseFee *big.Int) *big.Int {
 	if baseFee == nil {
 		return dst.Set(tx.GasFeeCap)
 	}
@@ -98,21 +99,22 @@ func (tx *CeloDynamicFeeTx) effectiveGasPrice(dst *big.Int, baseFee *big.Int) *b
 	return tip.Add(tip, baseFee)
 }
 
-func (tx *CeloDynamicFeeTx) rawSignatureValues() (v, r, s *big.Int) {
+func (tx *CeloDenominatedTx) rawSignatureValues() (v, r, s *big.Int) {
 	return tx.V, tx.R, tx.S
 }
 
-func (tx *CeloDynamicFeeTx) setSignatureValues(chainID, v, r, s *big.Int) {
+func (tx *CeloDenominatedTx) setSignatureValues(chainID, v, r, s *big.Int) {
 	tx.ChainID, tx.V, tx.R, tx.S = chainID, v, r, s
 }
 
-func (tx *CeloDynamicFeeTx) encode(b *bytes.Buffer) error {
+func (tx *CeloDenominatedTx) encode(b *bytes.Buffer) error {
 	return rlp.Encode(b, tx)
 }
 
-func (tx *CeloDynamicFeeTx) decode(input []byte) error {
+func (tx *CeloDenominatedTx) decode(input []byte) error {
 	return rlp.DecodeBytes(input, tx)
 }
 
-func (tx *CeloDynamicFeeTx) feeCurrency() *common.Address  { return tx.FeeCurrency }
-func (tx *CeloDynamicFeeTx) maxFeeInFeeCurrency() *big.Int { return nil }
+func (tx *CeloDenominatedTx) feeCurrency() *common.Address { return tx.FeeCurrency }
+
+func (tx *CeloDenominatedTx) maxFeeInFeeCurrency() *big.Int { return tx.MaxFeeInFeeCurrency }

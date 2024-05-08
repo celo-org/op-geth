@@ -51,7 +51,8 @@ const (
 	DynamicFeeTxType = 0x02
 	BlobTxType       = 0x03
 	// CeloDynamicFeeTxType = 0x7c  old Celo tx type with gateway fee
-	CeloDynamicFeeTxType = 0x7b
+	CeloDynamicFeeTxType  = 0x7b
+	CeloDenominatedTxType = 0x7a
 )
 
 // Transaction is an Ethereum transaction.
@@ -110,6 +111,7 @@ type TxData interface {
 
 	// Celo specific fields
 	feeCurrency() *common.Address
+	maxFeeInFeeCurrency() *big.Int
 }
 
 // EncodeRLP implements rlp.Encoder
@@ -216,6 +218,8 @@ func (tx *Transaction) decodeTyped(b []byte) (TxData, error) {
 		inner = new(DynamicFeeTx)
 	case CeloDynamicFeeTxType:
 		inner = new(CeloDynamicFeeTx)
+	case CeloDenominatedTxType:
+		inner = new(CeloDenominatedTx)
 	case BlobTxType:
 		inner = new(BlobTx)
 	case DepositTxType:
@@ -626,6 +630,11 @@ func (tx *Transaction) WithSignature(signer Signer, sig []byte) (*Transaction, e
 // FeeCurrency returns the fee currency of the transaction. Nil implies paying in CELO.
 func (tx *Transaction) FeeCurrency() *common.Address {
 	return copyAddressPtr(tx.inner.feeCurrency())
+}
+
+// MaxFeeInFeeCurrency returns the max fee in the fee_currency for celo denominated txs.
+func (tx *Transaction) MaxFeeInFeeCurrency() *big.Int {
+	return new(big.Int).Set(tx.inner.maxFeeInFeeCurrency())
 }
 
 // Transactions implements DerivableList for transactions.
