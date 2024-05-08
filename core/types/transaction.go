@@ -634,7 +634,11 @@ func (tx *Transaction) FeeCurrency() *common.Address {
 
 // MaxFeeInFeeCurrency returns the max fee in the fee_currency for celo denominated txs.
 func (tx *Transaction) MaxFeeInFeeCurrency() *big.Int {
-	return new(big.Int).Set(tx.inner.maxFeeInFeeCurrency())
+	mfifc := tx.inner.maxFeeInFeeCurrency()
+	if mfifc == nil {
+		return nil
+	}
+	return new(big.Int).Set(mfifc)
 }
 
 // Transactions implements DerivableList for transactions.
