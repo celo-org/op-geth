@@ -209,6 +209,10 @@ func (args *TransactionArgs) setFeeDefaults(ctx context.Context, b CeloBackend) 
 	// other tx values. See https://github.com/ethereum/go-ethereum/pull/23274
 	// for more information.
 	eip1559ParamsSet := args.MaxFeePerGas != nil && args.MaxPriorityFeePerGas != nil
+
+	if args.MaxFeeInFeeCurrency != nil && args.FeeCurrency == nil {
+		return errors.New("feeCurrency must be set when maxFeeInFeeCurrency is given")
+	}
 	// Sanity check the EIP-1559 fee parameters if present.
 	if args.GasPrice == nil && eip1559ParamsSet {
 		if args.MaxFeePerGas.ToInt().Sign() == 0 {
@@ -244,17 +248,6 @@ func (args *TransactionArgs) setFeeDefaults(ctx context.Context, b CeloBackend) 
 		price, err := b.SuggestGasTipCap(ctx)
 		if err != nil {
 			return err
-		}
-		if args.IsFeeCurrencyDenominated() {
-			price, err = b.ConvertToCurrency(
-				ctx,
-				rpc.BlockNumberOrHashWithHash(head.Hash(), false),
-				price,
-				args.FeeCurrency,
-			)
-			if err != nil {
-				return fmt.Errorf("can't convert suggested gasTipCap to fee-currency: %w", err)
-			}
 		}
 		args.GasPrice = (*hexutil.Big)(price)
 	}
