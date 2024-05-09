@@ -151,7 +151,6 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 			log.Error("Failed to recover state", "error", err)
 		}
 	}
-
 	// Transfer mining-related config to the ethash config.
 	chainConfig, err := core.LoadChainConfig(chainDb, config.Genesis)
 	if err != nil {
