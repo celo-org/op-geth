@@ -88,7 +88,7 @@ func toCeloRlpList(tx LegacyTx) celoTxRlpList {
 	}
 }
 
-func (tx *LegacyTx) setTxFromEthCompatibleRlpList(rlplist ethCompatibleTxRlpList) {
+func setTxFromEthCompatibleRlpList(tx *LegacyTx, rlplist ethCompatibleTxRlpList) {
 	tx.Nonce = rlplist.Nonce
 	tx.GasPrice = rlplist.GasPrice
 	tx.Gas = rlplist.Gas
@@ -107,7 +107,7 @@ func (tx *LegacyTx) setTxFromEthCompatibleRlpList(rlplist ethCompatibleTxRlpList
 	tx.EthCompatible = true
 }
 
-func (tx *LegacyTx) setTxFromCeloRlpList(rlplist celoTxRlpList) {
+func setTxFromCeloRlpList(tx *LegacyTx, rlplist celoTxRlpList) {
 	tx.Nonce = rlplist.Nonce
 	tx.GasPrice = rlplist.GasPrice
 	tx.Gas = rlplist.Gas
@@ -151,11 +151,11 @@ func (tx *LegacyTx) DecodeRLP(s *rlp.Stream) (err error) {
 	if numElems == ethCompatibleTxNumFields {
 		rlpList := ethCompatibleTxRlpList{}
 		err = rlp.DecodeBytes(raw, &rlpList)
-		tx.setTxFromEthCompatibleRlpList(rlpList)
+		setTxFromEthCompatibleRlpList(tx, rlpList)
 	} else {
 		var rlpList celoTxRlpList
 		err = rlp.DecodeBytes(raw, &rlpList)
-		tx.setTxFromCeloRlpList(rlpList)
+		setTxFromCeloRlpList(tx, rlpList)
 	}
 
 	return err
