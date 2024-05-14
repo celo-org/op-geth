@@ -97,7 +97,6 @@ func (tx *CeloDynamicFeeTx) copy() TxData {
 // accessors for innerTx.
 func (tx *CeloDynamicFeeTx) txType() byte           { return CeloDynamicFeeTxType }
 func (tx *CeloDynamicFeeTx) chainID() *big.Int      { return tx.ChainID }
-func (tx *CeloDynamicFeeTx) protected() bool        { return true }
 func (tx *CeloDynamicFeeTx) accessList() AccessList { return tx.AccessList }
 func (tx *CeloDynamicFeeTx) data() []byte           { return tx.Data }
 func (tx *CeloDynamicFeeTx) gas() uint64            { return tx.Gas }
