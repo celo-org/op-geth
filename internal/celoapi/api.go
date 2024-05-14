@@ -2,13 +2,10 @@ package celoapi
 
 import (
 	"context"
-	"fmt"
-	"math/big"
+	"errors"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/exchange"
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/contracts"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/internal/ethapi"
 )
@@ -18,51 +15,33 @@ type Ethereum interface {
 }
 
 type CeloAPI struct {
-	ethAPI *ethapi.EthereumAPI
-	eth    Ethereum
+	ethAPI      *ethapi.EthereumAPI
+	celoBackend ethapi.CeloBackend
+	eth         Ethereum
 }
 
 func NewCeloAPI(e Ethereum, b ethapi.CeloBackend) *CeloAPI {
 	return &CeloAPI{
-		ethAPI: ethapi.NewEthereumAPI(b),
-		eth:    e,
+		ethAPI:      ethapi.NewEthereumAPI(b),
+		celoBackend: b,
+		eth:         e,
 	}
 }
 
-func (c *CeloAPI) convertedCurrencyValue(v *hexutil.Big, feeCurrency *common.Address) (*hexutil.Big, error) {
+func (c *CeloAPI) convertedCurrencyValue(ctx context.Context, v *hexutil.Big, feeCurrency *common.Address) (*hexutil.Big, error) {
 	if feeCurrency != nil {
-		convertedTipCap, err := c.convertGoldToCurrency(v.ToInt(), feeCurrency)
+		// retrieve the latest head
+		header := c.eth.BlockChain().CurrentBlock()
+		if header != nil {
+			return nil, errors.New("no latest header retrieved")
+		}
+		convertedTipCap, err := c.celoBackend.ConvertToCurrency(ctx, header.Hash(), v.ToInt(), feeCurrency)
 		if err != nil {
-			return nil, fmt.Errorf("convert to feeCurrency: %w", err)
+			return nil, err
 		}
 		v = (*hexutil.Big)(convertedTipCap)
 	}
 	return v, nil
-}
-
-func (c *CeloAPI) celoBackendCurrentState() (*contracts.CeloBackend, error) {
-	state, err := c.eth.BlockChain().State()
-	if err != nil {
-		return nil, fmt.Errorf("retrieve HEAD blockchain state': %w", err)
-	}
-
-	cb := &contracts.CeloBackend{
-		ChainConfig: c.eth.BlockChain().Config(),
-		State:       state,
-	}
-	return cb, nil
-}
-
-func (c *CeloAPI) convertGoldToCurrency(nativePrice *big.Int, feeCurrency *common.Address) (*big.Int, error) {
-	cb, err := c.celoBackendCurrentState()
-	if err != nil {
-		return nil, err
-	}
-	er, err := contracts.GetExchangeRates(cb)
-	if err != nil {
-		return nil, fmt.Errorf("retrieve exchange rates from current state: %w", err)
-	}
-	return exchange.ConvertGoldToCurrency(er, feeCurrency, nativePrice)
 }
 
 // GasPrice wraps the original JSON RPC `eth_gasPrice` and adds an additional
@@ -78,7 +57,7 @@ func (c *CeloAPI) GasPrice(ctx context.Context, feeCurrency *common.Address) (*h
 	// based on state of block x, while the currency conversion could be calculated based on block
 	// x+1.
 	// However, a similar race condition is present in the `ethapi.GasPrice` method itself.
-	return c.convertedCurrencyValue(tipcap, feeCurrency)
+	return c.convertedCurrencyValue(ctx, tipcap, feeCurrency)
 }
 
 // MaxPriorityFeePerGas wraps the original JSON RPC `eth_maxPriorityFeePerGas` and adds an additional
@@ -93,5 +72,5 @@ func (c *CeloAPI) MaxPriorityFeePerGas(ctx context.Context, feeCurrency *common.
 	// there is a chance of a state-change. This means that gas-price suggestion is calculated
 	// based on state of block x, while the currency conversion could be calculated based on block
 	// x+1.
-	return c.convertedCurrencyValue(tipcap, feeCurrency)
+	return c.convertedCurrencyValue(ctx, tipcap, feeCurrency)
 }
