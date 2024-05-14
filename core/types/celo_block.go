@@ -86,7 +86,7 @@ func (h *Header) DecodeRLP(s *rlp.Stream) error {
 // EncodeRLP implements encodes the Header to an RLP data stream.
 func (h *Header) EncodeRLP(w io.Writer) error {
 	// Before gingerbread
-	if h.BaseFee == nil {
+	if h.Difficulty == nil {
 		// Encode the header
 		encodedHeader := beforeGingerbreadHeader{
 			ParentHash:  h.ParentHash,
