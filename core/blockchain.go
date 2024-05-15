@@ -474,6 +474,17 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, genesis *Genesis
 	if txLookupLimit != nil {
 		bc.txIndexer = newTxIndexer(*txLookupLimit, bc)
 	}
+
+	start := head.Number.Uint64() - 90055
+	for i := 0; i < 10; i++ {
+		n := start + uint64(i)
+		fmt.Printf("########--- Number: %d, Hash: %v\n", n, rawdb.ReadCanonicalHash(db, n))
+	}
+	start = head.Number.Uint64() - 10
+	for i := 0; i < 10; i++ {
+		n := start + uint64(i)
+		fmt.Printf("########--- Number: %d, Hash: %v\n", n, rawdb.ReadCanonicalHash(db, n))
+	}
 	return bc, nil
 }
 
