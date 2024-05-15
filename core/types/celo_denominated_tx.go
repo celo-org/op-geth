@@ -19,7 +19,7 @@ type CeloDenominatedTx struct {
 	Data       []byte
 	AccessList AccessList
 
-	FeeCurrency         *common.Address `rlp:"nil"` // nil means native currency
+	FeeCurrency         *common.Address
 	MaxFeeInFeeCurrency *big.Int
 
 	// Signature values
