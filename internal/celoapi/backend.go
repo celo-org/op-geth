@@ -70,7 +70,7 @@ func (b *CeloAPIBackend) GetExchangeRates(ctx context.Context, atBlock common.Ha
 	}
 	er, err := contracts.GetExchangeRates(cb)
 	if err != nil {
-		return nil, fmt.Errorf("retrieve exchange rates from current state: %w", err)
+		return nil, err
 	}
 	b.exchangeRatesCache.Add(atBlock, er)
 	return er, nil
@@ -81,11 +81,7 @@ func (b *CeloAPIBackend) ConvertToCurrency(ctx context.Context, atBlock common.H
 	if err != nil {
 		return nil, err
 	}
-	currencyValue, err := exchange.ConvertGoldToCurrency(er, fromFeeCurrency, value)
-	if err != nil {
-		return nil, fmt.Errorf("could not convert to native from fee currency (%s): %w ", fromFeeCurrency, err)
-	}
-	return currencyValue, nil
+	return exchange.ConvertGoldToCurrency(er, fromFeeCurrency, value)
 }
 
 func (b *CeloAPIBackend) ConvertToGold(ctx context.Context, atBlock common.Hash, value *big.Int, toFeeCurrency *common.Address) (*big.Int, error) {
@@ -93,9 +89,5 @@ func (b *CeloAPIBackend) ConvertToGold(ctx context.Context, atBlock common.Hash,
 	if err != nil {
 		return nil, err
 	}
-	goldValue, err := exchange.ConvertCurrencyToGold(er, value, toFeeCurrency)
-	if err != nil {
-		return nil, fmt.Errorf("could not convert from native to fee currency (%s): %w ", toFeeCurrency, err)
-	}
-	return goldValue, nil
+	return exchange.ConvertCurrencyToGold(er, value, toFeeCurrency)
 }
