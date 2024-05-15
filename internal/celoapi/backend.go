@@ -56,7 +56,7 @@ func (b *CeloAPIBackend) GetFeeBalance(ctx context.Context, atBlock common.Hash,
 	if err != nil {
 		return nil, err
 	}
-	return contracts.GetFeeBalance(cb, account, feeCurrency), nil
+	return contracts.GetFeeBalance(cb, account, feeCurrency)
 }
 
 func (b *CeloAPIBackend) GetExchangeRates(ctx context.Context, atBlock common.Hash) (common.ExchangeRates, error) {

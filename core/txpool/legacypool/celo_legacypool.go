@@ -25,7 +25,17 @@ func (pool *LegacyPool) filter(list *list, addr common.Address, gasLimit uint64)
 func (pool *LegacyPool) getBalances(address common.Address, currencies []common.Address) map[common.Address]*big.Int {
 	balances := make(map[common.Address]*big.Int, len(currencies))
 	for _, curr := range currencies {
-		balances[curr] = contracts.GetFeeBalance(pool.celoBackend, address, &curr)
+		balance, err := contracts.GetFeeBalance(pool.celoBackend, address, &curr)
+		if err != nil {
+			log.Error(
+				"Failed to retrieve fee-balance, assuming zero balance",
+				"error", err,
+				"account", address,
+				"fee-currency", curr,
+			)
+			balance = new(big.Int)
+		}
+		balances[curr] = balance
 	}
 	return balances
 }

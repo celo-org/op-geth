@@ -1086,7 +1086,17 @@ func (p *BlobPool) validateTx(tx *types.Transaction) error {
 			return nil
 		},
 		ExistingBalance: func(addr common.Address, feeCurrency *common.Address) *big.Int {
-			return contracts.GetFeeBalance(p.celoBackend, addr, feeCurrency)
+			balance, err := contracts.GetFeeBalance(p.celoBackend, addr, feeCurrency)
+			if err != nil {
+				log.Error(
+					"Failed to retrieve fee-balance, assuming zero balance",
+					"error", err,
+					"account", addr,
+					"fee-currency", feeCurrency,
+				)
+				balance = new(big.Int)
+			}
+			return balance
 		},
 	}
 

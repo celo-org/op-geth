@@ -144,12 +144,12 @@ func GetExchangeRates(caller bind.ContractCaller) (common.ExchangeRates, error) 
 func GetBalanceERC20(caller bind.ContractCaller, accountOwner common.Address, contractAddress common.Address) (result *big.Int, err error) {
 	token, err := abigen.NewFeeCurrencyCaller(contractAddress, caller)
 	if err != nil {
-		return nil, fmt.Errorf("failed to access FeeCurrency: %w", err)
+		return nil, fmt.Errorf("failed to bind FeeCurrency contract (contract-address=%s): %w", contractAddress, err)
 	}
 
 	balance, err := token.BalanceOf(&bind.CallOpts{}, accountOwner)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to query token balance (account=%s, fee-currency=%s): %w", accountOwner, contractAddress, err)
 	}
 
 	return balance, nil
@@ -157,13 +157,13 @@ func GetBalanceERC20(caller bind.ContractCaller, accountOwner common.Address, co
 
 // GetFeeBalance returns the account's balance from the specified feeCurrency
 // (if feeCurrency is nil or ZeroAddress, native currency balance is returned).
-func GetFeeBalance(backend *CeloBackend, account common.Address, feeCurrency *common.Address) *big.Int {
+func GetFeeBalance(backend *CeloBackend, account common.Address, feeCurrency *common.Address) (*big.Int, error) {
 	if feeCurrency == nil || *feeCurrency == common.ZeroAddress {
-		return backend.State.GetBalance(account)
+		return backend.State.GetBalance(account), nil
 	}
 	balance, err := GetBalanceERC20(backend, account, *feeCurrency)
 	if err != nil {
-		log.Error("Error while trying to get ERC20 balance:", "cause", err, "contract", feeCurrency.Hex(), "account", account.Hex())
+		return nil, err
 	}
-	return balance
+	return balance, nil
 }

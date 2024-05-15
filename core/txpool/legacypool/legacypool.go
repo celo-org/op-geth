@@ -678,7 +678,17 @@ func (pool *LegacyPool) validateTx(tx *types.Transaction, local bool) error {
 		},
 		L1CostFn: pool.l1CostFn,
 		ExistingBalance: func(addr common.Address, feeCurrency *common.Address) *big.Int {
-			return contracts.GetFeeBalance(pool.celoBackend, addr, feeCurrency)
+			balance, err := contracts.GetFeeBalance(pool.celoBackend, addr, feeCurrency)
+			if err != nil {
+				log.Error(
+					"Failed to retrieve fee-balance, assuming zero balance",
+					"error", err,
+					"account", addr,
+					"fee-currency", feeCurrency,
+				)
+				balance = new(big.Int)
+			}
+			return balance
 		},
 	}
 
