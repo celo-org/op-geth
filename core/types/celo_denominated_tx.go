@@ -37,17 +37,18 @@ func (tx *CeloDenominatedTx) copy() TxData {
 		Gas:         tx.Gas,
 		FeeCurrency: copyAddressPtr(tx.FeeCurrency),
 		// These are copied below.
-		AccessList: make(AccessList, len(tx.AccessList)),
-		Value:      new(big.Int),
-		ChainID:    new(big.Int),
-		GasTipCap:  new(big.Int),
-		GasFeeCap:  new(big.Int),
-		V:          new(big.Int),
-		R:          new(big.Int),
-		S:          new(big.Int),
+		MaxFeeInFeeCurrency: new(big.Int),
+		AccessList:          make(AccessList, len(tx.AccessList)),
+		Value:               new(big.Int),
+		ChainID:             new(big.Int),
+		GasTipCap:           new(big.Int),
+		GasFeeCap:           new(big.Int),
+		V:                   new(big.Int),
+		R:                   new(big.Int),
+		S:                   new(big.Int),
 	}
 	if tx.MaxFeeInFeeCurrency != nil {
-		cpy.MaxFeeInFeeCurrency = new(big.Int).Set(tx.MaxFeeInFeeCurrency)
+		cpy.MaxFeeInFeeCurrency.Set(tx.MaxFeeInFeeCurrency)
 	}
 	copy(cpy.AccessList, tx.AccessList)
 	if tx.Value != nil {
