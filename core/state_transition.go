@@ -154,14 +154,15 @@ func toWordSize(size uint64) uint64 {
 // A Message contains the data derived from a single transaction that is relevant to state
 // processing.
 type Message struct {
-	To            *common.Address
-	From          common.Address
-	Nonce         uint64
-	Value         *big.Int
-	GasLimit      uint64
-	GasPrice      *big.Int
-	GasFeeCap     *big.Int
-	GasTipCap     *big.Int
+	To        *common.Address
+	From      common.Address
+	Nonce     uint64
+	Value     *big.Int
+	GasLimit  uint64
+	GasPrice  *big.Int
+	GasFeeCap *big.Int
+	GasTipCap *big.Int
+
 	Data          []byte
 	AccessList    types.AccessList
 	BlobGasFeeCap *big.Int
@@ -182,8 +183,7 @@ type Message struct {
 	// FeeCurrency specifies the currency for gas fees.
 	// `nil` corresponds to Celo Gold (native currency).
 	// All other values should correspond to ERC20 contract addresses.
-	FeeCurrency *common.Address
-
+	FeeCurrency         *common.Address
 	MaxFeeInFeeCurrency *big.Int // MaxFeeInFeeCurrency is the maximum fee that can be charged in the fee currency.
 }
 
@@ -213,7 +213,7 @@ func TransactionToMessage(tx *types.Transaction, s types.Signer, baseFee *big.In
 	}
 	// If baseFee provided, set gasPrice to effectiveGasPrice.
 	if baseFee != nil {
-		if msg.FeeCurrency != nil {
+		if tx.Type() == types.CeloDynamicFeeTxType {
 			var err error
 			baseFee, err = exchange.ConvertGoldToCurrency(exchangeRates, msg.FeeCurrency, baseFee)
 			if err != nil {

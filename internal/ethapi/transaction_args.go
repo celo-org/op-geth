@@ -445,10 +445,11 @@ func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int, ex
 		gas = globalGasCap
 	}
 	var (
-		gasPrice   *big.Int
-		gasFeeCap  *big.Int
-		gasTipCap  *big.Int
-		blobFeeCap *big.Int
+		gasPrice            *big.Int
+		gasFeeCap           *big.Int
+		gasTipCap           *big.Int
+		blobFeeCap          *big.Int
+		maxFeeInFeeCurrency *big.Int
 	)
 	if baseFee == nil {
 		// If there's no basefee, then it must be a non-1559 execution
@@ -501,20 +502,24 @@ func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int, ex
 	if args.AccessList != nil {
 		accessList = *args.AccessList
 	}
+	if args.MaxFeeInFeeCurrency != nil {
+		maxFeeInFeeCurrency = args.MaxFeeInFeeCurrency.ToInt()
+	}
 	msg := &core.Message{
-		From:              addr,
-		To:                args.To,
-		Value:             value,
-		GasLimit:          gas,
-		GasPrice:          gasPrice,
-		GasFeeCap:         gasFeeCap,
-		GasTipCap:         gasTipCap,
-		Data:              data,
-		AccessList:        accessList,
-		BlobGasFeeCap:     blobFeeCap,
-		BlobHashes:        args.BlobHashes,
-		SkipAccountChecks: true,
-		FeeCurrency:       args.FeeCurrency,
+		From:                addr,
+		To:                  args.To,
+		Value:               value,
+		GasLimit:            gas,
+		GasPrice:            gasPrice,
+		GasFeeCap:           gasFeeCap,
+		GasTipCap:           gasTipCap,
+		Data:                data,
+		AccessList:          accessList,
+		BlobGasFeeCap:       blobFeeCap,
+		BlobHashes:          args.BlobHashes,
+		SkipAccountChecks:   true,
+		FeeCurrency:         args.FeeCurrency,
+		MaxFeeInFeeCurrency: maxFeeInFeeCurrency,
 	}
 	return msg, nil
 }
