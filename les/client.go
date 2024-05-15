@@ -35,6 +35,7 @@ import (
 	"github.com/ethereum/go-ethereum/eth/ethconfig"
 	"github.com/ethereum/go-ethereum/eth/gasprice"
 	"github.com/ethereum/go-ethereum/event"
+	"github.com/ethereum/go-ethereum/internal/celoapi"
 	"github.com/ethereum/go-ethereum/internal/ethapi"
 	"github.com/ethereum/go-ethereum/internal/shutdowncheck"
 	"github.com/ethereum/go-ethereum/les/vflux"
@@ -313,7 +314,8 @@ func (s *LightDummyAPI) Mining() bool {
 // APIs returns the collection of RPC services the ethereum package offers.
 // NOTE, some of these services probably need to be moved to somewhere else.
 func (s *LightEthereum) APIs() []rpc.API {
-	apis := ethapi.GetAPIs(s.ApiBackend)
+	celoBackend := celoapi.NewCeloAPIBackend(s.ApiBackend)
+	apis := ethapi.GetAPIs(celoBackend)
 	apis = append(apis, s.engine.APIs(s.BlockChain().HeaderChain())...)
 	return append(apis, []rpc.API{
 		{

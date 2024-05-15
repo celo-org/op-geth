@@ -52,6 +52,8 @@ import (
 	"github.com/ethereum/go-ethereum/trie"
 )
 
+var emptyExchangeRates = make(common.ExchangeRates)
+
 // EthereumAPI provides an API to access Ethereum related information.
 type EthereumAPI struct {
 	b Backend
@@ -278,11 +280,11 @@ func (s *EthereumAccountAPI) Accounts() []common.Address {
 type PersonalAccountAPI struct {
 	am        *accounts.Manager
 	nonceLock *AddrLocker
-	b         Backend
+	b         CeloBackend
 }
 
 // NewPersonalAccountAPI create a new PersonalAccountAPI.
-func NewPersonalAccountAPI(b Backend, nonceLock *AddrLocker) *PersonalAccountAPI {
+func NewPersonalAccountAPI(b CeloBackend, nonceLock *AddrLocker) *PersonalAccountAPI {
 	return &PersonalAccountAPI{
 		am:        b.AccountManager(),
 		nonceLock: nonceLock,
@@ -606,11 +608,11 @@ func (s *PersonalAccountAPI) Unpair(ctx context.Context, url string, pin string)
 
 // BlockChainAPI provides an API to access Ethereum blockchain data.
 type BlockChainAPI struct {
-	b Backend
+	b CeloBackend
 }
 
 // NewBlockChainAPI creates a new Ethereum blockchain API.
-func NewBlockChainAPI(b Backend) *BlockChainAPI {
+func NewBlockChainAPI(b CeloBackend) *BlockChainAPI {
 	return &BlockChainAPI{b}
 }
 
@@ -1161,13 +1163,13 @@ func doCall(ctx context.Context, b Backend, args TransactionArgs, state *state.S
 	defer cancel()
 
 	// Get a new instance of the EVM.
-	msg, err := args.ToMessage(globalGasCap, header.BaseFee)
-	if err != nil {
-		return nil, err
-	}
 	blockCtx := core.NewEVMBlockContext(header, NewChainContext(ctx, b), nil, b.ChainConfig(), state)
 	if blockOverrides != nil {
 		blockOverrides.Apply(&blockCtx)
+	}
+	msg, err := args.ToMessage(globalGasCap, header.BaseFee, blockCtx.ExchangeRates)
+	if err != nil {
+		return nil, err
 	}
 	evm, vmError := b.GetEVM(ctx, msg, state, header, &vm.Config{NoBaseFee: true}, &blockCtx)
 
@@ -1195,7 +1197,7 @@ func doCall(ctx context.Context, b Backend, args TransactionArgs, state *state.S
 	return result, nil
 }
 
-func DoCall(ctx context.Context, b Backend, args TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash, overrides *StateOverride, blockOverrides *BlockOverrides, timeout time.Duration, globalGasCap uint64) (*core.ExecutionResult, error) {
+func DoCall(ctx context.Context, b CeloBackend, args TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash, overrides *StateOverride, blockOverrides *BlockOverrides, timeout time.Duration, globalGasCap uint64) (*core.ExecutionResult, error) {
 	defer func(start time.Time) { log.Debug("Executing EVM call finished", "runtime", time.Since(start)) }(time.Now())
 
 	state, header, err := b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
@@ -1296,7 +1298,7 @@ func executeEstimate(ctx context.Context, b Backend, args TransactionArgs, state
 // successfully at block `blockNrOrHash`. It returns error if the transaction would revert, or if
 // there are unexpected failures. The gas limit is capped by both `args.Gas` (if non-nil &
 // non-zero) and `gasCap` (if non-zero).
-func DoEstimateGas(ctx context.Context, b Backend, args TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash, overrides *StateOverride, gasCap uint64) (hexutil.Uint64, error) {
+func DoEstimateGas(ctx context.Context, b CeloBackend, args TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash, overrides *StateOverride, gasCap uint64) (hexutil.Uint64, error) {
 	// Binary search the gas limit, as it may need to be higher than the amount used
 	var (
 		lo uint64 // lowest-known gas limit where tx execution fails
@@ -1342,14 +1344,35 @@ func DoEstimateGas(ctx context.Context, b Backend, args TransactionArgs, blockNr
 
 	// Recap the highest gas limit with account's available balance.
 	if feeCap.BitLen() != 0 {
-		balance := state.GetBalance(*args.From) // from can't be nil
-		available := new(big.Int).Set(balance)
-		if args.Value != nil {
-			if args.Value.ToInt().Cmp(available) >= 0 {
-				return 0, core.ErrInsufficientFundsForTransfer
-			}
-			available.Sub(available, args.Value.ToInt())
+		// Is given in native token when the feeCurrency is nil.
+		balance, err := b.GetFeeBalance(ctx, header.Hash(), *args.From, args.FeeCurrency) // from can't be nil
+		if err != nil {
+			return 0, err
 		}
+		available := new(big.Int).Set(balance)
+		if args.FeeCurrency != nil {
+			if !args.IsFeeCurrencyDenominated() {
+				// CIP-66, prices are given in native token.
+				// We need to check the allowance in the converted feeCurrency
+				feeCap, err = b.ConvertToCurrency(ctx, header.Hash(), feeCap, args.FeeCurrency)
+				if err != nil {
+					return 0, err
+				}
+			}
+		} else {
+			if args.Value != nil {
+				if args.Value.ToInt().Cmp(available) >= 0 {
+					return 0, core.ErrInsufficientFundsForTransfer
+				}
+				available.Sub(available, args.Value.ToInt())
+			}
+		}
+
+		// cap the available by the maxFeeInFeeCurrency
+		if args.MaxFeeInFeeCurrency != nil {
+			available = math.BigMin(available, args.MaxFeeInFeeCurrency.ToInt())
+		}
+
 		allowance := new(big.Int).Div(available, feeCap)
 
 		// If the allowance is larger than maximum uint64, skip checking
@@ -1358,8 +1381,13 @@ func DoEstimateGas(ctx context.Context, b Backend, args TransactionArgs, blockNr
 			if transfer == nil {
 				transfer = new(hexutil.Big)
 			}
+			maxFeeInFeeCurrency := args.MaxFeeInFeeCurrency
+			if maxFeeInFeeCurrency == nil {
+				maxFeeInFeeCurrency = new(hexutil.Big)
+			}
 			log.Warn("Gas estimation capped by limited funds", "original", hi, "balance", balance,
-				"sent", transfer.ToInt(), "maxFeePerGas", feeCap, "fundable", allowance)
+				"sent", transfer.ToInt(), "maxFeePerGas", feeCap, "fundable", allowance,
+				"feeCurrency", args.FeeCurrency, "maxFeeInFeeCurrency", maxFeeInFeeCurrency.ToInt())
 			hi = allowance.Uint64()
 		}
 	}
@@ -1781,7 +1809,7 @@ func (s *BlockChainAPI) CreateAccessList(ctx context.Context, args TransactionAr
 // AccessList creates an access list for the given transaction.
 // If the accesslist creation fails an error is returned.
 // If the transaction itself fails, an vmErr is returned.
-func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrHash, args TransactionArgs) (acl types.AccessList, gasUsed uint64, vmErr error, err error) {
+func AccessList(ctx context.Context, b CeloBackend, blockNrOrHash rpc.BlockNumberOrHash, args TransactionArgs) (acl types.AccessList, gasUsed uint64, vmErr error, err error) {
 	// Retrieve the execution context
 	db, header, err := b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
 	if db == nil || err != nil {
@@ -1821,7 +1849,19 @@ func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrH
 		statedb := db.Copy()
 		// Set the accesslist to the last al
 		args.AccessList = &accessList
-		msg, err := args.ToMessage(b.RPCGasCap(), header.BaseFee)
+		baseFee := header.BaseFee
+
+		exchangeRates := emptyExchangeRates
+		if args.FeeCurrency != nil {
+			// Always use the header's parent here, since we want to create the list at the
+			// queried block, but want to use the exchange rates before (at the beginning of)
+			// the queried block
+			exchangeRates, err = b.GetExchangeRates(ctx, header.ParentHash)
+			if err != nil {
+				return nil, 0, nil, fmt.Errorf("get exchange rates for block: %v err: %w", header.Hash(), err)
+			}
+		}
+		msg, err := args.ToMessage(b.RPCGasCap(), baseFee, exchangeRates)
 		if err != nil {
 			return nil, 0, nil, err
 		}
@@ -1843,13 +1883,13 @@ func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrH
 
 // TransactionAPI exposes methods for reading and creating transaction data.
 type TransactionAPI struct {
-	b         Backend
+	b         CeloBackend
 	nonceLock *AddrLocker
 	signer    types.Signer
 }
 
 // NewTransactionAPI creates a new RPC service with methods for interacting with transactions.
-func NewTransactionAPI(b Backend, nonceLock *AddrLocker) *TransactionAPI {
+func NewTransactionAPI(b CeloBackend, nonceLock *AddrLocker) *TransactionAPI {
 	// The signer used by the API should always be the 'latest' known one because we expect
 	// signers to be backwards-compatible with old transactions.
 	signer := types.LatestSigner(b.ChainConfig())
