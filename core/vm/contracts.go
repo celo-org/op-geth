@@ -128,7 +128,7 @@ var PrecompiledContractsFjord = map[common.Address]PrecompiledContract{
 // contracts used in the Cel2 release which don't require the extra
 // celoPrecompileContext, while PrecompiledCeloContractsCel2 contains those
 // that do.
-var PrecompiledContractsCel2 = PrecompiledContractsCancun
+var PrecompiledContractsCel2 = PrecompiledContractsFjord
 var PrecompiledCeloContractsCel2 = map[common.Address]CeloPrecompiledContract{
 	celoPrecompileAddress(2): &transfer{},
 }
