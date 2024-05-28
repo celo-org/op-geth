@@ -124,11 +124,8 @@ var PrecompiledContractsFjord = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{0x01, 0x00}): &p256Verify{},
 }
 
-// PrecompiledContractsCel2 contains the default set of pre-compiled Ethereum
-// contracts used in the Cel2 release which don't require the extra
-// celoPrecompileContext, while PrecompiledCeloContractsCel2 contains those
-// that do.
-var PrecompiledContractsCel2 = PrecompiledContractsFjord
+// PrecompiledCeloContractsCel2 contains a set of pre-compiled contracts used
+// in the Cel2 release which require the extra celoPrecompileContext.
 var PrecompiledCeloContractsCel2 = map[common.Address]CeloPrecompiledContract{
 	celoPrecompileAddress(2): &transfer{},
 }
@@ -176,32 +173,39 @@ func init() {
 	for k := range PrecompiledContractsFjord {
 		PrecompiledAddressesFjord = append(PrecompiledAddressesFjord, k)
 	}
-	for k := range PrecompiledContractsCel2 {
-		PrecompiledAddressesCel2 = append(PrecompiledAddressesCel2, k)
-	}
-	for k := range PrecompiledCeloContractsCel2 {
-		PrecompiledAddressesCel2 = append(PrecompiledAddressesCel2, k)
-	}
 }
 
 // ActivePrecompiles returns the precompiles enabled with the current configuration.
 func ActivePrecompiles(rules params.Rules) []common.Address {
+	var addresses []common.Address
+
 	switch {
-	case rules.IsCel2:
-		return PrecompiledAddressesCel2
 	case rules.IsOptimismFjord:
-		return PrecompiledAddressesFjord
+		addresses = PrecompiledAddressesFjord
 	case rules.IsCancun:
-		return PrecompiledAddressesCancun
+		addresses = PrecompiledAddressesCancun
 	case rules.IsBerlin:
-		return PrecompiledAddressesBerlin
+		addresses = PrecompiledAddressesBerlin
 	case rules.IsIstanbul:
-		return PrecompiledAddressesIstanbul
+		addresses = PrecompiledAddressesIstanbul
 	case rules.IsByzantium:
-		return PrecompiledAddressesByzantium
+		addresses = PrecompiledAddressesByzantium
 	default:
-		return PrecompiledAddressesHomestead
+		addresses = PrecompiledAddressesHomestead
 	}
+
+	if !rules.IsCel2 {
+		return addresses
+	}
+
+	PrecompiledAddressesCel2 = PrecompiledAddressesCel2[:0]
+	PrecompiledAddressesCel2 = append(PrecompiledAddressesCel2, addresses...)
+
+	for k := range PrecompiledCeloContractsCel2 {
+		PrecompiledAddressesCel2 = append(PrecompiledAddressesCel2, k)
+	}
+
+	return PrecompiledAddressesCel2
 }
 
 // RunPrecompiledContract runs and evaluates the output of a precompiled contract.
