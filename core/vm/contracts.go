@@ -175,24 +175,28 @@ func init() {
 	}
 }
 
-// ActivePrecompiles returns the precompiles enabled with the current configuration.
-func ActivePrecompiles(rules params.Rules) []common.Address {
-	var addresses []common.Address
-
+// OptimismPrecompiles returns the original Optimism precompiles enabled with
+// the current configuration.
+func OptimismPrecompiles(rules params.Rules) []common.Address {
 	switch {
 	case rules.IsOptimismFjord:
-		addresses = PrecompiledAddressesFjord
+		return PrecompiledAddressesFjord
 	case rules.IsCancun:
-		addresses = PrecompiledAddressesCancun
+		return PrecompiledAddressesCancun
 	case rules.IsBerlin:
-		addresses = PrecompiledAddressesBerlin
+		return PrecompiledAddressesBerlin
 	case rules.IsIstanbul:
-		addresses = PrecompiledAddressesIstanbul
+		return PrecompiledAddressesIstanbul
 	case rules.IsByzantium:
-		addresses = PrecompiledAddressesByzantium
+		return PrecompiledAddressesByzantium
 	default:
-		addresses = PrecompiledAddressesHomestead
+		return PrecompiledAddressesHomestead
 	}
+}
+
+// ActivePrecompiles returns the precompiles enabled with the current configuration.
+func ActivePrecompiles(rules params.Rules) []common.Address {
+	addresses := OptimismPrecompiles(rules)
 
 	if !rules.IsCel2 {
 		return addresses
