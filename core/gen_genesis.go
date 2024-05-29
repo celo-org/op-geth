@@ -96,14 +96,12 @@ func (g *Genesis) UnmarshalJSON(input []byte) error {
 	if dec.ExtraData != nil {
 		g.ExtraData = *dec.ExtraData
 	}
-	if dec.GasLimit == nil {
-		return errors.New("missing required field 'gasLimit' for Genesis")
+	if dec.GasLimit != nil {
+		g.GasLimit = uint64(*dec.GasLimit)
 	}
-	g.GasLimit = uint64(*dec.GasLimit)
-	if dec.Difficulty == nil {
-		return errors.New("missing required field 'difficulty' for Genesis")
+	if dec.Difficulty != nil {
+		g.Difficulty = (*big.Int)(dec.Difficulty)
 	}
-	g.Difficulty = (*big.Int)(dec.Difficulty)
 	if dec.Mixhash != nil {
 		g.Mixhash = *dec.Mixhash
 	}
