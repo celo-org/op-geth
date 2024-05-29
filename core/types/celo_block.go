@@ -86,7 +86,11 @@ func (h *Header) DecodeRLP(s *rlp.Stream) error {
 // EncodeRLP implements encodes the Header to an RLP data stream.
 func (h *Header) EncodeRLP(w io.Writer) error {
 	// Before gingerbread
-	if h.Difficulty == nil {
+	// We use gas limit here because CopyHeader can end up setting a nil
+	// Difficulty to a zero difficulty, so testing for nil difficulty is not
+	// reliable, and also testing for base fee is not reliable because some
+	// older eth blocks had no base fee.
+	if h.GasLimit == 0 {
 		// Encode the header
 		encodedHeader := beforeGingerbreadHeader{
 			ParentHash:  h.ParentHash,
