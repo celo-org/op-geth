@@ -38,6 +38,9 @@ type ExecutionResult struct {
 	UsedGas    uint64 // Total used gas but include the refunded gas
 	Err        error  // Any error encountered during the execution(listed in core/vm/errors.go)
 	ReturnData []byte // Returned data from evm(function result or data supplied with revert opcode)
+
+	// Celo additions
+	FeeInFeeCurrency *big.Int // Total fee debited in a CELO denominated tx, in FeeCurrency
 }
 
 // Unwrap returns the internal evm error which allows us for further
@@ -180,6 +183,20 @@ type Message struct {
 	// `nil` corresponds to Celo Gold (native currency).
 	// All other values should correspond to ERC20 contract addresses.
 	FeeCurrency *common.Address
+
+	// MaxFeeInFeeCurrency provides a maximum accepted value for the
+	// total fee of a CELO denominated transaction in the FeeCurrency.
+	// Note that it is not necessary that Balance > MaxFeeInFeeCurrency,
+	// only that ConvertGoldToCurrency(tx.Fee,FeeCurrency) <= MaxFeeInFeeCurrency.
+	MaxFeeInFeeCurrency *big.Int
+}
+
+// DenominatedFeeCurrency returns the currency in which all fees are expressed
+func (m Message) DenominatedFeeCurrency() *common.Address {
+	if m.FeeCurrency != nil && m.MaxFeeInFeeCurrency != nil {
+		return nil
+	}
+	return m.FeeCurrency
 }
 
 // TransactionToMessage converts a transaction into a Message.
@@ -203,11 +220,21 @@ func TransactionToMessage(tx *types.Transaction, s types.Signer, baseFee *big.In
 		BlobHashes:        tx.BlobHashes(),
 		BlobGasFeeCap:     tx.BlobGasFeeCap(),
 
-		FeeCurrency: tx.FeeCurrency(),
+		FeeCurrency:         tx.FeeCurrency(),
+		MaxFeeInFeeCurrency: tx.MaxFeeInFeeCurrency(),
+	}
+	if tx.Type() == types.CeloDenominatedTxType {
+		// Sanity checks for CELO denominated txs
+		if tx.MaxFeeInFeeCurrency() == nil {
+			return msg, ErrDenominatedNoMax
+		}
+		if tx.FeeCurrency() == nil {
+			return msg, ErrDenominatedNoCurrency
+		}
 	}
 	// If baseFee provided, set gasPrice to effectiveGasPrice.
 	if baseFee != nil {
-		if msg.FeeCurrency != nil {
+		if msg.DenominatedFeeCurrency() != nil {
 			var err error
 			baseFee, err = exchange.ConvertGoldToCurrency(exchangeRates, msg.FeeCurrency, baseFee)
 			if err != nil {
@@ -262,6 +289,10 @@ type StateTransition struct {
 	initialGas   uint64
 	state        vm.StateDB
 	evm          *vm.EVM
+
+	// Celo additions
+	erc20FeeDebited  *big.Int // Amount debited in the Debit at buyGas for a FeeCurrency tx
+	feeInFeeCurrency *big.Int // Total fee deducted (Debited - Credited) at the end of a CELO denominated tx
 }
 
 // NewStateTransition initialises and returns a new state transition object.
@@ -291,7 +322,7 @@ func (st *StateTransition) buyGas() error {
 		l1Cost = st.evm.Context.L1CostFunc(st.msg.RollupCostData, st.evm.Context.Time)
 
 		// L1 data fee needs to be converted in fee currency
-		if st.msg.FeeCurrency != nil && l1Cost != nil {
+		if st.msg.DenominatedFeeCurrency() != nil && l1Cost != nil {
 			// Existence of the fee currency has been checked in `preCheck`
 			l1Cost, _ = exchange.ConvertGoldToCurrency(st.evm.Context.ExchangeRates, st.msg.FeeCurrency, l1Cost)
 		}
@@ -304,9 +335,9 @@ func (st *StateTransition) buyGas() error {
 	if st.msg.GasFeeCap != nil {
 		balanceCheck.SetUint64(st.msg.GasLimit)
 		balanceCheck = balanceCheck.Mul(balanceCheck, st.msg.GasFeeCap)
-		balanceCheck.Add(balanceCheck, st.msg.Value)
-		if l1Cost != nil {
-			balanceCheck.Add(balanceCheck, l1Cost)
+		if st.msg.FeeCurrency == nil {
+			// Value will be checked individually for FeeCurrencies in canPayFee
+			balanceCheck.Add(balanceCheck, st.msg.Value)
 		}
 	}
 	if st.evm.ChainConfig().IsCancun(st.evm.Context.BlockNumber, st.evm.Context.Time) {
@@ -335,18 +366,37 @@ func (st *StateTransition) buyGas() error {
 	return st.subFees(mgval)
 }
 
+func (st *StateTransition) checkCanPayCELOamount(celoAmount *big.Int) error {
+	balance := st.state.GetBalance(st.msg.From)
+
+	if balance.Cmp(celoAmount) < 0 {
+		return fmt.Errorf("%w: address %v have %v want %v", ErrInsufficientFunds, st.msg.From.Hex(), balance, celoAmount)
+	}
+	return nil
+}
+
 // canPayFee checks whether accountOwner's balance can cover transaction fee.
 func (st *StateTransition) canPayFee(checkAmount *big.Int) error {
 	if st.msg.FeeCurrency == nil {
-		balance := st.state.GetBalance(st.msg.From)
-
-		if balance.Cmp(checkAmount) < 0 {
-			return fmt.Errorf("%w: address %v have %v want %v", ErrInsufficientFunds, st.msg.From.Hex(), balance, checkAmount)
+		if err := st.checkCanPayCELOamount(checkAmount); err != nil {
+			return err
 		}
 	} else {
 		backend := &contracts.CeloBackend{
 			ChainConfig: st.evm.ChainConfig(),
 			State:       st.state,
+		}
+		// Check first VALUE for FeeCurrencies
+		if err := st.checkCanPayCELOamount(st.msg.Value); err != nil {
+			return err
+		}
+		if st.msg.MaxFeeInFeeCurrency != nil {
+			// CELO denominated tx, convert the checked value to the FeeCurrency
+			var err error
+			checkAmount, err = exchange.ConvertGoldToCurrency(st.evm.Context.ExchangeRates, st.msg.FeeCurrency, checkAmount)
+			if err != nil {
+				return err
+			}
 		}
 		balance, err := contracts.GetBalanceERC20(backend, st.msg.From, *st.msg.FeeCurrency)
 		if err != nil {
@@ -368,6 +418,22 @@ func (st *StateTransition) subFees(effectiveFee *big.Int) (err error) {
 		st.state.SubBalance(st.msg.From, effectiveFee)
 		return nil
 	} else {
+		st.state.SubBalance(st.msg.From, st.msg.Value)
+		if st.msg.MaxFeeInFeeCurrency != nil {
+			// CELO denominated tx. Exchange the fee
+			var err error
+			effectiveFee, err = exchange.ConvertGoldToCurrency(st.evm.Context.ExchangeRates, st.msg.FeeCurrency, effectiveFee)
+			if err != nil {
+				return err
+			}
+			// effectiveFee also includes l1cost
+			if effectiveFee.Cmp(st.msg.MaxFeeInFeeCurrency) > 0 {
+				// Fee can't be higher than MaxFeeInFeeCurrency
+				return fmt.Errorf("%w: Fee %v should be lower or equal than MaxFeeInFeeCurrency %v",
+					ErrDenominatedLowMaxFee, effectiveFee, st.msg.MaxFeeInFeeCurrency)
+			}
+		}
+		st.erc20FeeDebited = effectiveFee
 		return contracts.DebitFees(st.evm, st.msg.FeeCurrency, st.msg.From, effectiveFee)
 	}
 }
@@ -420,6 +486,14 @@ func (st *StateTransition) preCheck() error {
 			if !isWhiteListed {
 				log.Trace("fee currency not whitelisted", "fee currency address", msg.FeeCurrency)
 				return exchange.ErrNonWhitelistedFeeCurrency
+			}
+		}
+
+		// Verify that CELO denominated tx is valid (not including l1cost here)
+		if msg.MaxFeeInFeeCurrency != nil {
+			maxFee := new(big.Int).Mul(new(big.Int).SetUint64(st.msg.GasLimit), st.msg.GasFeeCap)
+			if maxFee.Cmp(st.msg.MaxFeeInFeeCurrency) > 0 {
+				return ErrDenominatedLowMaxFee
 			}
 		}
 	}
@@ -643,9 +717,10 @@ func (st *StateTransition) innerTransitionDb() (*ExecutionResult, error) {
 	}
 
 	return &ExecutionResult{
-		UsedGas:    st.gasUsed(),
-		Err:        vmerr,
-		ReturnData: ret,
+		UsedGas:          st.gasUsed(),
+		Err:              vmerr,
+		ReturnData:       ret,
+		FeeInFeeCurrency: st.feeInFeeCurrency,
 	}, nil
 }
 
@@ -710,6 +785,33 @@ func (st *StateTransition) distributeTxFees() error {
 		l1Cost = st.evm.Context.L1CostFunc(st.msg.RollupCostData, st.evm.Context.Time)
 	}
 
+	if feeCurrency != nil && st.msg.MaxFeeInFeeCurrency != nil {
+		// Celo Denominated
+
+		// We want to ensure that
+		// 		st.erc20FeeDebited = tipTxFee + baseTxFee + refund
+		// so that debit and credit totals match. Since the exchange rate
+		// conversions have limited accuracy, the only way to achieve this
+		// is to calculate one of the three credit values based on the two
+		// others after the exchange rate conversion.
+
+		// We have already pass the prechecks and the Debit fees so we know the
+		// exchange rate is whitelisted, no need to check for the error
+		tipTxFee, _ = exchange.ConvertGoldToCurrency(st.evm.Context.ExchangeRates, feeCurrency, tipTxFee)
+		baseTxFee, _ = exchange.ConvertGoldToCurrency(st.evm.Context.ExchangeRates, feeCurrency, baseTxFee)
+
+		// The l1cost is added inside of the CreditFees transaction, it should not be added here
+		totalTxFee.Add(tipTxFee, baseTxFee)
+		refund.Sub(st.erc20FeeDebited, totalTxFee) // refund = debited - tip - basefee
+
+		// Set receipt field
+		st.feeInFeeCurrency = totalTxFee
+		// Add l1cost to the fee paid
+		if l1Cost != nil {
+			st.feeInFeeCurrency.Add(st.feeInFeeCurrency, l1Cost)
+		}
+	}
+
 	if feeCurrency == nil {
 		st.state.AddBalance(st.evm.Context.Coinbase, tipTxFee)
 		st.state.AddBalance(from, refund)
@@ -745,7 +847,7 @@ func (st *StateTransition) calculateBaseFee() *big.Int {
 		baseFee = big.NewInt(0)
 	}
 
-	if st.msg.FeeCurrency != nil {
+	if st.msg.DenominatedFeeCurrency() != nil {
 		// Existence of the fee currency has been checked in `preCheck`
 		baseFee, _ = exchange.ConvertGoldToCurrency(st.evm.Context.ExchangeRates, st.msg.FeeCurrency, baseFee)
 	}
