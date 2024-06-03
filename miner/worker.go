@@ -87,12 +87,13 @@ var (
 // environment is the worker's current environment and holds all
 // information of the sealing block generation.
 type environment struct {
-	signer       types.Signer
-	state        *state.StateDB     // apply state changes here
-	tcount       int                // tx count in cycle
-	gasPool      *core.GasPool      // available gas used to pack transactions
-	multiGasPool *core.MultiGasPool // available per-fee-currency gas used to pack transactions
-	coinbase     common.Address
+	signer               types.Signer
+	state                *state.StateDB     // apply state changes here
+	tcount               int                // tx count in cycle
+	gasPool              *core.GasPool      // available gas used to pack transactions
+	multiGasPool         *core.MultiGasPool // available per-fee-currency gas used to pack transactions
+	feeCurrencyWhitelist []common.Address
+	coinbase             common.Address
 
 	header   *types.Header
 	txs      []*types.Transaction
@@ -858,6 +859,7 @@ func (w *worker) commitTransactions(env *environment, plainTxs, blobTxs *transac
 	if env.multiGasPool == nil {
 		env.multiGasPool = core.NewMultiGasPool(
 			env.header.GasLimit,
+			env.feeCurrencyWhitelist,
 			w.config.FeeCurrencyDefault,
 			w.config.FeeCurrencyLimits,
 		)
@@ -917,7 +919,7 @@ func (w *worker) commitTransactions(env *environment, plainTxs, blobTxs *transac
 			txs.Pop()
 			continue
 		}
-		if left := env.multiGasPool.GetPool(ltx.FeeCurrency).Gas(); left < ltx.Gas {
+		if left := env.multiGasPool.PoolFor(ltx.FeeCurrency).Gas(); left < ltx.Gas {
 			log.Trace(
 				"Not enough specific fee-currency gas left for transaction",
 				"currency", ltx.FeeCurrency, "hash", ltx.Hash,
@@ -957,12 +959,12 @@ func (w *worker) commitTransactions(env *environment, plainTxs, blobTxs *transac
 			txs.Shift()
 
 		case errors.Is(err, nil):
-			err := env.multiGasPool.GetPool(tx.FeeCurrency()).SubGas(gasUsed)
+			err := env.multiGasPool.PoolFor(tx.FeeCurrency()).SubGas(gasUsed)
 			if err != nil {
 				// Should never happen as we check it above
 				log.Warn(
 					"Unexpectedly reached limit for fee currency, but tx will not be skipped",
-					"hash", tx.Hash(), "gas", env.multiGasPool.GetPool(tx.FeeCurrency()).Gas(),
+					"hash", tx.Hash(), "gas", env.multiGasPool.PoolFor(tx.FeeCurrency()).Gas(),
 					"tx gas used", gasUsed,
 				)
 				// If we reach this codepath, we want to still include the transaction,
@@ -1134,8 +1136,9 @@ func (w *worker) prepareWork(genParams *generateParams) (*environment, error) {
 		log.Error("Failed to create sealing context", "err", err)
 		return nil, err
 	}
+	context := core.NewEVMBlockContext(header, w.chain, nil, w.chainConfig, env.state)
+	env.feeCurrencyWhitelist = common.CurrencyWhitelist(context.ExchangeRates)
 	if header.ParentBeaconRoot != nil {
-		context := core.NewEVMBlockContext(header, w.chain, nil, w.chainConfig, env.state)
 		vmenv := vm.NewEVM(context, vm.TxContext{}, env.state, w.chainConfig, vm.Config{})
 		core.ProcessBeaconBlockRoot(*header.ParentBeaconRoot, vmenv, env.state)
 	}
@@ -1217,6 +1220,7 @@ func (w *worker) generateWork(genParams *generateParams) *newPayloadResult {
 	if work.multiGasPool == nil {
 		work.multiGasPool = core.NewMultiGasPool(
 			work.header.GasLimit,
+			work.feeCurrencyWhitelist,
 			w.config.FeeCurrencyDefault,
 			w.config.FeeCurrencyLimits,
 		)
@@ -1234,7 +1238,7 @@ func (w *worker) generateWork(genParams *generateParams) *newPayloadResult {
 		// the non-fee currency pool in the multipool is not used, but for consistency
 		// subtract the gas. Don't check the error either, this has been checked already
 		// with the work.gasPool.
-		work.multiGasPool.GetPool(nil).SubGas(tx.Gas())
+		work.multiGasPool.PoolFor(nil).SubGas(tx.Gas())
 		work.tcount++
 	}
 

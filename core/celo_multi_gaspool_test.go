@@ -16,22 +16,27 @@ func TestMultiCurrencyGasPool(t *testing.T) {
 	testCases := []struct {
 		name                string
 		feeCurrency         *FeeCurrency
+		whitelist           []FeeCurrency
 		defaultLimit        float64
 		limits              FeeCurrencyLimitMapping
 		defaultPoolExpected bool
 		expectedValue       uint64
 	}{
 		{
-			name:                "Empty mapping, CELO uses default pool",
+			name:                "Empty whitelist, empty mapping, CELO uses default pool",
 			feeCurrency:         nil,
+			whitelist:           []FeeCurrency{},
 			defaultLimit:        0.9,
 			limits:              map[FeeCurrency]float64{},
 			defaultPoolExpected: true,
 			expectedValue:       900, // blockGasLimit - subGasAmount
 		},
 		{
-			name:         "Non-empty mapping, CELO uses default pool",
-			feeCurrency:  nil,
+			name:        "Non-empty whitelist, non-empty mapping, CELO uses default pool",
+			feeCurrency: nil,
+			whitelist: []FeeCurrency{
+				cUSDToken,
+			},
 			defaultLimit: 0.9,
 			limits: map[FeeCurrency]float64{
 				cUSDToken: 0.5,
@@ -40,26 +45,44 @@ func TestMultiCurrencyGasPool(t *testing.T) {
 			expectedValue:       900, // blockGasLimit - subGasAmount
 		},
 		{
-			name:                "Empty mapping, currency fallbacks to the default limit",
+			name:                "Empty whitelist, empty mapping, non-whitelisted currency fallbacks to the default pool",
 			feeCurrency:         &cUSDToken,
+			whitelist:           []FeeCurrency{},
 			defaultLimit:        0.9,
 			limits:              map[FeeCurrency]float64{},
-			defaultPoolExpected: false,
-			expectedValue:       800, // blockGasLimit * defaultLimit- subGasAmount
+			defaultPoolExpected: true,
+			expectedValue:       900, // blockGasLimit - subGasAmount
 		},
 		{
-			name:         "Non-empty mapping, currency uses default limit",
-			feeCurrency:  &cEURToken,
+			name:        "Non-empty whitelist, non-empty mapping, non-whitelisted currency uses default pool",
+			feeCurrency: &cEURToken,
+			whitelist: []FeeCurrency{
+				cUSDToken,
+			},
 			defaultLimit: 0.9,
 			limits: map[FeeCurrency]float64{
 				cUSDToken: 0.5,
 			},
+			defaultPoolExpected: true,
+			expectedValue:       900, // blockGasLimit - subGasAmount
+		},
+		{
+			name:        "Non-empty whitelist, empty mapping, whitelisted currency uses default limit",
+			feeCurrency: &cUSDToken,
+			whitelist: []FeeCurrency{
+				cUSDToken,
+			},
+			defaultLimit:        0.9,
+			limits:              map[FeeCurrency]float64{},
 			defaultPoolExpected: false,
 			expectedValue:       800, // blockGasLimit * defaultLimit - subGasAmount
 		},
 		{
-			name:         "Non-empty mapping, configured currency uses configured limits",
-			feeCurrency:  &cUSDToken,
+			name:        "Non-empty whitelist, non-empty mapping, configured whitelisted currency uses configured limits",
+			feeCurrency: &cUSDToken,
+			whitelist: []FeeCurrency{
+				cUSDToken,
+			},
 			defaultLimit: 0.9,
 			limits: map[FeeCurrency]float64{
 				cUSDToken: 0.5,
@@ -67,26 +90,41 @@ func TestMultiCurrencyGasPool(t *testing.T) {
 			defaultPoolExpected: false,
 			expectedValue:       400, // blockGasLimit * 0.5 - subGasAmount
 		},
+		{
+			name:        "Non-empty whitelist, non-empty mapping, unconfigured whitelisted currency uses default limit",
+			feeCurrency: &cEURToken,
+			whitelist: []FeeCurrency{
+				cUSDToken,
+				cEURToken,
+			},
+			defaultLimit: 0.9,
+			limits: map[FeeCurrency]float64{
+				cUSDToken: 0.5,
+			},
+			defaultPoolExpected: false,
+			expectedValue:       800, // blockGasLimit * 0.5 - subGasAmount
+		},
 	}
 
 	for _, c := range testCases {
 		t.Run(c.name, func(t *testing.T) {
 			mgp := NewMultiGasPool(
 				blockGasLimit,
+				c.whitelist,
 				c.defaultLimit,
 				c.limits,
 			)
 
-			pool := mgp.GetPool(c.feeCurrency)
+			pool := mgp.PoolFor(c.feeCurrency)
 			pool.SubGas(uint64(subGasAmount))
 
 			if c.defaultPoolExpected {
-				result := mgp.GetPool(nil).Gas()
+				result := mgp.PoolFor(nil).Gas()
 				if result != c.expectedValue {
 					t.Error("Default pool expected", c.expectedValue, "got", result)
 				}
 			} else {
-				result := mgp.GetPool(c.feeCurrency).Gas()
+				result := mgp.PoolFor(c.feeCurrency).Gas()
 
 				if result != c.expectedValue {
 					t.Error(

@@ -1,6 +1,8 @@
 package core
 
-import "github.com/ethereum/go-ethereum/common"
+import (
+	"github.com/ethereum/go-ethereum/common"
+)
 
 type FeeCurrency = common.Address
 
@@ -10,9 +12,6 @@ type FeeCurrency = common.Address
 type MultiGasPool struct {
 	pools       map[FeeCurrency]*GasPool
 	defaultPool *GasPool
-
-	blockGasLimit uint64
-	defaultLimit  float64
 }
 
 type FeeCurrencyLimitMapping = map[FeeCurrency]float64
@@ -21,48 +20,41 @@ type FeeCurrencyLimitMapping = map[FeeCurrency]float64
 // pool for CELO
 func NewMultiGasPool(
 	blockGasLimit uint64,
+	whitelist []FeeCurrency,
 	defaultLimit float64,
 	limitsMapping FeeCurrencyLimitMapping,
 ) *MultiGasPool {
-	pools := make(map[FeeCurrency]*GasPool, len(limitsMapping))
+	pools := make(map[FeeCurrency]*GasPool, len(whitelist))
+
+	for i := range whitelist {
+		currency := whitelist[i]
+		fraction, ok := limitsMapping[currency]
+		if !ok {
+			fraction = defaultLimit
+		}
+
+		pools[currency] = new(GasPool).AddGas(
+			uint64(float64(blockGasLimit) * fraction),
+		)
+	}
+
 	// A special case for CELO which doesn't have a limit
 	celoPool := new(GasPool).AddGas(blockGasLimit)
-	mgp := &MultiGasPool{
-		pools:         pools,
-		defaultPool:   celoPool,
-		blockGasLimit: blockGasLimit,
-		defaultLimit:  defaultLimit,
+
+	return &MultiGasPool{
+		pools:       pools,
+		defaultPool: celoPool,
 	}
-	for feeCurrency, fraction := range limitsMapping {
-		mgp.getOrInitPool(feeCurrency, &fraction)
-	}
-	return mgp
 }
 
-func (mgp MultiGasPool) getOrInitPool(c FeeCurrency, fraction *float64) *GasPool {
-	if gp, ok := mgp.pools[c]; ok {
-		return gp
-	}
-	if fraction == nil {
-		fraction = &mgp.defaultLimit
-	}
-	gp := new(GasPool).AddGas(
-		uint64(float64(mgp.blockGasLimit) * *fraction),
-	)
-	mgp.pools[c] = gp
-	return gp
-}
-
-// GetPool returns an initialised pool for the given fee currency or
-// initialises and returns a new pool with a default limit.
-// For a `nil` FeeCurrency value, it returns the default pool.
-func (mgp MultiGasPool) GetPool(c *FeeCurrency) *GasPool {
-	if c == nil {
+// PoolFor returns a configured pool for the given fee currency or the default
+// one otherwise
+func (mgp MultiGasPool) PoolFor(feeCurrency *FeeCurrency) *GasPool {
+	if feeCurrency == nil || mgp.pools[*feeCurrency] == nil {
 		return mgp.defaultPool
 	}
-	// Use the default fraction here because the configured limits'
-	// pools have been created already in the constructor.
-	return mgp.getOrInitPool(*c, nil)
+
+	return mgp.pools[*feeCurrency]
 }
 
 func (mgp MultiGasPool) Copy() *MultiGasPool {
@@ -71,9 +63,9 @@ func (mgp MultiGasPool) Copy() *MultiGasPool {
 		gpCpy := *gp
 		pools[fc] = &gpCpy
 	}
+	gpCpy := *mgp.defaultPool
 	return &MultiGasPool{
-		pools:         pools,
-		blockGasLimit: mgp.blockGasLimit,
-		defaultLimit:  mgp.defaultLimit,
+		pools:       pools,
+		defaultPool: &gpCpy,
 	}
 }
