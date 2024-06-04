@@ -98,6 +98,10 @@ type environment struct {
 
 	noTxs  bool            // true if we are reproducing a block, and do not have to check interop txs
 	rpcCtx context.Context // context to control block-building RPC work. No RPC allowed if nil.
+
+	// Celo specific
+	multiGasPool         *core.MultiGasPool // available per-fee-currency gas used to pack transactions
+	feeCurrencyAllowlist []common.Address
 }
 
 // txFitsSize reports whether the transaction fits into the block size limit.
@@ -207,6 +211,14 @@ func (miner *Miner) generateWork(ctx context.Context, genParam *generateParams, 
 		}
 		work.gasPool = core.NewGasPool(gasLimit)
 	}
+	if work.multiGasPool == nil {
+		work.multiGasPool = core.NewMultiGasPool(
+			work.header.GasLimit,
+			work.feeCurrencyAllowlist,
+			miner.config.FeeCurrencyDefault,
+			miner.config.FeeCurrencyLimits,
+		)
+	}
 
 	misc.EnsureCreate2Deployer(miner.chainConfig, work.header.Time, work.state)
 
@@ -217,6 +229,10 @@ func (miner *Miner) generateWork(ctx context.Context, genParam *generateParams, 
 		if err != nil {
 			return &newPayloadResult{err: fmt.Errorf("failed to force-include tx: %s type: %d sender: %s nonce: %d, err: %w", tx.Hash(), tx.Type(), from, tx.Nonce(), err)}
 		}
+		// the non-fee currency pool in the multipool is not used, but for consistency
+		// subtract the gas. Don't check the error either, this has been checked already
+		// with the work.gasPool.
+		work.multiGasPool.PoolFor(nil).SubGas(tx.Gas())
 	}
 	if !genParam.noTxs {
 		// If forceOverrides is true and overrideTxs is not empty, commit the override transactions
@@ -425,6 +441,8 @@ func (miner *Miner) prepareWork(ctx context.Context, genParams *generateParams, 
 			return nil, err
 		}
 	}
+	context := core.NewEVMBlockContext(header, miner.chain, nil, miner.chainConfig, env.state)
+	env.feeCurrencyAllowlist = common.CurrencyAllowlist(context.ExchangeRates)
 	if header.ParentBeaconRoot != nil {
 		core.ProcessBeaconBlockRoot(*header.ParentBeaconRoot, env.evm)
 	}
@@ -574,6 +592,14 @@ func (miner *Miner) commitTransactions(ctx context.Context, env *environment, pl
 	gasLimit := env.header.GasLimit
 
 	isCancun := miner.chainConfig.IsCancun(env.header.Number, env.header.Time)
+	if env.multiGasPool == nil {
+		env.multiGasPool = core.NewMultiGasPool(
+			env.header.GasLimit,
+			env.feeCurrencyAllowlist,
+			miner.config.FeeCurrencyDefault,
+			miner.config.FeeCurrencyLimits,
+		)
+	}
 	for {
 		// Check interruption signal and abort building if it's fired.
 		if interrupt != nil {
@@ -676,7 +702,15 @@ func (miner *Miner) commitTransactions(ctx context.Context, env *environment, pl
 				continue
 			}
 		}
-
+		if left := env.multiGasPool.PoolFor(ltx.FeeCurrency).Gas(); left < ltx.Gas {
+			log.Trace(
+				"Not enough specific fee-currency gas left for transaction",
+				"currency", ltx.FeeCurrency, "hash", ltx.Hash,
+				"left", left, "needed", ltx.Gas,
+			)
+			txs.Pop()
+			continue
+		}
 		// Transaction seems to fit, pull it up from the pool
 		tx := ltx.Resolve()
 		if tx == nil {
@@ -704,7 +738,9 @@ func (miner *Miner) commitTransactions(ctx context.Context, env *environment, pl
 		// Start executing the transaction
 		env.state.SetTxContext(tx.Hash(), env.tcount)
 
+		availableGas := env.gasPool.Gas()
 		err := miner.commitTransaction(ctx, env, tx)
+		gasUsed := availableGas - env.gasPool.Gas()
 		switch {
 		case errors.Is(err, core.ErrNonceTooLow):
 			// New head notification data race between the transaction pool and miner, shift
@@ -729,6 +765,23 @@ func (miner *Miner) commitTransactions(ctx context.Context, env *environment, pl
 			txs.Pop()
 
 		case errors.Is(err, nil):
+			err := env.multiGasPool.PoolFor(tx.FeeCurrency()).SubGas(gasUsed)
+			if err != nil {
+				// Should never happen as we check it above
+				log.Warn(
+					"Unexpectedly reached limit for fee currency, but tx will not be skipped",
+					"hash", tx.Hash(), "gas", env.multiGasPool.PoolFor(tx.FeeCurrency()).Gas(),
+					"tx gas used", gasUsed,
+				)
+				// If we reach this codepath, we want to still include the transaction,
+				// since the "global" gasPool in the commitTransaction accepted it and we
+				// would have to roll the transaction back now, introducing unnecessary
+				// complexity.
+				// Since we shouldn't reach this point anyways and the
+				// block gas limit per fee currency is enforced voluntarily and not
+				// included in the consensus this is fine.
+			}
+
 			// Everything ok, collect the logs and shift in the next transaction from the same account
 			blockDABytes = daBytesAfter
 			if isJovian {
