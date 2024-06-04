@@ -44,6 +44,9 @@ type LazyTransaction struct {
 	BlobGas uint64 // Amount of blob gas required by the transaction
 
 	DABytes *big.Int // Amount of data availability bytes this transaction may require if this is a rollup
+
+	// Celo
+	FeeCurrency *common.Address
 }
 
 // Resolve retrieves the full transaction belonging to a lazy handle if it is still
