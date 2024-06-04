@@ -26,6 +26,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -156,6 +157,9 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	if err != nil {
 		return nil, err
 	}
+	spew.Dump("chainconfig", chainConfig)
+	spew.Config.DisableMethods = true
+	spew.Dump("chainconfig.optimism", chainConfig.Optimism)
 	// Hardcode TerminalTotalDifficultyPassed to true.
 	chainConfig.TerminalTotalDifficultyPassed = true
 	engine, err := ethconfig.CreateConsensusEngine(chainConfig, chainDb)
