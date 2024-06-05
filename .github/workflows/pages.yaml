@@ -22,7 +22,7 @@ jobs:
           warn-only: true
 
       - name: Build forkdiff
-        uses: "docker://protolambda/forkdiff:latest"
+        uses: "docker://protolambda/forkdiff:0.1.0"
         with:
           args: -repo=/github/workspace -fork=/github/workspace/fork.yaml -out=/github/workspace/index.html
 
