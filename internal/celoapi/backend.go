@@ -37,13 +37,13 @@ type CeloAPIBackend struct {
 	exchangeRatesCache *lru.Cache[common.Hash, common.ExchangeRates]
 }
 
-func (b *CeloAPIBackend) getContractCaller(ctx context.Context, atBlock common.Hash) (*contracts.CeloBackend, error) {
+func (b *CeloAPIBackend) getContractCaller(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash) (*contracts.CeloBackend, error) {
 	state, _, err := b.Backend.StateAndHeaderByNumberOrHash(
 		ctx,
-		rpc.BlockNumberOrHashWithHash(atBlock, false),
+		blockNumOrHash,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("retrieve state for block hash %s: %w", atBlock.String(), err)
+		return nil, fmt.Errorf("retrieve state for block hash %s: %w", blockNumOrHash.String(), err)
 	}
 	return &contracts.CeloBackend{
 		ChainConfig: b.Backend.ChainConfig(),
@@ -51,20 +51,23 @@ func (b *CeloAPIBackend) getContractCaller(ctx context.Context, atBlock common.H
 	}, nil
 }
 
-func (b *CeloAPIBackend) GetFeeBalance(ctx context.Context, atBlock common.Hash, account common.Address, feeCurrency *common.Address) (*big.Int, error) {
-	cb, err := b.getContractCaller(ctx, atBlock)
+func (b *CeloAPIBackend) GetFeeBalance(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash, account common.Address, feeCurrency *common.Address) (*big.Int, error) {
+	cb, err := b.getContractCaller(ctx, blockNumOrHash)
 	if err != nil {
 		return nil, err
 	}
 	return contracts.GetFeeBalance(cb, account, feeCurrency), nil
 }
 
-func (b *CeloAPIBackend) GetExchangeRates(ctx context.Context, atBlock common.Hash) (common.ExchangeRates, error) {
-	cachedRates, ok := b.exchangeRatesCache.Get(atBlock)
-	if ok {
-		return cachedRates, nil
+func (b *CeloAPIBackend) GetExchangeRates(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash) (common.ExchangeRates, error) {
+	blockHash, isHash := blockNumOrHash.Hash()
+	if isHash {
+		cachedRates, ok := b.exchangeRatesCache.Get(blockHash)
+		if ok {
+			return cachedRates, nil
+		}
 	}
-	cb, err := b.getContractCaller(ctx, atBlock)
+	cb, err := b.getContractCaller(ctx, blockNumOrHash)
 	if err != nil {
 		return nil, err
 	}
@@ -72,20 +75,22 @@ func (b *CeloAPIBackend) GetExchangeRates(ctx context.Context, atBlock common.Ha
 	if err != nil {
 		return nil, err
 	}
-	b.exchangeRatesCache.Add(atBlock, er)
+	if isHash {
+		b.exchangeRatesCache.Add(blockHash, er)
+	}
 	return er, nil
 }
 
-func (b *CeloAPIBackend) ConvertToCurrency(ctx context.Context, atBlock common.Hash, value *big.Int, fromFeeCurrency *common.Address) (*big.Int, error) {
-	er, err := b.GetExchangeRates(ctx, atBlock)
+func (b *CeloAPIBackend) ConvertToCurrency(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash, value *big.Int, fromFeeCurrency *common.Address) (*big.Int, error) {
+	er, err := b.GetExchangeRates(ctx, blockNumOrHash)
 	if err != nil {
 		return nil, err
 	}
 	return exchange.ConvertGoldToCurrency(er, fromFeeCurrency, value)
 }
 
-func (b *CeloAPIBackend) ConvertToGold(ctx context.Context, atBlock common.Hash, value *big.Int, toFeeCurrency *common.Address) (*big.Int, error) {
-	er, err := b.GetExchangeRates(ctx, atBlock)
+func (b *CeloAPIBackend) ConvertToGold(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash, value *big.Int, toFeeCurrency *common.Address) (*big.Int, error) {
+	er, err := b.GetExchangeRates(ctx, blockNumOrHash)
 	if err != nil {
 		return nil, err
 	}

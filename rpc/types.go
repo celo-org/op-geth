@@ -26,6 +26,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 // API describes the set of methods offered over the RPC interface
@@ -250,4 +251,44 @@ func BlockNumberOrHashWithHash(hash common.Hash, canonical bool) BlockNumberOrHa
 		BlockHash:        &hash,
 		RequireCanonical: canonical,
 	}
+}
+
+type HeaderRetriever interface {
+	HeaderByNumber(ctx context.Context, number BlockNumber) (*types.Header, error)
+	HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error)
+}
+
+func BlockNumberOrHashEnsureHashOnly(
+	ctx context.Context,
+	backend HeaderRetriever,
+	blockNumOrHash BlockNumberOrHash,
+	useParentForPending bool,
+	forceUseParent bool,
+) (BlockNumberOrHash, error) {
+	blockNum, isNum := blockNumOrHash.Number()
+	if !isNum {
+		if forceUseParent {
+			hash, _ := blockNumOrHash.Hash()
+			h, err := backend.HeaderByHash(ctx, hash)
+			if err != nil {
+				return blockNumOrHash, err
+			}
+			return BlockNumberOrHashWithHash(h.ParentHash, false), nil
+		}
+		return blockNumOrHash, nil
+	}
+	var hash common.Hash
+	h, err := backend.HeaderByNumber(ctx, blockNum)
+	if err != nil {
+		return blockNumOrHash, err
+	}
+	if (blockNum == PendingBlockNumber && useParentForPending) || forceUseParent {
+		// use the parent hash, since the pending hash
+		// may be changing and is not presisted in the StateDB yet,
+		// or the caller required to use the parent.
+		hash = h.ParentHash
+	} else {
+		hash = h.Hash()
+	}
+	return BlockNumberOrHashWithHash(hash, false), nil
 }
