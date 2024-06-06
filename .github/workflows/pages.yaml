@@ -16,13 +16,8 @@ jobs:
         with:
           fetch-depth: 0  # make sure to fetch the old commit we diff against
 
-      - name: 'Dependency Review'
-        uses: actions/dependency-review-action@v4
-        with:
-          warn-only: true
-
       - name: Build forkdiff
-        uses: "docker://protolambda/forkdiff:latest"
+        uses: "docker://protolambda/forkdiff:0.1.0"
         with:
           args: -repo=/github/workspace -fork=/github/workspace/fork.yaml -out=/github/workspace/index.html
 
