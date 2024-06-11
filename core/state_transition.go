@@ -154,15 +154,14 @@ func toWordSize(size uint64) uint64 {
 // A Message contains the data derived from a single transaction that is relevant to state
 // processing.
 type Message struct {
-	To        *common.Address
-	From      common.Address
-	Nonce     uint64
-	Value     *big.Int
-	GasLimit  uint64
-	GasPrice  *big.Int
-	GasFeeCap *big.Int
-	GasTipCap *big.Int
-
+	To            *common.Address
+	From          common.Address
+	Nonce         uint64
+	Value         *big.Int
+	GasLimit      uint64
+	GasPrice      *big.Int
+	GasFeeCap     *big.Int
+	GasTipCap     *big.Int
 	Data          []byte
 	AccessList    types.AccessList
 	BlobGasFeeCap *big.Int

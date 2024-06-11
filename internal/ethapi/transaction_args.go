@@ -499,18 +499,19 @@ func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int, ex
 		maxFeeInFeeCurrency = args.MaxFeeInFeeCurrency.ToInt()
 	}
 	msg := &core.Message{
-		From:                addr,
-		To:                  args.To,
-		Value:               value,
-		GasLimit:            gas,
-		GasPrice:            gasPrice,
-		GasFeeCap:           gasFeeCap,
-		GasTipCap:           gasTipCap,
-		Data:                data,
-		AccessList:          accessList,
-		BlobGasFeeCap:       blobFeeCap,
-		BlobHashes:          args.BlobHashes,
-		SkipAccountChecks:   true,
+		From:              addr,
+		To:                args.To,
+		Value:             value,
+		GasLimit:          gas,
+		GasPrice:          gasPrice,
+		GasFeeCap:         gasFeeCap,
+		GasTipCap:         gasTipCap,
+		Data:              data,
+		AccessList:        accessList,
+		BlobGasFeeCap:     blobFeeCap,
+		BlobHashes:        args.BlobHashes,
+		SkipAccountChecks: true,
+		// Celo specific:
 		FeeCurrency:         args.FeeCurrency,
 		MaxFeeInFeeCurrency: maxFeeInFeeCurrency,
 	}

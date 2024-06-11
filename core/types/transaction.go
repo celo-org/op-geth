@@ -632,7 +632,8 @@ func (tx *Transaction) FeeCurrency() *common.Address {
 	return copyAddressPtr(tx.inner.feeCurrency())
 }
 
-// MaxFeeInFeeCurrency returns the max fee in the fee_currency for celo denominated txs.
+// MaxFeeInFeeCurrency is only used to guard against very quickly changing exchange rates.
+// Txs must be discarded if MaxFeeInFeeCurrency is exceeded.
 func (tx *Transaction) MaxFeeInFeeCurrency() *big.Int {
 	mfifc := tx.inner.maxFeeInFeeCurrency()
 	if mfifc == nil {
