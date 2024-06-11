@@ -248,7 +248,12 @@ func (args *TransactionArgs) setFeeDefaults(ctx context.Context, b CeloBackend, 
 			return err
 		}
 		if args.IsFeeCurrencyDenominated() {
-			price, err = b.ConvertToCurrency(ctx, head.Hash(), price, args.FeeCurrency)
+			price, err = b.ConvertToCurrency(
+				ctx,
+				rpc.BlockNumberOrHashWithHash(head.Hash(), false),
+				price,
+				args.FeeCurrency,
+			)
 			if err != nil {
 				return fmt.Errorf("can't convert suggested gasTipCap to fee-currency: %w", err)
 			}
@@ -288,7 +293,12 @@ func (args *TransactionArgs) setLondonFeeDefaults(ctx context.Context, head *typ
 			return err
 		}
 		if args.IsFeeCurrencyDenominated() {
-			tip, err = b.ConvertToCurrency(ctx, head.Hash(), tip, args.FeeCurrency)
+			tip, err = b.ConvertToCurrency(
+				ctx,
+				rpc.BlockNumberOrHashWithHash(head.Hash(), false),
+				tip,
+				args.FeeCurrency,
+			)
 			if err != nil {
 				return fmt.Errorf("can't convert suggested gasTipCap to fee-currency: %w", err)
 			}
@@ -303,7 +313,12 @@ func (args *TransactionArgs) setLondonFeeDefaults(ctx context.Context, head *typ
 		baseFee := head.BaseFee
 		if args.IsFeeCurrencyDenominated() {
 			var err error
-			baseFee, err = b.ConvertToCurrency(ctx, head.Hash(), baseFee, args.FeeCurrency)
+			baseFee, err = b.ConvertToCurrency(
+				ctx,
+				rpc.BlockNumberOrHashWithHash(head.Hash(), false),
+				baseFee,
+				args.FeeCurrency,
+			)
 			if err != nil {
 				return fmt.Errorf("can't convert base-fee to fee-currency: %w", err)
 			}
