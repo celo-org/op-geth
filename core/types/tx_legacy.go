@@ -137,4 +137,5 @@ func (tx *LegacyTx) decode([]byte) error {
 	panic("decode called on LegacyTx)")
 }
 
-func (tx *LegacyTx) feeCurrency() *common.Address { return nil }
+func (tx *LegacyTx) feeCurrency() *common.Address  { return nil }
+func (tx *LegacyTx) maxFeeInFeeCurrency() *big.Int { return nil }
