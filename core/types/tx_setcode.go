@@ -225,4 +225,5 @@ func (tx *SetCodeTx) decode(input []byte) error {
 	return rlp.DecodeBytes(input, tx)
 }
 
-func (tx *SetCodeTx) feeCurrency() *common.Address { return nil }
+func (tx *SetCodeTx) feeCurrency() *common.Address  { return nil }
+func (tx *SetCodeTx) maxFeeInFeeCurrency() *big.Int { return nil }
