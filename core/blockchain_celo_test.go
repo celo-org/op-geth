@@ -71,6 +71,7 @@ func testNativeTransferWithFeeCurrency(t *testing.T, scheme string, feeCurrencyA
 		}
 	)
 	gspec.Config.Cel2Time = uint64ptr(0)
+	gspec.GasLimit = params.GenesisGasLimit
 
 	signer := types.LatestSigner(gspec.Config)
 
