@@ -104,7 +104,7 @@ func setTxFromEthCompatibleRlpList(tx *LegacyTx, rlplist ethCompatibleTxRlpList)
 	tx.FeeCurrency = nil
 	tx.GatewayFeeRecipient = nil
 	tx.GatewayFee = big.NewInt(0)
-	tx.EthCompatible = true
+	tx.CeloLegacy = false
 }
 
 func setTxFromCeloRlpList(tx *LegacyTx, rlplist celoTxRlpList) {
@@ -123,15 +123,15 @@ func setTxFromCeloRlpList(tx *LegacyTx, rlplist celoTxRlpList) {
 	tx.FeeCurrency = rlplist.FeeCurrency
 	tx.GatewayFeeRecipient = rlplist.GatewayFeeRecipient
 	tx.GatewayFee = rlplist.GatewayFee
-	tx.EthCompatible = false
+	tx.CeloLegacy = true
 }
 
 // EncodeRLP implements rlp.Encoder
 func (tx *LegacyTx) EncodeRLP(w io.Writer) error {
-	if tx.EthCompatible {
-		return rlp.Encode(w, toEthCompatibleRlpList(*tx))
-	} else {
+	if tx.CeloLegacy {
 		return rlp.Encode(w, toCeloRlpList(*tx))
+	} else {
+		return rlp.Encode(w, toEthCompatibleRlpList(*tx))
 	}
 }
 

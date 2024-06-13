@@ -42,8 +42,8 @@ type LegacyTx struct {
 	// This is only used when marshaling to JSON.
 	Hash *common.Hash `rlp:"-"`
 
-	// Whether this is an ethereum-compatible transaction (i.e. with FeeCurrency, GatewayFeeRecipient and GatewayFee omitted)
-	EthCompatible bool `rlp:"-"`
+	// Whether this is a celo legacy transaction (i.e. with FeeCurrency, GatewayFeeRecipient and GatewayFee)
+	CeloLegacy bool `rlp:"-"`
 }
 
 // NewTransaction creates an unsigned legacy transaction.
