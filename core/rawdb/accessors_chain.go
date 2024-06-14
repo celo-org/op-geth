@@ -305,6 +305,7 @@ func WriteFastTxLookupLimit(db ethdb.KeyValueWriter, number uint64) {
 // N.B: Since the input is a number, as opposed to a hash, it's implicit that
 // this method only operates on canon headers.
 func ReadHeaderRange(db ethdb.Reader, number uint64, count uint64) []rlp.RawValue {
+	log.Info("Reading header range", "number", number, "count", count, "end number", number-count)
 	var rlpHeaders []rlp.RawValue
 	if count == 0 {
 		return rlpHeaders

@@ -26,6 +26,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
@@ -78,6 +79,7 @@ func NewID(config *params.ChainConfig, genesis *types.Block, head, time uint64) 
 
 	// Calculate the current fork checksum and the next fork block
 	forksByBlock, forksByTime := gatherForks(config, genesis.Time())
+	spew.Dump("forks", forksByBlock, forksByTime)
 	for _, fork := range forksByBlock {
 		if fork <= head {
 			// Fork already passed, checksum the previous hash and the fork number
