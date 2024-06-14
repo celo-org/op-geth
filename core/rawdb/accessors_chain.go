@@ -305,7 +305,6 @@ func WriteFastTxLookupLimit(db ethdb.KeyValueWriter, number uint64) {
 // N.B: Since the input is a number, as opposed to a hash, it's implicit that
 // this method only operates on canon headers.
 func ReadHeaderRange(db ethdb.Reader, number uint64, count uint64) []rlp.RawValue {
-	log.Info("Reading header range", "number", number, "count", count, "end number", number-count)
 	var rlpHeaders []rlp.RawValue
 	if count == 0 {
 		return rlpHeaders
@@ -316,6 +315,8 @@ func ReadHeaderRange(db ethdb.Reader, number uint64, count uint64) []rlp.RawValu
 		count = number + 1
 	}
 	limit, _ := db.Ancients()
+
+	log.Info("Reading header range", "number", number, "count", count, "end number", number-count, "ancients count", limit)
 	// First read live blocks
 	if i >= limit {
 		// If we need to read live blocks, we need to figure out the hash first
@@ -326,6 +327,7 @@ func ReadHeaderRange(db ethdb.Reader, number uint64, count uint64) []rlp.RawValu
 				// Get the parent hash for next query
 				hash = types.HeaderParentHashFromRLP(data)
 			} else {
+				log.Info("Couldnt read header", "number", i, "hash", hash)
 				break // Maybe got moved to ancients
 			}
 			count--

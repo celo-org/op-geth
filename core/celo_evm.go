@@ -4,7 +4,6 @@ import (
 	"github.com/ethereum/go-ethereum/contracts"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 )
 
@@ -19,6 +18,6 @@ func setCeloFieldsInBlockContext(blockContext *vm.BlockContext, header *types.He
 	var err error
 	blockContext.ExchangeRates, err = contracts.GetExchangeRates(caller)
 	if err != nil {
-		log.Error("Error fetching exchange rates!", "err", err)
+		// log.Error("Error fetching exchange rates!", "err", err)
 	}
 }
