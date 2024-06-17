@@ -47,7 +47,11 @@ func celoPrecompileAddress(index byte) common.Address {
 }
 
 func (ctx *celoPrecompileContext) IsCallerCeloToken() (bool, error) {
-	return addresses.CeloTokenAddress == ctx.caller, nil
+	tokenAddress := addresses.CeloTokenAddress
+	if ctx.evm.ChainConfig().ChainID != nil && ctx.evm.ChainConfig().ChainID.Uint64() == addresses.AlfajoresChainID {
+		tokenAddress = addresses.CeloTokenAlfajoresAddress
+	}
+	return tokenAddress == ctx.caller, nil
 }
 
 // Native transfer contract to make CELO ERC20 compatible.
