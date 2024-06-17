@@ -553,6 +553,19 @@ func (s *StateDB) getStateObject(addr common.Address) *stateObject {
 	return nil
 }
 
+func (s *StateDB) MoveAccount(from, to common.Address) error {
+	fromObj := s.getStateObject(from)
+	if fromObj == nil {
+		return fmt.Errorf("account %s not found", from.Hex())
+	}
+
+	fromObj.address = to
+	fromObj.addrHash = crypto.Keccak256Hash(to[:])
+
+	s.setStateObject(fromObj)
+	return nil
+}
+
 // getDeletedStateObject is similar to getStateObject, but instead of returning
 // nil for a deleted state object, it returns the actual object with the deleted
 // flag set. This is needed by the state journal to revert to the correct s-
