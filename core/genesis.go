@@ -475,6 +475,9 @@ func (g *Genesis) ToBlock() *types.Block {
 		Coinbase:   g.Coinbase,
 		Root:       root,
 	}
+	if g.Difficulty == nil && g.Mixhash == (common.Hash{}) {
+		head.Difficulty = new(big.Int)
+	}
 	if g.Config != nil && g.Config.IsLondon(common.Big0) {
 		if g.BaseFee != nil {
 			head.BaseFee = g.BaseFee
