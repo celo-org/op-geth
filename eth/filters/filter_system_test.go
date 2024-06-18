@@ -819,7 +819,7 @@ func TestLightFilterLogs(t *testing.T) {
 
 		key, _  = crypto.GenerateKey()
 		addr    = crypto.PubkeyToAddress(key.PublicKey)
-		genesis = &core.Genesis{Config: params.TestChainConfig,
+		genesis = &core.Genesis{Config: params.TestChainConfigNoCel2,
 			Alloc: types.GenesisAlloc{
 				addr: {Balance: big.NewInt(params.Ether)},
 			},
