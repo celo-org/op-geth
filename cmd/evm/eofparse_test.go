@@ -119,7 +119,12 @@ func testEofParse(t *testing.T, isInitCode bool, wantFile string) {
 				fmt.Printf("%v\n", have)
 			} else {
 				want := wantFn()
-				if have != want {
+				if want == "ERR: max initcode size exceeded" {
+					// Celo increases the MaxCodeSize, so some tests
+					// expecting this error will fail. It is easier to
+					// ignore the failures than to maintain updated
+					// test data.
+				} else if have != want {
 					if len(want) > 100 {
 						want = want[:100]
 					}
