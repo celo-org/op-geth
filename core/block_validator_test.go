@@ -135,7 +135,7 @@ func testHeaderVerificationForMerging(t *testing.T, isClique bool) {
 		gspec.Config.TerminalTotalDifficulty = big.NewInt(int64(td))
 		postBlocks, _ = GenerateChain(gspec.Config, preBlocks[len(preBlocks)-1], engine, genDb, 8, nil)
 	} else {
-		config := *params.TestChainConfig
+		config := *params.TestChainConfigNoCel2
 		gspec = &Genesis{Config: &config}
 		engine = beacon.New(ethash.NewFaker())
 		td := int(params.GenesisDifficulty.Uint64())
