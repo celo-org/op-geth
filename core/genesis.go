@@ -485,10 +485,6 @@ func (g *Genesis) ToBlock() *types.Block {
 			head.Difficulty = params.GenesisDifficulty
 		}
 	}
-	// Ensure at any rate that difficulty is non nil
-	if g.Difficulty == nil && g.Mixhash == (common.Hash{}) {
-		head.Difficulty = new(big.Int)
-	}
 	if g.Config != nil && g.Config.IsLondon(common.Big0) {
 		if g.BaseFee != nil {
 			head.BaseFee = g.BaseFee

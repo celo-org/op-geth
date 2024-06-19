@@ -53,7 +53,6 @@ func (h *Header) DecodeRLP(s *rlp.Stream) error {
 		h.GasUsed = decodedHeader.GasUsed
 		h.Time = decodedHeader.Time
 		h.Extra = decodedHeader.Extra
-		h.Difficulty = new(big.Int)
 	} else {
 		// After gingerbread
 		decodedHeader := afterGingerbreadHeader{}
