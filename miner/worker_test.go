@@ -77,9 +77,9 @@ func init() {
 	testTxPoolConfig = legacypool.DefaultConfig
 	testTxPoolConfig.Journal = ""
 	ethashChainConfig = new(params.ChainConfig)
-	*ethashChainConfig = *params.TestChainConfig
+	*ethashChainConfig = *params.TestChainConfigNoCel2
 	cliqueChainConfig = new(params.ChainConfig)
-	*cliqueChainConfig = *params.TestChainConfig
+	*cliqueChainConfig = *params.TestChainConfigNoCel2
 	cliqueChainConfig.Clique = &params.CliqueConfig{
 		Period: 10,
 		Epoch:  30000,
