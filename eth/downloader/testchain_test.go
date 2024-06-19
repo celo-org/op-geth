@@ -40,7 +40,7 @@ var (
 	testDB      = rawdb.NewMemoryDatabase()
 
 	testGspec = &core.Genesis{
-		Config:  params.TestChainConfig,
+		Config:  params.TestChainConfigNoCel2,
 		Alloc:   types.GenesisAlloc{testAddress: {Balance: big.NewInt(1000000000000000)}},
 		BaseFee: big.NewInt(params.InitialBaseFee),
 	}
