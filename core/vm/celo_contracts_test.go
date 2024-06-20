@@ -50,8 +50,9 @@ var vmTxCtx = TxContext{
 
 // Create a global mock EVM for use in the following tests.
 var mockEVM = &EVM{
-	Context:   vmBlockCtx,
-	TxContext: vmTxCtx,
+	chainConfig: params.TestChainConfig,
+	Context:     vmBlockCtx,
+	TxContext:   vmTxCtx,
 }
 
 var mockPrecompileContext = NewContext(common.HexToAddress("1337"), mockEVM)
@@ -79,7 +80,7 @@ func TestPrecompileTransfer(t *testing.T) {
 			name: "Test transfer with short input",
 			args: args{
 				input: []byte("0000"),
-				ctx:   NewContext(addresses.GoldTokenAddress, mockEVM),
+				ctx:   NewContext(addresses.CeloTokenAddress, mockEVM),
 			},
 			wantErr:     true,
 			expectedErr: "invalid input length",

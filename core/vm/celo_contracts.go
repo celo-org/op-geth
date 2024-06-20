@@ -46,8 +46,12 @@ func celoPrecompileAddress(index byte) common.Address {
 	return common.BytesToAddress(append([]byte{0}, (celoPrecompiledContractsAddressOffset - index)))
 }
 
-func (ctx *celoPrecompileContext) IsCallerGoldToken() (bool, error) {
-	return addresses.GoldTokenAddress == ctx.caller, nil
+func (ctx *celoPrecompileContext) IsCallerCeloToken() (bool, error) {
+	tokenAddress := addresses.CeloTokenAddress
+	if ctx.evm.ChainConfig().ChainID != nil && ctx.evm.ChainConfig().ChainID.Uint64() == addresses.AlfajoresChainID {
+		tokenAddress = addresses.CeloTokenAlfajoresAddress
+	}
+	return tokenAddress == ctx.caller, nil
 }
 
 // Native transfer contract to make Celo Gold ERC20 compatible.
@@ -58,9 +62,9 @@ func (c *transfer) RequiredGas(input []byte) uint64 {
 }
 
 func (c *transfer) Run(input []byte, ctx *celoPrecompileContext) ([]byte, error) {
-	if isGoldToken, err := ctx.IsCallerGoldToken(); err != nil {
+	if isCeloToken, err := ctx.IsCallerCeloToken(); err != nil {
 		return nil, err
-	} else if !isGoldToken {
+	} else if !isCeloToken {
 		return nil, fmt.Errorf("unable to call transfer from unpermissioned address")
 	}
 
