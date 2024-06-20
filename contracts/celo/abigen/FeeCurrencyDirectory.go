@@ -29,16 +29,15 @@ var (
 	_ = abi.ConvertType
 )
 
-// CurrencyConfig is an auto generated low-level Go binding around an user-defined struct.
-type CurrencyConfig struct {
-	CurrencyIdentifier common.Address
-	Oracle             common.Address
-	IntrinsicGas       *big.Int
+// IFeeCurrencyDirectoryCurrencyConfig is an auto generated low-level Go binding around an user-defined struct.
+type IFeeCurrencyDirectoryCurrencyConfig struct {
+	Oracle       common.Address
+	IntrinsicGas *big.Int
 }
 
 // FeeCurrencyDirectoryMetaData contains all meta data concerning the FeeCurrencyDirectory contract.
 var FeeCurrencyDirectoryMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"test\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"currencies\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"currencyIdentifier\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"oracle\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"intrinsicGas\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrencies\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrencyConfig\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structCurrencyConfig\",\"components\":[{\"name\":\"currencyIdentifier\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"oracle\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"intrinsicGas\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getExchangeRate\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"numerator\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"denominator\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVersionNumber\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"initialize\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"initialized\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"removeCurrencies\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"index\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setCurrencyConfig\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"currencyIdentifier\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"oracle\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"intrinsicGas\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false}]",
+	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"test\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"currencies\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"oracle\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"intrinsicGas\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrencies\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address[]\",\"internalType\":\"address[]\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getCurrencyConfig\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"tuple\",\"internalType\":\"structIFeeCurrencyDirectory.CurrencyConfig\",\"components\":[{\"name\":\"oracle\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"intrinsicGas\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getExchangeRate\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"numerator\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"denominator\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVersionNumber\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"initialize\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"initialized\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"removeCurrencies\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"index\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setCurrencyConfig\",\"inputs\":[{\"name\":\"token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"oracle\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"intrinsicGas\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false}]",
 }
 
 // FeeCurrencyDirectoryABI is the input ABI used to generate the binding from.
@@ -189,27 +188,24 @@ func (_FeeCurrencyDirectory *FeeCurrencyDirectoryTransactorRaw) Transact(opts *b
 
 // Currencies is a free data retrieval call binding the contract method 0x6036cba3.
 //
-// Solidity: function currencies(address ) view returns(address currencyIdentifier, address oracle, uint256 intrinsicGas)
+// Solidity: function currencies(address ) view returns(address oracle, uint256 intrinsicGas)
 func (_FeeCurrencyDirectory *FeeCurrencyDirectoryCaller) Currencies(opts *bind.CallOpts, arg0 common.Address) (struct {
-	CurrencyIdentifier common.Address
-	Oracle             common.Address
-	IntrinsicGas       *big.Int
+	Oracle       common.Address
+	IntrinsicGas *big.Int
 }, error) {
 	var out []interface{}
 	err := _FeeCurrencyDirectory.contract.Call(opts, &out, "currencies", arg0)
 
 	outstruct := new(struct {
-		CurrencyIdentifier common.Address
-		Oracle             common.Address
-		IntrinsicGas       *big.Int
+		Oracle       common.Address
+		IntrinsicGas *big.Int
 	})
 	if err != nil {
 		return *outstruct, err
 	}
 
-	outstruct.CurrencyIdentifier = *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
-	outstruct.Oracle = *abi.ConvertType(out[1], new(common.Address)).(*common.Address)
-	outstruct.IntrinsicGas = *abi.ConvertType(out[2], new(*big.Int)).(**big.Int)
+	outstruct.Oracle = *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+	outstruct.IntrinsicGas = *abi.ConvertType(out[1], new(*big.Int)).(**big.Int)
 
 	return *outstruct, err
 
@@ -217,22 +213,20 @@ func (_FeeCurrencyDirectory *FeeCurrencyDirectoryCaller) Currencies(opts *bind.C
 
 // Currencies is a free data retrieval call binding the contract method 0x6036cba3.
 //
-// Solidity: function currencies(address ) view returns(address currencyIdentifier, address oracle, uint256 intrinsicGas)
+// Solidity: function currencies(address ) view returns(address oracle, uint256 intrinsicGas)
 func (_FeeCurrencyDirectory *FeeCurrencyDirectorySession) Currencies(arg0 common.Address) (struct {
-	CurrencyIdentifier common.Address
-	Oracle             common.Address
-	IntrinsicGas       *big.Int
+	Oracle       common.Address
+	IntrinsicGas *big.Int
 }, error) {
 	return _FeeCurrencyDirectory.Contract.Currencies(&_FeeCurrencyDirectory.CallOpts, arg0)
 }
 
 // Currencies is a free data retrieval call binding the contract method 0x6036cba3.
 //
-// Solidity: function currencies(address ) view returns(address currencyIdentifier, address oracle, uint256 intrinsicGas)
+// Solidity: function currencies(address ) view returns(address oracle, uint256 intrinsicGas)
 func (_FeeCurrencyDirectory *FeeCurrencyDirectoryCallerSession) Currencies(arg0 common.Address) (struct {
-	CurrencyIdentifier common.Address
-	Oracle             common.Address
-	IntrinsicGas       *big.Int
+	Oracle       common.Address
+	IntrinsicGas *big.Int
 }, error) {
 	return _FeeCurrencyDirectory.Contract.Currencies(&_FeeCurrencyDirectory.CallOpts, arg0)
 }
@@ -270,16 +264,16 @@ func (_FeeCurrencyDirectory *FeeCurrencyDirectoryCallerSession) GetCurrencies() 
 
 // GetCurrencyConfig is a free data retrieval call binding the contract method 0xeab43d97.
 //
-// Solidity: function getCurrencyConfig(address token) view returns((address,address,uint256))
-func (_FeeCurrencyDirectory *FeeCurrencyDirectoryCaller) GetCurrencyConfig(opts *bind.CallOpts, token common.Address) (CurrencyConfig, error) {
+// Solidity: function getCurrencyConfig(address token) view returns((address,uint256))
+func (_FeeCurrencyDirectory *FeeCurrencyDirectoryCaller) GetCurrencyConfig(opts *bind.CallOpts, token common.Address) (IFeeCurrencyDirectoryCurrencyConfig, error) {
 	var out []interface{}
 	err := _FeeCurrencyDirectory.contract.Call(opts, &out, "getCurrencyConfig", token)
 
 	if err != nil {
-		return *new(CurrencyConfig), err
+		return *new(IFeeCurrencyDirectoryCurrencyConfig), err
 	}
 
-	out0 := *abi.ConvertType(out[0], new(CurrencyConfig)).(*CurrencyConfig)
+	out0 := *abi.ConvertType(out[0], new(IFeeCurrencyDirectoryCurrencyConfig)).(*IFeeCurrencyDirectoryCurrencyConfig)
 
 	return out0, err
 
@@ -287,15 +281,15 @@ func (_FeeCurrencyDirectory *FeeCurrencyDirectoryCaller) GetCurrencyConfig(opts 
 
 // GetCurrencyConfig is a free data retrieval call binding the contract method 0xeab43d97.
 //
-// Solidity: function getCurrencyConfig(address token) view returns((address,address,uint256))
-func (_FeeCurrencyDirectory *FeeCurrencyDirectorySession) GetCurrencyConfig(token common.Address) (CurrencyConfig, error) {
+// Solidity: function getCurrencyConfig(address token) view returns((address,uint256))
+func (_FeeCurrencyDirectory *FeeCurrencyDirectorySession) GetCurrencyConfig(token common.Address) (IFeeCurrencyDirectoryCurrencyConfig, error) {
 	return _FeeCurrencyDirectory.Contract.GetCurrencyConfig(&_FeeCurrencyDirectory.CallOpts, token)
 }
 
 // GetCurrencyConfig is a free data retrieval call binding the contract method 0xeab43d97.
 //
-// Solidity: function getCurrencyConfig(address token) view returns((address,address,uint256))
-func (_FeeCurrencyDirectory *FeeCurrencyDirectoryCallerSession) GetCurrencyConfig(token common.Address) (CurrencyConfig, error) {
+// Solidity: function getCurrencyConfig(address token) view returns((address,uint256))
+func (_FeeCurrencyDirectory *FeeCurrencyDirectoryCallerSession) GetCurrencyConfig(token common.Address) (IFeeCurrencyDirectoryCurrencyConfig, error) {
 	return _FeeCurrencyDirectory.Contract.GetCurrencyConfig(&_FeeCurrencyDirectory.CallOpts, token)
 }
 
@@ -503,25 +497,25 @@ func (_FeeCurrencyDirectory *FeeCurrencyDirectoryTransactorSession) RenounceOwne
 	return _FeeCurrencyDirectory.Contract.RenounceOwnership(&_FeeCurrencyDirectory.TransactOpts)
 }
 
-// SetCurrencyConfig is a paid mutator transaction binding the contract method 0x9046e34a.
+// SetCurrencyConfig is a paid mutator transaction binding the contract method 0x216ab7df.
 //
-// Solidity: function setCurrencyConfig(address token, address currencyIdentifier, address oracle, uint256 intrinsicGas) returns()
-func (_FeeCurrencyDirectory *FeeCurrencyDirectoryTransactor) SetCurrencyConfig(opts *bind.TransactOpts, token common.Address, currencyIdentifier common.Address, oracle common.Address, intrinsicGas *big.Int) (*types.Transaction, error) {
-	return _FeeCurrencyDirectory.contract.Transact(opts, "setCurrencyConfig", token, currencyIdentifier, oracle, intrinsicGas)
+// Solidity: function setCurrencyConfig(address token, address oracle, uint256 intrinsicGas) returns()
+func (_FeeCurrencyDirectory *FeeCurrencyDirectoryTransactor) SetCurrencyConfig(opts *bind.TransactOpts, token common.Address, oracle common.Address, intrinsicGas *big.Int) (*types.Transaction, error) {
+	return _FeeCurrencyDirectory.contract.Transact(opts, "setCurrencyConfig", token, oracle, intrinsicGas)
 }
 
-// SetCurrencyConfig is a paid mutator transaction binding the contract method 0x9046e34a.
+// SetCurrencyConfig is a paid mutator transaction binding the contract method 0x216ab7df.
 //
-// Solidity: function setCurrencyConfig(address token, address currencyIdentifier, address oracle, uint256 intrinsicGas) returns()
-func (_FeeCurrencyDirectory *FeeCurrencyDirectorySession) SetCurrencyConfig(token common.Address, currencyIdentifier common.Address, oracle common.Address, intrinsicGas *big.Int) (*types.Transaction, error) {
-	return _FeeCurrencyDirectory.Contract.SetCurrencyConfig(&_FeeCurrencyDirectory.TransactOpts, token, currencyIdentifier, oracle, intrinsicGas)
+// Solidity: function setCurrencyConfig(address token, address oracle, uint256 intrinsicGas) returns()
+func (_FeeCurrencyDirectory *FeeCurrencyDirectorySession) SetCurrencyConfig(token common.Address, oracle common.Address, intrinsicGas *big.Int) (*types.Transaction, error) {
+	return _FeeCurrencyDirectory.Contract.SetCurrencyConfig(&_FeeCurrencyDirectory.TransactOpts, token, oracle, intrinsicGas)
 }
 
-// SetCurrencyConfig is a paid mutator transaction binding the contract method 0x9046e34a.
+// SetCurrencyConfig is a paid mutator transaction binding the contract method 0x216ab7df.
 //
-// Solidity: function setCurrencyConfig(address token, address currencyIdentifier, address oracle, uint256 intrinsicGas) returns()
-func (_FeeCurrencyDirectory *FeeCurrencyDirectoryTransactorSession) SetCurrencyConfig(token common.Address, currencyIdentifier common.Address, oracle common.Address, intrinsicGas *big.Int) (*types.Transaction, error) {
-	return _FeeCurrencyDirectory.Contract.SetCurrencyConfig(&_FeeCurrencyDirectory.TransactOpts, token, currencyIdentifier, oracle, intrinsicGas)
+// Solidity: function setCurrencyConfig(address token, address oracle, uint256 intrinsicGas) returns()
+func (_FeeCurrencyDirectory *FeeCurrencyDirectoryTransactorSession) SetCurrencyConfig(token common.Address, oracle common.Address, intrinsicGas *big.Int) (*types.Transaction, error) {
+	return _FeeCurrencyDirectory.Contract.SetCurrencyConfig(&_FeeCurrencyDirectory.TransactOpts, token, oracle, intrinsicGas)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.

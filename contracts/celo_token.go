@@ -11,8 +11,10 @@ import (
 
 var celoTokenABI *abi.ABI
 
-// TODO: actually it should be pretty clear how expensive the call is
-var maxGasForIncreaseWithdraw uint64 = 3 * 50 * Thousand
+// TODO: find an upper limit for this call
+// this will mainly prevent implementation errors
+// in the L2's CeloToken contract
+var maxGasForWithdrawAmount uint64 = 20 * 50 * Thousand
 
 func init() {
 	var err error
@@ -23,7 +25,7 @@ func init() {
 }
 
 // Debits transaction fees from the transaction sender and stores them in the temporary address
-func DecreaseWithdrawn(evm *vm.EVM, amount *uint256.Int) error {
+func DepositAmount(evm *vm.EVM, amount *uint256.Int) error {
 	if amount.CmpUint64(0) == 0 {
 		return nil
 	}
@@ -34,12 +36,12 @@ func DecreaseWithdrawn(evm *vm.EVM, amount *uint256.Int) error {
 	}
 
 	leftoverGas, err := evm.CallWithABI(
-		celoTokenABI, "decreaseWithdrawn", tokenAddress, maxGasForIncreaseWithdraw,
-		// decreaseWithdrawn(uint256 value) parameters
+		celoTokenABI, "depositAmount", tokenAddress, maxGasForWithdrawAmount,
+		// depositAmount(uint256 _withdrawAmount) parameters
 		amount,
 	)
-	gasUsed := maxGasForIncreaseWithdraw - leftoverGas
+	gasUsed := maxGasForWithdrawAmount - leftoverGas
 	//TODO: how to handle gas?
-	log.Trace("DecreaseWithdrawn called", "amount", *amount, "gasUsed", gasUsed)
+	log.Trace("DepositAmount called", "amount", *amount, "gasUsed", gasUsed)
 	return err
 }

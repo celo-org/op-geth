@@ -26,13 +26,8 @@
       {
         "name": "",
         "type": "tuple",
-        "internalType": "struct CurrencyConfig",
+        "internalType": "struct IFeeCurrencyDirectory.CurrencyConfig",
         "components": [
-          {
-            "name": "currencyIdentifier",
-            "type": "address",
-            "internalType": "address"
-          },
           {
             "name": "oracle",
             "type": "address",

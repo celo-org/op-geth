@@ -528,12 +528,14 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 		// This is done before taking the snapshot, because
 		// the balance is already deposited on L1.
 		st.state.AddBalance(st.msg.From, mintU256)
-		if err := contracts.DecreaseWithdrawn(st.evm, mintU256); err != nil {
-			//FIXME: now the problem is that we can't really fail here,
-			// because the minting is already considered in the StateDB.
+		if err := contracts.DepositAmount(st.evm, mintU256); err != nil {
+			// we can't really fail here,
+			// because the minting is already considered in the StateDB
+			// and the user already deposited on L1.
 			// If we fail here (for whatever reason), there will be
 			// an imbalance of minted token tracked in the GoldToken
-			// and the native representation actually spendeable.
+			// and the native representation that is actually spendeable.
+			log.Error("error calling CeloToken.DepositAmount during minting, this will cause an imbalance in token supply", "error", err)
 		}
 	}
 	snap := st.state.Snapshot()
