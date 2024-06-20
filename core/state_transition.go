@@ -525,7 +525,16 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 		if overflow {
 			return nil, fmt.Errorf("mint value exceeds uint256: %d", mintU256)
 		}
+		// This is done before taking the snapshot, because
+		// the balance is already deposited on L1.
 		st.state.AddBalance(st.msg.From, mintU256)
+		if err := contracts.DecreaseWithdrawn(st.evm, mintU256); err != nil {
+			//FIXME: now the problem is that we can't really fail here,
+			// because the minting is already considered in the StateDB.
+			// If we fail here (for whatever reason), there will be
+			// an imbalance of minted token tracked in the GoldToken
+			// and the native representation actually spendeable.
+		}
 	}
 	snap := st.state.Snapshot()
 
