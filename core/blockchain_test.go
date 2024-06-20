@@ -1765,7 +1765,7 @@ func testBlockchainHeaderchainReorgConsistency(t *testing.T, scheme string) {
 	// Generate a canonical chain to act as the main dataset
 	engine := ethash.NewFaker()
 	genesis := &Genesis{
-		Config:  params.TestChainConfigNoCel2,
+		Config:  params.TestChainConfig,
 		BaseFee: big.NewInt(params.InitialBaseFee),
 	}
 	genDb, blocks, _ := GenerateChainWithGenesis(genesis, engine, 64, func(i int, b *BlockGen) { b.SetCoinbase(common.Address{1}) })
@@ -1810,7 +1810,7 @@ func TestTrieForkGC(t *testing.T) {
 	// Generate a canonical chain to act as the main dataset
 	engine := ethash.NewFaker()
 	genesis := &Genesis{
-		Config:  params.TestChainConfigNoCel2,
+		Config:  params.TestChainConfig,
 		BaseFee: big.NewInt(params.InitialBaseFee),
 	}
 	genDb, blocks, _ := GenerateChainWithGenesis(genesis, engine, 2*TriesInMemory, func(i int, b *BlockGen) { b.SetCoinbase(common.Address{1}) })
@@ -1861,7 +1861,7 @@ func testLargeReorgTrieGC(t *testing.T, scheme string) {
 	// Generate the original common chain segment and the two competing forks
 	engine := ethash.NewFaker()
 	genesis := &Genesis{
-		Config:  params.TestChainConfigNoCel2,
+		Config:  params.TestChainConfig,
 		BaseFee: big.NewInt(params.InitialBaseFee),
 	}
 	genDb, shared, _ := GenerateChainWithGenesis(genesis, engine, 64, func(i int, b *BlockGen) { b.SetCoinbase(common.Address{1}) })
@@ -1932,7 +1932,7 @@ func testBlockchainRecovery(t *testing.T, scheme string) {
 		key, _  = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
 		address = crypto.PubkeyToAddress(key.PublicKey)
 		funds   = big.NewInt(1000000000)
-		gspec   = &Genesis{Config: params.TestChainConfigNoCel2, Alloc: types.GenesisAlloc{address: {Balance: funds}}}
+		gspec   = &Genesis{Config: params.TestChainConfig, Alloc: types.GenesisAlloc{address: {Balance: funds}}}
 	)
 	height := uint64(1024)
 	_, blocks, receipts := GenerateChainWithGenesis(gspec, ethash.NewFaker(), int(height), nil)
@@ -2068,7 +2068,7 @@ func testLowDiffLongChain(t *testing.T, scheme string) {
 	// Generate a canonical chain to act as the main dataset
 	engine := ethash.NewFaker()
 	genesis := &Genesis{
-		Config:  params.TestChainConfigNoCel2,
+		Config:  params.TestChainConfig,
 		BaseFee: big.NewInt(params.InitialBaseFee),
 	}
 	// We must use a pretty long chain to ensure that the fork doesn't overtake us
@@ -2127,7 +2127,7 @@ func testLowDiffLongChain(t *testing.T, scheme string) {
 // 1:  the transition happens after some chain segments
 func testSideImport(t *testing.T, numCanonBlocksInSidechain, blocksBetweenCommonAncestorAndPruneblock int, mergePoint int) {
 	// Generate a canonical chain to act as the main dataset
-	chainConfig := *params.TestChainConfigNoCel2
+	chainConfig := *params.TestChainConfig
 	var (
 		merger = consensus.NewMerger(rawdb.NewMemoryDatabase())
 		engine = beacon.New(ethash.NewFaker())
@@ -2282,7 +2282,7 @@ func TestInsertKnownBlocks(t *testing.T) {
 func testInsertKnownChainData(t *testing.T, typ string, scheme string) {
 	engine := ethash.NewFaker()
 	genesis := &Genesis{
-		Config:  params.TestChainConfigNoCel2,
+		Config:  params.TestChainConfig,
 		BaseFee: big.NewInt(params.InitialBaseFee),
 	}
 	genDb, blocks, receipts := GenerateChainWithGenesis(genesis, engine, 32, func(i int, b *BlockGen) { b.SetCoinbase(common.Address{1}) })
@@ -2420,8 +2420,8 @@ func TestInsertKnownBlocksAfterMerging(t *testing.T) {
 // 0: means the merging is applied since genesis
 // 1: means the merging is applied after the first segment
 func testInsertKnownChainDataWithMerging(t *testing.T, typ string, mergeHeight int) {
-	// Copy the TestChainConfigNoCel2 so we can modify it during tests
-	chainConfig := *params.TestChainConfigNoCel2
+	// Copy the TestChainConfig so we can modify it during tests
+	chainConfig := *params.TestChainConfig
 	var (
 		genesis = &Genesis{
 			BaseFee: big.NewInt(params.InitialBaseFee),
@@ -2579,7 +2579,7 @@ func getLongAndShortChains(scheme string) (*BlockChain, []*types.Block, []*types
 	// Generate a canonical chain to act as the main dataset
 	engine := ethash.NewFaker()
 	genesis := &Genesis{
-		Config:  params.TestChainConfigNoCel2,
+		Config:  params.TestChainConfig,
 		BaseFee: big.NewInt(params.InitialBaseFee),
 	}
 	// Generate and import the canonical chain,
@@ -2844,7 +2844,7 @@ func testSideImportPrunedBlocks(t *testing.T, scheme string) {
 	// Generate a canonical chain to act as the main dataset
 	engine := ethash.NewFaker()
 	genesis := &Genesis{
-		Config:  params.TestChainConfigNoCel2,
+		Config:  params.TestChainConfig,
 		BaseFee: big.NewInt(params.InitialBaseFee),
 	}
 	// Generate and import the canonical chain
@@ -2909,7 +2909,7 @@ func testDeleteCreateRevert(t *testing.T, scheme string) {
 		address = crypto.PubkeyToAddress(key.PublicKey)
 		funds   = big.NewInt(100000000000000000)
 		gspec   = &Genesis{
-			Config: params.TestChainConfigNoCel2,
+			Config: params.TestChainConfig,
 			Alloc: types.GenesisAlloc{
 				address: {Balance: funds},
 				// The address 0xAAAAA selfdestructs if called
@@ -3033,7 +3033,7 @@ func testDeleteRecreateSlots(t *testing.T, scheme string) {
 	t.Logf("Destination address: %x\n", aa)
 
 	gspec := &Genesis{
-		Config: params.TestChainConfigNoCel2,
+		Config: params.TestChainConfig,
 		Alloc: types.GenesisAlloc{
 			address: {Balance: funds},
 			// The address 0xAAAAA selfdestructs if called
@@ -3119,7 +3119,7 @@ func testDeleteRecreateAccount(t *testing.T, scheme string) {
 	aaStorage[common.HexToHash("02")] = common.HexToHash("02")
 
 	gspec := &Genesis{
-		Config: params.TestChainConfigNoCel2,
+		Config: params.TestChainConfig,
 		Alloc: types.GenesisAlloc{
 			address: {Balance: funds},
 			// The address 0xAAAAA selfdestructs if called
@@ -3240,7 +3240,7 @@ func testDeleteRecreateSlotsAcrossManyBlocks(t *testing.T, scheme string) {
 	aa := crypto.CreateAddress2(bb, [32]byte{}, initHash[:])
 	t.Logf("Destination address: %x\n", aa)
 	gspec := &Genesis{
-		Config: params.TestChainConfigNoCel2,
+		Config: params.TestChainConfig,
 		Alloc: types.GenesisAlloc{
 			address: {Balance: funds},
 			// The address 0xAAAAA selfdestructs if called
@@ -3435,7 +3435,7 @@ func testInitThenFailCreateContract(t *testing.T, scheme string) {
 	t.Logf("Destination address: %x\n", aa)
 
 	gspec := &Genesis{
-		Config: params.TestChainConfigNoCel2,
+		Config: params.TestChainConfig,
 		Alloc: types.GenesisAlloc{
 			address: {Balance: funds},
 			// The address aa has some funds
@@ -3510,7 +3510,7 @@ func testEIP2718Transition(t *testing.T, scheme string) {
 		address = crypto.PubkeyToAddress(key.PublicKey)
 		funds   = big.NewInt(1000000000000000)
 		gspec   = &Genesis{
-			Config: params.TestChainConfigNoCel2,
+			Config: params.TestChainConfig,
 			Alloc: types.GenesisAlloc{
 				address: {Balance: funds},
 				// The address 0xAAAA sloads 0x00 and 0x01
@@ -3736,7 +3736,7 @@ func testSetCanonical(t *testing.T, scheme string) {
 		address = crypto.PubkeyToAddress(key.PublicKey)
 		funds   = big.NewInt(100000000000000000)
 		gspec   = &Genesis{
-			Config:  params.TestChainConfigNoCel2,
+			Config:  params.TestChainConfig,
 			Alloc:   types.GenesisAlloc{address: {Balance: funds}},
 			BaseFee: big.NewInt(params.InitialBaseFee),
 		}
@@ -3853,7 +3853,7 @@ func testCanonicalHashMarker(t *testing.T, scheme string) {
 	for _, c := range cases {
 		var (
 			gspec = &Genesis{
-				Config:  params.TestChainConfigNoCel2,
+				Config:  params.TestChainConfig,
 				Alloc:   types.GenesisAlloc{},
 				BaseFee: big.NewInt(params.InitialBaseFee),
 			}
@@ -3933,7 +3933,7 @@ func TestCreateThenDeletePreByzantium(t *testing.T) {
 	})
 }
 func TestCreateThenDeletePostByzantium(t *testing.T) {
-	testCreateThenDelete(t, params.TestChainConfigNoCel2)
+	testCreateThenDelete(t, params.TestChainConfig)
 }
 
 // testCreateThenDelete tests a creation and subsequent deletion of a contract, happening
@@ -4052,7 +4052,7 @@ func TestDeleteThenCreate(t *testing.T) {
 	contractAddr := crypto.CreateAddress2(factoryAddr, [32]byte{}, crypto.Keccak256(contractABI))
 
 	gspec := &Genesis{
-		Config: params.TestChainConfigNoCel2,
+		Config: params.TestChainConfig,
 		Alloc: types.GenesisAlloc{
 			address: {Balance: funds},
 		},
@@ -4164,7 +4164,7 @@ func TestTransientStorageReset(t *testing.T) {
 		byte(vm.RETURN), // return 6 bytes of zero-code
 	}...)
 	gspec := &Genesis{
-		Config: params.TestChainConfigNoCel2,
+		Config: params.TestChainConfig,
 		Alloc: types.GenesisAlloc{
 			address: {Balance: funds},
 		},

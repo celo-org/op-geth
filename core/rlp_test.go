@@ -40,7 +40,7 @@ func getBlock(transactions int, uncles int, dataSize int) *types.Block {
 		address = crypto.PubkeyToAddress(key.PublicKey)
 		funds   = big.NewInt(1_000_000_000_000_000_000)
 		gspec   = &Genesis{
-			Config: params.TestChainConfigNoCel2,
+			Config: params.TestChainConfig,
 			Alloc:  types.GenesisAlloc{address: {Balance: funds}},
 		}
 	)
