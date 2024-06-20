@@ -139,7 +139,7 @@ func (h *Header) EncodeRLP(w io.Writer) error {
 // isPreGingerbreadHeader introspects the header rlp to check the length of the
 // second element of the list (the first element describes the list). Pre
 // gingerbread the second element of a header is an address which is 20 bytes
-// long.
+// long, post gingerbread the second element is a hash which is 32 bytes long.
 func isPreGingerbreadHeader(buf []byte) (bool, error) {
 	var contentSize uint64
 	var err error
@@ -150,5 +150,5 @@ func isPreGingerbreadHeader(buf []byte) (bool, error) {
 		}
 	}
 
-	return contentSize == 20, nil
+	return contentSize == common.AddressLength, nil
 }
