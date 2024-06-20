@@ -68,7 +68,7 @@ func newTesterWithNotification(t *testing.T, success func()) *downloadTester {
 		db.Close()
 	})
 	gspec := &core.Genesis{
-		Config:  params.TestChainConfigNoCel2,
+		Config:  params.TestChainConfig,
 		Alloc:   types.GenesisAlloc{testAddress: {Balance: big.NewInt(1000000000000000)}},
 		BaseFee: big.NewInt(params.InitialBaseFee),
 	}
