@@ -42,7 +42,7 @@ func TestHeaderVerification(t *testing.T) {
 func testHeaderVerification(t *testing.T, scheme string) {
 	// Create a simple chain to verify
 	var (
-		gspec        = &Genesis{Config: params.TestChainConfigNoCel2}
+		gspec        = &Genesis{Config: params.TestChainConfig}
 		_, blocks, _ = GenerateChainWithGenesis(gspec, ethash.NewFaker(), 8, nil)
 	)
 	headers := make([]*types.Header, len(blocks))
