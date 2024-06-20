@@ -69,7 +69,7 @@ func newTestBackendWithGenerator(blocks int, shanghai bool, generator func(int, 
 	var (
 		// Create a database pre-initialize with a genesis block
 		db                      = rawdb.NewMemoryDatabase()
-		config                  = params.TestChainConfigNoCel2
+		config                  = params.TestChainConfig
 		engine consensus.Engine = ethash.NewFaker()
 	)
 

@@ -412,7 +412,7 @@ func (tt *cliqueTest) run(t *testing.T) {
 	}
 
 	// Assemble a chain of headers from the cast votes
-	config := *params.TestChainConfigNoCel2
+	config := *params.TestChainConfig
 	config.Clique = &params.CliqueConfig{
 		Period: 1,
 		Epoch:  tt.epoch,
