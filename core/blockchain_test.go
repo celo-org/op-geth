@@ -971,7 +971,7 @@ func testLightVsFastVsFullChainHeads(t *testing.T, scheme string) {
 		address = crypto.PubkeyToAddress(key.PublicKey)
 		funds   = big.NewInt(1000000000000000)
 		gspec   = &Genesis{
-			Config:  params.TestChainConfigNoCel2,
+			Config:  params.TestChainConfig,
 			Alloc:   types.GenesisAlloc{address: {Balance: funds}},
 			BaseFee: big.NewInt(params.InitialBaseFee),
 		}
