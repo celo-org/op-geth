@@ -525,7 +525,15 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 		if overflow {
 			return nil, fmt.Errorf("mint value exceeds uint256: %d", mintU256)
 		}
+		// This is done before taking the snapshot, because
+		// the balance is already deposited on L1.
 		st.state.AddBalance(st.msg.From, mintU256)
+		if err := contracts.DepositAmount(st.evm, mintU256); err != nil {
+			// If we fail here (for whatever reason), there will be
+			// an imbalance of minted token tracked in the GoldToken
+			// and the native representation that is actually spendeable.
+			log.Error("error calling CeloToken.DepositAmount during minting, this will cause an imbalance in token supply", "error", err)
+		}
 	}
 	snap := st.state.Snapshot()
 
