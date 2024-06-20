@@ -475,15 +475,11 @@ func (g *Genesis) ToBlock() *types.Block {
 		Coinbase:   g.Coinbase,
 		Root:       root,
 	}
-	// Disable setting default gas limit and difficulty in cel2 context.
-	// Because the celo genesis lacked gas limit and difficulty.
-	if g.Config.Cel2Time == nil {
-		if g.GasLimit == 0 {
-			head.GasLimit = params.GenesisGasLimit
-		}
-		if g.Difficulty == nil && g.Mixhash == (common.Hash{}) {
-			head.Difficulty = params.GenesisDifficulty
-		}
+	if g.GasLimit == 0 {
+		head.GasLimit = params.GenesisGasLimit
+	}
+	if g.Difficulty == nil && g.Mixhash == (common.Hash{}) {
+		head.Difficulty = params.GenesisDifficulty
 	}
 	if g.Config != nil && g.Config.IsLondon(common.Big0) {
 		if g.BaseFee != nil {
