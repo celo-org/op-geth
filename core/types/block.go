@@ -69,7 +69,6 @@ type ExecutionWitness struct {
 }
 
 //go:generate go run github.com/fjl/gencodec -type Header -field-override headerMarshaling -out gen_header_json.go
-//go:generate go run ../../rlp/rlpgen -type Header -out gen_header_rlp.go
 
 // Header represents a block header in the Ethereum blockchain.
 type Header struct {
@@ -106,6 +105,9 @@ type Header struct {
 
 	// RequestsHash was added by EIP-7685 and is ignored in legacy headers.
 	RequestsHash *common.Hash `json:"requestsHash" rlp:"optional"`
+
+	// preGingerbread determines whether this is a pre-gingerbread header, which determines how this block will be encoded.
+	preGingerbread bool
 }
 
 // field type overrides for gencodec
@@ -252,6 +254,8 @@ type extblock struct {
 type BlockType interface {
 	HasOptimismWithdrawalsRoot(blkTime uint64) bool
 	IsIsthmus(blkTime uint64) bool
+	IsGingerbread(blockNumber *big.Int) bool
+	IsMigratedChain() bool
 }
 
 // NewBlock creates a new block. The input data is copied, changes to header and to the
@@ -285,13 +289,17 @@ func NewBlock(header *Header, body *Body, receipts []*Receipt, hasher TrieHasher
 		b.header.Bloom = CreateBloom(receipts)
 	}
 
-	if len(uncles) == 0 {
-		b.header.UncleHash = EmptyUncleHash
-	} else {
-		b.header.UncleHash = CalcUncleHash(uncles)
-		b.uncles = make([]*Header, len(uncles))
-		for i := range uncles {
-			b.uncles[i] = CopyHeader(uncles[i])
+	// We prevent setting the unclehash when we are on a migrated chain and the
+	// block is pre-gingerbread.
+	if !(bType.IsMigratedChain() && !bType.IsGingerbread(header.Number)) {
+		if len(uncles) == 0 {
+			b.header.UncleHash = EmptyUncleHash
+		} else {
+			b.header.UncleHash = CalcUncleHash(uncles)
+			b.uncles = make([]*Header, len(uncles))
+			for i := range uncles {
+				b.uncles[i] = CopyHeader(uncles[i])
+			}
 		}
 	}
 
