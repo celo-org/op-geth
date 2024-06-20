@@ -88,8 +88,9 @@ func (h *Header) EncodeRLP(w io.Writer) error {
 	// We check for a pre gingerbread header by looking for (GasLimit == 0)
 	// here. We don't use Difficulty  because CopyHeader can end up setting a
 	// nil Difficulty to a zero difficulty, so testing for nil difficulty is
-	// not reliable, and also testing for base fee is not reliable because some
-	// older eth blocks had no base fee and they are used in some tests.
+	// not reliable, and post gingerbread difficulty is hardcoded to zero. Also
+	// testing for base fee is not reliable because some older eth blocks had
+	// no base fee and they are used in some tests.
 	if h.GasLimit == 0 {
 		// Encode the header
 		encodedHeader := beforeGingerbreadHeader{
