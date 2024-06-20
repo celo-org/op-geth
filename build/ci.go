@@ -286,7 +286,7 @@ func doTest(cmdline []string) {
 		arch     = flag.String("arch", "", "Run tests for given architecture")
 		cc       = flag.String("cc", "", "Sets C compiler binary")
 		coverage = flag.Bool("coverage", false, "Whether to record code coverage")
-		verbose  = flag.Bool("v", true, "Whether to log verbosely")
+		verbose  = flag.Bool("v", false, "Whether to log verbosely")
 		race     = flag.Bool("race", false, "Execute the race detector")
 		short    = flag.Bool("short", false, "Pass the 'short'-flag to go test")
 		cachedir = flag.String("cachedir", "./build/cache", "directory for caching downloads")
