@@ -1,10 +1,10 @@
 [
   {
     "type": "function",
-    "name": "getExchangeRateFor",
+    "name": "getExchangeRate",
     "inputs": [
       {
-        "name": "",
+        "name": "_token",
         "type": "address",
         "internalType": "address"
       }
@@ -27,6 +27,11 @@
     "type": "function",
     "name": "setExchangeRate",
     "inputs": [
+      {
+        "name": "_token",
+        "type": "address",
+        "internalType": "address"
+      },
       {
         "name": "_numerator",
         "type": "uint256",
