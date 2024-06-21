@@ -182,7 +182,7 @@ func MakeReceipt(evm *vm.EVM, result *ExecutionResult, statedb *state.StateDB, b
 			*receipt.DepositReceiptVersion = types.CanyonDepositReceiptVersion
 		}
 	}
-	if tx.Type() == types.CeloDynamicFeeTxType {
+	if tx.Type() == types.CeloDynamicFeeTxV2Type {
 		alternativeBaseFee := evm.Context.BaseFee
 		if tx.FeeCurrency() != nil {
 			var err error
