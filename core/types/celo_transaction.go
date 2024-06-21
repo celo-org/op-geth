@@ -7,7 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/exchange"
 )
 
-// Returns the fee currency of the transaction if there is one.
+// FeeCurrency returns the fee currency of the transaction if there is one.
 func (tx *Transaction) FeeCurrency() *common.Address {
 	var feeCurrency *common.Address
 	switch t := tx.inner.(type) {
@@ -17,6 +17,7 @@ func (tx *Transaction) FeeCurrency() *common.Address {
 	return feeCurrency
 }
 
+// MaxFeeInFeeCurrency returns the maximum fee in the fee currency of the transaction if there is one.
 func (tx *Transaction) MaxFeeInFeeCurrency() *big.Int {
 	var maxFeeInFeeCurrency *big.Int
 	switch t := tx.inner.(type) {
