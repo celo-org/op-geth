@@ -362,7 +362,7 @@ func (r *Receipt) decodeTyped(b []byte) error {
 		}
 		r.Type = b[0]
 		return r.setFromRLP(data)
-	case CeloDynamicFeeTxV2Type:
+	case CeloDynamicFeeTxType, CeloDynamicFeeTxV2Type:
 		var data celoDynamicReceiptRLP
 		err := rlp.DecodeBytes(b[1:], &data)
 		if err != nil {
