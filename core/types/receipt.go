@@ -278,9 +278,9 @@ func (r *Receipt) EncodeRLP(w io.Writer) error {
 func (r *Receipt) encodeTyped(data *receiptRLP, w *bytes.Buffer) error {
 	w.WriteByte(r.Type)
 	switch r.Type {
-	case CeloDynamicFeeTxV2Type:
-		withBaseFee := &celoDynamicReceiptRLP{data.PostStateOrStatus, data.CumulativeGasUsed, data.Bloom, data.Logs, r.BaseFee}
-		return rlp.Encode(w, withBaseFee)
+	// case CeloDynamicFeeTxType, CeloDynamicFeeTxV2Type:
+	// 	withBaseFee := &celoDynamicReceiptRLP{data.PostStateOrStatus, data.CumulativeGasUsed, data.Bloom, data.Logs, r.BaseFee}
+	// 	return rlp.Encode(w, withBaseFee)
 	case DepositTxType:
 		withNonce := &depositReceiptRLP{data.PostStateOrStatus, data.CumulativeGasUsed, data.Bloom, data.Logs, r.DepositNonce, r.DepositReceiptVersion}
 		return rlp.Encode(w, withNonce)
@@ -354,7 +354,7 @@ func (r *Receipt) decodeTyped(b []byte) error {
 		return errShortTypedReceipt
 	}
 	switch b[0] {
-	case DynamicFeeTxType, AccessListTxType, BlobTxType:
+	case DynamicFeeTxType, AccessListTxType, BlobTxType, CeloDynamicFeeTxType, CeloDynamicFeeTxV2Type:
 		var data receiptRLP
 		err := rlp.DecodeBytes(b[1:], &data)
 		if err != nil {
@@ -362,15 +362,15 @@ func (r *Receipt) decodeTyped(b []byte) error {
 		}
 		r.Type = b[0]
 		return r.setFromRLP(data)
-	case CeloDynamicFeeTxType, CeloDynamicFeeTxV2Type:
-		var data celoDynamicReceiptRLP
-		err := rlp.DecodeBytes(b[1:], &data)
-		if err != nil {
-			return err
-		}
-		r.Type = b[0]
-		r.BaseFee = data.BaseFee
-		return r.setFromRLP(receiptRLP{data.PostStateOrStatus, data.CumulativeGasUsed, data.Bloom, data.Logs})
+	// case CeloDynamicFeeTxType, CeloDynamicFeeTxV2Type:
+	// 	var data celoDynamicReceiptRLP
+	// 	err := rlp.DecodeBytes(b[1:], &data)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	r.Type = b[0]
+	// 	r.BaseFee = data.BaseFee
+	// 	return r.setFromRLP(receiptRLP{data.PostStateOrStatus, data.CumulativeGasUsed, data.Bloom, data.Logs})
 	case DepositTxType:
 		var data depositReceiptRLP
 		err := rlp.DecodeBytes(b[1:], &data)
@@ -435,11 +435,11 @@ type ReceiptForStorage Receipt
 func (r *ReceiptForStorage) EncodeRLP(_w io.Writer) error {
 	w := rlp.NewEncoderBuffer(_w)
 	outerList := w.List()
-	if r.Type == CeloDynamicFeeTxV2Type {
-		// Mark receipt as CeloDynamicFee receipt by starting with an empty list
-		listIndex := w.List()
-		w.ListEnd(listIndex)
-	}
+	// if r.Type == CeloDynamicFeeTxV2Type {
+	// 	// Mark receipt as CeloDynamicFee receipt by starting with an empty list
+	// 	listIndex := w.List()
+	// 	w.ListEnd(listIndex)
+	// }
 	w.WriteBytes((*Receipt)(r).statusEncoding())
 	w.WriteUint64(r.CumulativeGasUsed)
 	logList := w.List()
@@ -455,9 +455,9 @@ func (r *ReceiptForStorage) EncodeRLP(_w io.Writer) error {
 			w.WriteUint64(*r.DepositReceiptVersion)
 		}
 	}
-	if r.Type == CeloDynamicFeeTxV2Type {
-		w.WriteBigInt(r.BaseFee)
-	}
+	// if r.Type == CeloDynamicFeeTxV2Type {
+	// 	w.WriteBigInt(r.BaseFee)
+	// }
 	w.ListEnd(outerList)
 	return w.Flush()
 }
@@ -483,9 +483,9 @@ func (r *ReceiptForStorage) DecodeRLP(s *rlp.Stream) error {
 		return err
 	}
 	// First try to decode the latest receipt database format, try the pre-bedrock Optimism legacy format otherwise.
-	if isCeloDynamicFeeReceipt(blob) {
-		return decodeStoredCeloDynamicFeeReceiptRLP(r, blob)
-	}
+	// if isCeloDynamicFeeReceipt(blob) {
+	// 	return decodeStoredCeloDynamicFeeReceiptRLP(r, blob)
+	// }
 	if err := decodeStoredReceiptRLP(r, blob); err == nil {
 		return nil
 	}
@@ -574,11 +574,11 @@ func (rs Receipts) EncodeIndex(i int, w *bytes.Buffer) {
 	}
 	w.WriteByte(r.Type)
 	switch r.Type {
-	case AccessListTxType, DynamicFeeTxType, BlobTxType:
+	case AccessListTxType, DynamicFeeTxType, BlobTxType, CeloDynamicFeeTxType, CeloDynamicFeeTxV2Type:
 		rlp.Encode(w, data)
-	case CeloDynamicFeeTxV2Type:
-		celoDynamicData := &celoDynamicReceiptRLP{data.PostStateOrStatus, data.CumulativeGasUsed, data.Bloom, data.Logs, r.BaseFee}
-		rlp.Encode(w, celoDynamicData)
+	// case CeloDynamicFeeTxV2Type:
+	// 	celoDynamicData := &celoDynamicReceiptRLP{data.PostStateOrStatus, data.CumulativeGasUsed, data.Bloom, data.Logs, r.BaseFee}
+	// 	rlp.Encode(w, celoDynamicData)
 	case DepositTxType:
 		if r.DepositReceiptVersion != nil {
 			// post-canyon receipt hash computation update
@@ -611,11 +611,11 @@ func (rs Receipts) DeriveFields(config *params.ChainConfig, hash common.Hash, nu
 		rs[i].TxHash = txs[i].Hash()
 
 		// The CeloDynamicFeeTxs set the baseFee in the receipt
-		if txs[i].Type() != CeloDynamicFeeTxV2Type {
-			rs[i].EffectiveGasPrice = txs[i].inner.effectiveGasPrice(new(big.Int), baseFee)
-		} else {
-			rs[i].EffectiveGasPrice = txs[i].inner.effectiveGasPrice(new(big.Int), rs[i].BaseFee)
-		}
+		// if txs[i].Type() != CeloDynamicFeeTxV2Type {
+		rs[i].EffectiveGasPrice = txs[i].inner.effectiveGasPrice(new(big.Int), baseFee)
+		// } else {
+		// rs[i].EffectiveGasPrice = txs[i].inner.effectiveGasPrice(new(big.Int), rs[i].BaseFee)
+		// }
 
 		// EIP-4844 blob transaction fields
 		if txs[i].Type() == BlobTxType {
