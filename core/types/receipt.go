@@ -151,7 +151,7 @@ type celoDynamicReceiptRLP struct {
 	Bloom             Bloom
 	Logs              []*Log
 	// BaseFee was introduced as mandatory in Cel2 ONLY for the CeloDynamicFeeTxs
-	BaseFee *big.Int
+	BaseFee *big.Int `rlp:"optional"`
 }
 
 // storedReceiptRLP is the storage encoding of a receipt.
