@@ -219,6 +219,7 @@ func (tx *Transaction) decodeTyped(b []byte) (TxData, error) {
 	case DepositTxType:
 		inner = new(DepositTx)
 	default:
+		log.Error("unknown transaction type", "type", b[0], "data", b[1:])
 		return nil, ErrTxTypeNotSupported
 	}
 	err := inner.decode(b[1:])
