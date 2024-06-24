@@ -18,6 +18,7 @@ package tests
 
 import (
 	"math/rand"
+	"regexp"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -85,6 +86,13 @@ func TestExecutionSpecBlocktests(t *testing.T) {
 	bt.skipLoad(".*prague/eip7002_el_triggerable_withdrawals/contract_deployment/system_contract_deployment.json")
 
 	bt.walk(t, executionSpecBlockchainTestDir, func(t *testing.T, name string, test *BlockTest) {
+		matches, err := regexp.MatchString("blockchain_test-create2?-over_limit_(ones|zeros)", name)
+		if err != nil {
+			t.Errorf("Bad regexp: %s", err)
+		}
+		if matches {
+			t.Skipf("Celo has increased the MaxCodeSize, which makes some tests invalid")
+		}
 		execBlockTest(t, bt, test)
 	})
 }
