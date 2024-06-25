@@ -434,8 +434,6 @@ type ChainConfig struct {
 
 	Cel2Time *uint64 `json:"cel2Time,omitempty"` // Cel2 switch time (nil = no fork, 0 = already on optimism cel2)
 
-	Cel2Config *Cel2Config `json:"cel2Config,omitempty"` // Cel2 config
-
 	// TerminalTotalDifficulty is the amount of total difficulty reached by
 	// the network that triggers the consensus upgrade.
 	TerminalTotalDifficulty *big.Int `json:"terminalTotalDifficulty,omitempty"`

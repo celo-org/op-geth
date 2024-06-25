@@ -58,12 +58,6 @@ func VerifyEIP1559Header(config *params.ChainConfig, parent, header *types.Heade
 // CalcBaseFee calculates the basefee of the header.
 // The time belongs to the new block to check if Canyon is activted or not
 func CalcBaseFee(config *params.ChainConfig, parent *types.Header, time uint64) *big.Int {
-	// If this is the cel2 transition block then we use the initial base fee
-	// from the Cel2Config of the chain config.
-	if config.Cel2Time != nil && *config.Cel2Time == time {
-		return new(big.Int).SetUint64(config.Cel2Config.TransitionBlockBaseFee)
-	}
-
 	// If the current block is the first EIP-1559 block, return the InitialBaseFee.
 	if !config.IsLondon(parent.Number) {
 		return new(big.Int).SetUint64(params.InitialBaseFee)
