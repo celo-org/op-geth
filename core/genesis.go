@@ -613,6 +613,9 @@ func (g *Genesis) toBlockWithRoot(stateRoot, storageRootMessagePasser common.Has
 		if g.Difficulty == nil && g.Mixhash == (common.Hash{}) {
 			head.Difficulty = params.GenesisDifficulty
 		}
+	} else if g.Difficulty == nil {
+		// In the case of migrated chains we ensure a zero rather than nil difficulty.
+		head.Difficulty = new(big.Int)
 	}
 	if g.Config != nil && g.Config.IsLondon(common.Big0) {
 		if g.BaseFee != nil {
