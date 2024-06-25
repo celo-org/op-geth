@@ -526,6 +526,7 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 			return nil, fmt.Errorf("mint value exceeds uint256: %d", mintU256)
 		}
 		st.state.AddBalance(st.msg.From, mintU256)
+		contracts.DepositAmount(st.evm, mintU256)
 	}
 	snap := st.state.Snapshot()
 
