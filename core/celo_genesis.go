@@ -53,18 +53,8 @@ var (
 )
 
 func celoGenesisAccounts(fundedAddr common.Address) GenesisAlloc {
-	// As defined in ERC-1967: Proxy Storage Slots (https://eips.ethereum.org/EIPS/eip-1967)
-	var (
-		proxy_owner_slot          = common.HexToHash("0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103")
-		proxy_implementation_slot = common.HexToHash("0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc")
-	)
-
 	// Initialize Bytecodes
 	celoTokenBytecode, err := DecodeHex(celo.CeloTokenBytecodeRaw)
-	if err != nil {
-		panic(err)
-	}
-	proxyBytecode, err := DecodeHex(celo.ProxyBytecodeRaw)
 	if err != nil {
 		panic(err)
 	}
@@ -91,15 +81,7 @@ func celoGenesisAccounts(fundedAddr common.Address) GenesisAlloc {
 		panic("Couldn not set faucet balance!")
 	}
 	genesisAccounts := map[common.Address]GenesisAccount{
-		addresses.CeloTokenAddress: { // CeloToken Proxy
-			Code: proxyBytecode,
-			Storage: map[common.Hash]common.Hash{
-				proxy_implementation_slot: common.HexToHash("0xce13"),
-				proxy_owner_slot:          DevAddr32,
-			},
-			Balance: big.NewInt(0),
-		},
-		common.HexToAddress("0xce13"): { // CeloToken Implementation
+		addresses.CeloTokenAddress: {
 			Code:    celoTokenBytecode,
 			Balance: big.NewInt(0),
 		},
