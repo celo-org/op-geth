@@ -10,9 +10,6 @@ import _ "embed"
 //go:embed compiled/GoldToken.bin-runtime
 var CeloTokenBytecodeRaw []byte
 
-//go:embed compiled/Proxy.bin-runtime
-var ProxyBytecodeRaw []byte
-
 //go:embed compiled/FeeCurrency.bin-runtime
 var FeeCurrencyBytecodeRaw []byte
 
