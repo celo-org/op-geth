@@ -60,10 +60,6 @@ func celoGenesisAccounts(fundedAddr common.Address) GenesisAlloc {
 	)
 
 	// Initialize Bytecodes
-	registryBytecode, err := DecodeHex(celo.RegistryBytecodeRaw)
-	if err != nil {
-		panic(err)
-	}
 	celoTokenBytecode, err := DecodeHex(celo.CeloTokenBytecodeRaw)
 	if err != nil {
 		panic(err)
@@ -95,19 +91,6 @@ func celoGenesisAccounts(fundedAddr common.Address) GenesisAlloc {
 		panic("Couldn not set faucet balance!")
 	}
 	genesisAccounts := map[common.Address]GenesisAccount{
-		addresses.RegistryAddress: { // Registry Proxy
-			Code: proxyBytecode,
-			Storage: map[common.Hash]common.Hash{
-				common.HexToHash("0x0"):   DevAddr32, // `_owner` slot in Registry contract
-				proxy_implementation_slot: common.HexToHash("0xce11"),
-				proxy_owner_slot:          DevAddr32,
-			},
-			Balance: big.NewInt(0),
-		},
-		common.HexToAddress("0xce11"): { // Registry Implementation
-			Code:    registryBytecode,
-			Balance: big.NewInt(0),
-		},
 		addresses.CeloTokenAddress: { // CeloToken Proxy
 			Code: proxyBytecode,
 			Storage: map[common.Hash]common.Hash{

@@ -3,7 +3,6 @@ package addresses
 import "github.com/ethereum/go-ethereum/common"
 
 var (
-	RegistryAddress             = common.HexToAddress("0x000000000000000000000000000000000000ce10")
 	CeloTokenAddress            = common.HexToAddress("0x471ece3750da237f93b8e339c536989b8978a438")
 	FeeHandlerAddress           = common.HexToAddress("0xcd437749e43a154c07f3553504c68fbfd56b8778")
 	FeeCurrencyDirectoryAddress = common.HexToAddress("0x71ffbd48e34bdd5a87c3c683e866dc63b8b2a685")
