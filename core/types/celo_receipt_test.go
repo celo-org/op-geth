@@ -29,7 +29,7 @@ func TestCeloDynamicFeeTxV2ReceiptEncodeDecode(t *testing.T) {
 func createTypedReceipt(receiptType uint8) *Receipt {
 	// Note this receipt and logs lack lots of fields, those fields are derived from the
 	// block and transaction and so are not part of encoding/decoding.
-	return &Receipt{
+	r := &Receipt{
 		Type:              receiptType,
 		PostState:         common.Hash{3}.Bytes(),
 		CumulativeGasUsed: 6,
@@ -46,11 +46,14 @@ func createTypedReceipt(receiptType uint8) *Receipt {
 			},
 		},
 	}
+	r.Bloom = CreateBloom(Receipts{r})
+	return r
 }
 
 // checkEncodeDecodeConsistency checks both RLP and binary encoding/decoding consistency.
 func checkEncodeDecodeConsistency(r *Receipt, t *testing.T) {
 	checkRLPEncodeDecodeConsistency(r, t)
+	checkStorageRLPEncodeDecodeConsistency((*ReceiptForStorage)(r), t)
 	checkBinaryEncodeDecodeConsistency(r, t)
 }
 
@@ -77,4 +80,24 @@ func checkBinaryEncodeDecodeConsistency(r *Receipt, t *testing.T) {
 	require.NoError(t, err)
 
 	require.EqualValues(t, r, r2)
+}
+
+// checkStorageRLPEncodeDecodeConsistency encodes and decodes the receipt and checks that they are equal.
+func checkStorageRLPEncodeDecodeConsistency(r *ReceiptForStorage, t *testing.T) {
+	buf := new(bytes.Buffer)
+	err := rlp.Encode(buf, r)
+	require.NoError(t, err)
+
+	// Stored receipts do not encode the type, (although they do require it to be set during encoding)
+	// since it is derived from the associated transaction. So for the sake of the comparison we set it
+	// to 0 and restore it after the comparison.
+	receiptType := r.Type
+	defer func() { r.Type = receiptType }()
+	r.Type = 0
+
+	var r2 ReceiptForStorage
+	err = rlp.Decode(buf, &r2)
+	require.NoError(t, err)
+
+	require.EqualValues(t, r, &r2)
 }
