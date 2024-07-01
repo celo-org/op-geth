@@ -15,6 +15,10 @@ import (
 //	GetState(common.Address, common.Hash) common.Hash
 //	GetCodeHash(common.Address) common.Hash
 //	GetCode(common.Address) []byte
+//	GetCodeSize(common.Address) int
+//	GetBalance(common.Address) *uint256.Int
+//	Exists(common.Address) bool
+//	Empty(common.Address) bool
 //
 // Gas calculations based on ReadOnlyStateDB will be wrong because the accessed storage slots and addresses are not tracked.
 type ReadOnlyStateDB struct {
@@ -37,10 +41,6 @@ func (r *ReadOnlyStateDB) AddBalance(_ common.Address, amount *uint256.Int) {
 	panic("not implemented")
 }
 
-func (r *ReadOnlyStateDB) GetBalance(common.Address) *uint256.Int {
-	panic("not implemented")
-}
-
 func (r *ReadOnlyStateDB) GetNonce(common.Address) uint64 {
 	panic("not implemented")
 }
@@ -50,10 +50,6 @@ func (r *ReadOnlyStateDB) SetNonce(common.Address, uint64) {
 }
 
 func (r *ReadOnlyStateDB) SetCode(common.Address, []byte) {
-	panic("not implemented")
-}
-
-func (r *ReadOnlyStateDB) GetCodeSize(common.Address) int {
 	panic("not implemented")
 }
 
@@ -94,14 +90,6 @@ func (r *ReadOnlyStateDB) HasSelfDestructed(common.Address) bool {
 }
 
 func (r *ReadOnlyStateDB) Selfdestruct6780(common.Address) {
-	panic("not implemented")
-}
-
-func (r *ReadOnlyStateDB) Exist(common.Address) bool {
-	panic("not implemented")
-}
-
-func (r *ReadOnlyStateDB) Empty(common.Address) bool {
 	panic("not implemented")
 }
 
