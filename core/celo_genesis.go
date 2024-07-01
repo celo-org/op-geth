@@ -109,6 +109,7 @@ func celoGenesisAccounts(fundedAddr common.Address) GenesisAlloc {
 			Storage: map[common.Hash]common.Hash{
 				common.HexToHash("0x0"): common.BigToHash(rateNumerator),
 				common.HexToHash("0x1"): common.BigToHash(rateDenominator),
+				common.HexToHash("0x3"): common.BytesToHash(DevFeeCurrencyAddr.Bytes()),
 			},
 		},
 		mockOracleAddr2: {
@@ -117,6 +118,7 @@ func celoGenesisAccounts(fundedAddr common.Address) GenesisAlloc {
 			Storage: map[common.Hash]common.Hash{
 				common.HexToHash("0x0"): common.BigToHash(rateNumerator2),
 				common.HexToHash("0x1"): common.BigToHash(rateDenominator),
+				common.HexToHash("0x3"): common.BytesToHash(DevFeeCurrencyAddr2.Bytes()),
 			},
 		},
 		DevAddr: {
@@ -152,7 +154,6 @@ func celoGenesisAccounts(fundedAddr common.Address) GenesisAlloc {
 
 func addFeeCurrencyToStorage(feeCurrencyAddr common.Address, oracleAddr common.Address, storage map[common.Hash]common.Hash) {
 	structStart := CalcMapAddr(common.HexToHash("0x1"), common.BytesToHash(feeCurrencyAddr.Bytes()))
-	storage[structStart] = common.HexToHash("0x1")                            // currencyIdentifier, dummy value
-	storage[incHash(structStart, 1)] = common.BytesToHash(oracleAddr.Bytes()) // oracle
-	storage[incHash(structStart, 2)] = common.BigToHash(big.NewInt(50000))    // intrinsicGas
+	storage[structStart] = common.BytesToHash(oracleAddr.Bytes())          // oracle
+	storage[incHash(structStart, 1)] = common.BigToHash(big.NewInt(50000)) // intrinsicGas
 }
