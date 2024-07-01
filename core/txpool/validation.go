@@ -269,6 +269,9 @@ func ValidateTransactionWithState(tx *types.Transaction, signer types.Signer, op
 		nativeBalance               = opts.ExistingBalance(from, &common.ZeroAddress)
 		feeCurrencyCost, nativeCost = tx.Cost()
 	)
+	if feeCurrencyBalance == nil {
+		return fmt.Errorf("feeCurrencyBalance is nil for FeeCurrency %x", tx.FeeCurrency())
+	}
 	if opts.L1CostFn != nil {
 		if l1Cost := opts.L1CostFn(tx.RollupCostData()); l1Cost != nil { // add rollup cost
 			nativeCost = nativeCost.Add(nativeCost, l1Cost)
