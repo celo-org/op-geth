@@ -31,7 +31,7 @@ var (
 
 // MockOracleMetaData contains all meta data concerning the MockOracle contract.
 var MockOracleMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"getExchangeRateFor\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"setExchangeRate\",\"inputs\":[{\"name\":\"_numerator\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"_denominator\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"getExchangeRate\",\"inputs\":[{\"name\":\"_token\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"setExchangeRate\",\"inputs\":[{\"name\":\"_token\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_numerator\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"_denominator\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"}]",
 }
 
 // MockOracleABI is the input ABI used to generate the binding from.
@@ -180,12 +180,12 @@ func (_MockOracle *MockOracleTransactorRaw) Transact(opts *bind.TransactOpts, me
 	return _MockOracle.Contract.contract.Transact(opts, method, params...)
 }
 
-// GetExchangeRateFor is a free data retrieval call binding the contract method 0x78da2e1f.
+// GetExchangeRate is a free data retrieval call binding the contract method 0xefb7601d.
 //
-// Solidity: function getExchangeRateFor(address ) view returns(uint256, uint256)
-func (_MockOracle *MockOracleCaller) GetExchangeRateFor(opts *bind.CallOpts, arg0 common.Address) (*big.Int, *big.Int, error) {
+// Solidity: function getExchangeRate(address _token) view returns(uint256, uint256)
+func (_MockOracle *MockOracleCaller) GetExchangeRate(opts *bind.CallOpts, _token common.Address) (*big.Int, *big.Int, error) {
 	var out []interface{}
-	err := _MockOracle.contract.Call(opts, &out, "getExchangeRateFor", arg0)
+	err := _MockOracle.contract.Call(opts, &out, "getExchangeRate", _token)
 
 	if err != nil {
 		return *new(*big.Int), *new(*big.Int), err
@@ -198,37 +198,37 @@ func (_MockOracle *MockOracleCaller) GetExchangeRateFor(opts *bind.CallOpts, arg
 
 }
 
-// GetExchangeRateFor is a free data retrieval call binding the contract method 0x78da2e1f.
+// GetExchangeRate is a free data retrieval call binding the contract method 0xefb7601d.
 //
-// Solidity: function getExchangeRateFor(address ) view returns(uint256, uint256)
-func (_MockOracle *MockOracleSession) GetExchangeRateFor(arg0 common.Address) (*big.Int, *big.Int, error) {
-	return _MockOracle.Contract.GetExchangeRateFor(&_MockOracle.CallOpts, arg0)
+// Solidity: function getExchangeRate(address _token) view returns(uint256, uint256)
+func (_MockOracle *MockOracleSession) GetExchangeRate(_token common.Address) (*big.Int, *big.Int, error) {
+	return _MockOracle.Contract.GetExchangeRate(&_MockOracle.CallOpts, _token)
 }
 
-// GetExchangeRateFor is a free data retrieval call binding the contract method 0x78da2e1f.
+// GetExchangeRate is a free data retrieval call binding the contract method 0xefb7601d.
 //
-// Solidity: function getExchangeRateFor(address ) view returns(uint256, uint256)
-func (_MockOracle *MockOracleCallerSession) GetExchangeRateFor(arg0 common.Address) (*big.Int, *big.Int, error) {
-	return _MockOracle.Contract.GetExchangeRateFor(&_MockOracle.CallOpts, arg0)
+// Solidity: function getExchangeRate(address _token) view returns(uint256, uint256)
+func (_MockOracle *MockOracleCallerSession) GetExchangeRate(_token common.Address) (*big.Int, *big.Int, error) {
+	return _MockOracle.Contract.GetExchangeRate(&_MockOracle.CallOpts, _token)
 }
 
-// SetExchangeRate is a paid mutator transaction binding the contract method 0xf55ecf06.
+// SetExchangeRate is a paid mutator transaction binding the contract method 0x58a5514f.
 //
-// Solidity: function setExchangeRate(uint256 _numerator, uint256 _denominator) returns()
-func (_MockOracle *MockOracleTransactor) SetExchangeRate(opts *bind.TransactOpts, _numerator *big.Int, _denominator *big.Int) (*types.Transaction, error) {
-	return _MockOracle.contract.Transact(opts, "setExchangeRate", _numerator, _denominator)
+// Solidity: function setExchangeRate(address _token, uint256 _numerator, uint256 _denominator) returns()
+func (_MockOracle *MockOracleTransactor) SetExchangeRate(opts *bind.TransactOpts, _token common.Address, _numerator *big.Int, _denominator *big.Int) (*types.Transaction, error) {
+	return _MockOracle.contract.Transact(opts, "setExchangeRate", _token, _numerator, _denominator)
 }
 
-// SetExchangeRate is a paid mutator transaction binding the contract method 0xf55ecf06.
+// SetExchangeRate is a paid mutator transaction binding the contract method 0x58a5514f.
 //
-// Solidity: function setExchangeRate(uint256 _numerator, uint256 _denominator) returns()
-func (_MockOracle *MockOracleSession) SetExchangeRate(_numerator *big.Int, _denominator *big.Int) (*types.Transaction, error) {
-	return _MockOracle.Contract.SetExchangeRate(&_MockOracle.TransactOpts, _numerator, _denominator)
+// Solidity: function setExchangeRate(address _token, uint256 _numerator, uint256 _denominator) returns()
+func (_MockOracle *MockOracleSession) SetExchangeRate(_token common.Address, _numerator *big.Int, _denominator *big.Int) (*types.Transaction, error) {
+	return _MockOracle.Contract.SetExchangeRate(&_MockOracle.TransactOpts, _token, _numerator, _denominator)
 }
 
-// SetExchangeRate is a paid mutator transaction binding the contract method 0xf55ecf06.
+// SetExchangeRate is a paid mutator transaction binding the contract method 0x58a5514f.
 //
-// Solidity: function setExchangeRate(uint256 _numerator, uint256 _denominator) returns()
-func (_MockOracle *MockOracleTransactorSession) SetExchangeRate(_numerator *big.Int, _denominator *big.Int) (*types.Transaction, error) {
-	return _MockOracle.Contract.SetExchangeRate(&_MockOracle.TransactOpts, _numerator, _denominator)
+// Solidity: function setExchangeRate(address _token, uint256 _numerator, uint256 _denominator) returns()
+func (_MockOracle *MockOracleTransactorSession) SetExchangeRate(_token common.Address, _numerator *big.Int, _denominator *big.Int) (*types.Transaction, error) {
+	return _MockOracle.Contract.SetExchangeRate(&_MockOracle.TransactOpts, _token, _numerator, _denominator)
 }

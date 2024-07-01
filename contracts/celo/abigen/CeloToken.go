@@ -31,7 +31,7 @@ var (
 
 // CeloTokenMetaData contains all meta data concerning the CeloToken contract.
 var CeloTokenMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[{\"internalType\":\"bool\",\"name\":\"test\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Approval\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"registryAddress\",\"type\":\"address\"}],\"name\":\"RegistrySet\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"Transfer\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"string\",\"name\":\"comment\",\"type\":\"string\"}],\"name\":\"TransferComment\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"}],\"name\":\"allowance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"approve\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"}],\"name\":\"balanceOf\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"burn\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"circulatingSupply\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"decimals\",\"outputs\":[{\"internalType\":\"uint8\",\"name\":\"\",\"type\":\"uint8\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"decreaseAllowance\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getBurnedAmount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getVersionNumber\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"spender\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"increaseAllowance\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"increaseSupply\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"registryAddress\",\"type\":\"address\"}],\"name\":\"initialize\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"initialized\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"mint\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"name\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"registry\",\"outputs\":[{\"internalType\":\"contractICeloRegistry\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"registryAddress\",\"type\":\"address\"}],\"name\":\"setRegistry\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"symbol\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"totalSupply\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"transfer\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"}],\"name\":\"transferFrom\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"comment\",\"type\":\"string\"}],\"name\":\"transferWithComment\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"type\":\"constructor\",\"inputs\":[{\"name\":\"test\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"allocatedSupply\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"allowance\",\"inputs\":[{\"name\":\"_owner\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"spender\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"approve\",\"inputs\":[{\"name\":\"spender\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"balanceOf\",\"inputs\":[{\"name\":\"_owner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"burn\",\"inputs\":[{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"celoTokenDistributionSchedule\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractICeloDistributionSchedule\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"circulatingSupply\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"decimals\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint8\",\"internalType\":\"uint8\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"decreaseAllowance\",\"inputs\":[{\"name\":\"spender\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"depositAmount\",\"inputs\":[{\"name\":\"_depositAmount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"getBurnedAmount\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"getVersionNumber\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"pure\"},{\"type\":\"function\",\"name\":\"increaseAllowance\",\"inputs\":[{\"name\":\"spender\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"increaseSupply\",\"inputs\":[{\"name\":\"amount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"initialize\",\"inputs\":[{\"name\":\"registryAddress\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"initialized\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isL2\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"isOwner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"mint\",\"inputs\":[{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"name\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"string\",\"internalType\":\"string\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"owner\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"registry\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"contractIRegistry\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"renounceOwnership\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setCeloTokenDistributionScheduleAddress\",\"inputs\":[{\"name\":\"celoTokenDistributionScheduleAddress\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"setRegistry\",\"inputs\":[{\"name\":\"registryAddress\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"symbol\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"string\",\"internalType\":\"string\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"totalSupply\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"transfer\",\"inputs\":[{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"transferFrom\",\"inputs\":[{\"name\":\"from\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"transferOwnership\",\"inputs\":[{\"name\":\"newOwner\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"transferWithComment\",\"inputs\":[{\"name\":\"to\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"comment\",\"type\":\"string\",\"internalType\":\"string\"}],\"outputs\":[{\"name\":\"\",\"type\":\"bool\",\"internalType\":\"bool\"}],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"withdrawAmount\",\"inputs\":[{\"name\":\"_withdrawAmount\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"withdrawn\",\"inputs\":[],\"outputs\":[{\"name\":\"\",\"type\":\"uint256\",\"internalType\":\"uint256\"}],\"stateMutability\":\"view\"},{\"type\":\"event\",\"name\":\"Approval\",\"inputs\":[{\"name\":\"owner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"spender\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"OwnershipTransferred\",\"inputs\":[{\"name\":\"previousOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"newOwner\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"RegistrySet\",\"inputs\":[{\"name\":\"registryAddress\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"SetCeloTokenDistributionScheduleAddress\",\"inputs\":[{\"name\":\"newScheduleAddress\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"Transfer\",\"inputs\":[{\"name\":\"from\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"to\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"value\",\"type\":\"uint256\",\"indexed\":false,\"internalType\":\"uint256\"}],\"anonymous\":false},{\"type\":\"event\",\"name\":\"TransferComment\",\"inputs\":[{\"name\":\"comment\",\"type\":\"string\",\"indexed\":false,\"internalType\":\"string\"}],\"anonymous\":false}]",
 }
 
 // CeloTokenABI is the input ABI used to generate the binding from.
@@ -180,12 +180,43 @@ func (_CeloToken *CeloTokenTransactorRaw) Transact(opts *bind.TransactOpts, meth
 	return _CeloToken.Contract.contract.Transact(opts, method, params...)
 }
 
+// AllocatedSupply is a free data retrieval call binding the contract method 0x3a70a5ca.
+//
+// Solidity: function allocatedSupply() view returns(uint256)
+func (_CeloToken *CeloTokenCaller) AllocatedSupply(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _CeloToken.contract.Call(opts, &out, "allocatedSupply")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// AllocatedSupply is a free data retrieval call binding the contract method 0x3a70a5ca.
+//
+// Solidity: function allocatedSupply() view returns(uint256)
+func (_CeloToken *CeloTokenSession) AllocatedSupply() (*big.Int, error) {
+	return _CeloToken.Contract.AllocatedSupply(&_CeloToken.CallOpts)
+}
+
+// AllocatedSupply is a free data retrieval call binding the contract method 0x3a70a5ca.
+//
+// Solidity: function allocatedSupply() view returns(uint256)
+func (_CeloToken *CeloTokenCallerSession) AllocatedSupply() (*big.Int, error) {
+	return _CeloToken.Contract.AllocatedSupply(&_CeloToken.CallOpts)
+}
+
 // Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
 //
-// Solidity: function allowance(address owner, address spender) view returns(uint256)
-func (_CeloToken *CeloTokenCaller) Allowance(opts *bind.CallOpts, owner common.Address, spender common.Address) (*big.Int, error) {
+// Solidity: function allowance(address _owner, address spender) view returns(uint256)
+func (_CeloToken *CeloTokenCaller) Allowance(opts *bind.CallOpts, _owner common.Address, spender common.Address) (*big.Int, error) {
 	var out []interface{}
-	err := _CeloToken.contract.Call(opts, &out, "allowance", owner, spender)
+	err := _CeloToken.contract.Call(opts, &out, "allowance", _owner, spender)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -199,24 +230,24 @@ func (_CeloToken *CeloTokenCaller) Allowance(opts *bind.CallOpts, owner common.A
 
 // Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
 //
-// Solidity: function allowance(address owner, address spender) view returns(uint256)
-func (_CeloToken *CeloTokenSession) Allowance(owner common.Address, spender common.Address) (*big.Int, error) {
-	return _CeloToken.Contract.Allowance(&_CeloToken.CallOpts, owner, spender)
+// Solidity: function allowance(address _owner, address spender) view returns(uint256)
+func (_CeloToken *CeloTokenSession) Allowance(_owner common.Address, spender common.Address) (*big.Int, error) {
+	return _CeloToken.Contract.Allowance(&_CeloToken.CallOpts, _owner, spender)
 }
 
 // Allowance is a free data retrieval call binding the contract method 0xdd62ed3e.
 //
-// Solidity: function allowance(address owner, address spender) view returns(uint256)
-func (_CeloToken *CeloTokenCallerSession) Allowance(owner common.Address, spender common.Address) (*big.Int, error) {
-	return _CeloToken.Contract.Allowance(&_CeloToken.CallOpts, owner, spender)
+// Solidity: function allowance(address _owner, address spender) view returns(uint256)
+func (_CeloToken *CeloTokenCallerSession) Allowance(_owner common.Address, spender common.Address) (*big.Int, error) {
+	return _CeloToken.Contract.Allowance(&_CeloToken.CallOpts, _owner, spender)
 }
 
 // BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 //
-// Solidity: function balanceOf(address owner) view returns(uint256)
-func (_CeloToken *CeloTokenCaller) BalanceOf(opts *bind.CallOpts, owner common.Address) (*big.Int, error) {
+// Solidity: function balanceOf(address _owner) view returns(uint256)
+func (_CeloToken *CeloTokenCaller) BalanceOf(opts *bind.CallOpts, _owner common.Address) (*big.Int, error) {
 	var out []interface{}
-	err := _CeloToken.contract.Call(opts, &out, "balanceOf", owner)
+	err := _CeloToken.contract.Call(opts, &out, "balanceOf", _owner)
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -230,16 +261,47 @@ func (_CeloToken *CeloTokenCaller) BalanceOf(opts *bind.CallOpts, owner common.A
 
 // BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 //
-// Solidity: function balanceOf(address owner) view returns(uint256)
-func (_CeloToken *CeloTokenSession) BalanceOf(owner common.Address) (*big.Int, error) {
-	return _CeloToken.Contract.BalanceOf(&_CeloToken.CallOpts, owner)
+// Solidity: function balanceOf(address _owner) view returns(uint256)
+func (_CeloToken *CeloTokenSession) BalanceOf(_owner common.Address) (*big.Int, error) {
+	return _CeloToken.Contract.BalanceOf(&_CeloToken.CallOpts, _owner)
 }
 
 // BalanceOf is a free data retrieval call binding the contract method 0x70a08231.
 //
-// Solidity: function balanceOf(address owner) view returns(uint256)
-func (_CeloToken *CeloTokenCallerSession) BalanceOf(owner common.Address) (*big.Int, error) {
-	return _CeloToken.Contract.BalanceOf(&_CeloToken.CallOpts, owner)
+// Solidity: function balanceOf(address _owner) view returns(uint256)
+func (_CeloToken *CeloTokenCallerSession) BalanceOf(_owner common.Address) (*big.Int, error) {
+	return _CeloToken.Contract.BalanceOf(&_CeloToken.CallOpts, _owner)
+}
+
+// CeloTokenDistributionSchedule is a free data retrieval call binding the contract method 0xd4d83cfb.
+//
+// Solidity: function celoTokenDistributionSchedule() view returns(address)
+func (_CeloToken *CeloTokenCaller) CeloTokenDistributionSchedule(opts *bind.CallOpts) (common.Address, error) {
+	var out []interface{}
+	err := _CeloToken.contract.Call(opts, &out, "celoTokenDistributionSchedule")
+
+	if err != nil {
+		return *new(common.Address), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(common.Address)).(*common.Address)
+
+	return out0, err
+
+}
+
+// CeloTokenDistributionSchedule is a free data retrieval call binding the contract method 0xd4d83cfb.
+//
+// Solidity: function celoTokenDistributionSchedule() view returns(address)
+func (_CeloToken *CeloTokenSession) CeloTokenDistributionSchedule() (common.Address, error) {
+	return _CeloToken.Contract.CeloTokenDistributionSchedule(&_CeloToken.CallOpts)
+}
+
+// CeloTokenDistributionSchedule is a free data retrieval call binding the contract method 0xd4d83cfb.
+//
+// Solidity: function celoTokenDistributionSchedule() view returns(address)
+func (_CeloToken *CeloTokenCallerSession) CeloTokenDistributionSchedule() (common.Address, error) {
+	return _CeloToken.Contract.CeloTokenDistributionSchedule(&_CeloToken.CallOpts)
 }
 
 // CirculatingSupply is a free data retrieval call binding the contract method 0x9358928b.
@@ -275,7 +337,7 @@ func (_CeloToken *CeloTokenCallerSession) CirculatingSupply() (*big.Int, error) 
 
 // Decimals is a free data retrieval call binding the contract method 0x313ce567.
 //
-// Solidity: function decimals() pure returns(uint8)
+// Solidity: function decimals() view returns(uint8)
 func (_CeloToken *CeloTokenCaller) Decimals(opts *bind.CallOpts) (uint8, error) {
 	var out []interface{}
 	err := _CeloToken.contract.Call(opts, &out, "decimals")
@@ -292,14 +354,14 @@ func (_CeloToken *CeloTokenCaller) Decimals(opts *bind.CallOpts) (uint8, error) 
 
 // Decimals is a free data retrieval call binding the contract method 0x313ce567.
 //
-// Solidity: function decimals() pure returns(uint8)
+// Solidity: function decimals() view returns(uint8)
 func (_CeloToken *CeloTokenSession) Decimals() (uint8, error) {
 	return _CeloToken.Contract.Decimals(&_CeloToken.CallOpts)
 }
 
 // Decimals is a free data retrieval call binding the contract method 0x313ce567.
 //
-// Solidity: function decimals() pure returns(uint8)
+// Solidity: function decimals() view returns(uint8)
 func (_CeloToken *CeloTokenCallerSession) Decimals() (uint8, error) {
 	return _CeloToken.Contract.Decimals(&_CeloToken.CallOpts)
 }
@@ -400,9 +462,71 @@ func (_CeloToken *CeloTokenCallerSession) Initialized() (bool, error) {
 	return _CeloToken.Contract.Initialized(&_CeloToken.CallOpts)
 }
 
+// IsL2 is a free data retrieval call binding the contract method 0x76348f71.
+//
+// Solidity: function isL2() view returns(bool)
+func (_CeloToken *CeloTokenCaller) IsL2(opts *bind.CallOpts) (bool, error) {
+	var out []interface{}
+	err := _CeloToken.contract.Call(opts, &out, "isL2")
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// IsL2 is a free data retrieval call binding the contract method 0x76348f71.
+//
+// Solidity: function isL2() view returns(bool)
+func (_CeloToken *CeloTokenSession) IsL2() (bool, error) {
+	return _CeloToken.Contract.IsL2(&_CeloToken.CallOpts)
+}
+
+// IsL2 is a free data retrieval call binding the contract method 0x76348f71.
+//
+// Solidity: function isL2() view returns(bool)
+func (_CeloToken *CeloTokenCallerSession) IsL2() (bool, error) {
+	return _CeloToken.Contract.IsL2(&_CeloToken.CallOpts)
+}
+
+// IsOwner is a free data retrieval call binding the contract method 0x8f32d59b.
+//
+// Solidity: function isOwner() view returns(bool)
+func (_CeloToken *CeloTokenCaller) IsOwner(opts *bind.CallOpts) (bool, error) {
+	var out []interface{}
+	err := _CeloToken.contract.Call(opts, &out, "isOwner")
+
+	if err != nil {
+		return *new(bool), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
+
+	return out0, err
+
+}
+
+// IsOwner is a free data retrieval call binding the contract method 0x8f32d59b.
+//
+// Solidity: function isOwner() view returns(bool)
+func (_CeloToken *CeloTokenSession) IsOwner() (bool, error) {
+	return _CeloToken.Contract.IsOwner(&_CeloToken.CallOpts)
+}
+
+// IsOwner is a free data retrieval call binding the contract method 0x8f32d59b.
+//
+// Solidity: function isOwner() view returns(bool)
+func (_CeloToken *CeloTokenCallerSession) IsOwner() (bool, error) {
+	return _CeloToken.Contract.IsOwner(&_CeloToken.CallOpts)
+}
+
 // Name is a free data retrieval call binding the contract method 0x06fdde03.
 //
-// Solidity: function name() pure returns(string)
+// Solidity: function name() view returns(string)
 func (_CeloToken *CeloTokenCaller) Name(opts *bind.CallOpts) (string, error) {
 	var out []interface{}
 	err := _CeloToken.contract.Call(opts, &out, "name")
@@ -419,14 +543,14 @@ func (_CeloToken *CeloTokenCaller) Name(opts *bind.CallOpts) (string, error) {
 
 // Name is a free data retrieval call binding the contract method 0x06fdde03.
 //
-// Solidity: function name() pure returns(string)
+// Solidity: function name() view returns(string)
 func (_CeloToken *CeloTokenSession) Name() (string, error) {
 	return _CeloToken.Contract.Name(&_CeloToken.CallOpts)
 }
 
 // Name is a free data retrieval call binding the contract method 0x06fdde03.
 //
-// Solidity: function name() pure returns(string)
+// Solidity: function name() view returns(string)
 func (_CeloToken *CeloTokenCallerSession) Name() (string, error) {
 	return _CeloToken.Contract.Name(&_CeloToken.CallOpts)
 }
@@ -495,7 +619,7 @@ func (_CeloToken *CeloTokenCallerSession) Registry() (common.Address, error) {
 
 // Symbol is a free data retrieval call binding the contract method 0x95d89b41.
 //
-// Solidity: function symbol() pure returns(string)
+// Solidity: function symbol() view returns(string)
 func (_CeloToken *CeloTokenCaller) Symbol(opts *bind.CallOpts) (string, error) {
 	var out []interface{}
 	err := _CeloToken.contract.Call(opts, &out, "symbol")
@@ -512,14 +636,14 @@ func (_CeloToken *CeloTokenCaller) Symbol(opts *bind.CallOpts) (string, error) {
 
 // Symbol is a free data retrieval call binding the contract method 0x95d89b41.
 //
-// Solidity: function symbol() pure returns(string)
+// Solidity: function symbol() view returns(string)
 func (_CeloToken *CeloTokenSession) Symbol() (string, error) {
 	return _CeloToken.Contract.Symbol(&_CeloToken.CallOpts)
 }
 
 // Symbol is a free data retrieval call binding the contract method 0x95d89b41.
 //
-// Solidity: function symbol() pure returns(string)
+// Solidity: function symbol() view returns(string)
 func (_CeloToken *CeloTokenCallerSession) Symbol() (string, error) {
 	return _CeloToken.Contract.Symbol(&_CeloToken.CallOpts)
 }
@@ -553,6 +677,37 @@ func (_CeloToken *CeloTokenSession) TotalSupply() (*big.Int, error) {
 // Solidity: function totalSupply() view returns(uint256)
 func (_CeloToken *CeloTokenCallerSession) TotalSupply() (*big.Int, error) {
 	return _CeloToken.Contract.TotalSupply(&_CeloToken.CallOpts)
+}
+
+// Withdrawn is a free data retrieval call binding the contract method 0xc80ec522.
+//
+// Solidity: function withdrawn() view returns(uint256)
+func (_CeloToken *CeloTokenCaller) Withdrawn(opts *bind.CallOpts) (*big.Int, error) {
+	var out []interface{}
+	err := _CeloToken.contract.Call(opts, &out, "withdrawn")
+
+	if err != nil {
+		return *new(*big.Int), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+
+	return out0, err
+
+}
+
+// Withdrawn is a free data retrieval call binding the contract method 0xc80ec522.
+//
+// Solidity: function withdrawn() view returns(uint256)
+func (_CeloToken *CeloTokenSession) Withdrawn() (*big.Int, error) {
+	return _CeloToken.Contract.Withdrawn(&_CeloToken.CallOpts)
+}
+
+// Withdrawn is a free data retrieval call binding the contract method 0xc80ec522.
+//
+// Solidity: function withdrawn() view returns(uint256)
+func (_CeloToken *CeloTokenCallerSession) Withdrawn() (*big.Int, error) {
+	return _CeloToken.Contract.Withdrawn(&_CeloToken.CallOpts)
 }
 
 // Approve is a paid mutator transaction binding the contract method 0x095ea7b3.
@@ -616,6 +771,27 @@ func (_CeloToken *CeloTokenSession) DecreaseAllowance(spender common.Address, va
 // Solidity: function decreaseAllowance(address spender, uint256 value) returns(bool)
 func (_CeloToken *CeloTokenTransactorSession) DecreaseAllowance(spender common.Address, value *big.Int) (*types.Transaction, error) {
 	return _CeloToken.Contract.DecreaseAllowance(&_CeloToken.TransactOpts, spender, value)
+}
+
+// DepositAmount is a paid mutator transaction binding the contract method 0x87f8ab26.
+//
+// Solidity: function depositAmount(uint256 _depositAmount) returns()
+func (_CeloToken *CeloTokenTransactor) DepositAmount(opts *bind.TransactOpts, _depositAmount *big.Int) (*types.Transaction, error) {
+	return _CeloToken.contract.Transact(opts, "depositAmount", _depositAmount)
+}
+
+// DepositAmount is a paid mutator transaction binding the contract method 0x87f8ab26.
+//
+// Solidity: function depositAmount(uint256 _depositAmount) returns()
+func (_CeloToken *CeloTokenSession) DepositAmount(_depositAmount *big.Int) (*types.Transaction, error) {
+	return _CeloToken.Contract.DepositAmount(&_CeloToken.TransactOpts, _depositAmount)
+}
+
+// DepositAmount is a paid mutator transaction binding the contract method 0x87f8ab26.
+//
+// Solidity: function depositAmount(uint256 _depositAmount) returns()
+func (_CeloToken *CeloTokenTransactorSession) DepositAmount(_depositAmount *big.Int) (*types.Transaction, error) {
+	return _CeloToken.Contract.DepositAmount(&_CeloToken.TransactOpts, _depositAmount)
 }
 
 // IncreaseAllowance is a paid mutator transaction binding the contract method 0x39509351.
@@ -723,6 +899,27 @@ func (_CeloToken *CeloTokenTransactorSession) RenounceOwnership() (*types.Transa
 	return _CeloToken.Contract.RenounceOwnership(&_CeloToken.TransactOpts)
 }
 
+// SetCeloTokenDistributionScheduleAddress is a paid mutator transaction binding the contract method 0xdb2b4d10.
+//
+// Solidity: function setCeloTokenDistributionScheduleAddress(address celoTokenDistributionScheduleAddress) returns()
+func (_CeloToken *CeloTokenTransactor) SetCeloTokenDistributionScheduleAddress(opts *bind.TransactOpts, celoTokenDistributionScheduleAddress common.Address) (*types.Transaction, error) {
+	return _CeloToken.contract.Transact(opts, "setCeloTokenDistributionScheduleAddress", celoTokenDistributionScheduleAddress)
+}
+
+// SetCeloTokenDistributionScheduleAddress is a paid mutator transaction binding the contract method 0xdb2b4d10.
+//
+// Solidity: function setCeloTokenDistributionScheduleAddress(address celoTokenDistributionScheduleAddress) returns()
+func (_CeloToken *CeloTokenSession) SetCeloTokenDistributionScheduleAddress(celoTokenDistributionScheduleAddress common.Address) (*types.Transaction, error) {
+	return _CeloToken.Contract.SetCeloTokenDistributionScheduleAddress(&_CeloToken.TransactOpts, celoTokenDistributionScheduleAddress)
+}
+
+// SetCeloTokenDistributionScheduleAddress is a paid mutator transaction binding the contract method 0xdb2b4d10.
+//
+// Solidity: function setCeloTokenDistributionScheduleAddress(address celoTokenDistributionScheduleAddress) returns()
+func (_CeloToken *CeloTokenTransactorSession) SetCeloTokenDistributionScheduleAddress(celoTokenDistributionScheduleAddress common.Address) (*types.Transaction, error) {
+	return _CeloToken.Contract.SetCeloTokenDistributionScheduleAddress(&_CeloToken.TransactOpts, celoTokenDistributionScheduleAddress)
+}
+
 // SetRegistry is a paid mutator transaction binding the contract method 0xa91ee0dc.
 //
 // Solidity: function setRegistry(address registryAddress) returns()
@@ -826,6 +1023,27 @@ func (_CeloToken *CeloTokenSession) TransferWithComment(to common.Address, value
 // Solidity: function transferWithComment(address to, uint256 value, string comment) returns(bool)
 func (_CeloToken *CeloTokenTransactorSession) TransferWithComment(to common.Address, value *big.Int, comment string) (*types.Transaction, error) {
 	return _CeloToken.Contract.TransferWithComment(&_CeloToken.TransactOpts, to, value, comment)
+}
+
+// WithdrawAmount is a paid mutator transaction binding the contract method 0x0562b9f7.
+//
+// Solidity: function withdrawAmount(uint256 _withdrawAmount) returns()
+func (_CeloToken *CeloTokenTransactor) WithdrawAmount(opts *bind.TransactOpts, _withdrawAmount *big.Int) (*types.Transaction, error) {
+	return _CeloToken.contract.Transact(opts, "withdrawAmount", _withdrawAmount)
+}
+
+// WithdrawAmount is a paid mutator transaction binding the contract method 0x0562b9f7.
+//
+// Solidity: function withdrawAmount(uint256 _withdrawAmount) returns()
+func (_CeloToken *CeloTokenSession) WithdrawAmount(_withdrawAmount *big.Int) (*types.Transaction, error) {
+	return _CeloToken.Contract.WithdrawAmount(&_CeloToken.TransactOpts, _withdrawAmount)
+}
+
+// WithdrawAmount is a paid mutator transaction binding the contract method 0x0562b9f7.
+//
+// Solidity: function withdrawAmount(uint256 _withdrawAmount) returns()
+func (_CeloToken *CeloTokenTransactorSession) WithdrawAmount(_withdrawAmount *big.Int) (*types.Transaction, error) {
+	return _CeloToken.Contract.WithdrawAmount(&_CeloToken.TransactOpts, _withdrawAmount)
 }
 
 // CeloTokenApprovalIterator is returned from FilterApproval and is used to iterate over the raw logs and unpacked data for Approval events raised by the CeloToken contract.
@@ -1273,6 +1491,150 @@ func (_CeloToken *CeloTokenFilterer) WatchRegistrySet(opts *bind.WatchOpts, sink
 func (_CeloToken *CeloTokenFilterer) ParseRegistrySet(log types.Log) (*CeloTokenRegistrySet, error) {
 	event := new(CeloTokenRegistrySet)
 	if err := _CeloToken.contract.UnpackLog(event, "RegistrySet", log); err != nil {
+		return nil, err
+	}
+	event.Raw = log
+	return event, nil
+}
+
+// CeloTokenSetCeloTokenDistributionScheduleAddressIterator is returned from FilterSetCeloTokenDistributionScheduleAddress and is used to iterate over the raw logs and unpacked data for SetCeloTokenDistributionScheduleAddress events raised by the CeloToken contract.
+type CeloTokenSetCeloTokenDistributionScheduleAddressIterator struct {
+	Event *CeloTokenSetCeloTokenDistributionScheduleAddress // Event containing the contract specifics and raw log
+
+	contract *bind.BoundContract // Generic contract to use for unpacking event data
+	event    string              // Event name to use for unpacking event data
+
+	logs chan types.Log        // Log channel receiving the found contract events
+	sub  ethereum.Subscription // Subscription for errors, completion and termination
+	done bool                  // Whether the subscription completed delivering logs
+	fail error                 // Occurred error to stop iteration
+}
+
+// Next advances the iterator to the subsequent event, returning whether there
+// are any more events found. In case of a retrieval or parsing error, false is
+// returned and Error() can be queried for the exact failure.
+func (it *CeloTokenSetCeloTokenDistributionScheduleAddressIterator) Next() bool {
+	// If the iterator failed, stop iterating
+	if it.fail != nil {
+		return false
+	}
+	// If the iterator completed, deliver directly whatever's available
+	if it.done {
+		select {
+		case log := <-it.logs:
+			it.Event = new(CeloTokenSetCeloTokenDistributionScheduleAddress)
+			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+				it.fail = err
+				return false
+			}
+			it.Event.Raw = log
+			return true
+
+		default:
+			return false
+		}
+	}
+	// Iterator still in progress, wait for either a data or an error event
+	select {
+	case log := <-it.logs:
+		it.Event = new(CeloTokenSetCeloTokenDistributionScheduleAddress)
+		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
+			it.fail = err
+			return false
+		}
+		it.Event.Raw = log
+		return true
+
+	case err := <-it.sub.Err():
+		it.done = true
+		it.fail = err
+		return it.Next()
+	}
+}
+
+// Error returns any retrieval or parsing error occurred during filtering.
+func (it *CeloTokenSetCeloTokenDistributionScheduleAddressIterator) Error() error {
+	return it.fail
+}
+
+// Close terminates the iteration process, releasing any pending underlying
+// resources.
+func (it *CeloTokenSetCeloTokenDistributionScheduleAddressIterator) Close() error {
+	it.sub.Unsubscribe()
+	return nil
+}
+
+// CeloTokenSetCeloTokenDistributionScheduleAddress represents a SetCeloTokenDistributionScheduleAddress event raised by the CeloToken contract.
+type CeloTokenSetCeloTokenDistributionScheduleAddress struct {
+	NewScheduleAddress common.Address
+	Raw                types.Log // Blockchain specific contextual infos
+}
+
+// FilterSetCeloTokenDistributionScheduleAddress is a free log retrieval operation binding the contract event 0x4b0e16c81bce2248d2d60ed469d2fe74152253bde95ba850f22ae056723980a6.
+//
+// Solidity: event SetCeloTokenDistributionScheduleAddress(address indexed newScheduleAddress)
+func (_CeloToken *CeloTokenFilterer) FilterSetCeloTokenDistributionScheduleAddress(opts *bind.FilterOpts, newScheduleAddress []common.Address) (*CeloTokenSetCeloTokenDistributionScheduleAddressIterator, error) {
+
+	var newScheduleAddressRule []interface{}
+	for _, newScheduleAddressItem := range newScheduleAddress {
+		newScheduleAddressRule = append(newScheduleAddressRule, newScheduleAddressItem)
+	}
+
+	logs, sub, err := _CeloToken.contract.FilterLogs(opts, "SetCeloTokenDistributionScheduleAddress", newScheduleAddressRule)
+	if err != nil {
+		return nil, err
+	}
+	return &CeloTokenSetCeloTokenDistributionScheduleAddressIterator{contract: _CeloToken.contract, event: "SetCeloTokenDistributionScheduleAddress", logs: logs, sub: sub}, nil
+}
+
+// WatchSetCeloTokenDistributionScheduleAddress is a free log subscription operation binding the contract event 0x4b0e16c81bce2248d2d60ed469d2fe74152253bde95ba850f22ae056723980a6.
+//
+// Solidity: event SetCeloTokenDistributionScheduleAddress(address indexed newScheduleAddress)
+func (_CeloToken *CeloTokenFilterer) WatchSetCeloTokenDistributionScheduleAddress(opts *bind.WatchOpts, sink chan<- *CeloTokenSetCeloTokenDistributionScheduleAddress, newScheduleAddress []common.Address) (event.Subscription, error) {
+
+	var newScheduleAddressRule []interface{}
+	for _, newScheduleAddressItem := range newScheduleAddress {
+		newScheduleAddressRule = append(newScheduleAddressRule, newScheduleAddressItem)
+	}
+
+	logs, sub, err := _CeloToken.contract.WatchLogs(opts, "SetCeloTokenDistributionScheduleAddress", newScheduleAddressRule)
+	if err != nil {
+		return nil, err
+	}
+	return event.NewSubscription(func(quit <-chan struct{}) error {
+		defer sub.Unsubscribe()
+		for {
+			select {
+			case log := <-logs:
+				// New log arrived, parse the event and forward to the user
+				event := new(CeloTokenSetCeloTokenDistributionScheduleAddress)
+				if err := _CeloToken.contract.UnpackLog(event, "SetCeloTokenDistributionScheduleAddress", log); err != nil {
+					return err
+				}
+				event.Raw = log
+
+				select {
+				case sink <- event:
+				case err := <-sub.Err():
+					return err
+				case <-quit:
+					return nil
+				}
+			case err := <-sub.Err():
+				return err
+			case <-quit:
+				return nil
+			}
+		}
+	}), nil
+}
+
+// ParseSetCeloTokenDistributionScheduleAddress is a log parse operation binding the contract event 0x4b0e16c81bce2248d2d60ed469d2fe74152253bde95ba850f22ae056723980a6.
+//
+// Solidity: event SetCeloTokenDistributionScheduleAddress(address indexed newScheduleAddress)
+func (_CeloToken *CeloTokenFilterer) ParseSetCeloTokenDistributionScheduleAddress(log types.Log) (*CeloTokenSetCeloTokenDistributionScheduleAddress, error) {
+	event := new(CeloTokenSetCeloTokenDistributionScheduleAddress)
+	if err := _CeloToken.contract.UnpackLog(event, "SetCeloTokenDistributionScheduleAddress", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
