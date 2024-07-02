@@ -49,6 +49,7 @@ var (
 	rateDenominator, _  = new(big.Int).SetString("1000000000000000000000000", 10)
 	mockOracleAddr      = common.HexToAddress("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0001")
 	mockOracleAddr2     = common.HexToAddress("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0002")
+	mockOracleAddr3     = common.HexToAddress("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0003")
 	FaucetAddr          = common.HexToAddress("0xfcf982bb4015852e706100b14e21f947a5bb718e")
 )
 
@@ -120,6 +121,11 @@ func celoGenesisAccounts(fundedAddr common.Address) GenesisAlloc {
 				common.HexToHash("0x1"): common.BigToHash(rateDenominator),
 				common.HexToHash("0x3"): common.BytesToHash(DevFeeCurrencyAddr2.Bytes()),
 			},
+		},
+		mockOracleAddr3: {
+			Code:    mockOracleBytecode,
+			Balance: big.NewInt(0),
+			// This oracle is available for tests of contracts outside the celo_genesis, so no initialization is done at this point
 		},
 		DevAddr: {
 			Balance: DevBalance,
