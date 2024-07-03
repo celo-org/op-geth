@@ -24,18 +24,7 @@ var (
 
 	celoLegacyUnprotectedTxFuncs = &txFuncs{
 		hash: func(tx *Transaction, chainID *big.Int) common.Hash {
-			return rlpHash([]interface{}{
-				tx.Nonce(),
-				tx.GasPrice(),
-				tx.Gas(),
-				tx.FeeCurrency(),
-				tx.GatewayFeeRecipient(),
-				tx.GatewayFee(),
-				tx.To(),
-				tx.Value(),
-				tx.Data(),
-			})
-
+			return rlpHash(baseCeloLegacyTxSigningFields(tx))
 		},
 		signatureValues: func(tx *Transaction, sig []byte, signerChainID *big.Int) (r *big.Int, s *big.Int, v *big.Int, err error) {
 			r, s, v = decodeSignature(sig)
@@ -49,19 +38,7 @@ var (
 
 	celoLegacyProtectedTxFuncs = &txFuncs{
 		hash: func(tx *Transaction, chainID *big.Int) common.Hash {
-			return rlpHash([]interface{}{
-				tx.Nonce(),
-				tx.GasPrice(),
-				tx.Gas(),
-				tx.FeeCurrency(),
-				tx.GatewayFeeRecipient(),
-				tx.GatewayFee(),
-				tx.To(),
-				tx.Value(),
-				tx.Data(),
-				chainID, uint(0), uint(0),
-			})
-
+			return rlpHash(append(baseCeloLegacyTxSigningFields(tx), chainID, uint(0), uint(0)))
 		},
 		signatureValues: func(tx *Transaction, sig []byte, signerChainID *big.Int) (r *big.Int, s *big.Int, v *big.Int, err error) {
 			r, s, v = decodeSignature(sig)
@@ -110,20 +87,7 @@ var (
 	// Custom signing functionality for CeloDynamicFeeTxV2 txs.
 	celoDynamicFeeTxV2Funcs = &txFuncs{
 		hash: func(tx *Transaction, chainID *big.Int) common.Hash {
-			return prefixedRlpHash(
-				tx.Type(),
-				[]interface{}{
-					chainID,
-					tx.Nonce(),
-					tx.GasTipCap(),
-					tx.GasFeeCap(),
-					tx.Gas(),
-					tx.To(),
-					tx.Value(),
-					tx.Data(),
-					tx.AccessList(),
-					tx.FeeCurrency(),
-				})
+			return prefixedRlpHash(tx.Type(), baseDynomicatedTxSigningFields(tx, chainID))
 		},
 		signatureValues: dynamicAndDenominatedTxSigValues,
 		sender:          dynamicAndDenominatedTxSender,
@@ -132,21 +96,7 @@ var (
 	// Custom signing functionality for CeloDenominatedTx txs.
 	celoDenominatedTxFuncs = &txFuncs{
 		hash: func(tx *Transaction, chainID *big.Int) common.Hash {
-			return prefixedRlpHash(
-				tx.Type(),
-				[]interface{}{
-					chainID,
-					tx.Nonce(),
-					tx.GasTipCap(),
-					tx.GasFeeCap(),
-					tx.Gas(),
-					tx.To(),
-					tx.Value(),
-					tx.Data(),
-					tx.AccessList(),
-					tx.FeeCurrency(),
-					tx.MaxFeeInFeeCurrency(),
-				})
+			return prefixedRlpHash(tx.Type(), append(baseDynomicatedTxSigningFields(tx, chainID), tx.MaxFeeInFeeCurrency()))
 		},
 		signatureValues: dynamicAndDenominatedTxSigValues,
 		sender:          dynamicAndDenominatedTxSender,
@@ -190,4 +140,37 @@ func dynamicAndDenominatedTxSender(tx *Transaction, hashFunc func(tx *Transactio
 	// id, add 27 to become equivalent to unprotected Homestead signatures.
 	V = new(big.Int).Add(V, big.NewInt(27))
 	return recoverPlain(hashFunc(tx, signerChainID), R, S, V, true)
+}
+
+// Extracts the common signing fields for CeloLegacy and CeloDynamicFeeTx
+// transactions.
+func baseCeloLegacyTxSigningFields(tx *Transaction) []interface{} {
+	return []interface{}{
+		tx.Nonce(),
+		tx.GasPrice(),
+		tx.Gas(),
+		tx.FeeCurrency(),
+		tx.GatewayFeeRecipient(),
+		tx.GatewayFee(),
+		tx.To(),
+		tx.Value(),
+		tx.Data(),
+	}
+}
+
+// Extracts the common signing fields for CeloDynamicFeeTxV2 and
+// CeloDenominatedTx transactions.
+func baseDynomicatedTxSigningFields(tx *Transaction, chainID *big.Int) []interface{} {
+	return []interface{}{
+		chainID,
+		tx.Nonce(),
+		tx.GasTipCap(),
+		tx.GasFeeCap(),
+		tx.Gas(),
+		tx.To(),
+		tx.Value(),
+		tx.Data(),
+		tx.AccessList(),
+		tx.FeeCurrency(),
+	}
 }
