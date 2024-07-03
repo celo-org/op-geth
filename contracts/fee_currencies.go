@@ -130,12 +130,11 @@ func GetExchangeRates(caller bind.ContractCaller) (common.ExchangeRates, error) 
 			log.Error("Failed to get medianRate for gas currency!", "err", err, "tokenAddress", tokenAddress.Hex())
 			continue
 		}
-		if rate.Denominator.Sign() == 0 {
+		if rate.Numerator.Sign() <= 0 || rate.Denominator.Sign() <= 0 {
 			log.Error("Bad exchange rate for fee currency", "tokenAddress", tokenAddress.Hex(), "numerator", rate.Numerator, "denominator", rate.Denominator)
 			continue
 		}
-		// TODO: Is bigint -> int64 safe?
-		exchangeRates[tokenAddress] = big.NewRat(rate.Numerator.Int64(), rate.Denominator.Int64())
+		exchangeRates[tokenAddress] = new(big.Rat).SetFrac(rate.Numerator, rate.Denominator)
 	}
 
 	return exchangeRates, nil
