@@ -103,12 +103,12 @@ var (
 	}
 )
 
-// txFuncs serves as a container to hold custom signing functionality for a tranaction.
+// txFuncs serves as a container to hold custom signing functionality for a transaction.
 //
-// TODO consider changing this to an interface, it might probably make thigs
-// easier because then I could store custom bits of data relevant to each tx
-// type / signer such as the signerChainMul. It would also solve the problem of
-// having to pass the hash function into the sender function.
+// TODO consider changing this to an interface, it might make things easier
+// because then I could store custom bits of data relevant to each tx type /
+// signer such as the signerChainMul. It would also solve the problem of having
+// to pass the hash function into the sender function.
 type txFuncs struct {
 	hash            func(tx *Transaction, chainID *big.Int) common.Hash
 	signatureValues func(tx *Transaction, sig []byte, signerChainID *big.Int) (r *big.Int, s *big.Int, v *big.Int, err error)
