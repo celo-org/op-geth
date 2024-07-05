@@ -50,6 +50,7 @@ func (tx *Transaction) FeeCurrency() *common.Address {
 }
 
 // GatewayFee returns the gateway fee of the transaction if there is one.
+// Note: this is here to support serving legacy transactions over the RPC, it should not be used in new code.
 func (tx *Transaction) GatewayFee() *big.Int {
 	var gatewayFee *big.Int
 	switch t := tx.inner.(type) {
@@ -62,6 +63,7 @@ func (tx *Transaction) GatewayFee() *big.Int {
 }
 
 // GatewayFeeRecipient returns the gateway fee recipient of the transaction if there is one.
+// Note: this is here to support serving legacy transactions over the RPC, it should not be used in new code.
 func (tx *Transaction) GatewayFeeRecipient() *common.Address {
 	var gatewayFeeRecipient *common.Address
 	switch t := tx.inner.(type) {
