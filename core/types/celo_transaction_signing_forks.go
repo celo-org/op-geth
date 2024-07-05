@@ -3,8 +3,34 @@ package types
 import "github.com/ethereum/go-ethereum/params"
 
 var (
-	forks = []fork{&celoLegacy{}, &cel2{}}
+	// celoForks is the list of celo forks that are supported by the
+	// celoSigner. This list is ordered with more recent forks appearing
+	// earlier. It is assumed that if a more recent fork is active then all
+	// previous forks are also active.
+	celoForks = forks{&cel2{}, &celoLegacy{}}
 )
+
+type forks []fork
+
+// activeForks returns the active forks for the given block time and chain config.
+func (f forks) activeForks(blockTime uint64, config *params.ChainConfig) []fork {
+	for i, fork := range f {
+		if fork.active(blockTime, config) {
+			return f[:i+1]
+		}
+	}
+	return nil
+}
+
+// findTxFuncs returns the txFuncs for the given tx if there is a fork that supports it.
+func (f forks) findTxFuncs(tx *Transaction) *txFuncs {
+	for _, fork := range f {
+		if funcs := fork.txFuncs(tx); funcs != nil {
+			return funcs
+		}
+	}
+	return nil
+}
 
 // fork contains functionality to determine if it is active for a given block
 // time and chain config. It also acts as a container for functionality related

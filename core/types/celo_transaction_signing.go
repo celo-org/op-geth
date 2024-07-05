@@ -37,7 +37,7 @@ var (
 type celoSigner struct {
 	upstreamSigner Signer
 	chainID        *big.Int
-	activatedForks []fork
+	activatedForks forks
 }
 
 // makeCeloSigner creates a new celoSigner that is configured to handle all
@@ -47,16 +47,11 @@ func makeCeloSigner(chainConfig *params.ChainConfig, blockTime uint64, upstreamS
 	s := &celoSigner{
 		chainID:        chainConfig.ChainID,
 		upstreamSigner: upstreamSigner,
+		activatedForks: celoForks.activeForks(blockTime, chainConfig),
 	}
-	// Iterate over forks and set the activated forks
-	for i, fork := range forks {
-		if fork.active(blockTime, chainConfig) {
-			s.activatedForks = forks[:i+1]
-			break
-		}
-	}
+
 	// If there are no active celo forks, return the upstream signer
-	if s.activatedForks == nil {
+	if len(s.activatedForks) == 0 {
 		return upstreamSigner
 	}
 	return s
@@ -69,7 +64,7 @@ func latestCeloSigner(chainID *big.Int, upstreamSigner Signer) Signer {
 	return &celoSigner{
 		chainID:        chainID,
 		upstreamSigner: upstreamSigner,
-		activatedForks: forks,
+		activatedForks: celoForks,
 	}
 }
 
@@ -101,14 +96,7 @@ func (c *celoSigner) Hash(tx *Transaction) common.Hash {
 // of the active forks. Note that this mechanism can be used to deprecate
 // support for tx types by having forks reutrn deprecatedTxFuncs for a tx type.
 func (c *celoSigner) findTxFuncs(tx *Transaction) *txFuncs {
-	// iterate in reverse over the activeForks and if any of them have a non nil txFuncs
-	// for the tx then return it.
-	for i := len(c.activatedForks) - 1; i >= 0; i-- {
-		if funcs := c.activatedForks[i].txFuncs(tx); funcs != nil {
-			return funcs
-		}
-	}
-	return nil
+	return c.activatedForks.findTxFuncs(tx)
 }
 
 // ChainID implements Signer.
