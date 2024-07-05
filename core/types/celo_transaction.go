@@ -23,9 +23,9 @@ import (
 	"github.com/ethereum/go-ethereum/common/exchange"
 )
 
-// CeloLegacy returns true if the transaction is a legacy celo transaction.
+// IsCeloLegacy returns true if the transaction is a legacy celo transaction.
 // I.E. it has the fields feeCurrency, gatewayFee and gatewayFeeRecipient.
-func (tx *Transaction) CeloLegacy() bool {
+func (tx *Transaction) IsCeloLegacy() bool {
 	switch t := tx.inner.(type) {
 	case *LegacyTx:
 		return t.CeloLegacy

@@ -62,7 +62,7 @@ func (c *cel2) equal(other fork) bool {
 func (c *cel2) txFuncs(tx *Transaction) *txFuncs {
 	t := tx.Type()
 	switch {
-	case t == LegacyTxType && tx.CeloLegacy():
+	case t == LegacyTxType && tx.IsCeloLegacy():
 		return deprecatedTxFuncs
 	case t == CeloDenominatedTxType:
 		return deprecatedTxFuncs
@@ -92,7 +92,7 @@ func (c *celoLegacy) equal(other fork) bool {
 func (c *celoLegacy) txFuncs(tx *Transaction) *txFuncs {
 	t := tx.Type()
 	switch {
-	case t == uint8(LegacyTxType) && tx.CeloLegacy():
+	case t == uint8(LegacyTxType) && tx.IsCeloLegacy():
 		if tx.Protected() {
 			return celoLegacyProtectedTxFuncs
 		}
