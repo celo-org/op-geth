@@ -16,7 +16,7 @@ type forks []fork
 func (f forks) activeForks(blockTime uint64, config *params.ChainConfig) []fork {
 	for i, fork := range f {
 		if fork.active(blockTime, config) {
-			return f[:i+1]
+			return f[i:]
 		}
 	}
 	return nil
