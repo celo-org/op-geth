@@ -54,7 +54,8 @@ func (c *cel2) txFuncs(tx *Transaction) *txFuncs {
 type celoLegacy struct{}
 
 func (c *celoLegacy) active(blockTime uint64, config *params.ChainConfig) bool {
-	return config.IsCel2(blockTime)
+	// The celo legacy fork is always active in a celo context
+	return config.Cel2Time != nil
 }
 
 func (c *celoLegacy) equal(other fork) bool {
