@@ -94,7 +94,7 @@ func (c *celoSigner) Hash(tx *Transaction) common.Hash {
 
 // findTxFuncs returns the txFuncs for the given tx if it is supported by one
 // of the active forks. Note that this mechanism can be used to deprecate
-// support for tx types by having forks reutrn deprecatedTxFuncs for a tx type.
+// support for tx types by having forks return deprecatedTxFuncs for a tx type.
 func (c *celoSigner) findTxFuncs(tx *Transaction) *txFuncs {
 	return c.activatedForks.findTxFuncs(tx)
 }
