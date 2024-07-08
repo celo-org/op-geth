@@ -54,7 +54,7 @@ func (ctx *celoPrecompileContext) IsCallerCeloToken() (bool, error) {
 	return tokenAddress == ctx.caller, nil
 }
 
-// Native transfer contract to make Celo Gold ERC20 compatible.
+// Native transfer contract to make CELO ERC20 compatible.
 type transfer struct{}
 
 func (c *transfer) RequiredGas(input []byte) uint64 {
@@ -71,7 +71,7 @@ func (c *transfer) Run(input []byte, ctx *celoPrecompileContext) ([]byte, error)
 	// input is comprised of 3 arguments:
 	//   from:  32 bytes representing the address of the sender
 	//   to:    32 bytes representing the address of the recipient
-	//   value: 32 bytes, a 256 bit integer representing the amount of Celo Gold to transfer
+	//   value: 32 bytes, a 256 bit integer representing the amount of CELO to transfer
 	// 3 arguments x 32 bytes each = 96 bytes total input
 	if len(input) != 96 {
 		return nil, ErrInputLength

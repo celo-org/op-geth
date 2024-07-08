@@ -316,7 +316,7 @@ func (c *celoBackendMock) ConvertToCurrency(ctx context.Context, blockNumOrHash 
 	return new(big.Int).Mul(value, big.NewInt(2)), nil
 }
 
-func (c *celoBackendMock) ConvertToGold(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash, value *big.Int, toFeeCurrency *common.Address) (*big.Int, error) {
+func (c *celoBackendMock) ConvertToCelo(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash, value *big.Int, toFeeCurrency *common.Address) (*big.Int, error) {
 	if toFeeCurrency == nil {
 		return value, nil
 	}

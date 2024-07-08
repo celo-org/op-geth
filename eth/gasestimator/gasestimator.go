@@ -78,7 +78,7 @@ func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uin
 				// CIP-66, prices are given in native token.
 				// We need to check the allowance in the converted feeCurrency
 				var err error
-				feeCap, err = exchange.ConvertGoldToCurrency(exchangeRates, call.FeeCurrency, feeCap)
+				feeCap, err = exchange.ConvertCeloToCurrency(exchangeRates, call.FeeCurrency, feeCap)
 				if err != nil {
 					return 0, nil, err
 				}

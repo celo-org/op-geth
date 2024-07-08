@@ -18,18 +18,18 @@ var (
 
 // ConvertCurrency does an exchange conversion from currencyFrom to currencyTo of the value given.
 func ConvertCurrency(exchangeRates common.ExchangeRates, val1 *big.Int, currencyFrom *common.Address, currencyTo *common.Address) *big.Int {
-	goldAmount, err := ConvertCurrencyToGold(exchangeRates, val1, currencyFrom)
+	celoAmount, err := ConvertCurrencyToCelo(exchangeRates, val1, currencyFrom)
 	if err != nil {
-		log.Error("Error trying to convert from currency to gold.", "value", val1, "fromCurrency", currencyFrom.Hex())
+		log.Error("Error trying to convert from currency to CELO.", "value", val1, "fromCurrency", currencyFrom.Hex())
 	}
-	toAmount, err := ConvertGoldToCurrency(exchangeRates, currencyTo, goldAmount)
+	toAmount, err := ConvertCeloToCurrency(exchangeRates, currencyTo, celoAmount)
 	if err != nil {
-		log.Error("Error trying to convert from gold to currency.", "value", goldAmount, "toCurrency", currencyTo.Hex())
+		log.Error("Error trying to convert from CELO to currency.", "value", celoAmount, "toCurrency", currencyTo.Hex())
 	}
 	return toAmount
 }
 
-func ConvertCurrencyToGold(exchangeRates common.ExchangeRates, currencyAmount *big.Int, feeCurrency *common.Address) (*big.Int, error) {
+func ConvertCurrencyToCelo(exchangeRates common.ExchangeRates, currencyAmount *big.Int, feeCurrency *common.Address) (*big.Int, error) {
 	if feeCurrency == nil {
 		return currencyAmount, nil
 	}
@@ -42,15 +42,15 @@ func ConvertCurrencyToGold(exchangeRates common.ExchangeRates, currencyAmount *b
 	return new(big.Int).Div(new(big.Int).Mul(currencyAmount, exchangeRate.Denom()), exchangeRate.Num()), nil
 }
 
-func ConvertGoldToCurrency(exchangeRates common.ExchangeRates, feeCurrency *common.Address, goldAmount *big.Int) (*big.Int, error) {
+func ConvertCeloToCurrency(exchangeRates common.ExchangeRates, feeCurrency *common.Address, celoAmount *big.Int) (*big.Int, error) {
 	if feeCurrency == nil {
-		return goldAmount, nil
+		return celoAmount, nil
 	}
 	exchangeRate, ok := exchangeRates[*feeCurrency]
 	if !ok {
 		return nil, fmt.Errorf("could not convert from native to fee currency (fee-currency=%s): %w ", feeCurrency, ErrNonWhitelistedFeeCurrency)
 	}
-	return new(big.Int).Div(new(big.Int).Mul(goldAmount, exchangeRate.Num()), exchangeRate.Denom()), nil
+	return new(big.Int).Div(new(big.Int).Mul(celoAmount, exchangeRate.Num()), exchangeRate.Denom()), nil
 }
 
 func getRate(exchangeRates common.ExchangeRates, feeCurrency *common.Address) (*big.Rat, error) {
@@ -150,7 +150,7 @@ func (rf *RatesAndFees) GetBaseFeeIn(currency *common.Address) *big.Int {
 		return baseFee
 	}
 	// Not found, calculate
-	calculatedBaseFee, err := ConvertGoldToCurrency(rf.Rates, currency, rf.nativeBaseFee)
+	calculatedBaseFee, err := ConvertCeloToCurrency(rf.Rates, currency, rf.nativeBaseFee)
 	if err != nil {
 		// Should never happen: error lvl log line
 		log.Error("BaseFee requested for non whitelisted currency",

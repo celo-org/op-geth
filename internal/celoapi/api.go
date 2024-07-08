@@ -31,7 +31,7 @@ func NewCeloAPI(e Ethereum, b ethapi.CeloBackend) *CeloAPI {
 
 func (c *CeloAPI) convertedCurrencyValue(v *hexutil.Big, feeCurrency *common.Address) (*hexutil.Big, error) {
 	if feeCurrency != nil {
-		convertedTipCap, err := c.convertGoldToCurrency(v.ToInt(), feeCurrency)
+		convertedTipCap, err := c.convertCeloToCurrency(v.ToInt(), feeCurrency)
 		if err != nil {
 			return nil, fmt.Errorf("convert to feeCurrency: %w", err)
 		}
@@ -53,7 +53,7 @@ func (c *CeloAPI) celoBackendCurrentState() (*contracts.CeloBackend, error) {
 	return cb, nil
 }
 
-func (c *CeloAPI) convertGoldToCurrency(nativePrice *big.Int, feeCurrency *common.Address) (*big.Int, error) {
+func (c *CeloAPI) convertCeloToCurrency(nativePrice *big.Int, feeCurrency *common.Address) (*big.Int, error) {
 	cb, err := c.celoBackendCurrentState()
 	if err != nil {
 		return nil, err
@@ -62,7 +62,7 @@ func (c *CeloAPI) convertGoldToCurrency(nativePrice *big.Int, feeCurrency *commo
 	if err != nil {
 		return nil, fmt.Errorf("retrieve exchange rates from current state: %w", err)
 	}
-	return exchange.ConvertGoldToCurrency(er, feeCurrency, nativePrice)
+	return exchange.ConvertCeloToCurrency(er, feeCurrency, nativePrice)
 }
 
 // GasPrice wraps the original JSON RPC `eth_gasPrice` and adds an additional
