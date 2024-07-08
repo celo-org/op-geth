@@ -620,7 +620,7 @@ func (c *celoTestBackend) ConvertToCurrency(ctx context.Context, blockNumOrHash 
 	return nil, errCeloNotImplemented
 }
 
-func (c *celoTestBackend) ConvertToGold(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash, value *big.Int, feeCurrency *common.Address) (*big.Int, error) {
+func (c *celoTestBackend) ConvertToCelo(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash, value *big.Int, feeCurrency *common.Address) (*big.Int, error) {
 	if feeCurrency == nil {
 		return value, nil
 	}

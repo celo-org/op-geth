@@ -156,7 +156,7 @@ func applyTransaction(msg *Message, config *params.ChainConfig, gp *GasPool, sta
 	if tx.Type() == types.CeloDynamicFeeTxV2Type {
 		alternativeBaseFee := evm.Context.BaseFee
 		if msg.FeeCurrency != nil {
-			alternativeBaseFee, err = exchange.ConvertGoldToCurrency(evm.Context.ExchangeRates, msg.FeeCurrency, evm.Context.BaseFee)
+			alternativeBaseFee, err = exchange.ConvertCeloToCurrency(evm.Context.ExchangeRates, msg.FeeCurrency, evm.Context.BaseFee)
 			if err != nil {
 				return nil, err
 			}

@@ -4,7 +4,7 @@
 
 The contracts bytecode is used to generate the genesis block in `geth --dev`
 mode while the ABI is used to generate the contract bindings in `abigen`. The
-bindings are necessary to access the Registry and GoldToken to support Celo
+bindings are necessary to access the CeloToken to support Celo
 features like token duality.
 
 ## How to update to newer contracts

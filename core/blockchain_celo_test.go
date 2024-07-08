@@ -120,7 +120,7 @@ func testNativeTransferWithFeeCurrency(t *testing.T, scheme string, feeCurrencyA
 	if err != nil {
 		t.Fatal("could not get exchange rates")
 	}
-	baseFeeInFeeCurrency, _ := exchange.ConvertGoldToCurrency(exchangeRates, &feeCurrencyAddr, block.BaseFee())
+	baseFeeInFeeCurrency, _ := exchange.ConvertCeloToCurrency(exchangeRates, &feeCurrencyAddr, block.BaseFee())
 	actual, _ := contracts.GetBalanceERC20(&backend, block.Coinbase(), feeCurrencyAddr)
 
 	// 3: Ensure that miner received only the tx's tip.
