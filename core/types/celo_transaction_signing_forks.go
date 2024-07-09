@@ -64,6 +64,8 @@ func (c *cel2) txFuncs(tx *Transaction) *txFuncs {
 	switch {
 	case t == LegacyTxType && tx.IsCeloLegacy():
 		return deprecatedTxFuncs
+	case t == CeloDynamicFeeTxType:
+		return deprecatedTxFuncs
 	case t == CeloDenominatedTxType:
 		return deprecatedTxFuncs
 	}
