@@ -277,35 +277,35 @@ func filterResponses(res1, res2 json.RawMessage) (json.RawMessage, json.RawMessa
 			return nil, nil, err
 		}
 
-		extraData1, err := execJQ([]byte(res1), ".extraData")
+		extraData1Hex, err := execJQ([]byte(res1), ".extraData")
 		if err != nil {
 			return nil, nil, err
 		}
-
+		extraData1HexString := strings.TrimSuffix(string(extraData1Hex), "\"\n")
+		extraData1HexString = strings.Trim(extraData1HexString, `"\"`)
+		extraData1 := hexutil.MustDecode(extraData1HexString)
 		if len(extraData1) < IstanbulExtraVanity {
 			return nil, nil, fmt.Errorf("invalid istanbul header extra-data length from res1: %d", len(extraData1))
 		}
 
 		istanbulExtra := IstanbulExtra{}
-		err = rlp.DecodeBytes(hexutil.Bytes(extraData1)[IstanbulExtraVanity:], &istanbulExtra)
+		err = rlp.DecodeBytes(extraData1[IstanbulExtraVanity:], &istanbulExtra)
 		if err != nil {
 			return nil, nil, err
 		}
-
-		// istanbulExtra := IstanbulExtra{}
-		// err = json.Unmarshal(.UnmarshalJSON).UnmarshalFixedJSON()Bytes(extraData1)[IstanbulExtraVanity:], &istanbulExtra)
-		// if err != nil {
-		// 	return nil, nil, err
-		// }
 
 		istanbulExtra.AggregatedSeal = IstanbulAggregatedSeal{}
 
-		payload, err := json.Marshal(&istanbulExtra)
+		payload, err := rlp.EncodeToBytes(&istanbulExtra)
 		if err != nil {
 			return nil, nil, err
 		}
 
-		res1Filtered, err = execJQ([]byte(res1Filtered), ".extraData |=", string(append(extraData1[:IstanbulExtraVanity], payload...)))
+		res1Filtered, err = execJQ([]byte(res1Filtered), `.extraData = "`+hexutil.Encode(append(extraData1[:IstanbulExtraVanity], payload...))+`"`)
+
+		if err != nil {
+			return nil, nil, err
+		}
 
 		return res1Filtered, res2Filtered, nil
 	}
