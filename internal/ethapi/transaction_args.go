@@ -472,7 +472,7 @@ func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int, ex
 			if gasFeeCap.BitLen() > 0 || gasTipCap.BitLen() > 0 {
 				if args.IsFeeCurrencyDenominated() {
 					var err error
-					baseFee, err = exchange.ConvertGoldToCurrency(exchangeRates, args.FeeCurrency, baseFee)
+					baseFee, err = exchange.ConvertCeloToCurrency(exchangeRates, args.FeeCurrency, baseFee)
 					if err != nil {
 						return nil, fmt.Errorf("can't convert base-fee to fee-currency: %w", err)
 					}
