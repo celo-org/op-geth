@@ -49,9 +49,9 @@ var errGenesisNoConfig = errors.New("genesis has no chain configuration")
 
 // Deprecated: use types.Account instead.
 type GenesisAccount = types.Account
+type GenesisAlloc = types.GenesisAlloc
 
 // Deprecated: use types.GenesisAlloc instead.
-type GenesisAlloc = types.GenesisAlloc
 
 // Genesis specifies the header fields, state of a genesis block. It also defines hard
 // fork switch-over blocks through the chain configuration.
@@ -870,6 +870,12 @@ func DeveloperGenesisBlock(gasLimit uint64, faucet *common.Address) *Genesis {
 	if faucet != nil {
 		genesis.Alloc[*faucet] = types.Account{Balance: new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(9))}
 	}
+
+	// Add state from celoGenesisAccounts
+	for addr, data := range celoGenesisAccounts(common.HexToAddress("0x2")) {
+		genesis.Alloc[addr] = data
+	}
+
 	return genesis
 }
 
