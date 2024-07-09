@@ -66,8 +66,6 @@ func (c *cel2) txFuncs(tx *Transaction) *txFuncs {
 		return deprecatedTxFuncs
 	case t == CeloDynamicFeeTxType:
 		return deprecatedTxFuncs
-	case t == CeloDenominatedTxType:
-		return deprecatedTxFuncs
 	}
 	return nil
 }
@@ -101,8 +99,6 @@ func (c *celoLegacy) txFuncs(tx *Transaction) *txFuncs {
 		return celoLegacyUnprotectedTxFuncs
 	case t == CeloDynamicFeeTxV2Type:
 		return celoDynamicFeeTxV2Funcs
-	case t == CeloDenominatedTxType:
-		return celoDenominatedTxFuncs
 	}
 	return nil
 }
