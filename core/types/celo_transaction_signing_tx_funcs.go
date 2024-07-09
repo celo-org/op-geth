@@ -61,7 +61,7 @@ var (
 		},
 	}
 
-	CeloDynamicFeeTxFuncs = &txFuncs{
+	celoDynamicFeeTxFuncs = &txFuncs{
 		hash: func(tx *Transaction, chainID *big.Int) common.Hash {
 			return prefixedRlpHash(
 				tx.Type(),

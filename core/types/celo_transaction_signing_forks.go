@@ -99,6 +99,8 @@ func (c *celoLegacy) txFuncs(tx *Transaction) *txFuncs {
 		return celoLegacyUnprotectedTxFuncs
 	case t == CeloDynamicFeeTxV2Type:
 		return celoDynamicFeeTxV2Funcs
+	case t == CeloDynamicFeeTxType:
+		return celoDynamicFeeTxFuncs
 	}
 	return nil
 }
