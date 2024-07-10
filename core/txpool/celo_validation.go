@@ -1,15 +1,13 @@
 package txpool
 
 import (
-	"errors"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/exchange"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 )
-
-var NonWhitelistedFeeCurrencyError = errors.New("Fee currency given is not whitelisted at current block")
 
 // AcceptSet is a set of accepted transaction types for a transaction subpool.
 type AcceptSet = map[uint8]struct{}

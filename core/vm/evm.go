@@ -102,7 +102,6 @@ type BlockContext struct {
 	Random      *common.Hash   // Provides information for PREVRANDAO
 
 	// Celo specific information
-	GasUsedForDebit    uint64
 	FeeCurrencyContext common.FeeCurrencyContext
 }
 

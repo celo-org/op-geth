@@ -713,7 +713,10 @@ func (pool *LegacyPool) validateTx(tx *types.Transaction, local bool) error {
 			log.Error("Transaction sender recovery failed", "err", err)
 			return err
 		}
-		return contracts.TryDebitFees(tx, from, pool.celoBackend)
+		//NOTE: we only test the `debitFees` call here.
+		// If the `creditFees` reverts (or runs out of gas), the transaction will
+		// not be invalidated here and will be included in the block.
+		return contracts.TryDebitFees(tx, from, pool.celoBackend, pool.feeCurrencyContext)
 	}
 	return nil
 }

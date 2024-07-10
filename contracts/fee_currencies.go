@@ -1,6 +1,7 @@
 package contracts
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"math/big"
@@ -8,20 +9,12 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/exchange"
 	"github.com/ethereum/go-ethereum/contracts/addresses"
 	"github.com/ethereum/go-ethereum/contracts/celo/abigen"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/log"
-)
-
-const (
-	Thousand = 1000
-
-	// Default intrinsic gas cost of transactions paying for gas in alternative currencies.
-	// Calculated to estimate 1 balance read, 1 debit, and 4 credit transactions.
-	IntrinsicGasForAlternativeFeeCurrency uint64 = 50 * Thousand
-	maxAllowedGasForDebitAndCredit        uint64 = 3 * IntrinsicGasForAlternativeFeeCurrency
 )
 
 var feeCurrencyABI *abi.ABI
@@ -35,31 +28,43 @@ func init() {
 }
 
 // Returns nil if debit is possible, used in tx pool validation
-func TryDebitFees(tx *types.Transaction, from common.Address, backend *CeloBackend) error {
+func TryDebitFees(tx *types.Transaction, from common.Address, backend *CeloBackend, feeContext common.FeeCurrencyContext) error {
 	amount := new(big.Int).SetUint64(tx.Gas())
 	amount.Mul(amount, tx.GasFeeCap())
 
 	snapshot := backend.State.Snapshot()
-	err := DebitFees(backend.NewEVM(), tx.FeeCurrency(), from, amount)
+	evm := backend.NewEVM()
+	evm.Context.FeeCurrencyContext = feeContext
+	_, err := DebitFees(evm, tx.FeeCurrency(), from, amount)
 	backend.State.RevertToSnapshot(snapshot)
 	return err
 }
 
 // Debits transaction fees from the transaction sender and stores them in the temporary address
-func DebitFees(evm *vm.EVM, feeCurrency *common.Address, address common.Address, amount *big.Int) error {
+func DebitFees(evm *vm.EVM, feeCurrency *common.Address, address common.Address, amount *big.Int) (uint64, error) {
 	if amount.Cmp(big.NewInt(0)) == 0 {
-		return nil
+		return 0, nil
+	}
+
+	maxIntrinsicGasCost, ok := common.MaxAllowedIntrinsicGasCost(evm.Context.FeeCurrencyContext.IntrinsicGasCosts, feeCurrency)
+	if !ok {
+		return 0, exchange.ErrNonWhitelistedFeeCurrency
 	}
 
 	leftoverGas, err := evm.CallWithABI(
-		feeCurrencyABI, "debitGasFees", *feeCurrency, maxAllowedGasForDebitAndCredit,
+		feeCurrencyABI, "debitGasFees", *feeCurrency, maxIntrinsicGasCost,
 		// debitGasFees(address from, uint256 value) parameters
 		address, amount,
 	)
-	gasUsed := maxAllowedGasForDebitAndCredit - leftoverGas
-	evm.Context.GasUsedForDebit = gasUsed
+	if errors.Is(err, vm.ErrOutOfGas) {
+		// This basically is a configuration / contract error, since
+		// the contract itself used way more gas than was expected (including grace limit)
+		return 0, fmt.Errorf("surpassed maximum allowed intrinsic gas for fee currency: %w", err)
+	}
+
+	gasUsed := maxIntrinsicGasCost - leftoverGas
 	log.Trace("DebitFees called", "feeCurrency", *feeCurrency, "gasUsed", gasUsed)
-	return err
+	return gasUsed, err
 }
 
 // Credits fees to the respective parties
@@ -72,6 +77,7 @@ func CreditFees(
 	feeCurrency *common.Address,
 	txSender, tipReceiver, baseFeeReceiver, l1DataFeeReceiver common.Address,
 	refund, feeTip, baseFee, l1DataFee *big.Int,
+	gasUsedDebit uint64,
 ) error {
 	// Our old `creditGasFees` function does not accept an l1DataFee and
 	// the fee currencies do not implement the new interface yet. Since tip
@@ -86,8 +92,12 @@ func CreditFees(
 	if tipReceiver.Cmp(common.ZeroAddress) == 0 {
 		tipReceiver = baseFeeReceiver
 	}
+	maxAllowedGasForDebitAndCredit, ok := common.MaxAllowedIntrinsicGasCost(evm.Context.FeeCurrencyContext.IntrinsicGasCosts, feeCurrency)
+	if !ok {
+		return exchange.ErrNonWhitelistedFeeCurrency
+	}
 
-	maxAllowedGasForCredit := maxAllowedGasForDebitAndCredit - evm.Context.GasUsedForDebit
+	maxAllowedGasForCredit := maxAllowedGasForDebitAndCredit - gasUsedDebit
 	leftoverGas, err := evm.CallWithABI(
 		feeCurrencyABI, "creditGasFees", *feeCurrency, maxAllowedGasForCredit,
 		// function creditGasFees(
@@ -102,13 +112,23 @@ func CreditFees(
 		// )
 		txSender, tipReceiver, common.ZeroAddress, baseFeeReceiver, refund, feeTip, common.Big0, baseFee,
 	)
+	if errors.Is(err, vm.ErrOutOfGas) {
+		// This is a configuration / contract error, since
+		// the contract itself used way more gas than was expected (including grace limit)
+		return fmt.Errorf("surpassed maximum allowed intrinsic gas for fee currency: %w", err)
+	}
 
 	gasUsed := maxAllowedGasForCredit - leftoverGas
 	log.Trace("CreditFees called", "feeCurrency", *feeCurrency, "gasUsed", gasUsed)
 
-	gasUsedForDebitAndCredit := evm.Context.GasUsedForDebit + gasUsed
-	if gasUsedForDebitAndCredit > IntrinsicGasForAlternativeFeeCurrency {
-		log.Info("Gas usage for debit+credit exceeds intrinsic gas!", "gasUsed", gasUsedForDebitAndCredit, "intrinsicGas", IntrinsicGasForAlternativeFeeCurrency, "feeCurrency", feeCurrency)
+	intrinsicGas, ok := common.CurrencyIntrinsicGasCost(evm.Context.FeeCurrencyContext.IntrinsicGasCosts, feeCurrency)
+	if !ok {
+		// this will never happen
+		return exchange.ErrNonWhitelistedFeeCurrency
+	}
+	gasUsedForDebitAndCredit := gasUsedDebit + gasUsed
+	if gasUsedForDebitAndCredit > intrinsicGas {
+		log.Info("Gas usage for debit+credit exceeds intrinsic gas!", "gasUsed", gasUsedForDebitAndCredit, "intrinsicGas", intrinsicGas, "feeCurrency", feeCurrency)
 	}
 	return err
 }
