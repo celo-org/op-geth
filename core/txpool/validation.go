@@ -276,7 +276,7 @@ func ValidateTransactionWithState(tx *types.Transaction, signer types.Signer, op
 		}
 	}
 	if feeCurrencyBalance.Cmp(feeCurrencyCost) < 0 {
-		return fmt.Errorf("%w: balance %v, tx cost %v, overshot %v", core.ErrInsufficientFunds, feeCurrencyBalance, feeCurrencyCost, new(big.Int).Sub(feeCurrencyCost, feeCurrencyBalance))
+		return fmt.Errorf("%w: balance %v, tx cost %v, overshot %v, fee currency: %v", core.ErrInsufficientFunds, feeCurrencyBalance, feeCurrencyCost, new(big.Int).Sub(feeCurrencyCost, feeCurrencyBalance), tx.FeeCurrency().Hex())
 	}
 	if nativeBalance.Cmp(nativeCost) < 0 {
 		return fmt.Errorf("%w: balance %v, tx cost %v, overshot %v", core.ErrInsufficientFunds, nativeBalance, nativeCost, new(big.Int).Sub(nativeCost, nativeBalance))
