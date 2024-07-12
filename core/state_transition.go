@@ -372,7 +372,7 @@ func (st *StateTransition) canPayFee(checkAmount *uint256.Int) error {
 		// Token amount can't be bigger than 256 bit
 		balanceU256, _ := uint256.FromBig(balance)
 		if balanceU256.Cmp(checkAmount) < 0 {
-			return fmt.Errorf("%w: address %v have %v want %v", ErrInsufficientFunds, st.msg.From.Hex(), balance, checkAmount)
+			return fmt.Errorf("%w: address %v have %v want %v, fee currency: %v", ErrInsufficientFunds, st.msg.From.Hex(), balance, checkAmount, st.msg.FeeCurrency.Hex())
 		}
 	}
 	return nil
