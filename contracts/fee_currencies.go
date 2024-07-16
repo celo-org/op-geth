@@ -12,12 +12,20 @@ import (
 	"github.com/ethereum/go-ethereum/common/exchange"
 	"github.com/ethereum/go-ethereum/contracts/addresses"
 	"github.com/ethereum/go-ethereum/contracts/celo/abigen"
+	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/log"
 )
 
 var feeCurrencyABI *abi.ABI
+
+var ErrFeeCurrencyEVMCall = errors.New("fee-currency contract error during internal EVM call")
+
+type hookedStateDB interface {
+	Hooks() *tracing.Hooks
+	SetHooks(hooks *tracing.Hooks)
+}
 
 func init() {
 	var err error
@@ -39,8 +47,35 @@ func TryDebitFees(tx *types.Transaction, from common.Address, backend *CeloBacke
 	return err
 }
 
+// disableTracer is a helper function to disable EVM tracer and associated stateDB hooks temporarily.
+// It returns a function that restores the original configuration.
+func disableTracer(evm *vm.EVM) func() {
+	originalTracer := evm.Config.Tracer
+	evm.Config.Tracer = nil
+
+	var originalHooks *tracing.Hooks
+	hookedStateDB, isHookedStateDB := evm.StateDB.(hookedStateDB)
+	if isHookedStateDB {
+		originalHooks = hookedStateDB.Hooks()
+		hookedStateDB.SetHooks(nil)
+	}
+
+	return func() {
+		evm.Config.Tracer = originalTracer
+		if isHookedStateDB {
+			hookedStateDB.SetHooks(originalHooks)
+		}
+	}
+}
+
 // Debits transaction fees from the transaction sender and stores them in the temporary address
 func DebitFees(evm *vm.EVM, feeCurrency *common.Address, address common.Address, amount *big.Int) (uint64, error) {
+	// Hide this function from traces
+	if evm.Config.Tracer != nil && !evm.Config.Tracer.TraceDebitCredit {
+		reenable := disableTracer(evm)
+		defer reenable()
+	}
+
 	if amount.Cmp(big.NewInt(0)) == 0 {
 		return 0, nil
 	}
@@ -78,6 +113,12 @@ func CreditFees(
 	refund, feeTip, baseFee, l1DataFee *big.Int,
 	gasUsedDebit uint64,
 ) error {
+	// Hide this function from traces
+	if evm.Config.Tracer != nil && !evm.Config.Tracer.TraceDebitCredit {
+		reenable := disableTracer(evm)
+		defer reenable()
+	}
+
 	// Our old `creditGasFees` function does not accept an l1DataFee and
 	// the fee currencies do not implement the new interface yet. Since tip
 	// and data fee both go to the sequencer, we can work around that for
