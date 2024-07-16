@@ -215,6 +215,9 @@ type Hooks struct {
 	OnLog           LogHook
 	// Block hash read
 	OnBlockHashRead BlockHashReadHook
+
+	// Celo specific: should the tracer be run when fee currencies are debited/credited for gas?
+	TraceDebitCredit bool
 }
 
 // BalanceChangeReason is used to indicate the reason for a balance change, useful
