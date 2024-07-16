@@ -108,7 +108,12 @@ func (t *prestateTracer) CaptureStart(env *vm.EVM, from common.Address, to commo
 	fromBal := new(big.Int).Set(t.pre[from].Balance)
 	gasPrice := env.TxContext.GasPrice
 	consumedGas := new(big.Int).Mul(gasPrice, new(big.Int).SetUint64(t.gasLimit))
-	fromBal.Add(fromBal, new(big.Int).Add(value, consumedGas))
+	fromBal.Add(fromBal, value)
+	if env.Context.GasUsedForDebit > 0 {
+		// Celo fee currency tx
+	} else {
+		fromBal.Add(fromBal, consumedGas)
+	}
 	t.pre[from].Balance = fromBal
 	t.pre[from].Nonce--
 
