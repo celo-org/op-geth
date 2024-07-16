@@ -298,6 +298,7 @@ func newTracerAllHooks() *tracerAllHooks {
 		t.hooksCalled[hooksType.Field(i).Name] = false
 	}
 	delete(t.hooksCalled, "OnNonceChange")
+	delete(t.hooksCalled, "TraceDebitCredit")
 	return t
 }
 
@@ -323,6 +324,9 @@ func (t *tracerAllHooks) hooks() *Hooks {
 	for i := 0; i < hooksValue.NumField(); i++ {
 		field := hooksValue.Type().Field(i)
 		if field.Name == "OnNonceChange" {
+			continue
+		}
+		if field.Name == "TraceDebitCredit" {
 			continue
 		}
 		hookMethod := reflect.MakeFunc(field.Type, func(args []reflect.Value) []reflect.Value {
