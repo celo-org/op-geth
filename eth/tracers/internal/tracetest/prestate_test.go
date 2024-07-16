@@ -94,6 +94,8 @@ func testPrestateTracer(tracerName string, dirPath string, t *testing.T) {
 				context = test.Context.toBlockContext(test.Genesis, state.StateDB)
 			)
 			defer state.Close()
+			// Required for the fee currency prestate tests
+			context.L1CostFunc = types.NewL1CostFunc(test.Genesis.Config, state.StateDB)
 
 			tracer, err := tracers.DefaultDirectory.New(tracerName, new(tracers.Context), test.TracerConfig, test.Genesis.Config)
 			if err != nil {

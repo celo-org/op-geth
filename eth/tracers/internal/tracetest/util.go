@@ -51,6 +51,8 @@ type traceContext struct {
 	GasLimit   math.HexOrDecimal64   `json:"gasLimit"`
 	Miner      common.Address        `json:"miner"`
 	BaseFee    *math.HexOrDecimal256 `json:"baseFeePerGas"`
+	// Celo specific
+	FeeCurrencyContext common.FeeCurrencyContext `json:"feeCurrencyContext"`
 }
 
 func (c *traceContext) toBlockContext(genesis *core.Genesis, statedb types.StateGetter) vm.BlockContext {
@@ -63,6 +65,8 @@ func (c *traceContext) toBlockContext(genesis *core.Genesis, statedb types.State
 		Difficulty:  (*big.Int)(c.Difficulty),
 		GasLimit:    uint64(c.GasLimit),
 		L1CostFunc:  types.NewL1CostFunc(genesis.Config, statedb),
+		// Celo specific
+		FeeCurrencyContext: c.FeeCurrencyContext,
 	}
 	if genesis.Config.IsLondon(context.BlockNumber) {
 		context.BaseFee = (*big.Int)(c.BaseFee)
