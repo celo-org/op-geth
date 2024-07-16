@@ -92,8 +92,10 @@ func testPrestateDiffTracer(tracerName string, dirPath string, t *testing.T) {
 			}
 			// Configure a blockchain with the given prestate
 			var (
-				signer  = types.MakeSigner(test.Genesis.Config, new(big.Int).SetUint64(uint64(test.Context.Number)), uint64(test.Context.Time))
-				context = vm.BlockContext{
+				signer             = types.MakeSigner(test.Genesis.Config, new(big.Int).SetUint64(uint64(test.Context.Number)), uint64(test.Context.Time))
+				rateNumerator, _   = new(big.Int).SetString("2000000000000000000000000", 10)
+				rateDenominator, _ = new(big.Int).SetString("1000000000000000000000000", 10)
+				context            = vm.BlockContext{
 					CanTransfer: core.CanTransfer,
 					Transfer:    core.Transfer,
 					Coinbase:    test.Context.Miner,
@@ -102,6 +104,10 @@ func testPrestateDiffTracer(tracerName string, dirPath string, t *testing.T) {
 					Difficulty:  (*big.Int)(test.Context.Difficulty),
 					GasLimit:    uint64(test.Context.GasLimit),
 					BaseFee:     test.Genesis.BaseFee,
+					ExchangeRates: common.ExchangeRates{
+						common.HexToAddress("0x000000000000000000000000000000000000cE16"): new(big.Rat).SetFrac(rateNumerator, rateDenominator),
+						// common.HexToAddress("0x000000000000000000000000000000000000cE16"): new(big.Rat).SetFrac(common.Big2, common.Big1),
+					},
 				}
 				state = tests.MakePreState(rawdb.NewMemoryDatabase(), test.Genesis.Alloc, false, rawdb.HashScheme)
 			)
