@@ -36,7 +36,7 @@ func ConvertCurrencyToCelo(exchangeRates common.ExchangeRates, currencyAmount *b
 	exchangeRate, ok := exchangeRates[*feeCurrency]
 	if !ok {
 		if !ok {
-			return nil, fmt.Errorf("could not convert to native from fee currency (fee-currency=%s): %w ", feeCurrency, ErrNonWhitelistedFeeCurrency)
+			return nil, fmt.Errorf("could not convert from fee currency to native (fee-currency=%s): %w ", feeCurrency, ErrNonWhitelistedFeeCurrency)
 		}
 	}
 	return new(big.Int).Div(new(big.Int).Mul(currencyAmount, exchangeRate.Denom()), exchangeRate.Num()), nil
