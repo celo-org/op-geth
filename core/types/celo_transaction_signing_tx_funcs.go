@@ -63,13 +63,13 @@ var (
 
 	dynamicFeeTxFuncs = &txFuncs{
 		hash: func(tx *Transaction, chainID *big.Int) common.Hash {
-			return NewEIP155Signer(chainID).Hash(tx)
+			return NewLondonSigner(chainID).Hash(tx)
 		},
 		signatureValues: func(tx *Transaction, sig []byte, signerChainID *big.Int) (r *big.Int, s *big.Int, v *big.Int, err error) {
-			return NewEIP155Signer(signerChainID).SignatureValues(tx, sig)
+			return NewLondonSigner(signerChainID).SignatureValues(tx, sig)
 		},
 		sender: func(tx *Transaction, hashFunc func(tx *Transaction, chainID *big.Int) common.Hash, signerChainID *big.Int) (common.Address, error) {
-			return NewEIP155Signer(signerChainID).Sender(tx)
+			return NewLondonSigner(signerChainID).Sender(tx)
 		},
 	}
 
