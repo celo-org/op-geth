@@ -97,5 +97,5 @@ func (c *transfer) Run(input []byte, ctx *celoPrecompileContext) ([]byte, error)
 
 	ctx.Transfer(ctx.evm.StateDB, from, to, valueU256)
 
-	return input, nil
+	return nil, nil
 }
