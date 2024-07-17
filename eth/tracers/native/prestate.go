@@ -19,11 +19,13 @@ package native
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"sync/atomic"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/contracts"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/eth/tracers"
@@ -67,6 +69,9 @@ type prestateTracer struct {
 	reason    error       // Textual reason for the interruption
 	created   map[common.Address]bool
 	deleted   map[common.Address]bool
+
+	// Celo specific fields
+	feeCurrency *common.Address
 }
 
 type prestateTracerConfig struct {
@@ -91,6 +96,7 @@ func newPrestateTracer(ctx *tracers.Context, cfg json.RawMessage) (tracers.Trace
 
 // CaptureStart implements the EVMLogger interface to initialize the tracing operation.
 func (t *prestateTracer) CaptureStart(env *vm.EVM, from common.Address, to common.Address, create bool, input []byte, gas uint64, value *big.Int) {
+	fmt.Printf("prestateTracer.CaptureStart: from %v, input: %v\n", from, input)
 	t.env = env
 	t.create = create
 	t.to = to
@@ -109,8 +115,17 @@ func (t *prestateTracer) CaptureStart(env *vm.EVM, from common.Address, to commo
 	gasPrice := env.TxContext.GasPrice
 	consumedGas := new(big.Int).Mul(gasPrice, new(big.Int).SetUint64(t.gasLimit))
 	fromBal.Add(fromBal, value)
-	if env.Context.GasUsedForDebit > 0 {
-		// Celo fee currency tx
+	if t.feeCurrency != nil {
+		origTracer := env.Config.Tracer
+		env.Config.Tracer = nil
+		_, err := env.CallWithABI(
+			contracts.FeeCurrencyABI, "creditGasFees", *t.feeCurrency, 1_000_000,
+			from, common.ZeroAddress, common.ZeroAddress, common.ZeroAddress, consumedGas, common.Big0, common.Big0, common.Big0,
+		)
+		if err != nil {
+			log.Trace("Error during prestate tracing", "err", err)
+		}
+		env.Config.Tracer = origTracer
 	} else {
 		fromBal.Add(fromBal, consumedGas)
 	}
@@ -299,4 +314,8 @@ func (t *prestateTracer) lookupStorage(addr common.Address, key common.Hash) {
 		return
 	}
 	t.pre[addr].Storage[key] = t.env.StateDB.GetState(addr, key)
+}
+
+func (t *prestateTracer) SetFeeCurrency(feeCurrency *common.Address) {
+	t.feeCurrency = feeCurrency
 }

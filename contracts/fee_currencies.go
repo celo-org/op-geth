@@ -23,11 +23,11 @@ const (
 	maxAllowedGasForDebitAndCredit        uint64 = 3 * IntrinsicGasForAlternativeFeeCurrency
 )
 
-var feeCurrencyABI *abi.ABI
+var FeeCurrencyABI *abi.ABI
 
 func init() {
 	var err error
-	feeCurrencyABI, err = abigen.FeeCurrencyMetaData.GetAbi()
+	FeeCurrencyABI, err = abigen.FeeCurrencyMetaData.GetAbi()
 	if err != nil {
 		panic(err)
 	}
@@ -58,7 +58,7 @@ func DebitFees(evm *vm.EVM, feeCurrency *common.Address, address common.Address,
 	}
 
 	leftoverGas, err := evm.CallWithABI(
-		feeCurrencyABI, "debitGasFees", *feeCurrency, maxAllowedGasForDebitAndCredit,
+		FeeCurrencyABI, "debitGasFees", *feeCurrency, maxAllowedGasForDebitAndCredit,
 		// debitGasFees(address from, uint256 value) parameters
 		address, amount,
 	)
@@ -102,7 +102,7 @@ func CreditFees(
 
 	maxAllowedGasForCredit := maxAllowedGasForDebitAndCredit - evm.Context.GasUsedForDebit
 	leftoverGas, err := evm.CallWithABI(
-		feeCurrencyABI, "creditGasFees", *feeCurrency, maxAllowedGasForCredit,
+		FeeCurrencyABI, "creditGasFees", *feeCurrency, maxAllowedGasForCredit,
 		// function creditGasFees(
 		// 	address from,
 		// 	address feeRecipient,

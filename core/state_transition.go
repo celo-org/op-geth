@@ -584,6 +584,15 @@ func (st *StateTransition) innerTransitionDb() (*ExecutionResult, error) {
 
 	if tracer := st.evm.Config.Tracer; tracer != nil {
 		tracer.CaptureTxStart(st.initialGas)
+
+		if msg.FeeCurrency != nil {
+			type FeeCurrencyAwareTracer interface {
+				SetFeeCurrency(feeCurrency *common.Address)
+			}
+			if t, ok := tracer.(FeeCurrencyAwareTracer); ok {
+				t.SetFeeCurrency(msg.FeeCurrency)
+			}
+		}
 		defer func() {
 			if st.msg.IsDepositTx {
 				tracer.CaptureTxEnd(0)
