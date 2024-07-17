@@ -132,7 +132,7 @@ func newCallTracer(ctx *tracers.Context, cfg json.RawMessage) (tracers.Tracer, e
 // CaptureStart implements the EVMLogger interface to initialize the tracing operation.
 func (t *callTracer) CaptureStart(env *vm.EVM, from common.Address, to common.Address, create bool, input []byte, gas uint64, value *big.Int) {
 	toCopy := to
-	t.callstack[0] = callFrame{
+	frame := callFrame{
 		Type:  vm.CALL,
 		From:  from,
 		To:    &toCopy,
@@ -141,8 +141,9 @@ func (t *callTracer) CaptureStart(env *vm.EVM, from common.Address, to common.Ad
 		Value: value,
 	}
 	if create {
-		t.callstack[0].Type = vm.CREATE
+		frame.Type = vm.CREATE
 	}
+	t.callstack = append(t.callstack, frame)
 }
 
 // CaptureEnd is called after the call finishes to finalize the tracing.
@@ -258,15 +259,21 @@ func (t *callTracer) CaptureTxEnd(restGas uint64) {
 // GetResult returns the json-encoded nested list of call traces, and any
 // error arising from the encoding or forceful termination (via `Stop`).
 func (t *callTracer) GetResult() (json.RawMessage, error) {
-	if len(t.callstack) != 1 {
-		return nil, errors.New("incorrect number of top-level calls")
-	}
+	// if len(t.callstack) != 1 {
+	// 	return nil, errors.New("incorrect number of top-level calls")
+	// }
 
 	if t.callstack[0].Type == vm.STOP {
 		t.callstack[0].Error = "failed deposit transaction"
 	}
 
-	res, err := json.Marshal(t.callstack[0])
+	var res []byte
+	var err error
+	if len(t.callstack) == 1 {
+		res, err = json.Marshal(t.callstack[0])
+	} else {
+		res, err = json.Marshal(t.callstack)
+	}
 	if err != nil {
 		return nil, err
 	}
