@@ -65,6 +65,9 @@ func (c *cel2) txFuncs(tx *Transaction) *txFuncs {
 	case t == LegacyTxType && tx.IsCeloLegacy():
 		return deprecatedTxFuncs
 	case t == DynamicFeeTxType:
+		// We deprecate celo support of the DynamicFeeTxType in the cel2 fork
+		// since at this point it will be supported by the upstream London
+		// hardfork.
 		return deprecatedTxFuncs
 	case t == CeloDynamicFeeTxType:
 		return deprecatedTxFuncs
