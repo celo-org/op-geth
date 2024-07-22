@@ -297,21 +297,13 @@ func (st *StateTransition) to() common.Address {
 func (st *StateTransition) buyGas() error {
 	mgval := new(big.Int).SetUint64(st.msg.GasLimit)
 	mgval = mgval.Mul(mgval, st.msg.GasPrice)
-
 	var l1Cost *big.Int
 	if st.evm.Context.L1CostFunc != nil && !st.msg.SkipAccountChecks {
 		l1Cost = st.evm.Context.L1CostFunc(st.msg.RollupCostData, st.evm.Context.Time)
-
-		// L1 data fee needs to be converted in fee currency
-		if st.msg.FeeCurrency != nil && l1Cost != nil {
-			// Existence of the fee currency has been checked in `preCheck`
-			l1Cost, _ = exchange.ConvertCeloToCurrency(st.evm.Context.ExchangeRates, st.msg.FeeCurrency, l1Cost)
+		if l1Cost != nil {
+			mgval = mgval.Add(mgval, l1Cost)
 		}
 	}
-	if l1Cost != nil {
-		mgval = mgval.Add(mgval, l1Cost)
-	}
-
 	balanceCheck := new(big.Int).Set(mgval)
 	if st.msg.GasFeeCap != nil {
 		balanceCheck.SetUint64(st.msg.GasLimit)
