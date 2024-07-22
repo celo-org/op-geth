@@ -176,7 +176,7 @@ type Message struct {
 	IsSystemTx     bool                 // IsSystemTx indicates the message, if also a deposit, does not emit gas usage.
 	IsDepositTx    bool                 // IsDepositTx indicates the message is force-included and can persist a mint.
 	Mint           *big.Int             // Mint is the amount to mint before EVM processing, or nil if there is no minting.
-	RollupCostData types.RollupCostData // RollupDataGas indicates the rollup cost of the message, 0 if not a rollup or no cost.
+	RollupCostData types.RollupCostData // RollupCostData caches data to compute the fee we charge for data availability
 
 	// Celo additions
 
