@@ -283,10 +283,8 @@ type list struct {
 	strict bool       // Whether nonces are strictly continuous or not
 	txs    *sortedMap // Heap indexed sorted hash map of the transactions
 
-	costCap map[common.Address]*uint256.Int // Price of the highest costing transaction per currency (reset only if exceeds balance)
-	gascap  uint64                          // Gas limit of the highest spending transaction (reset only if exceeds block limit)
-
-	// Celo additions for multi currency
+	costCap   map[common.Address]*uint256.Int // Price of the highest costing transaction per currency (reset only if exceeds balance)
+	gascap    uint64                          // Gas limit of the highest spending transaction (reset only if exceeds block limit)
 	totalCost map[common.Address]*uint256.Int // Total cost of all transactions in the list (by currency)
 }
 
@@ -503,7 +501,7 @@ type priceHeap struct {
 
 	// Celo specific
 	ratesAndFees *exchange.RatesAndFees // current exchange rates and basefees
-	// heap should always be re-sorted after baseFee is changed
+	// heap should always be re-sorted after ratesAndFees is changed
 }
 
 func (h *priceHeap) Len() int      { return len(h.list) }
