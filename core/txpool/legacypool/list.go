@@ -357,12 +357,6 @@ func (l *list) Add(tx *types.Transaction, priceBump uint64, _ txpool.L1CostFunc,
 	}
 	feeCurrencyTc.Add(feeCurrencyTc, feeCurrencyCost)
 	nativeTc.Add(nativeTc, nativeCost)
-	// TODO: manage l1 cost
-	// if l1CostFn != nil {
-	// 	if l1Cost := l1CostFn(tx.RollupDataGas()); l1Cost != nil { // add rollup cost
-	// 		tc.Add(tc, l1Cost)
-	// 	}
-	// }
 	// Otherwise overwrite the old transaction with the current one
 	l.txs.Put(tx)
 	l.updateCostCapFor(tx.FeeCurrency(), feeCurrencyCost)

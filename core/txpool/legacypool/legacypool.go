@@ -1502,24 +1502,6 @@ func (pool *LegacyPool) reset(oldHead, newHead *types.Header) {
 	pool.addTxsLocked(reinject, false)
 }
 
-// reduceBalanceByL1Cost returns the given balance, reduced by the L1Cost of the first transaction in list if applicable
-// Other txs will get filtered out necessary.
-// func (pool *LegacyPool) reduceBalanceByL1Cost(list *list, balance *uint256.Int) *uint256.Int {
-// 	if !list.Empty() && pool.l1CostFn != nil {
-// 		el := list.txs.FirstElement()
-// 		if l1Cost := pool.l1CostFn(el.RollupCostData()); l1Cost != nil {
-// 			l1Cost256 := uint256.MustFromBig(l1Cost)
-// 			if l1Cost256.Cmp(balance) >= 0 {
-// 				// Avoid underflow
-// 				balance = uint256.NewInt(0)
-// 			} else {
-// 				balance = new(uint256.Int).Sub(balance, l1Cost256)
-// 			}
-// 		}
-// 	}
-// 	return balance
-// }
-
 // promoteExecutables moves transactions that have become processable from the
 // future queue to the set of pending transactions. During this process, all
 // invalidated transactions (low nonce, low balance) are deleted.
@@ -1541,10 +1523,6 @@ func (pool *LegacyPool) promoteExecutables(accounts []common.Address) []*types.T
 			pool.all.Remove(hash)
 		}
 		log.Trace("Removed old queued transactions", "count", len(forwards))
-
-		// TODO: manage l1cost in list
-		// balance := pool.currentState.GetBalance(addr)
-		// balance = pool.reduceBalanceByL1Cost(list, balance)
 
 		// Drop all transactions that are too costly (low balance or out of gas)
 		drops, _ := pool.filter(list, addr, gasLimit)
@@ -1747,9 +1725,6 @@ func (pool *LegacyPool) demoteUnexecutables() {
 			pool.all.Remove(hash)
 			log.Trace("Removed old pending transaction", "hash", hash)
 		}
-		// TODO: manage l1cost
-		// balance := pool.currentState.GetBalance(addr)
-		// balance = pool.reduceBalanceByL1Cost(list, balance)
 
 		// Drop all transactions that are too costly (low balance or out of gas), and queue any invalids back for later
 		drops, invalids := pool.filter(list, addr, gasLimit)
