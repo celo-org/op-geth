@@ -562,11 +562,11 @@ const (
 	floatingRatio = 1
 )
 
+// newPricedList creates a new price-sorted transaction heap.
 func newPricedList(all *lookup) *pricedList {
-	p := &pricedList{
+	return &pricedList{
 		all: all,
 	}
-	return p
 }
 
 // Put inserts a new transaction into the heap.
