@@ -77,6 +77,12 @@ func (c *transfer) Run(input []byte, ctx *celoPrecompileContext) ([]byte, error)
 		return nil, ErrInputLength
 	}
 
+	// The from parameter should always be set to the caller of the
+	// function calling the precompile (tx.sender in Solidity). Reasons why
+	// we have to pass that into the precompile from outside:
+	// * We can't use ctx.caller because that is always the CELO token
+	// * We can't use ctx.evm.Origin because that would limit usage to EOA accounts
+	// * The real value we could use is the caller's caller, which is not readily available
 	from := common.BytesToAddress(input[0:32])
 	to := common.BytesToAddress(input[32:64])
 
