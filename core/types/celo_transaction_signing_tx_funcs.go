@@ -22,7 +22,7 @@ var (
 		},
 	}
 
-	// Although celo allowed unprotected tranactions it never supported signing
+	// Although celo allowed unprotected transactions it never supported signing
 	// them with signers retreived by MakeSigner or LatestSigner (if you wanted
 	// to make an unprotected transaction you needed to use the HomesteadSigner
 	// directly), so both hash and signatureValues functions here provide
