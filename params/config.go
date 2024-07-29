@@ -554,7 +554,8 @@ type ChainConfig struct {
 
 	LagoonTime *uint64 `json:"lagoonTime,omitempty"` // Lagoon switch time (nil = no fork, 0 = already on optimism lagoon)
 
-	Cel2Time *uint64 `json:"cel2Time,omitempty"` // Cel2 switch time (nil = no fork, 0 = already on optimism cel2)
+	Cel2Time         *uint64  `json:"cel2Time,omitempty"`         // Cel2 switch time (nil = no fork, 0 = already on optimism cel2)
+	GingerbreadBlock *big.Int `json:"gingerbreadBlock,omitempty"` // Gingerbread switch block (nil = no fork, 0 = already activated)
 
 	// TerminalTotalDifficulty is the amount of total difficulty reached by
 	// the network that triggers the consensus upgrade.
@@ -1063,6 +1064,11 @@ func (c *ChainConfig) IsKarst(time uint64) bool {
 
 func (c *ChainConfig) IsLagoon(time uint64) bool {
 	return isTimestampForked(c.LagoonTime, time)
+}
+
+// IsGingerbread returns whether num represents a block number after the Gingerbread fork
+func (c *ChainConfig) IsGingerbread(num *big.Int) bool {
+	return isBlockForked(c.GingerbreadBlock, num)
 }
 
 // IsOptimism returns whether the node is an optimism node or not.
