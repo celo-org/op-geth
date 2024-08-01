@@ -427,7 +427,7 @@ func (st *StateTransition) preCheck() error {
 		if !st.evm.ChainConfig().IsCel2(st.evm.Context.Time) {
 			return ErrCel2NotEnabled
 		} else {
-			isWhiteListed := common.IsCurrencyWhitelisted(st.evm.Context.ExchangeRates, msg.FeeCurrency)
+			isWhiteListed := common.IsCurrencyWhitelisted(st.evm.Context.FeeCurrencyContext.ExchangeRates, msg.FeeCurrency)
 			if !isWhiteListed {
 				log.Trace("fee currency not whitelisted", "fee currency address", msg.FeeCurrency)
 				return exchange.ErrNonWhitelistedFeeCurrency
@@ -455,7 +455,7 @@ func (st *StateTransition) preCheck() error {
 
 			// This will panic if baseFee is nil, but basefee presence is verified
 			// as part of header validation.
-			baseFeeInFeeCurrency, err := exchange.ConvertCeloToCurrency(st.evm.Context.ExchangeRates, msg.FeeCurrency, st.evm.Context.BaseFee)
+			baseFeeInFeeCurrency, err := exchange.ConvertCeloToCurrency(st.evm.Context.FeeCurrencyContext.ExchangeRates, msg.FeeCurrency, st.evm.Context.BaseFee)
 			if err != nil {
 				return fmt.Errorf("preCheck: %w", err)
 			}
@@ -768,7 +768,7 @@ func (st *StateTransition) distributeTxFees() error {
 		}
 	} else {
 		if l1Cost != nil {
-			l1Cost, _ = exchange.ConvertCeloToCurrency(st.evm.Context.ExchangeRates, feeCurrency, l1Cost)
+			l1Cost, _ = exchange.ConvertCeloToCurrency(st.evm.Context.FeeCurrencyContext.ExchangeRates, feeCurrency, l1Cost)
 		}
 		if err := contracts.CreditFees(st.evm, feeCurrency, from, st.evm.Context.Coinbase, feeHandlerAddress, params.OptimismL1FeeRecipient, refund, tipTxFee, baseTxFee, l1Cost); err != nil {
 			log.Error("Error crediting", "from", from, "coinbase", st.evm.Context.Coinbase, "feeHandler", feeHandlerAddress, "err", err)
@@ -790,7 +790,7 @@ func (st *StateTransition) calculateBaseFee() *big.Int {
 
 	if st.msg.FeeCurrency != nil {
 		// Existence of the fee currency has been checked in `preCheck`
-		baseFee, _ = exchange.ConvertCeloToCurrency(st.evm.Context.ExchangeRates, st.msg.FeeCurrency, baseFee)
+		baseFee, _ = exchange.ConvertCeloToCurrency(st.evm.Context.FeeCurrencyContext.ExchangeRates, st.msg.FeeCurrency, baseFee)
 	}
 
 	return baseFee

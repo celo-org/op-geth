@@ -1187,7 +1187,7 @@ func doCall(ctx context.Context, b Backend, args TransactionArgs, state *state.S
 	if blockOverrides != nil {
 		blockOverrides.Apply(&blockCtx)
 	}
-	msg, err := args.ToMessage(globalGasCap, blockCtx.BaseFee, blockCtx.ExchangeRates)
+	msg, err := args.ToMessage(globalGasCap, blockCtx.BaseFee, blockCtx.FeeCurrencyContext.ExchangeRates)
 	if err != nil {
 		return nil, err
 	}

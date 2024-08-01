@@ -10,6 +10,10 @@ var (
 
 type ExchangeRates = map[Address]*big.Rat
 
+type FeeCurrencyContext struct {
+	ExchangeRates ExchangeRates
+}
+
 func CurrencyWhitelist(exchangeRates ExchangeRates) []Address {
 	addrs := make([]Address, len(exchangeRates))
 	i := 0

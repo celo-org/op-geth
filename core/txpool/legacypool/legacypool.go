@@ -242,8 +242,8 @@ type LegacyPool struct {
 	l1CostFn txpool.L1CostFunc // To apply L1 costs as rollup, optional field, may be nil.
 
 	// Celo specific
-	celoBackend  *contracts.CeloBackend // For fee currency balances & exchange rate calculation
-	currentRates common.ExchangeRates   // current exchange rates for fee currencies
+	celoBackend        *contracts.CeloBackend    // For fee currency balances & exchange rate calculation
+	feeCurrencyContext common.FeeCurrencyContext // context for fee currencies
 }
 
 type txpoolResetRequest struct {
@@ -650,7 +650,7 @@ func (pool *LegacyPool) validateTxBasics(tx *types.Transaction, local bool) erro
 	if local {
 		opts.MinTip = new(big.Int)
 	}
-	if err := txpool.CeloValidateTransaction(tx, pool.currentHead.Load(), pool.signer, opts, pool.currentRates); err != nil {
+	if err := txpool.CeloValidateTransaction(tx, pool.currentHead.Load(), pool.signer, opts, pool.feeCurrencyContext); err != nil {
 		return err
 	}
 	return nil
@@ -833,7 +833,7 @@ func (pool *LegacyPool) add(tx *types.Transaction, local bool) (replaced bool, e
 	// Try to replace an existing transaction in the pending pool
 	if list := pool.pending[from]; list != nil && list.Contains(tx.Nonce()) {
 		// Nonce already pending, check if required price bump is met
-		inserted, old := list.Add(tx, pool.config.PriceBump, pool.l1CostFn, pool.currentRates)
+		inserted, old := list.Add(tx, pool.config.PriceBump, pool.l1CostFn, pool.feeCurrencyContext.ExchangeRates)
 		if !inserted {
 			pendingDiscardMeter.Mark(1)
 			return false, txpool.ErrReplaceUnderpriced
@@ -907,7 +907,7 @@ func (pool *LegacyPool) enqueueTx(hash common.Hash, tx *types.Transaction, local
 	if pool.queue[from] == nil {
 		pool.queue[from] = newList(false)
 	}
-	inserted, old := pool.queue[from].Add(tx, pool.config.PriceBump, pool.l1CostFn, pool.currentRates)
+	inserted, old := pool.queue[from].Add(tx, pool.config.PriceBump, pool.l1CostFn, pool.feeCurrencyContext.ExchangeRates)
 	if !inserted {
 		// An older transaction was better, discard this
 		queuedDiscardMeter.Mark(1)
@@ -961,7 +961,7 @@ func (pool *LegacyPool) promoteTx(addr common.Address, hash common.Hash, tx *typ
 	}
 	list := pool.pending[addr]
 
-	inserted, old := list.Add(tx, pool.config.PriceBump, pool.l1CostFn, pool.currentRates)
+	inserted, old := list.Add(tx, pool.config.PriceBump, pool.l1CostFn, pool.feeCurrencyContext.ExchangeRates)
 	if !inserted {
 		// An older transaction was better, discard this
 		pool.all.Remove(hash)
@@ -1357,7 +1357,7 @@ func (pool *LegacyPool) runReorg(done chan struct{}, reset *txpoolResetRequest, 
 		if reset.newHead != nil {
 			if pool.chainconfig.IsLondon(new(big.Int).Add(reset.newHead.Number, big.NewInt(1))) {
 				pendingBaseFee := eip1559.CalcBaseFee(pool.chainconfig, reset.newHead, reset.newHead.Time+1)
-				pool.priced.SetBaseFeeAndRates(pendingBaseFee, pool.currentRates)
+				pool.priced.SetBaseFeeAndRates(pendingBaseFee, pool.feeCurrencyContext.ExchangeRates)
 			} else {
 				pool.priced.Reheap()
 			}

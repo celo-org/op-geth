@@ -140,6 +140,17 @@ func GetExchangeRates(caller bind.ContractCaller) (common.ExchangeRates, error) 
 	return exchangeRates, nil
 }
 
+// GetFeeCurrencyContext returns the fee-currency context for all gas currencies from CELO
+func GetFeeCurrencyContext(caller bind.ContractCaller) (common.FeeCurrencyContext, error) {
+	rates, err := GetExchangeRates(caller)
+	if err != nil {
+		return common.FeeCurrencyContext{}, err
+	}
+	return common.FeeCurrencyContext{
+		ExchangeRates: rates,
+	}, nil
+}
+
 // GetBalanceERC20 returns an account's balance on a given ERC20 currency
 func GetBalanceERC20(caller bind.ContractCaller, accountOwner common.Address, contractAddress common.Address) (result *big.Int, err error) {
 	token, err := abigen.NewFeeCurrencyCaller(contractAddress, caller)
