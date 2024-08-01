@@ -2,6 +2,7 @@ package contracts
 
 import (
 	"fmt"
+	"math"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -112,42 +113,51 @@ func CreditFees(
 	return err
 }
 
-// GetExchangeRates returns the exchange rates for all gas currencies from CELO
+func GetRegisteredCurrencies(caller *abigen.FeeCurrencyDirectoryCaller) ([]common.Address, error) {
+	currencies, err := caller.GetCurrencies(&bind.CallOpts{})
+	if err != nil {
+		return currencies, fmt.Errorf("Failed to get registered tokens: %w", err)
+	}
+	return currencies, nil
+}
+
+// GetExchangeRates returns the exchange rates for the provided gas currencies from CELO
 func GetExchangeRates(caller bind.ContractCaller) (common.ExchangeRates, error) {
 	exchangeRates := map[common.Address]*big.Rat{}
 	directory, err := abigen.NewFeeCurrencyDirectoryCaller(addresses.FeeCurrencyDirectoryAddress, caller)
 	if err != nil {
 		return exchangeRates, fmt.Errorf("Failed to access FeeCurrencyDirectory: %w", err)
 	}
-
-	registeredTokens, err := directory.GetCurrencies(&bind.CallOpts{})
+	currencies, err := GetRegisteredCurrencies(directory)
 	if err != nil {
-		return exchangeRates, fmt.Errorf("Failed to get whitelisted tokens: %w", err)
+		return map[common.Address]*big.Rat{}, err
 	}
-	for _, tokenAddress := range registeredTokens {
-		rate, err := directory.GetExchangeRate(&bind.CallOpts{}, tokenAddress)
-		if err != nil {
-			log.Error("Failed to get medianRate for gas currency!", "err", err, "tokenAddress", tokenAddress.Hex())
-			continue
-		}
-		if rate.Numerator.Sign() <= 0 || rate.Denominator.Sign() <= 0 {
-			log.Error("Bad exchange rate for fee currency", "tokenAddress", tokenAddress.Hex(), "numerator", rate.Numerator, "denominator", rate.Denominator)
-			continue
-		}
-		exchangeRates[tokenAddress] = new(big.Rat).SetFrac(rate.Numerator, rate.Denominator)
-	}
-
-	return exchangeRates, nil
+	return getExchangeRatesForTokens(directory, currencies)
 }
 
-// GetFeeCurrencyContext returns the fee-currency context for all gas currencies from CELO
+// GetFeeCurrencyContext returns the fee currency block context for all registered gas currencies from CELO
 func GetFeeCurrencyContext(caller bind.ContractCaller) (common.FeeCurrencyContext, error) {
-	rates, err := GetExchangeRates(caller)
+	var feeContext common.FeeCurrencyContext
+	directory, err := abigen.NewFeeCurrencyDirectoryCaller(addresses.FeeCurrencyDirectoryAddress, caller)
 	if err != nil {
-		return common.FeeCurrencyContext{}, err
+		return feeContext, fmt.Errorf("Failed to access FeeCurrencyDirectory: %w", err)
+	}
+
+	currencies, err := GetRegisteredCurrencies(directory)
+	if err != nil {
+		return feeContext, err
+	}
+	rates, err := getExchangeRatesForTokens(directory, currencies)
+	if err != nil {
+		return feeContext, err
+	}
+	intrinsicGas, err := getIntrinsicGasForTokens(directory, currencies)
+	if err != nil {
+		return feeContext, err
 	}
 	return common.FeeCurrencyContext{
-		ExchangeRates: rates,
+		ExchangeRates:     rates,
+		IntrinsicGasCosts: intrinsicGas,
 	}, nil
 }
 
@@ -177,4 +187,42 @@ func GetFeeBalance(backend *CeloBackend, account common.Address, feeCurrency *co
 		log.Error("Error while trying to get ERC20 balance:", "cause", err, "contract", feeCurrency.Hex(), "account", account.Hex())
 	}
 	return balance
+}
+
+// getIntrinsicGasForTokens returns the intrinsic gas costs for the provided gas currencies from CELO
+func getIntrinsicGasForTokens(caller *abigen.FeeCurrencyDirectoryCaller, tokens []common.Address) (common.IntrinsicGasCosts, error) {
+	gasCosts := common.IntrinsicGasCosts{}
+	for _, tokenAddress := range tokens {
+		config, err := caller.GetCurrencyConfig(&bind.CallOpts{}, tokenAddress)
+		if err != nil {
+			log.Error("Failed to get intrinsic gas cost for gas currency!", "err", err, "tokenAddress", tokenAddress.Hex())
+			continue
+		}
+		if !config.IntrinsicGas.IsUint64() {
+			log.Error("Intrinsic gas cost exceeds MaxUint64 limit, capping at MaxUint64", "err", err, "tokenAddress", tokenAddress.Hex())
+			gasCosts[tokenAddress] = math.MaxUint64
+		} else {
+			gasCosts[tokenAddress] = config.IntrinsicGas.Uint64()
+		}
+	}
+	return gasCosts, nil
+}
+
+// getExchangeRatesForTokens returns the exchange rates for the provided gas currencies from CELO
+func getExchangeRatesForTokens(caller *abigen.FeeCurrencyDirectoryCaller, tokens []common.Address) (common.ExchangeRates, error) {
+	exchangeRates := common.ExchangeRates{}
+	for _, tokenAddress := range tokens {
+		rate, err := caller.GetExchangeRate(&bind.CallOpts{}, tokenAddress)
+		if err != nil {
+			log.Error("Failed to get medianRate for gas currency!", "err", err, "tokenAddress", tokenAddress.Hex())
+			continue
+		}
+		if rate.Numerator.Sign() <= 0 || rate.Denominator.Sign() <= 0 {
+			log.Error("Bad exchange rate for fee currency", "tokenAddress", tokenAddress.Hex(), "numerator", rate.Numerator, "denominator", rate.Denominator)
+			continue
+		}
+		exchangeRates[tokenAddress] = new(big.Rat).SetFrac(rate.Numerator, rate.Denominator)
+	}
+
+	return exchangeRates, nil
 }

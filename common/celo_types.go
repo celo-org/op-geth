@@ -9,9 +9,31 @@ var (
 )
 
 type ExchangeRates = map[Address]*big.Rat
+type IntrinsicGasCosts = map[Address]uint64
 
 type FeeCurrencyContext struct {
-	ExchangeRates ExchangeRates
+	ExchangeRates     ExchangeRates
+	IntrinsicGasCosts IntrinsicGasCosts
+}
+
+func MaxAllowedIntrinsicGasCost(i IntrinsicGasCosts, feeCurrency *Address) (uint64, bool) {
+	intrinsicGas, ok := CurrencyIntrinsicGasCost(i, feeCurrency)
+	if !ok {
+		return 0, false
+	}
+	// allow the contract to overshoot 2 times the deducted intrinsic gas
+	// during execution
+	return intrinsicGas * 3, true
+}
+func CurrencyIntrinsicGasCost(i IntrinsicGasCosts, feeCurrency *Address) (uint64, bool) {
+	if feeCurrency == nil {
+		return 0, true
+	}
+	gasCost, ok := i[*feeCurrency]
+	if !ok {
+		return 0, false
+	}
+	return gasCost, true
 }
 
 func CurrencyWhitelist(exchangeRates ExchangeRates) []Address {
