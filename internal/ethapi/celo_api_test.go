@@ -88,7 +88,7 @@ func TestNewRPCTransactionDynamicFee(t *testing.T) {
 	tipCap := big.NewInt(100)
 
 	t.Run("PendingTransactions", func(t *testing.T) {
-		//For pending transactions we expect the gas price to the the gas fee cap.
+		// For pending transactions we expect the gas price to be the gas fee cap.
 		gasFeeCap := func(t *testing.T, tx *types.Transaction, rpcTx *RPCTransaction) {
 			assert.Equal(t, (*hexutil.Big)(feeCap), rpcTx.GasPrice)
 		}
