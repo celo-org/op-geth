@@ -1581,7 +1581,7 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 		if blockHash == (common.Hash{}) {
 			// This is a pending transaction, for pending transactions we set the gas price to gas fee cap.
 			result.GasPrice = (*hexutil.Big)(tx.GasFeeCap())
-		} else if isGingerbread && isNativeFeeCurrency && baseFee != nil {
+		} else if isGingerbread && isNativeFeeCurrency {
 			// Post gingerbread mined transaction with a native fee currency, we can compute the effective gas price.
 			result.GasPrice = (*hexutil.Big)(effectiveGasPrice(tx, baseFee))
 		} else if isCel2 && tx.Type() == types.CeloDynamicFeeTxV2Type {
