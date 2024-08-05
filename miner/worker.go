@@ -318,7 +318,7 @@ func (miner *Miner) prepareWork(genParams *generateParams, witness bool) (*envir
 	}
 	env.noTxs = genParams.noTxs
 	context := core.NewEVMBlockContext(header, miner.chain, nil, miner.chainConfig, env.state)
-	env.feeCurrencyAllowlist = common.CurrencyAllowlist(context.ExchangeRates)
+	env.feeCurrencyAllowlist = common.CurrencyAllowlist(context.FeeCurrencyContext.ExchangeRates)
 	if header.ParentBeaconRoot != nil {
 		vmenv := vm.NewEVM(context, vm.TxContext{}, env.state, miner.chainConfig, vm.Config{})
 		core.ProcessBeaconBlockRoot(*header.ParentBeaconRoot, vmenv, env.state)

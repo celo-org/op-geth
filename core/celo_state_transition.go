@@ -49,7 +49,9 @@ func (st *StateTransition) subFees(effectiveFee *big.Int) (err error) {
 		st.state.SubBalance(st.msg.From, effectiveFeeU256, tracing.BalanceDecreaseGasBuy)
 		return nil
 	} else {
-		return contracts.DebitFees(st.evm, st.msg.FeeCurrency, st.msg.From, effectiveFee)
+		gasUsedDebit, err := contracts.DebitFees(st.evm, st.msg.FeeCurrency, st.msg.From, effectiveFee)
+		st.feeCurrencyGasUsed += gasUsedDebit
+		return err
 	}
 }
 
@@ -121,9 +123,22 @@ func (st *StateTransition) distributeTxFees() error {
 		}
 	} else {
 		if l1Cost != nil {
-			l1Cost, _ = exchange.ConvertCeloToCurrency(st.evm.Context.ExchangeRates, feeCurrency, l1Cost)
+			l1Cost, _ = exchange.ConvertCeloToCurrency(st.evm.Context.FeeCurrencyContext.ExchangeRates, feeCurrency, l1Cost)
 		}
-		if err := contracts.CreditFees(st.evm, feeCurrency, from, st.evm.Context.Coinbase, feeHandlerAddress, params.OptimismL1FeeRecipient, refund, tipTxFee, baseTxFee, l1Cost); err != nil {
+		if err := contracts.CreditFees(
+			st.evm,
+			feeCurrency,
+			from,
+			st.evm.Context.Coinbase,
+			feeHandlerAddress,
+			params.OptimismL1FeeRecipient,
+			refund,
+			tipTxFee,
+			baseTxFee,
+			l1Cost,
+			st.feeCurrencyGasUsed,
+		); err != nil {
+			err = fmt.Errorf("error crediting fee-currency: %w", err)
 			log.Error("Error crediting", "from", from, "coinbase", st.evm.Context.Coinbase, "feeHandler", feeHandlerAddress, "err", err)
 			return err
 		}
@@ -147,7 +162,7 @@ func (st *StateTransition) calculateBaseFee() *big.Int {
 
 	if st.msg.FeeCurrency != nil {
 		// Existence of the fee currency has been checked in `preCheck`
-		baseFee, _ = exchange.ConvertCeloToCurrency(st.evm.Context.ExchangeRates, st.msg.FeeCurrency, baseFee)
+		baseFee, _ = exchange.ConvertCeloToCurrency(st.evm.Context.FeeCurrencyContext.ExchangeRates, st.msg.FeeCurrency, baseFee)
 	}
 
 	return baseFee

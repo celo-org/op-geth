@@ -1285,7 +1285,7 @@ func applyMessage(ctx context.Context, b Backend, args TransactionArgs, state *s
 	if err := args.CallDefaults(gp.Gas(), blockContext.BaseFee, b.ChainConfig().ChainID); err != nil {
 		return nil, err
 	}
-	msg := args.ToMessage(header.BaseFee, skipChecks, skipChecks, blockContext.ExchangeRates)
+	msg := args.ToMessage(header.BaseFee, skipChecks, skipChecks, blockContext.FeeCurrencyContext.ExchangeRates)
 	// Lower the basefee to 0 to avoid breaking EVM
 	// invariants (basefee < feecap).
 	if msg.GasPrice.Sign() == 0 {
