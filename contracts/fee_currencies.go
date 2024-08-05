@@ -141,7 +141,7 @@ func GetRegisteredCurrencies(caller *abigen.FeeCurrencyDirectoryCaller) ([]commo
 	return currencies, nil
 }
 
-// GetExchangeRates returns the exchange rates for the provided gas currencies from CELO
+// GetExchangeRates returns the exchange rates for the provided gas currencies
 func GetExchangeRates(caller bind.ContractCaller) (common.ExchangeRates, error) {
 	exchangeRates := map[common.Address]*big.Rat{}
 	directory, err := abigen.NewFeeCurrencyDirectoryCaller(addresses.FeeCurrencyDirectoryAddress, caller)
@@ -150,7 +150,7 @@ func GetExchangeRates(caller bind.ContractCaller) (common.ExchangeRates, error) 
 	}
 	currencies, err := GetRegisteredCurrencies(directory)
 	if err != nil {
-		return map[common.Address]*big.Rat{}, err
+		return common.ExchangeRates{}, err
 	}
 	return getExchangeRatesForTokens(directory, currencies)
 }

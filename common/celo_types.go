@@ -25,6 +25,7 @@ func MaxAllowedIntrinsicGasCost(i IntrinsicGasCosts, feeCurrency *Address) (uint
 	// during execution
 	return intrinsicGas * 3, true
 }
+
 func CurrencyIntrinsicGasCost(i IntrinsicGasCosts, feeCurrency *Address) (uint64, bool) {
 	if feeCurrency == nil {
 		return 0, true
