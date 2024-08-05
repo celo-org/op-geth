@@ -21,12 +21,16 @@ func MaxAllowedIntrinsicGasCost(i IntrinsicGasCosts, feeCurrency *Address) (uint
 	if !ok {
 		return 0, false
 	}
-	// allow the contract to overshoot 2 times the deducted intrinsic gas
-	// during execution
+	// Allow the contract to overshoot 2 times the deducted intrinsic gas
+	// during execution.
+	// If the feeCurrency is nil, then the max allowed intrinsic gas cost
+	// is 0 (i.e. not allowed) for a fee-currency specific EVM call within the STF.
 	return intrinsicGas * 3, true
 }
 
 func CurrencyIntrinsicGasCost(i IntrinsicGasCosts, feeCurrency *Address) (uint64, bool) {
+	// the additional intrinsic gas cost for a non fee-currency
+	// transaction is 0
 	if feeCurrency == nil {
 		return 0, true
 	}
