@@ -15,9 +15,9 @@ func setCeloFieldsInBlockContext(blockContext *vm.BlockContext, header *types.He
 
 	caller := &contracts.CeloBackend{ChainConfig: config, State: statedb}
 
-	// Add fee currency exchange rates
+	// Add fee currency context
 	var err error
-	blockContext.ExchangeRates, err = contracts.GetExchangeRates(caller)
+	blockContext.FeeCurrencyContext, err = contracts.GetFeeCurrencyContext(caller)
 	if err != nil {
 		log.Error("Error fetching exchange rates!", "err", err)
 	}

@@ -1137,7 +1137,7 @@ func (w *worker) prepareWork(genParams *generateParams) (*environment, error) {
 		return nil, err
 	}
 	context := core.NewEVMBlockContext(header, w.chain, nil, w.chainConfig, env.state)
-	env.feeCurrencyWhitelist = common.CurrencyWhitelist(context.ExchangeRates)
+	env.feeCurrencyWhitelist = common.CurrencyWhitelist(context.FeeCurrencyContext.ExchangeRates)
 	if header.ParentBeaconRoot != nil {
 		vmenv := vm.NewEVM(context, vm.TxContext{}, env.state, w.chainConfig, vm.Config{})
 		core.ProcessBeaconBlockRoot(*header.ParentBeaconRoot, vmenv, env.state)
