@@ -33,8 +33,7 @@ func TryDebitFees(tx *types.Transaction, from common.Address, backend *CeloBacke
 	amount.Mul(amount, tx.GasFeeCap())
 
 	snapshot := backend.State.Snapshot()
-	evm := backend.NewEVM()
-	evm.Context.FeeCurrencyContext = feeContext
+	evm := backend.NewEVM(&feeContext)
 	_, err := DebitFees(evm, tx.FeeCurrency(), from, amount)
 	backend.State.RevertToSnapshot(snapshot)
 	return err
