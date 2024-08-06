@@ -12,7 +12,7 @@ import (
 // and gasLimit. Returns drops and invalid txs.
 func (pool *LegacyPool) filter(list *list, addr common.Address, gasLimit uint64) (types.Transactions, types.Transactions) {
 	// CELO: drop all transactions that no longer have a whitelisted currency
-	dropsWhitelist, invalidsWhitelist := list.FilterWhitelisted(pool.feeCurrencyContext.ExchangeRates)
+	dropsWhitelist, invalidsWhitelist := list.FilterAllowlisted(pool.feeCurrencyContext.ExchangeRates)
 	// Check from which currencies we need to get balances
 	currenciesInList := list.FeeCurrencies()
 	drops, invalids := list.Filter(pool.getBalances(addr, currenciesInList), gasLimit)

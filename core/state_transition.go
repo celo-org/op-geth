@@ -435,7 +435,7 @@ func (st *StateTransition) preCheck() error {
 		if !st.evm.ChainConfig().IsCel2(st.evm.Context.Time) {
 			return ErrCel2NotEnabled
 		} else {
-			isWhiteListed := common.IsCurrencyWhitelisted(st.evm.Context.FeeCurrencyContext.ExchangeRates, msg.FeeCurrency)
+			isWhiteListed := common.IsCurrencyAllowed(st.evm.Context.FeeCurrencyContext.ExchangeRates, msg.FeeCurrency)
 			if !isWhiteListed {
 				log.Trace("fee currency not whitelisted", "fee currency address", msg.FeeCurrency)
 				return exchange.ErrNonWhitelistedFeeCurrency

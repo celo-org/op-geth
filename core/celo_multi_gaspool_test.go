@@ -16,7 +16,7 @@ func TestMultiCurrencyGasPool(t *testing.T) {
 	testCases := []struct {
 		name                string
 		feeCurrency         *FeeCurrency
-		whitelist           []FeeCurrency
+		allowlist           []FeeCurrency
 		defaultLimit        float64
 		limits              FeeCurrencyLimitMapping
 		defaultPoolExpected bool
@@ -25,7 +25,7 @@ func TestMultiCurrencyGasPool(t *testing.T) {
 		{
 			name:                "Empty whitelist, empty mapping, CELO uses default pool",
 			feeCurrency:         nil,
-			whitelist:           []FeeCurrency{},
+			allowlist:           []FeeCurrency{},
 			defaultLimit:        0.9,
 			limits:              map[FeeCurrency]float64{},
 			defaultPoolExpected: true,
@@ -34,7 +34,7 @@ func TestMultiCurrencyGasPool(t *testing.T) {
 		{
 			name:        "Non-empty whitelist, non-empty mapping, CELO uses default pool",
 			feeCurrency: nil,
-			whitelist: []FeeCurrency{
+			allowlist: []FeeCurrency{
 				cUSDToken,
 			},
 			defaultLimit: 0.9,
@@ -47,7 +47,7 @@ func TestMultiCurrencyGasPool(t *testing.T) {
 		{
 			name:                "Empty whitelist, empty mapping, non-whitelisted currency fallbacks to the default pool",
 			feeCurrency:         &cUSDToken,
-			whitelist:           []FeeCurrency{},
+			allowlist:           []FeeCurrency{},
 			defaultLimit:        0.9,
 			limits:              map[FeeCurrency]float64{},
 			defaultPoolExpected: true,
@@ -56,7 +56,7 @@ func TestMultiCurrencyGasPool(t *testing.T) {
 		{
 			name:        "Non-empty whitelist, non-empty mapping, non-whitelisted currency uses default pool",
 			feeCurrency: &cEURToken,
-			whitelist: []FeeCurrency{
+			allowlist: []FeeCurrency{
 				cUSDToken,
 			},
 			defaultLimit: 0.9,
@@ -69,7 +69,7 @@ func TestMultiCurrencyGasPool(t *testing.T) {
 		{
 			name:        "Non-empty whitelist, empty mapping, whitelisted currency uses default limit",
 			feeCurrency: &cUSDToken,
-			whitelist: []FeeCurrency{
+			allowlist: []FeeCurrency{
 				cUSDToken,
 			},
 			defaultLimit:        0.9,
@@ -80,7 +80,7 @@ func TestMultiCurrencyGasPool(t *testing.T) {
 		{
 			name:        "Non-empty whitelist, non-empty mapping, configured whitelisted currency uses configured limits",
 			feeCurrency: &cUSDToken,
-			whitelist: []FeeCurrency{
+			allowlist: []FeeCurrency{
 				cUSDToken,
 			},
 			defaultLimit: 0.9,
@@ -93,7 +93,7 @@ func TestMultiCurrencyGasPool(t *testing.T) {
 		{
 			name:        "Non-empty whitelist, non-empty mapping, unconfigured whitelisted currency uses default limit",
 			feeCurrency: &cEURToken,
-			whitelist: []FeeCurrency{
+			allowlist: []FeeCurrency{
 				cUSDToken,
 				cEURToken,
 			},
@@ -110,7 +110,7 @@ func TestMultiCurrencyGasPool(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			mgp := NewMultiGasPool(
 				blockGasLimit,
-				c.whitelist,
+				c.allowlist,
 				c.defaultLimit,
 				c.limits,
 			)

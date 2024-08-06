@@ -52,7 +52,7 @@ func CeloValidateTransaction(tx *types.Transaction, head *types.Header,
 	if err := ValidateTransaction(tx, head, signer, opts, currencyCtx); err != nil {
 		return err
 	}
-	if !common.IsCurrencyWhitelisted(currencyCtx.ExchangeRates, tx.FeeCurrency()) {
+	if !common.IsCurrencyAllowed(currencyCtx.ExchangeRates, tx.FeeCurrency()) {
 		return exchange.ErrNonWhitelistedFeeCurrency
 	}
 
