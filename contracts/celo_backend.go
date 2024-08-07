@@ -48,9 +48,13 @@ func (b *CeloBackend) CallContract(ctx context.Context, call ethereum.CallMsg, b
 	txCtx := vm.TxContext{}
 	vmConfig := vm.Config{}
 
-	readOnlyStateDB := ReadOnlyStateDB{StateDB: b.State}
-	evm := vm.NewEVM(blockCtx, txCtx, &readOnlyStateDB, b.ChainConfig, vmConfig)
+	// While StaticCall does not actually change state, it changes the
+	// access lists. We don't want this to add any access list changes, so
+	// we do a snapshot+revert.
+	snapshot := b.State.Snapshot()
+	evm := vm.NewEVM(blockCtx, txCtx, b.State, b.ChainConfig, vmConfig)
 	ret, _, err := evm.StaticCall(vm.AccountRef(evm.Origin), *call.To, call.Data, call.Gas)
+	b.State.RevertToSnapshot(snapshot)
 
 	return ret, err
 }
