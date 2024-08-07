@@ -48,8 +48,14 @@ func (b *CeloBackend) CallContract(ctx context.Context, call ethereum.CallMsg, b
 	txCtx := vm.TxContext{}
 	vmConfig := vm.Config{}
 
-	readOnlyStateDB := ReadOnlyStateDB{StateDB: b.State}
-	evm := vm.NewEVM(blockCtx, txCtx, &readOnlyStateDB, b.ChainConfig, vmConfig)
+	// We can use b.State here without copying or making a snapshot because
+	// StaticCall won't change the state. It reverts on all state modifying
+	// operations.
+	// The "touch" that is caused by a StaticCall is not relevant because
+	// no Celo chain contains empty accounts. Per EIP-7523, all chains that
+	// had the Spurious Dragon fork enabled at genesis don't have empty
+	// accounts, making touches irrelevant.
+	evm := vm.NewEVM(blockCtx, txCtx, b.State, b.ChainConfig, vmConfig)
 	ret, _, err := evm.StaticCall(vm.AccountRef(evm.Origin), *call.To, call.Data, call.Gas)
 
 	return ret, err
