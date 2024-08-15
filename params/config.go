@@ -211,6 +211,7 @@ var (
 		GrayGlacierBlock:              big.NewInt(0),
 		ShanghaiTime:                  newUint64(0),
 		Cel2Time:                      newUint64(0),
+		GingerbreadBlock:              big.NewInt(0),
 		TerminalTotalDifficulty:       big.NewInt(0),
 		TerminalTotalDifficultyPassed: true,
 	}
