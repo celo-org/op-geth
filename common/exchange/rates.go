@@ -11,9 +11,9 @@ import (
 
 var (
 	unitRate = big.NewRat(1, 1)
-	// ErrNonWhitelistedFeeCurrency is returned if the currency specified to use for the fees
+	// ErrUnregisteredFeeCurrency is returned if the currency specified to use for the fees
 	// isn't one of the currencies whitelisted for that purpose.
-	ErrNonWhitelistedFeeCurrency = errors.New("non-whitelisted fee currency address")
+	ErrUnregisteredFeeCurrency = errors.New("unregistered fee-currency address")
 )
 
 // ConvertCurrency does an exchange conversion from currencyFrom to currencyTo of the value given.
@@ -35,7 +35,7 @@ func ConvertCurrencyToCelo(exchangeRates common.ExchangeRates, currencyAmount *b
 	}
 	exchangeRate, ok := exchangeRates[*feeCurrency]
 	if !ok {
-		return nil, fmt.Errorf("could not convert from fee currency to native (fee-currency=%s): %w ", feeCurrency, ErrNonWhitelistedFeeCurrency)
+		return nil, fmt.Errorf("could not convert from fee currency to native (fee-currency=%s): %w ", feeCurrency, ErrUnregisteredFeeCurrency)
 	}
 	return new(big.Int).Div(new(big.Int).Mul(currencyAmount, exchangeRate.Denom()), exchangeRate.Num()), nil
 }
@@ -46,7 +46,7 @@ func ConvertCeloToCurrency(exchangeRates common.ExchangeRates, feeCurrency *comm
 	}
 	exchangeRate, ok := exchangeRates[*feeCurrency]
 	if !ok {
-		return nil, fmt.Errorf("could not convert from native to fee currency (fee-currency=%s): %w ", feeCurrency, ErrNonWhitelistedFeeCurrency)
+		return nil, fmt.Errorf("could not convert from native to fee currency (fee-currency=%s): %w ", feeCurrency, ErrUnregisteredFeeCurrency)
 	}
 	return new(big.Int).Div(new(big.Int).Mul(celoAmount, exchangeRate.Num()), exchangeRate.Denom()), nil
 }

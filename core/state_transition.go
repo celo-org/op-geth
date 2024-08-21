@@ -131,7 +131,7 @@ func IntrinsicGas(data []byte, accessList types.AccessList, isContractCreation b
 	if feeCurrency != nil {
 		intrinsicGasForFeeCurrency, ok := common.CurrencyIntrinsicGasCost(feeIntrinsicGas, feeCurrency)
 		if !ok {
-			return 0, exchange.ErrNonWhitelistedFeeCurrency
+			return 0, exchange.ErrUnregisteredFeeCurrency
 		}
 		if (math.MaxUint64 - gas) < intrinsicGasForFeeCurrency {
 			return 0, ErrGasUintOverflow
