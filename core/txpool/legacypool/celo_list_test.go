@@ -60,7 +60,7 @@ func TestListFeeCost(t *testing.T) {
 	assert.Equal(t, uint64(20000), list.TotalCostFor(&curr1).Uint64())
 }
 
-func TestFilterWhitelisted(t *testing.T) {
+func TestFilterAllowlisted(t *testing.T) {
 	curr1 := common.HexToAddress("0002")
 	curr2 := common.HexToAddress("0004")
 	curr3 := common.HexToAddress("0006")
@@ -84,7 +84,7 @@ func TestFilterWhitelisted(t *testing.T) {
 	assert.Equal(t, uint64(0), list.TotalCostFor(&curr2).Uint64())
 }
 
-func TestFilterWhitelistedStrict(t *testing.T) {
+func TestFilterAllowlistedStrict(t *testing.T) {
 	curr1 := common.HexToAddress("0002")
 	curr2 := common.HexToAddress("0004")
 	curr3 := common.HexToAddress("0006")

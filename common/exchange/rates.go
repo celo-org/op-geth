@@ -131,7 +131,7 @@ func (rf *RatesAndFees) GetNativeBaseFee() *big.Int {
 }
 
 // GetBaseFeeIn returns the basefee expressed in the specified currency. Returns nil
-// if the currency is not whitelisted.
+// if the currency is not allowlisted.
 func (rf *RatesAndFees) GetBaseFeeIn(currency *common.Address) *big.Int {
 	// If native currency is being requested, return it
 	if currency == nil {
@@ -151,7 +151,7 @@ func (rf *RatesAndFees) GetBaseFeeIn(currency *common.Address) *big.Int {
 	calculatedBaseFee, err := ConvertCeloToCurrency(rf.Rates, currency, rf.nativeBaseFee)
 	if err != nil {
 		// Should never happen: error lvl log line
-		log.Error("BaseFee requested for non whitelisted currency",
+		log.Error("BaseFee requested for unregistered currency",
 			"currency", currency.Hex(),
 			"exchangeRates", rf.Rates,
 			"cause", err)

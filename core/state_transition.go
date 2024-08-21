@@ -430,15 +430,14 @@ func (st *StateTransition) preCheck() error {
 		}
 	}
 
-	// Verify that fee currency is whitelisted
+	// Verify that fee currency is registered
 	if msg.FeeCurrency != nil {
 		if !st.evm.ChainConfig().IsCel2(st.evm.Context.Time) {
 			return ErrCel2NotEnabled
 		} else {
-			isWhiteListed := common.IsCurrencyAllowed(st.evm.Context.FeeCurrencyContext.ExchangeRates, msg.FeeCurrency)
-			if !isWhiteListed {
-				log.Trace("fee currency not whitelisted", "fee currency address", msg.FeeCurrency)
-				return exchange.ErrNonWhitelistedFeeCurrency
+			if !common.IsCurrencyAllowed(st.evm.Context.FeeCurrencyContext.ExchangeRates, msg.FeeCurrency) {
+				log.Trace("fee currency not allowed", "fee currency address", msg.FeeCurrency)
+				return exchange.ErrUnregisteredFeeCurrency
 			}
 		}
 	}

@@ -15,7 +15,7 @@ var (
 	}
 )
 
-func TestIsWhitelisted(t *testing.T) {
+func TestIsCurrencyAllowed(t *testing.T) {
 	tests := []struct {
 		name        string
 		feeCurrency *Address
@@ -40,7 +40,7 @@ func TestIsWhitelisted(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := IsCurrencyAllowed(exchangeRates, tt.feeCurrency); got != tt.want {
-				t.Errorf("IsWhitelisted() = %v, want %v", got, tt.want)
+				t.Errorf("IsCurrencyAllowed() = %v, want %v", got, tt.want)
 			}
 		})
 	}
