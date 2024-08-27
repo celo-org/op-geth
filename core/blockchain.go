@@ -83,6 +83,7 @@ var (
 	blockExecutionTimer  = metrics.NewRegisteredTimer("chain/execution", nil)
 	blockWriteTimer      = metrics.NewRegisteredTimer("chain/write", nil)
 	blockGasUsedGauge    = metrics.NewRegisteredGauge("chain/gasused", nil)
+	blockBaseFeeGauge    = metrics.NewRegisteredGauge("chain/basefee", nil)
 
 	blockReorgMeter     = metrics.NewRegisteredMeter("chain/reorg/executes", nil)
 	blockReorgAddMeter  = metrics.NewRegisteredMeter("chain/reorg/add", nil)
@@ -1828,6 +1829,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks, setHead bool) (int, error)
 		blockInsertTimer.UpdateSince(start)
 
 		blockGasUsedGauge.Update(int64(usedGas))
+		blockBaseFeeGauge.Update(block.Header().BaseFee.Int64())
 
 		// Report the import stats before returning the various results
 		stats.processed++
