@@ -170,6 +170,10 @@ func (t *prestateTracer) OnTxStart(env *tracing.VMContext, tx *types.Transaction
 		}
 		t.lookupAccount(addr)
 	}
+
+	if tx.FeeCurrency() != nil {
+		t.lookupAccount(*tx.FeeCurrency())
+	}
 }
 
 func (t *prestateTracer) OnTxEnd(receipt *types.Receipt, err error) {
