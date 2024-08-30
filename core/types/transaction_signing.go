@@ -71,10 +71,15 @@ func LatestSigner(config *params.ChainConfig) Signer {
 	var signer Signer
 	if config.ChainID != nil {
 		switch {
+		case config.Cel2Time != nil:
+			if config.CancunTime != nil {
+				// This branch is only used in testing
+				return latestCeloSigner(config.ChainID, NewCancunSigner(config.ChainID))
+			} else {
+				return latestCeloSigner(config.ChainID, NewLondonSigner(config.ChainID))
+			}
 		case config.CancunTime != nil && !config.IsOptimism():
 			signer = NewCancunSigner(config.ChainID)
-		case config.Cel2Time != nil:
-			signer = latestCeloSigner(config.ChainID, NewLondonSigner(config.ChainID))
 		case config.LondonBlock != nil:
 			signer = NewLondonSigner(config.ChainID)
 		case config.BerlinBlock != nil:
