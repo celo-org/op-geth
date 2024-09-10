@@ -60,7 +60,7 @@ type environment struct {
 	tcount               int                // tx count in cycle
 	gasPool              *core.GasPool      // available gas used to pack transactions
 	multiGasPool         *core.MultiGasPool // available per-fee-currency gas used to pack transactions
-	feeCurrencyAllowlist []common.Address
+	feeCurrencyAllowlist common.AddressSet
 	coinbase             common.Address
 
 	header   *types.Header
