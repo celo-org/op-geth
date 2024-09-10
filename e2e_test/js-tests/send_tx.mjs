@@ -34,23 +34,19 @@ const walletClient = createWalletClient({
   chain: devChain,
   transport: http(),
 });
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+async function waitBlocks(numBlocks) {
+  var initial = await publicClient.getBlockNumber({ cacheTime: 0 });
+  var next = initial;
+  while (next - initial < numBlocks) {
+    await sleep(500);
+    next = await publicClient.getBlockNumber({ cacheTime: 0 });
+  }
+}
 
-async function getTransactionReceiptAfterWait(hash, numBlocks) {
-  var count = 0;
-
-  const res = new Promise((resolve) => {
-    resolve();
-  });
-  const unwatch = publicClient.watchBlockNumber({
-    onBlockNumber: () => {
-      count++;
-      if (count >= numBlocks) {
-        res.resolve();
-      }
-    },
-  });
-  await res;
-  unwatch();
+async function getTransactionReceipt(hash) {
   try {
     return await publicClient.getTransactionReceipt({ hash: hash });
   } catch (e) {
@@ -109,7 +105,9 @@ async function main() {
   }
 
   var success = true;
-  var receipt = await getTransactionReceiptAfterWait(hash, 2);
+  // give the node some time to process the transaction
+  await waitBlocks(5);
+  var receipt = await getTransactionReceipt(hash);
   if (!receipt) {
     receipt = await replaceTx(request);
     success = false;
