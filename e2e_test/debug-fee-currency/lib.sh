@@ -20,9 +20,24 @@ function deploy_fee_currency() {
 		if [ -z "${fee_currency}" ]; then
 			exit 1
 		fi
+		# this always resets the token address for the predeployed oracle3
 		cast send --private-key $ACC_PRIVKEY $ORACLE3 'setExchangeRate(address, uint256, uint256)' $fee_currency 2ether 1ether &>/dev/null
 		cast send --private-key $ACC_PRIVKEY $FEE_CURRENCY_DIRECTORY_ADDR 'setCurrencyConfig(address, address, uint256)' $fee_currency $ORACLE3 60000 &>/dev/null
 		echo "$fee_currency"
+	)
+}
+
+# args:
+# 	$1: feeCurrency (address):
+# 		deployed fee-currency address to be cleaned up
+function cleanup_fee_currency() {
+	(
+		local fee_currency=$1
+		# HACK: this uses a static index 2, which relies on the fact that all non-predeployed currencies will be always cleaned up
+		# from the directory and the list never has more than 3 elements. Once there is the need for more dynamic removal we
+		# can parse the following call and find the index ourselves:
+		# local currencies=$(cast call "$FEE_CURRENCY_DIRECTORY_ADDR" 'getCurrencies() (address[] memory)')
+		cast send --private-key $ACC_PRIVKEY $FEE_CURRENCY_DIRECTORY_ADDR 'removeCurrencies(address, uint256)' $fee_currency 2 --json | jq 'if .status == "0x1" then 0 else 1 end' -r
 	)
 }
 

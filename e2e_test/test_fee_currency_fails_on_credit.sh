@@ -23,6 +23,7 @@ tail -F -n0 geth.log >debug-fee-currency/geth.partial.log & # start log capture
 	# initial tx should not succeed, should have required a replacement transaction.
 	cip_64_tx $fee_currency | assert_cip_64_tx false
 
+	cleanup_fee_currency $fee_currency
 )
 sleep 0.5
 kill %1 # stop log capture
