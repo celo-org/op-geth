@@ -42,6 +42,9 @@ func celoTransactionMarshal(tx *Transaction) ([]byte, bool, error) {
 		enc.V = (*hexutil.Big)(itx.V)
 		enc.R = (*hexutil.Big)(itx.R)
 		enc.S = (*hexutil.Big)(itx.S)
+		if tx.Protected() {
+			enc.ChainID = (*hexutil.Big)(tx.ChainId())
+		}
 		// Celo specific fields
 		enc.FeeCurrency = itx.FeeCurrency
 		enc.GatewayFee = (*hexutil.Big)(itx.GatewayFee)
