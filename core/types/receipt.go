@@ -625,7 +625,7 @@ func (rs Receipts) DeriveFields(config *params.ChainConfig, hash common.Hash, nu
 				// since we would need state to discover the true base fee.
 				if rs[i].BaseFee != nil {
 					rs[i].EffectiveGasPrice = txs[i].inner.effectiveGasPrice(new(big.Int), rs[i].BaseFee)
-				} else if txs[i].FeeCurrency() == nil {
+				} else if txs[i].FeeCurrency() == nil || txs[i].Type() == CeloDenominatedTxType {
 					rs[i].EffectiveGasPrice = txs[i].inner.effectiveGasPrice(new(big.Int), baseFee)
 				}
 			}
