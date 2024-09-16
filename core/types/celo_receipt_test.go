@@ -152,6 +152,7 @@ func testNonDynamic(t *testing.T, tx *Transaction, receiptBaseFee *big.Int) {
 	// Non dynamic txs should always have the gas price defined in the tx.
 	config := params.TestChainConfig
 	config.GingerbreadBlock = big.NewInt(1)
+	config.LondonBlock = big.NewInt(3)
 	preGingerbreadBlock := uint64(0)
 	postGingerbreadBlock := uint64(2)
 
@@ -175,6 +176,7 @@ func testNonDynamic(t *testing.T, tx *Transaction, receiptBaseFee *big.Int) {
 func testDynamic(t *testing.T, tx *Transaction, receiptBaseFee *big.Int) {
 	config := params.TestChainConfig
 	config.GingerbreadBlock = big.NewInt(1)
+	config.LondonBlock = big.NewInt(3)
 	preGingerbreadBlock := uint64(0)
 	postGingerbreadBlock := uint64(2)
 	receipts := []*Receipt{{BaseFee: receiptBaseFee}}
@@ -202,6 +204,7 @@ func testDynamic(t *testing.T, tx *Transaction, receiptBaseFee *big.Int) {
 func testDynamicWithFeeCurrency(t *testing.T, tx *Transaction, receiptBaseFee *big.Int) {
 	config := params.TestChainConfig
 	config.GingerbreadBlock = big.NewInt(1)
+	config.LondonBlock = big.NewInt(3)
 	preGingerbreadBlock := uint64(0)
 	postGingerbreadBlock := uint64(2)
 	receipts := []*Receipt{{BaseFee: receiptBaseFee}}

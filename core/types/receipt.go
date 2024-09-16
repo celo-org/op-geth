@@ -615,11 +615,14 @@ func (rs Receipts) DeriveFields(config *params.ChainConfig, hash common.Hash, nu
 			// These are the non dynamic tx types so we can simply set effective gas price to gas price.
 			rs[i].EffectiveGasPrice = txs[i].inner.effectiveGasPrice(new(big.Int), baseFee)
 		default:
-			// Pre-gingerbred the base fee was stored in state, but we don't try to recover it here, since A) we don't have
-			// access to the objects required to get the state and B) retrieving the base fee is quite code heavy and we
-			// don't want to bring that code across from the celo L1 to op-geth. In the celo L1 we would return a nil base
-			// fee if the state was not available, so that is what we do here.
-			if config.IsGingerbread(new(big.Int).SetUint64(number)) {
+			// Pre-gingerbred the base fee was stored in state, but we don't try to recover it here, since A) we don't
+			// have access to the objects required to get the state and B) retrieving the base fee is quite code heavy
+			// and we don't want to bring that code across from the celo L1 to op-geth. In the celo L1 we would return a
+			// nil base fee if the state was not available, so that is what we do here.
+			//
+			// We also check for the London hardfork here, in order to not break tests from upstream that have not
+			// configured the gingerbread block, since the london hardfork introduced dynamic fee transactions.
+			if config.IsGingerbread(new(big.Int).SetUint64(number)) || config.IsLondon(new(big.Int).SetUint64(number)) {
 				// The post transition CeloDynamicFeeV2Txs set the baseFee in the receipt, so if we have it use it.
 				// Otherwise we can set the effectiveGasPrice only if the transaction does not specify a fee currency,
 				// since we would need state to discover the true base fee.
