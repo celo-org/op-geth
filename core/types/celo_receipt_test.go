@@ -169,10 +169,10 @@ func testNonDynamic(t *testing.T, tx *Transaction, receiptBaseFee *big.Int) {
 	require.Equal(t, tx.GasPrice(), receipts[0].EffectiveGasPrice)
 }
 
+// Dynamic txs with no fee currency should have nil for the effective gas price pre-gingerbread and the correct
+// effective gas price post-gingerbread, if the receipt base fee is set then the post-gingerbread effective gas price
+// should be calculated with that.
 func testDynamic(t *testing.T, tx *Transaction, receiptBaseFee *big.Int) {
-	// Dynamic txs with no fee currency shold have nil for the effective gas price pre-gingerbread and the effective gas
-	// price post-gingerbread, if the receipt base fee is set then the post gingerbread effective gas price should be
-	// calculated with that.
 	config := params.TestChainConfig
 	config.GingerbreadBlock = big.NewInt(1)
 	preGingerbreadBlock := uint64(0)
@@ -195,10 +195,11 @@ func testDynamic(t *testing.T, tx *Transaction, receiptBaseFee *big.Int) {
 		require.Equal(t, tx.inner.effectiveGasPrice(new(big.Int), baseFee), receipts[0].EffectiveGasPrice)
 	}
 }
+
+// Dynamic txs with a fee currency set should have nil for the effective gas price pre and post gingerbread, unless
+// the receiptBaseFee is set, in which case the post-gingerbread effective gas price should be calculated with the
+// receiptBaseFee.
 func testDynamicWithFeeCurrency(t *testing.T, tx *Transaction, receiptBaseFee *big.Int) {
-	// Dynamic txs with a fee currency set shold have nil for the effective gas price pre and post gingerbread, unless
-	// the receiptBaseFee is set, in which case the post gingerbread effective gas price should be calculated with the
-	// receiptBaseFee.
 	config := params.TestChainConfig
 	config.GingerbreadBlock = big.NewInt(1)
 	preGingerbreadBlock := uint64(0)
