@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/require"
 )
 
@@ -119,6 +120,10 @@ func TestReceiptEffectiveGasPriceDerivation(t *testing.T) {
 	})
 	t.Run("DynamicFeeTx", func(t *testing.T) {
 		tx := NewTx(&DynamicFeeTx{GasFeeCap: gasFeeCap, GasTipCap: gasTipCap})
+		testDynamic(t, tx, nil)
+	})
+	t.Run("BlobTx", func(t *testing.T) {
+		tx := NewTx(&BlobTx{GasFeeCap: uint256.MustFromBig(gasFeeCap), GasTipCap: uint256.MustFromBig(gasTipCap)})
 		testDynamic(t, tx, nil)
 	})
 	t.Run("CeloDynamicFeeTx", func(t *testing.T) {
