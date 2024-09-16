@@ -108,8 +108,6 @@ func TestReceiptEffectiveGasPriceDerivation(t *testing.T) {
 	gasPrice := big.NewInt(1000)
 	gasFeeCap := big.NewInt(800)
 	gasTipCap := big.NewInt(100)
-	config := params.TestChainConfig
-	config.GingerbreadBlock = big.NewInt(1)
 	// Receipt base fee is the base fee encoded in the receipt which will be set post cel2 for CeloDynamicFeeTxV2 types.
 	receiptBaseFee := big.NewInt(50)
 
