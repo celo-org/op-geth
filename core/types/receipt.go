@@ -621,6 +621,11 @@ func (rs Receipts) DeriveFields(config *params.ChainConfig, hash common.Hash, nu
 			} else {
 				rs[i].EffectiveGasPrice = txs[i].inner.effectiveGasPrice(new(big.Int), rs[i].BaseFee)
 			}
+		} else {
+			// Tx types without fee currency can use the base fee from the block header
+			if rs[i].Type != CeloDynamicFeeTxType && rs[i].Type != CeloDynamicFeeTxV2Type && rs[i].Type != CeloDenominatedTxType {
+				rs[i].EffectiveGasPrice = txs[i].inner.effectiveGasPrice(new(big.Int), baseFee)
+			}
 		}
 
 		// EIP-4844 blob transaction fields
