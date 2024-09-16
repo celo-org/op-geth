@@ -613,7 +613,7 @@ func (rs Receipts) DeriveFields(config *params.ChainConfig, hash common.Hash, nu
 		switch rs[i].Type {
 		case LegacyTxType, AccessListTxType:
 			// These are the non dynamic tx types so we can simply set effective gas price to gas price.
-			rs[i].EffectiveGasPrice = new(big.Int).Set(txs[i].GasPrice())
+			rs[i].EffectiveGasPrice = txs[i].inner.effectiveGasPrice(new(big.Int), baseFee)
 		default:
 			// Pre-gingerbred the base fee was stored in state, but we don't try to recover it here, since A) we don't have
 			// access to the objects required to get the state and B) retrieving the base fee is quite code heavy and we
