@@ -334,7 +334,7 @@ func (b *batch) Process(results *blockResults) (done bool, err error) {
 	return b.remaining == 0, nil
 }
 
-// Holds results retreived from the celo and op-geth clients rpc api, fields named raw were retrieved via a direcet rpc
+// Holds results retrieved from the celo and op-geth clients rpc api, fields named raw were retrieved via a direct rpc
 // call whereas fields without raw were retrieved via the ethclient.
 type blockResults struct {
 	blockNumber uint64
