@@ -532,7 +532,7 @@ func (r *blockResults) verifyTransactions() error {
 	// We also need to take into account yparity (only set on op transactions which can cause different representations for the v value)
 	// We overcome this by re-setting the v value of the celo txs to the op txs v value
 	for _, tx := range r.celoTxs {
-		// This sets the y value to be a big number where abs is nul rather than a zero length array if the numebr is zero.
+		// This sets the y value to be a big number where abs is nul rather than a zero length array if the number is zero.
 		// It doesn't change the number but it does change the representation.
 		types.SetYNullStyleBigIfZero(tx)
 	}
