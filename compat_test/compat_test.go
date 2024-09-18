@@ -39,6 +39,7 @@ import (
 var (
 	celoRpcURL        string
 	opGethRpcURL      string
+	startBlock        uint64
 	gingerbreadBlocks = map[uint64]uint64{42220: 21616000, 62320: 18785000, 44787: 19814000}
 )
 
@@ -46,6 +47,7 @@ func init() {
 	// Define your custom flag
 	flag.StringVar(&celoRpcURL, "celo-url", "", "celo rpc url")
 	flag.StringVar(&opGethRpcURL, "op-geth-url", "", "op-geth rpc url")
+	flag.Uint64Var(&startBlock, "start-block", 0, "the block to start at")
 }
 
 type clients struct {
@@ -115,8 +117,6 @@ func TestCompatibilityOfChains(t *testing.T) {
 	// the celo block with a value, and we can't access that state from the
 	// op-geth side
 	endBlock := latestBlock - 128
-
-	startBlock := uint64(0)
 	batches := make(map[uint64]*batch)
 	fmt.Printf("start block: %v, end block: %v\n", startBlock, endBlock)
 	start := time.Now()
