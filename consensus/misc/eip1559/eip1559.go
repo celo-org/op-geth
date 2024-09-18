@@ -60,7 +60,11 @@ func VerifyEIP1559Header(config *params.ChainConfig, parent, header *types.Heade
 func CalcBaseFee(config *params.ChainConfig, parent *types.Header, time uint64) *big.Int {
 	// If this is the cel2 transition block and the parent block has a base fee
 	// then use that.
-	if config.Cel2Time != nil && *config.Cel2Time == time && parent.BaseFee != nil {
+	if !config.IsCel2(parent.Time) && config.IsCel2(time) && parent.BaseFee != nil {
+		// Could happen only in the cel2 transition block if the parent base fee is below the floor.
+		if config.Celo != nil {
+			return math.BigMax(parent.BaseFee, new(big.Int).SetUint64(config.Celo.EIP1559BaseFeeFloor))
+		}
 		return parent.BaseFee
 	}
 
@@ -99,6 +103,10 @@ func CalcBaseFee(config *params.ChainConfig, parent *types.Header, time uint64) 
 		num.Div(num, denom.SetUint64(config.BaseFeeChangeDenominator(time)))
 		baseFee := num.Sub(parent.BaseFee, num)
 
-		return math.BigMax(baseFee, common.Big0)
+		baseFeeFloor := common.Big0
+		if config.IsCel2(time) && config.Celo != nil {
+			baseFeeFloor = new(big.Int).SetUint64(config.Celo.EIP1559BaseFeeFloor)
+		}
+		return math.BigMax(baseFee, baseFeeFloor)
 	}
 }

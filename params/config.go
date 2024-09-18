@@ -458,6 +458,8 @@ type ChainConfig struct {
 
 	// Optimism config, nil if not active
 	Optimism *OptimismConfig `json:"optimism,omitempty"`
+	// Celo config, nil if not active
+	Celo *CeloConfig `json:"celo,omitempty"`
 }
 
 // EthashConfig is the consensus engine configs for proof-of-work based sealing.
@@ -489,6 +491,16 @@ type OptimismConfig struct {
 // String implements the stringer interface, returning the optimism fee config details.
 func (o *OptimismConfig) String() string {
 	return "optimism"
+}
+
+// CeloConfig is the celo config.
+type CeloConfig struct {
+	EIP1559BaseFeeFloor uint64 `json:"eip1559BaseFeeFloor"`
+}
+
+// String implements the stringer interface, returning the celo config details.
+func (o *CeloConfig) String() string {
+	return "celo"
 }
 
 // Description returns a human-readable description of ChainConfig.
