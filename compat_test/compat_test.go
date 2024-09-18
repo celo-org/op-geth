@@ -967,8 +967,6 @@ func filterCeloTx(tx map[string]interface{}) {
 	//it's not set,even ethcompatible ones, this is confusing so we have removed this in the op code, so we need to make
 	//sure the celo side matches.
 	delete(tx, "gatewayFee")
-	// Transaction at block 9476837 returns a nullGasPrice on celo but the op-geth side returns the gasFeeCap
-	// delete(tx, "gasPrice")
 }
 
 type filterQuery struct {
