@@ -831,7 +831,7 @@ func fetchBlockElements(clients *clients, blockNumber uint64, resultChan chan *b
 	})
 
 	// For each transaction in blockByNumber we retrieve it using the
-	// cethClient, ethClient, cClient, and client. Each transaction is
+	// celoEthclient, opEthclient, celoClient, and opClient. Each transaction is
 	// retrieved in its own goroutine and sets itself in the respective slice
 	// that is accessible from its closure.
 	for i, tx := range opBlockByNumber.Transactions() {
