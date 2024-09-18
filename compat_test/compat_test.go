@@ -54,7 +54,7 @@ type clients struct {
 }
 
 // Connects to a celo-blockchain and an op-geth node over rpc, selects the lowest head block and iterates from 0 to the
-// lowest head block comparing all blcoks, transactions receipts and logs.
+// lowest head block comparing all blocks, transactions receipts and logs.
 //
 // The test requires two flags to be set that provide the rpc urls to use, and the test is segregated from normal
 // execution via a build tag. So to run it you would do:
