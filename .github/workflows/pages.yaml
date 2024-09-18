@@ -31,7 +31,7 @@ jobs:
           touch tmp/pages/.nojekyll
 
       - name: Deploy
-        uses: JamesIves/github-pages-deploy-action@v4
+        uses: JamesIves/github-pages-deploy-action@920cbb300dcd3f0568dbc42700c61e2fd9e6139c
         with:
           folder: tmp/pages
           clean: true
