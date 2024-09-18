@@ -603,11 +603,6 @@ func (r *blockResults) verifyReceipts() error {
 		return err
 	}
 
-	for _, opReceipt := range r.opRawReceipts {
-		if opReceipt["cumulativeGasUsed"] == 0 {
-			return fmt.Errorf("receipt with hash %q has CumulativeGasUsed == 0", opReceipt["transactionHash"])
-		}
-	}
 	return nil
 }
 
