@@ -217,22 +217,21 @@ type batch struct {
 	celoLogs, opLogs       []*types.Log
 	logFetchErrGroup       *errgroup.Group
 	logFetchContext        context.Context
-	logFetchContextCancel  context.CancelFunc
 }
 
 func newBatch(start, end uint64, celoClient, opClient *ethclient.Client) *batch {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute*5)
+	// We discard the cancel func because the errgroup will cancel the context.
+	ctx, _ := context.WithTimeout(context.Background(), time.Minute*5)
 	g, ctx := errgroup.WithContext(ctx)
 	b := &batch{
-		start:                 start,
-		end:                   end,
-		remaining:             end - start,
-		incrementalLogs:       make([][]*types.Log, end-start),
-		celoClient:            celoClient,
-		opClient:              opClient,
-		logFetchErrGroup:      g,
-		logFetchContext:       ctx,
-		logFetchContextCancel: cancel,
+		start:            start,
+		end:              end,
+		remaining:        end - start,
+		incrementalLogs:  make([][]*types.Log, end-start),
+		celoClient:       celoClient,
+		opClient:         opClient,
+		logFetchErrGroup: g,
+		logFetchContext:  ctx,
 	}
 	b.fetchLogs()
 	return b
@@ -295,7 +294,6 @@ func (b *batch) Process(results *blockResults) (done bool, err error) {
 			allLogs = append(allLogs, logs...)
 		}
 
-		defer b.logFetchContextCancel()
 		err = b.logFetchErrGroup.Wait()
 		if err != nil {
 			return false, err
