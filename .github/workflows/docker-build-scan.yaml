@@ -3,8 +3,15 @@ on:
   push:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build-scan-container:
+    permissions:
+      contents: read
+      security-events: write
+      id-token: write
     uses: celo-org/reusable-workflows/.github/workflows/container-cicd.yaml@main
     name: Build us-west1-docker.pkg.dev/blockchaintestsglobaltestnet/dev-images/op-geth:${{ github.sha }}
     with:
@@ -12,6 +19,7 @@ jobs:
       service-account: 'op-geth-dev@blockchaintestsglobaltestnet.iam.gserviceaccount.com'
       artifact-registry: us-west1-docker.pkg.dev/blockchaintestsglobaltestnet/dev-images/op-geth
       tags: ${{ github.sha }}
+      platforms: linux/amd64,linux/arm64
       context: .
       file: Dockerfile
       trivy: true

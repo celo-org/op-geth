@@ -1,13 +1,16 @@
 name: Build and publish forkdiff github-pages
-permissions:
-  contents: write
 on:
   push:
     branches:
       - celo[0-9]+
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
+    permissions:
+      contents: write
     concurrency: ci-${{ github.ref }}
     runs-on: ubuntu-latest
     steps:
