@@ -1,3 +1,5 @@
+//go:build compat_test
+
 // MIT License
 //
 // Copyright (c) 2012-2020 Mat Ryer, Tyler Bunnell and contributors.
