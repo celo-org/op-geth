@@ -28,13 +28,46 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"regexp"
 	"runtime/debug"
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/pmezard/go-difflib/difflib"
 	"github.com/stretchr/testify/assert"
 )
+
+// Since blocks can contain lists of transactions we just repeat the pattern for a mismatched atomic pointer.
+var atomicPointerTransactionsOrBlockDiff = regexp.MustCompile(`^
+
+Diff:
+--- Expected
+\+\+\+ Actual
+(?:@@\s*-\d+,\d+\s*\+\d+,\d+\s*@@
+\s*\},
+-\s*v:\s*\(unsafe\.Pointer\)\s*0x[0-9a-f]+
+\+\s*v:\s*\(unsafe\.Pointer\)\s*0x[0-9a-f]+
+\s*\},
+?)+
+$`)
+
+var atomicPointerTransactionDiff = regexp.MustCompile(`^
+
+Diff:
+--- Expected
+\+\+\+\s*Actual
+@@\s*-\d+,\d+\s*\+\d+,\d+\s*@@
+\s*\},
+-\s*v:\s*\(unsafe\.Pointer\)\s*0x[0-9a-f]+
+\+\s*v:\s*\(unsafe\.Pointer\)\s*0x[0-9a-f]+
+\s*\},
+@@\s*-\d+,\d+\s*\+\d+,\d+\s*@@
+\s*\},
+-\s*v:\s*\(unsafe\.Pointer\)\s*0x[0-9a-f]+
+\+\s*v:\s*\(unsafe\.Pointer\)\s*0x[0-9a-f]+
+\s*\},
+$`)
 
 func EqualObjects(expected, actual interface{}, msgAndArgs ...interface{}) error {
 	msg := messageFromMsgAndArgs(msgAndArgs...)
@@ -44,6 +77,46 @@ func EqualObjects(expected, actual interface{}, msgAndArgs ...interface{}) error
 
 	if !assert.ObjectsAreEqual(expected, actual) {
 		diff := diff(expected, actual)
+
+		// A workaround for the atomic pointers now used to store the block and transaction hashes.
+		b1, ok1 := expected.(*types.Block)
+		b2, ok2 := actual.(*types.Block)
+		if ok1 && ok2 {
+			// So if the atomic pointers do not match but the hashes do we consider the blocks equal.
+			if b1.Hash() == b2.Hash() && atomicPointerTransactionsOrBlockDiff.MatchString(diff) {
+				return nil
+			}
+			// fmt.Printf("blockdiff matched (%v): %q\n", atomicPointerBlockDiff.MatchString(diff), diff)
+		}
+		t1, ok1 := expected.(*types.Transaction)
+		t2, ok2 := actual.(*types.Transaction)
+		if ok1 && ok2 {
+			// So if the atomic pointers do not match but the hashes do we consider the blocks equal.
+			if t1.Hash() == t2.Hash() && atomicPointerTransactionDiff.MatchString(diff) {
+				return nil
+			}
+			// fmt.Printf("transaction diff matched (%v): %q\n", atom.MatchString(diff), diff)
+		}
+		ts1, ok1 := expected.([]*types.Transaction)
+		ts2, ok2 := actual.([]*types.Transaction)
+		if ok1 && ok2 {
+			// Compare hashes of all transactions in the slice.
+			if len(ts1) == len(ts2) {
+				equal := true
+				for i := range ts1 {
+					if ts1[i].Hash() != ts2[i].Hash() {
+						equal = false
+						break
+					}
+				}
+				if equal && atomicPointerTransactionsOrBlockDiff.MatchString(diff) {
+					// So if the atomic pointers do not match but the hashes do we consider the blocks equal.
+					return nil
+				}
+				// fmt.Printf("transactionsdiff matched (%v): %q\n", atomicPointerBlockDiff.MatchString(diff), diff)
+			}
+		}
+
 		expected, actual = formatUnequalValues(expected, actual)
 		return fmt.Errorf("%s: Not equal: \n"+
 			"expected: %s\n"+
