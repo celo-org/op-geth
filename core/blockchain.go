@@ -1992,8 +1992,12 @@ func (bc *BlockChain) processBlock(block *types.Block, statedb *state.StateDB, s
 	blockInsertTimer.UpdateSince(start)
 
 	blockGasUsedGauge.Update(int64(usedGas))
-	blockBaseFeeGauge.Update(block.Header().BaseFee.Int64())
-	blockTxIncluded.Update(int64(block.Transactions().Len()))
+	if block.Header().BaseFee != nil {
+		blockBaseFeeGauge.Update(block.Header().BaseFee.Int64())
+	}
+	if block.Transactions() != nil {
+		blockTxIncluded.Update(int64(block.Transactions().Len()))
+	}
 
 	return &blockProcessingResult{usedGas: usedGas, procTime: proctime, status: status}, nil
 }
