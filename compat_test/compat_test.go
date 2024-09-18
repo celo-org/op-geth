@@ -924,13 +924,8 @@ func rpcCall(ctx context.Context, cl *rpc.Client, result interface{}, method str
 	if err != nil {
 		return err
 	}
-	// All other responses should be non null, but for block receipts since it's
-	// not linked to a transaction we have to call the endpoint to find out if
-	// one exists.
-	if method != "eth_getBlockReceipt" {
-		if result == "nil" {
-			return fmt.Errorf("response for %v %v should not be null", method, args)
-		}
+	if result == "null" {
+		return fmt.Errorf("response for %v %v should not be null", method, args)
 	}
 	return nil
 }
