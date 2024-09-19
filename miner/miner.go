@@ -102,6 +102,8 @@ type Miner struct {
 
 	lifeCtxCancel context.CancelFunc
 	lifeCtx       context.Context
+
+	feeCurrencyBlocklist *AddressBlocklist
 }
 
 // New creates a new miner with provided config.
@@ -118,6 +120,8 @@ func New(eth Backend, config Config, engine consensus.Engine) *Miner {
 		// To interrupt background tasks that may be attached to external processes
 		lifeCtxCancel: cancel,
 		lifeCtx:       ctx,
+
+		feeCurrencyBlocklist: NewAddressBlocklist(),
 	}
 }
 
