@@ -223,7 +223,7 @@ func TestCalcBaseFeeCeloBlockActivation(t *testing.T) {
 		GasLimit: 20000000,
 		GasUsed:  15000000,
 		BaseFee:  big.NewInt(params.InitialBaseFee * 3),
-		Time:     *config.Cel2Time - 1,
+		Time:     *config.Cel2Time - 2,
 	}
 	if have, want := CalcBaseFee(config, parent, parent.Time+2), big.NewInt(params.InitialBaseFee*3); have.Cmp(want) != 0 {
 		t.Errorf("have %d  want %d, ", have, want)
