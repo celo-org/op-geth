@@ -57,6 +57,7 @@ func VerifyEIP1559Header(config *params.ChainConfig, parent, header *types.Heade
 
 // CalcBaseFee calculates the basefee of the header.
 // The time belongs to the new block to check if Canyon is activted or not
+// **Notice** that the return value is catched by the deferred function which can change the return value
 func CalcBaseFee(config *params.ChainConfig, parent *types.Header, time uint64) (response *big.Int) {
 	defer func() {
 		// If the base fee response is below the floor, intercept the return and return the floor instead.

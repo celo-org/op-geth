@@ -493,7 +493,6 @@ func (o *OptimismConfig) String() string {
 	return "optimism"
 }
 
-// CeloConfig is the celo config.
 type CeloConfig struct {
 	EIP1559BaseFeeFloor uint64 `json:"eip1559BaseFeeFloor"`
 }
