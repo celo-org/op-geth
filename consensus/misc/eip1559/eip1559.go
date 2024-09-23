@@ -134,7 +134,18 @@ func ValidateHoloceneExtraData(extra []byte) error {
 
 // CalcBaseFee calculates the basefee of the header.
 // The time belongs to the new block to check which upgrades are active.
-func CalcBaseFee(config *params.ChainConfig, parent *types.Header, time uint64) *big.Int {
+// **Notice** that the return value is catched by the deferred function which can change the return value
+func CalcBaseFee(config *params.ChainConfig, parent *types.Header, time uint64) (response *big.Int) {
+	defer func() {
+		// If the base fee response is below the floor, intercept the return and return the floor instead.
+		if config.Celo != nil {
+			baseFeeFloor := new(big.Int).SetUint64(config.Celo.EIP1559BaseFeeFloor)
+			if response.Cmp(baseFeeFloor) < 0 {
+				response = baseFeeFloor
+			}
+		}
+	}()
+
 	// If this is the cel2 transition block and the parent block has a base fee
 	// then use that.
 	if config.Cel2Time != nil && *config.Cel2Time == time && parent.BaseFee != nil {
