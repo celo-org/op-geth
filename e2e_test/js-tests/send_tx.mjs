@@ -72,7 +72,7 @@ async function replaceTx(tx) {
   });
   const receipt = await publicClient.waitForTransactionReceipt({
     hash: hash,
-    confirmations: 2,
+    confirmations: 1,
   });
   return receipt;
 }
@@ -89,6 +89,7 @@ async function main() {
   });
 
   var hash;
+
   try {
     hash = await walletClient.sendRawTransaction({
       serializedTransaction: await walletClient.signTransaction(request),
@@ -105,8 +106,9 @@ async function main() {
   }
 
   var success = true;
-  // give the node some time to process the transaction
-  await waitBlocks(5);
+  // wait 1 second to give the node time to potentially process the tx
+  // in instamine mode.
+  await sleep(1000);
   var receipt = await getTransactionReceipt(hash);
   if (!receipt) {
     receipt = await replaceTx(request);

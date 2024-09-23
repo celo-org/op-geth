@@ -10,7 +10,7 @@ TEST_GLOB=$1
 cd "$SCRIPT_DIR/.." || exit 1
 make geth
 trap 'kill %%' EXIT # kill bg job at exit
-build/bin/geth --dev --dev.period 1 --http --http.api eth,web3,net &>"$SCRIPT_DIR/geth.log" &
+build/bin/geth --dev --http --http.api eth,web3,net &>"$SCRIPT_DIR/geth.log" &
 
 # Wait for geth to be ready
 for _ in {1..10}; do
@@ -27,7 +27,7 @@ cd "$SCRIPT_DIR" || exit 1
 # There's a problem with geth return errors on the first transaction sent.
 # See https://github.com/ethereum/web3.py/issues/3212
 # To work around this, send a transaction before running tests
-cast send --json --private-key $ACC_PRIVKEY $TOKEN_ADDR 'transfer(address to, uint256 value) returns (bool)' 0x000000000000000000000000000000000000dEaD 100
+cast send --async --json --private-key "$ACC_PRIVKEY" "$TOKEN_ADDR" 'transfer(address to, uint256 value) returns (bool)' 0x000000000000000000000000000000000000dEaD 100
 
 failures=0
 tests=0
