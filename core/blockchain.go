@@ -100,6 +100,9 @@ var (
 	blockCrossValidationTimer = metrics.NewRegisteredResettingTimer("chain/crossvalidation", nil)
 	blockExecutionTimer       = metrics.NewRegisteredResettingTimer("chain/execution", nil)
 	blockWriteTimer           = metrics.NewRegisteredResettingTimer("chain/write", nil)
+	blockGasUsedGauge         = metrics.NewRegisteredGauge("chain/gasused", nil)
+	blockBaseFeeGauge         = metrics.NewRegisteredGauge("chain/basefee", nil)
+	blockTxIncluded           = metrics.NewRegisteredGauge("chain/txincluded", nil)
 
 	blockReorgMeter     = metrics.NewRegisteredMeter("chain/reorg/executes", nil)
 	blockReorgAddMeter  = metrics.NewRegisteredMeter("chain/reorg/add", nil)
@@ -2314,6 +2317,14 @@ func (bc *BlockChain) ProcessBlock(ctx context.Context, parentRoot common.Hash, 
 	elapsed := time.Since(startTime) + 1 // prevent zero division
 	stats.TotalTime = elapsed
 	stats.MgasPerSecond = float64(res.GasUsed) * 1000 / float64(elapsed)
+
+	blockGasUsedGauge.Update(int64(res.GasUsed))
+	if block.Header().BaseFee != nil {
+		blockBaseFeeGauge.Update(block.Header().BaseFee.Int64())
+	}
+	if block.Transactions() != nil {
+		blockTxIncluded.Update(int64(block.Transactions().Len()))
+	}
 
 	return &blockProcessingResult{
 		usedGas:  res.GasUsed,
