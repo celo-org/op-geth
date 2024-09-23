@@ -458,6 +458,8 @@ type ChainConfig struct {
 
 	// Optimism config, nil if not active
 	Optimism *OptimismConfig `json:"optimism,omitempty"`
+	// Celo config, nil if not active
+	Celo *CeloConfig `json:"celo,omitempty"`
 }
 
 // EthashConfig is the consensus engine configs for proof-of-work based sealing.
@@ -488,7 +490,21 @@ type OptimismConfig struct {
 
 // String implements the stringer interface, returning the optimism fee config details.
 func (o *OptimismConfig) String() string {
-	return "optimism"
+	denominatorCanyonStr := "nil"
+	if o.EIP1559DenominatorCanyon != nil {
+		denominatorCanyonStr = fmt.Sprintf("%d", *o.EIP1559DenominatorCanyon)
+	}
+	return fmt.Sprintf("optimism(eip1559Elasticity: %d, eip1559Denominator: %d, eip1559DenominatorCanyon: %s)",
+		o.EIP1559Elasticity, o.EIP1559Denominator, denominatorCanyonStr)
+}
+
+type CeloConfig struct {
+	EIP1559BaseFeeFloor uint64 `json:"eip1559BaseFeeFloor"`
+}
+
+// String implements the stringer interface, returning the celo config details.
+func (o *CeloConfig) String() string {
+	return fmt.Sprintf("celo(eip1559BaseFeeFloor: %d)", o.EIP1559BaseFeeFloor)
 }
 
 // Description returns a human-readable description of ChainConfig.
@@ -504,6 +520,8 @@ func (c *ChainConfig) Description() string {
 	switch {
 	case c.Optimism != nil:
 		banner += "Consensus: Optimism\n"
+		banner += fmt.Sprintf(" - %s\n", c.Optimism)
+		banner += fmt.Sprintf(" - %s\n", c.Celo)
 	case c.Ethash != nil:
 		if c.TerminalTotalDifficulty == nil {
 			banner += "Consensus: Ethash (proof-of-work)\n"
