@@ -25,6 +25,7 @@ package compat_tests
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"reflect"
@@ -37,6 +38,184 @@ import (
 	"github.com/pmezard/go-difflib/difflib"
 	"github.com/stretchr/testify/assert"
 )
+
+// EqualBlocks compares two instances of types.Block and returns an error if they are not equal.
+func EqualBlocks(block1, block2 *types.Block) (err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("block %q mismatch: %w", block1.Hash(), err)
+		}
+	}()
+	if block1 == nil || block2 == nil {
+		if block1 == block2 {
+			return nil
+		}
+		return errors.New("one of the blocks is nil")
+	}
+
+	if block1.NumberU64() != block2.NumberU64() {
+		return fmt.Errorf("block numbers do not match: %d != %d", block1.NumberU64(), block2.NumberU64())
+	}
+
+	if block1.Hash() != block2.Hash() {
+		return fmt.Errorf("block hashes do not match: %s != %s", block1.Hash(), block2.Hash())
+	}
+
+	if block1.ParentHash() != block2.ParentHash() {
+		return fmt.Errorf("parent hashes do not match: %s != %s", block1.ParentHash(), block2.ParentHash())
+	}
+
+	if block1.UncleHash() != block2.UncleHash() {
+		return fmt.Errorf("uncle hashes do not match: %s != %s", block1.UncleHash(), block2.UncleHash())
+	}
+
+	if block1.Coinbase() != block2.Coinbase() {
+		return fmt.Errorf("coinbase addresses do not match: %s != %s", block1.Coinbase(), block2.Coinbase())
+	}
+
+	if block1.Root() != block2.Root() {
+		return fmt.Errorf("state roots do not match: %s != %s", block1.Root(), block2.Root())
+	}
+
+	if block1.TxHash() != block2.TxHash() {
+		return fmt.Errorf("transaction roots do not match: %s != %s", block1.TxHash(), block2.TxHash())
+	}
+
+	if block1.ReceiptHash() != block2.ReceiptHash() {
+		return fmt.Errorf("receipt roots do not match: %s != %s", block1.ReceiptHash(), block2.ReceiptHash())
+	}
+
+	if block1.Difficulty().Cmp(block2.Difficulty()) != 0 {
+		return fmt.Errorf("difficulties do not match: %s != %s", block1.Difficulty(), block2.Difficulty())
+	}
+
+	if block1.GasLimit() != block2.GasLimit() {
+		return fmt.Errorf("gas limits do not match: %d != %d", block1.GasLimit(), block2.GasLimit())
+	}
+
+	if block1.GasUsed() != block2.GasUsed() {
+		return fmt.Errorf("gas used do not match: %d != %d", block1.GasUsed(), block2.GasUsed())
+	}
+
+	if block1.Time() != block2.Time() {
+		return fmt.Errorf("timestamps do not match: %d != %d", block1.Time(), block2.Time())
+	}
+
+	if !bytes.Equal(block1.Extra(), block2.Extra()) {
+		return fmt.Errorf("extra data do not match: %s != %s", block1.Extra(), block2.Extra())
+	}
+
+	if block1.MixDigest() != block2.MixDigest() {
+		return fmt.Errorf("mix digests do not match: %s != %s", block1.MixDigest(), block2.MixDigest())
+	}
+
+	if block1.Nonce() != block2.Nonce() {
+		return fmt.Errorf("nonces do not match: %d != %d", block1.Nonce(), block2.Nonce())
+	}
+
+	if err := EqualTransactionSlices(block1.Transactions(), block2.Transactions()); err != nil {
+		return fmt.Errorf("transactions do not match: %w", err)
+	}
+
+	return nil
+}
+
+// EqualTransactionSlices compares two slices of types.Transaction and returns an error if they are not equal.
+func EqualTransactionSlices(txs1, txs2 []*types.Transaction) error {
+	if len(txs1) != len(txs2) {
+		return errors.New("transaction slices are of different lengths")
+	}
+
+	for i := range txs1 {
+		if err := EqualTransactions(txs1[i], txs2[i]); err != nil {
+			return fmt.Errorf("transaction at index %d mismatch: %w", i, err)
+		}
+	}
+
+	return nil
+}
+
+// EqualTransactions compares two instances of types.Transaction and returns an error if they are not equal.
+func EqualTransactions(tx1, tx2 *types.Transaction) (err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("transaction %q mismatch: %w", tx1.Hash(), err)
+		}
+	}()
+	if tx1 == nil || tx2 == nil {
+		if tx1 == tx2 {
+			return nil
+		}
+		return errors.New("one of the transactions is nil")
+	}
+
+	if tx1.Type() != tx2.Type() {
+		return fmt.Errorf("types do not match: %d != %d", tx1.Type(), tx2.Type())
+	}
+
+	if tx1.Nonce() != tx2.Nonce() {
+		return fmt.Errorf("nonces do not match: %d != %d", tx1.Nonce(), tx2.Nonce())
+	}
+
+	if tx1.GasPrice().Cmp(tx2.GasPrice()) != 0 {
+		return fmt.Errorf("gas prices do not match: %s != %s", tx1.GasPrice(), tx2.GasPrice())
+	}
+
+	if tx1.GasFeeCap().Cmp(tx2.GasFeeCap()) != 0 {
+		return fmt.Errorf("gas fee caps do not match: %s != %s", tx1.GasFeeCap(), tx2.GasFeeCap())
+	}
+
+	if tx1.GasTipCap().Cmp(tx2.GasTipCap()) != 0 {
+		return fmt.Errorf("gas tip caps do not match: %s != %s", tx1.GasTipCap(), tx2.GasTipCap())
+	}
+
+	if tx1.Gas() != tx2.Gas() {
+		return fmt.Errorf("gas limits do not match: %d != %d", tx1.Gas(), tx2.Gas())
+	}
+
+	if tx1.To() == nil && tx2.To() != nil || tx1.To() != nil && tx2.To() == nil {
+		return errors.New("one of the recipient addresses is nil")
+	}
+
+	if tx1.To() != nil && tx2.To() != nil && *tx1.To() != *tx2.To() {
+		return fmt.Errorf("recipient addresses do not match: %s != %s", tx1.To().Hex(), tx2.To().Hex())
+	}
+
+	if tx1.Value().Cmp(tx2.Value()) != 0 {
+		return fmt.Errorf("values do not match: %s != %s", tx1.Value(), tx2.Value())
+	}
+
+	if !reflect.DeepEqual(tx1.Data(), tx2.Data()) {
+		return errors.New("data payloads do not match")
+	}
+
+	if !reflect.DeepEqual(tx1.AccessList(), tx2.AccessList()) {
+		return errors.New("access lists do not match")
+	}
+
+	if tx1.ChainId().Cmp(tx2.ChainId()) != 0 {
+		return fmt.Errorf("chain IDs do not match: %s != %s", tx1.ChainId(), tx2.ChainId())
+	}
+
+	if tx1.Hash() != tx2.Hash() {
+		return fmt.Errorf("hashes do not match: %s != %s", tx1.Hash().Hex(), tx2.Hash().Hex())
+	}
+
+	if tx1.Size() != tx2.Size() {
+		return fmt.Errorf("sizes do not match: %d != %d", tx1.Size(), tx2.Size())
+	}
+
+	if tx1.Protected() != tx2.Protected() {
+		return fmt.Errorf("protected flags do not match: %t != %t", tx1.Protected(), tx2.Protected())
+	}
+	r1, s1, v1 := tx1.RawSignatureValues()
+	r2, s2, v2 := tx2.RawSignatureValues()
+	if r1.Cmp(r2) != 0 || s1.Cmp(s2) != 0 || v1.Cmp(v2) != 0 {
+		return errors.New("transaction signature values do not match")
+	}
+
+	return nil
+}
 
 // Since blocks can contain lists of transactions we just repeat the pattern for a mismatched atomic pointer.
 var atomicPointerTransactionsOrBlockDiff = regexp.MustCompile(`^
@@ -74,48 +253,25 @@ func EqualObjects(expected, actual interface{}, msgAndArgs ...interface{}) error
 	if err := validateEqualArgs(expected, actual); err != nil {
 		return fmt.Errorf("%s: Invalid operation: %#v == %#v (%s)", msg, expected, actual, err)
 	}
+	// A workaround for the atomic pointers now used to store the block and transaction hashes.
+	b1, ok1 := expected.(*types.Block)
+	b2, ok2 := actual.(*types.Block)
+	if ok1 && ok2 {
+		return EqualBlocks(b1, b2)
+	}
+	t1, ok1 := expected.(*types.Transaction)
+	t2, ok2 := actual.(*types.Transaction)
+	if ok1 && ok2 {
+		return EqualTransactions(t1, t2)
+	}
+	ts1, ok1 := expected.([]*types.Transaction)
+	ts2, ok2 := actual.([]*types.Transaction)
+	if ok1 && ok2 {
+		return EqualTransactionSlices(ts1, ts2)
+	}
 
 	if !assert.ObjectsAreEqual(expected, actual) {
 		diff := diff(expected, actual)
-
-		// A workaround for the atomic pointers now used to store the block and transaction hashes.
-		b1, ok1 := expected.(*types.Block)
-		b2, ok2 := actual.(*types.Block)
-		if ok1 && ok2 {
-			// So if the atomic pointers do not match but the hashes do we consider the blocks equal.
-			if b1.Hash() == b2.Hash() && atomicPointerTransactionsOrBlockDiff.MatchString(diff) {
-				return nil
-			}
-			// fmt.Printf("blockdiff matched (%v): %q\n", atomicPointerBlockDiff.MatchString(diff), diff)
-		}
-		t1, ok1 := expected.(*types.Transaction)
-		t2, ok2 := actual.(*types.Transaction)
-		if ok1 && ok2 {
-			// So if the atomic pointers do not match but the hashes do we consider the blocks equal.
-			if t1.Hash() == t2.Hash() && atomicPointerTransactionDiff.MatchString(diff) {
-				return nil
-			}
-			// fmt.Printf("transaction diff matched (%v): %q\n", atom.MatchString(diff), diff)
-		}
-		ts1, ok1 := expected.([]*types.Transaction)
-		ts2, ok2 := actual.([]*types.Transaction)
-		if ok1 && ok2 {
-			// Compare hashes of all transactions in the slice.
-			if len(ts1) == len(ts2) {
-				equal := true
-				for i := range ts1 {
-					if ts1[i].Hash() != ts2[i].Hash() {
-						equal = false
-						break
-					}
-				}
-				if equal && atomicPointerTransactionsOrBlockDiff.MatchString(diff) {
-					// So if the atomic pointers do not match but the hashes do we consider the blocks equal.
-					return nil
-				}
-				// fmt.Printf("transactionsdiff matched (%v): %q\n", atomicPointerBlockDiff.MatchString(diff), diff)
-			}
-		}
 
 		expected, actual = formatUnequalValues(expected, actual)
 		return fmt.Errorf("%s: Not equal: \n"+
