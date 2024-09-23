@@ -57,7 +57,15 @@ func VerifyEIP1559Header(config *params.ChainConfig, parent, header *types.Heade
 
 // CalcBaseFee calculates the basefee of the header.
 // The time belongs to the new block to check if Canyon is activted or not
-func CalcBaseFee(config *params.ChainConfig, parent *types.Header, time uint64) *big.Int {
+// **Notice** that the return value is catched by the deferred function which can change the return value
+func CalcBaseFee(config *params.ChainConfig, parent *types.Header, time uint64) (response *big.Int) {
+	defer func() {
+		// If the base fee response is below the floor, intercept the return and return the floor instead.
+		if config.Celo != nil {
+			response = math.BigMax(response, new(big.Int).SetUint64(config.Celo.EIP1559BaseFeeFloor))
+		}
+	}()
+
 	// If this is the cel2 transition block and the parent block has a base fee
 	// then use that.
 	if config.Cel2Time != nil && *config.Cel2Time == time && parent.BaseFee != nil {
