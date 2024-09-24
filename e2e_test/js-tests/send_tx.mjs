@@ -9,7 +9,8 @@ import {
 import { celoAlfajores } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 
-const [chainId, privateKey, feeCurrency] = process.argv.slice(2);
+const [chainId, privateKey, feeCurrency, waitBlocks, replaceTxAfterWait] =
+  process.argv.slice(2);
 const devChain = defineChain({
   ...celoAlfajores,
   id: parseInt(chainId, 10),
@@ -37,10 +38,9 @@ const walletClient = createWalletClient({
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
-async function waitBlocks(numBlocks) {
-  var initial = await publicClient.getBlockNumber({ cacheTime: 0 });
-  var next = initial;
-  while (next - initial < numBlocks) {
+async function waitUntilBlock(blocknum) {
+  var next = await publicClient.getBlockNumber({ cacheTime: 0 });
+  while (next < blocknum) {
     await sleep(500);
     next = await publicClient.getBlockNumber({ cacheTime: 0 });
   }
@@ -57,7 +57,7 @@ async function getTransactionReceipt(hash) {
   }
 }
 
-async function replaceTx(tx) {
+async function replaceTransaction(tx) {
   const request = await walletClient.prepareTransactionRequest({
     account: tx.account,
     to: account.address,
@@ -90,6 +90,8 @@ async function main() {
 
   var hash;
 
+  var blocknum = await publicClient.getBlockNumber({ cacheTime: 0 });
+  var replaced = false;
   try {
     hash = await walletClient.sendRawTransaction({
       serializedTransaction: await walletClient.signTransaction(request),
@@ -99,6 +101,7 @@ async function main() {
     console.log(
       JSON.stringify({
         success: false,
+        replaced: replaced,
         error: e,
       }),
     );
@@ -106,18 +109,24 @@ async function main() {
   }
 
   var success = true;
-  // wait 1 second to give the node time to potentially process the tx
-  // in instamine mode.
-  await sleep(1000);
+  var waitBlocksForReceipt = parseInt(waitBlocks);
   var receipt = await getTransactionReceipt(hash);
+  while (waitBlocksForReceipt > 0) {
+    await waitUntilBlock(blocknum + BigInt(1));
+    waitBlocksForReceipt--;
+    var receipt = await getTransactionReceipt(hash);
+  }
   if (!receipt) {
-    receipt = await replaceTx(request);
+    if (replaceTxAfterWait == "true") {
+      receipt = await replaceTransaction(request);
+    }
     success = false;
   }
   // print for bash script wrapper return value
   console.log(
     JSON.stringify({
       success: success,
+      replaced: replaced,
       error: null,
     }),
   );

@@ -44,8 +44,13 @@ function cleanup_fee_currency() {
 # args:
 # 	$1: feeCurrencyAddress (string):
 # 		which fee-currency address to use for the default CIP-64 transaction
+# 	$2: waitBlocks (num):
+# 	  how many blocks to wait until the lack of a receipt is considered a failure
+# 	$3: replaceTransaction (bool):
+# 		replace the transaction with a transaction of higher priority-fee when
+# 		there is no receipt after the `waitBlocks` time passed
 function cip_64_tx() {
-	$SCRIPT_DIR/js-tests/send_tx.mjs "$(cast chain-id)" $ACC_PRIVKEY $1
+	$SCRIPT_DIR/js-tests/send_tx.mjs "$(cast chain-id)" $ACC_PRIVKEY $1 $2 $3
 }
 
 # use this function to assert the cip_64_tx return value, by using a pipe like

@@ -13,7 +13,7 @@ tail -F -n0 geth.log >debug-fee-currency/geth.partial.log & # start log capture
 	# trigger the first failed call to the CreditFees(), causing the
 	# currency to get temporarily blocklisted.
 	# initial tx should not succeed, should have required a replacement transaction.
-	cip_64_tx $fee_currency | assert_cip_64_tx false
+	cip_64_tx $fee_currency 1 true | assert_cip_64_tx false
 
 	sleep 2
 
@@ -21,7 +21,7 @@ tail -F -n0 geth.log >debug-fee-currency/geth.partial.log & # start log capture
 	# this should NOT make the transaction execute anymore,
 	# but invalidate the transaction earlier.
 	# initial tx should not succeed, should have required a replacement transaction.
-	cip_64_tx $fee_currency | assert_cip_64_tx false
+	cip_64_tx $fee_currency 1 true | assert_cip_64_tx false
 
 	cleanup_fee_currency $fee_currency
 )
