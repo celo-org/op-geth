@@ -14,4 +14,7 @@ base_fee=$(cast base-fee $block_number)
 expected_balance_change=$((base_fee * gas_used))
 balance_after=$(cast balance $FEE_HANDLER)
 echo "Balance change: $balance_before -> $balance_after"
-[[ $((balance_before + expected_balance_change)) -eq $balance_after ]] || (echo "Balance did not change as expected"; exit 1)
+[[ $((balance_before + expected_balance_change)) -eq $balance_after ]] || (
+  echo "Balance did not change as expected"
+  exit 1
+)

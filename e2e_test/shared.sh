@@ -1,6 +1,8 @@
 #!/bin/bash
 #shellcheck disable=SC2034  # unused vars make sense in a shared file
 
+SCRIPT_DIR=$(readlink -f "$(dirname "$0")")
+export SCRIPT_DIR
 export ETH_RPC_URL=http://127.0.0.1:8545
 
 export ACC_ADDR=0x42cf1bbc38BaAA3c4898ce8790e21eD2738c6A4a
@@ -15,6 +17,9 @@ export ORACLE3=0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0003
 export FIXIDITY_1=1000000000000000000000000
 export ZERO_ADDRESS=0x0000000000000000000000000000000000000000
 
-prepare_node () {
-  (cd js-tests || exit 1; [[ -d node_modules ]] || npm install)
+prepare_node() {
+  (
+    cd js-tests || exit 1
+    [[ -d node_modules ]] || npm install
+  )
 }
