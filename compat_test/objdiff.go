@@ -29,7 +29,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"regexp"
 	"runtime/debug"
 	"time"
 
@@ -216,37 +215,6 @@ func EqualTransactions(tx1, tx2 *types.Transaction) (err error) {
 
 	return nil
 }
-
-// Since blocks can contain lists of transactions we just repeat the pattern for a mismatched atomic pointer.
-var atomicPointerTransactionsOrBlockDiff = regexp.MustCompile(`^
-
-Diff:
---- Expected
-\+\+\+ Actual
-(?:@@\s*-\d+,\d+\s*\+\d+,\d+\s*@@
-\s*\},
--\s*v:\s*\(unsafe\.Pointer\)\s*0x[0-9a-f]+
-\+\s*v:\s*\(unsafe\.Pointer\)\s*0x[0-9a-f]+
-\s*\},
-?)+
-$`)
-
-var atomicPointerTransactionDiff = regexp.MustCompile(`^
-
-Diff:
---- Expected
-\+\+\+\s*Actual
-@@\s*-\d+,\d+\s*\+\d+,\d+\s*@@
-\s*\},
--\s*v:\s*\(unsafe\.Pointer\)\s*0x[0-9a-f]+
-\+\s*v:\s*\(unsafe\.Pointer\)\s*0x[0-9a-f]+
-\s*\},
-@@\s*-\d+,\d+\s*\+\d+,\d+\s*@@
-\s*\},
--\s*v:\s*\(unsafe\.Pointer\)\s*0x[0-9a-f]+
-\+\s*v:\s*\(unsafe\.Pointer\)\s*0x[0-9a-f]+
-\s*\},
-$`)
 
 func EqualObjects(expected, actual interface{}, msgAndArgs ...interface{}) error {
 	msg := messageFromMsgAndArgs(msgAndArgs...)
