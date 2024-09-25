@@ -546,6 +546,15 @@ func TestTraceTransactionHistorical(t *testing.T) {
 			accounts[1].addr: {Balance: big.NewInt(params.Ether)},
 		},
 	}
+
+	// Set Cel2Time so that we are in the pre-migration case
+	var cel2Time uint64 = 10000
+	genesis.Config.Cel2Time = &cel2Time
+	// These two changes are a workaround to compensate for the Cel2Time
+	// check in Genesis.ToBlock(). Ideally we remove this and fix it there.
+	genesis.GasLimit = params.GenesisGasLimit
+	genesis.Difficulty = params.GenesisDifficulty
+
 	target := common.Hash{}
 	signer := types.HomesteadSigner{}
 	backend := newTestBackend(t, 1, genesis, func(i int, b *core.BlockGen) {
@@ -691,6 +700,15 @@ func TestTraceBlockHistorical(t *testing.T) {
 			accounts[2].addr: {Balance: big.NewInt(params.Ether)},
 		},
 	}
+
+	// Set Cel2Time so that we are in the pre-migration case
+	var cel2Time uint64 = 10000
+	genesis.Config.Cel2Time = &cel2Time
+	// These two changes are a workaround to compensate for the Cel2Time
+	// check in Genesis.ToBlock(). Ideally we remove this and fix it there.
+	genesis.GasLimit = params.GenesisGasLimit
+	genesis.Difficulty = params.GenesisDifficulty
+
 	genBlocks := 10
 	signer := types.HomesteadSigner{}
 	backend := newTestBackend(t, genBlocks, genesis, func(i int, b *core.BlockGen) {
