@@ -66,14 +66,8 @@ func CalcBaseFee(config *params.ChainConfig, parent *types.Header, time uint64) 
 		}
 	}()
 
-	// If this is the cel2 transition block and the parent block has a base fee
-	// then use that.
-	if config.Cel2Time != nil && *config.Cel2Time == time && parent.BaseFee != nil {
-		return parent.BaseFee
-	}
-
 	// If the current block is the first EIP-1559 block, return the InitialBaseFee.
-	if !config.IsLondon(parent.Number) {
+	if !config.IsLondon(parent.Number) && !config.IsGingerbread(parent.Number) {
 		return new(big.Int).SetUint64(params.InitialBaseFee)
 	}
 
