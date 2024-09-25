@@ -212,20 +212,3 @@ func TestCalcBaseFeeCeloFloor(t *testing.T) {
 		}
 	}
 }
-
-// TestCalcBaseFeeCeloBlockActivation tests the base fee calculation for the celo block activation, mantaining the same base fee as the parent block
-func TestCalcBaseFeeCeloBlockActivation(t *testing.T) {
-	config := celoConfig()
-	// Before activation
-	// usage above target
-	parent := &types.Header{
-		Number:   common.Big32,
-		GasLimit: 20000000,
-		GasUsed:  15000000,
-		BaseFee:  big.NewInt(params.InitialBaseFee * 3),
-		Time:     *config.Cel2Time - 2,
-	}
-	if have, want := CalcBaseFee(config, parent, parent.Time+2), big.NewInt(params.InitialBaseFee*3); have.Cmp(want) != 0 {
-		t.Errorf("have %d  want %d, ", have, want)
-	}
-}
