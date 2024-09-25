@@ -66,14 +66,12 @@ func CalcBaseFee(config *params.ChainConfig, parent *types.Header, time uint64) 
 		}
 	}()
 
-	// If this is the cel2 transition block and the parent block has a base fee
-	// then use that.
-	if config.Cel2Time != nil && *config.Cel2Time == time && parent.BaseFee != nil {
-		return parent.BaseFee
-	}
-
 	// If the current block is the first EIP-1559 block, return the InitialBaseFee.
-	if !config.IsLondon(parent.Number) {
+	// For cel2 the london hardfork is enabled at the transition block, but we want to smoothly continue
+	// using our existing base fee and simply transition the calculation logic across to the real eip1559 logic
+	// I.E. stop using original celo logic defined in a smart contract. So if gingerbread was active for the parent
+	// block we don't set the base fee to the InitialBaseFee, and instead use the normal calculation logic.
+	if !config.IsLondon(parent.Number) && !config.IsGingerbread(parent.Number) {
 		return new(big.Int).SetUint64(params.InitialBaseFee)
 	}
 
