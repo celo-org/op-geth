@@ -770,7 +770,7 @@ func (c *ChainConfig) IsCel2(time uint64) bool {
 }
 
 func (c *ChainConfig) IsPreCel2(time uint64) bool {
-	return !c.IsCel2(time)
+	return c.Cel2Time != nil && !c.IsCel2(time)
 }
 
 // IsGingerbread returns whether num represents a block number after the Gingerbread fork
