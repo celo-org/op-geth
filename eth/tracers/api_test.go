@@ -32,6 +32,7 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/consensus"
@@ -61,8 +62,6 @@ type mockHistoricalBackend struct {
 	mock.Mock
 }
 
-// mockHistoricalBackend does not have a TraceCall, because pre-bedrock there is no debug_traceCall available
-
 func (m *mockHistoricalBackend) TraceBlockByNumber(ctx context.Context, number rpc.BlockNumber, config *TraceConfig) ([]*txTraceResult, error) {
 	ret := m.Mock.MethodCalled("TraceBlockByNumber", number, config)
 	return ret[0].([]*txTraceResult), *ret[1].(*error)
@@ -80,6 +79,25 @@ func (m *mockHistoricalBackend) TraceTransaction(ctx context.Context, hash commo
 func (m *mockHistoricalBackend) ExpectTraceTransaction(hash common.Hash, config *TraceConfig, out interface{}, err error) {
 	jsonOut, _ := json.Marshal(out)
 	m.Mock.On("TraceTransaction", hash, config).Once().Return(json.RawMessage(jsonOut), &err)
+}
+
+func (m *mockHistoricalBackend) TraceBlockByHash(ctx context.Context, hash common.Hash, config *TraceConfig) ([]*txTraceResult, error) {
+	ret := m.Mock.MethodCalled("TraceBlockByHash", hash, config)
+	return ret[0].([]*txTraceResult), *ret[1].(*error)
+}
+
+func (m *mockHistoricalBackend) ExpectTraceBlockByHash(hash common.Hash, config *TraceConfig, out []*txTraceResult, err error) {
+	m.Mock.On("TraceBlockByHash", hash, config).Once().Return(out, &err)
+}
+
+func (m *mockHistoricalBackend) TraceCall(ctx context.Context, msg ethereum.CallMsg, config *TraceConfig) (interface{}, error) {
+	ret := m.Mock.MethodCalled("TraceCall", msg, config)
+	return ret[0], *ret[1].(*error)
+}
+
+func (m *mockHistoricalBackend) ExpectTraceCall(msg ethereum.CallMsg, config *TraceConfig, out interface{}, err error) {
+	jsonOut, _ := json.Marshal(out)
+	m.Mock.On("TraceCall", msg, config).Once().Return(json.RawMessage(jsonOut), &err)
 }
 
 func newMockHistoricalBackend(t *testing.T, backend *mockHistoricalBackend) string {
@@ -134,7 +152,7 @@ type testBackend struct {
 // invoked in order to release associated resources.
 func newTestBackend(t *testing.T, n int, gspec *core.Genesis, generator func(i int, b *core.BlockGen)) *testBackend {
 	mock := new(mockHistoricalBackend)
-	historicalAddr := newMockHistoricalBackend(t, mock)
+	historicalAddr := newMockHistoricalBackend(t, mock) // TODO(Alec)
 
 	historicalClient, err := rpc.Dial(historicalAddr)
 	if err != nil {
@@ -540,7 +558,8 @@ func TestTraceTransactionHistorical(t *testing.T) {
 	// Initialize test accounts
 	accounts := newAccounts(2)
 	genesis := &core.Genesis{
-		Config: params.OptimismTestConfig,
+		Timestamp: 9000,
+		Config:    params.OptimismTestConfig,
 		Alloc: core.GenesisAlloc{
 			accounts[0].addr: {Balance: big.NewInt(params.Ether)},
 			accounts[1].addr: {Balance: big.NewInt(params.Ether)},
@@ -722,6 +741,52 @@ func TestTraceBlockHistorical(t *testing.T) {
 			t.Errorf("error mismatch, want %v, get %v", expectErr, err)
 		}
 	}
+	if err != nil {
+		t.Errorf("want no error, have %v", err)
+	}
+	have, _ := json.Marshal(result)
+	if string(have) != want {
+		t.Errorf("result mismatch, have\n%v\n, want\n%v\n", string(have), want)
+	}
+}
+
+// TODO(Alec)
+func TestTraceBlockByHashHistorical(t *testing.T) {
+	t.Parallel()
+
+	// Initialize test accounts
+	accounts := newAccounts(3)
+	genesis := &core.Genesis{
+		Config: params.OptimismTestConfig,
+		Alloc: core.GenesisAlloc{
+			accounts[0].addr: {Balance: big.NewInt(params.Ether)},
+			accounts[1].addr: {Balance: big.NewInt(params.Ether)},
+			accounts[2].addr: {Balance: big.NewInt(params.Ether)},
+		},
+		GasLimit: 1000000000,
+	}
+	genBlocks := 10
+	signer := types.HomesteadSigner{}
+	backend := newTestBackend(t, genBlocks, genesis, func(i int, b *core.BlockGen) {
+		// Transfer from account[0] to account[1]
+		//    value: 1000 wei
+		//    fee:   0 wei
+		tx, _ := types.SignTx(types.NewTransaction(uint64(i), accounts[1].addr, big.NewInt(1000), params.TxGas, b.BaseFee(), nil), signer, accounts[0].key)
+		b.AddTx(tx)
+	})
+	defer backend.mockHistorical.AssertExpectations(t)
+	defer backend.chain.Stop()
+	api := NewAPI(backend)
+
+	var config *TraceConfig
+	blockHash := backend.chain.GetBlockByNumber(3).Hash()
+	want := `[{"txHash":"0x0000000000000000000000000000000000000000000000000000000000000000","result":{"failed":false,"gas":21000,"returnValue":"","structLogs":[]}}]`
+	var ret []*txTraceResult
+	_ = json.Unmarshal([]byte(want), &ret)
+
+	backend.mockHistorical.ExpectTraceBlockByHash(blockHash, config, ret, nil)
+
+	result, err := api.TraceBlockByHash(context.Background(), blockHash, config)
 	if err != nil {
 		t.Errorf("want no error, have %v", err)
 	}

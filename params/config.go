@@ -279,6 +279,37 @@ var (
 		Clique:                        nil,
 	}
 
+	// // // TestChainConfigCel2HistoricalRPC is the same as TestChainConfig but with Cel2Time set
+	// // // to a value greater than the genesis block time. This is used for testing the HistoricalRPCService.
+	// TestChainConfigCel2HistoricalRPC = &ChainConfig{
+	// 	ChainID:                       big.NewInt(1),
+	// 	HomesteadBlock:                big.NewInt(0),
+	// 	DAOForkBlock:                  nil,
+	// 	DAOForkSupport:                false,
+	// 	EIP150Block:                   big.NewInt(0),
+	// 	EIP155Block:                   big.NewInt(0),
+	// 	EIP158Block:                   big.NewInt(0),
+	// 	ByzantiumBlock:                big.NewInt(0),
+	// 	ConstantinopleBlock:           big.NewInt(0),
+	// 	PetersburgBlock:               big.NewInt(0),
+	// 	IstanbulBlock:                 big.NewInt(0),
+	// 	MuirGlacierBlock:              big.NewInt(0),
+	// 	BerlinBlock:                   big.NewInt(0),
+	// 	LondonBlock:                   big.NewInt(0),
+	// 	ArrowGlacierBlock:             big.NewInt(0),
+	// 	GrayGlacierBlock:              big.NewInt(0),
+	// 	MergeNetsplitBlock:            nil,
+	// 	ShanghaiTime:                  nil,
+	// 	CancunTime:                    nil,
+	// 	PragueTime:                    nil,
+	// 	VerkleTime:                    nil,
+	// 	Cel2Time:                      nil,
+	// 	TerminalTotalDifficulty:       nil,
+	// 	TerminalTotalDifficultyPassed: false,
+	// 	Ethash:                        new(EthashConfig),
+	// 	Clique:                        nil,
+	// }
+
 	// TestChainConfigNoCel2 contains every protocol change (EIPs) introduced
 	// and accepted by the Ethereum core developers for testing purposes.
 	TestChainConfigNoCel2 = &ChainConfig{
@@ -381,6 +412,16 @@ var (
 		conf.Optimism = &OptimismConfig{EIP1559Elasticity: 50, EIP1559Denominator: 10}
 		return &conf
 	}()
+
+	Cel2TestConfig = func(cel2Time uint64) *ChainConfig {
+		conf := *AllCliqueProtocolChanges
+		conf.Clique = nil
+		conf.TerminalTotalDifficultyPassed = true
+		conf.BedrockBlock = big.NewInt(0)
+		conf.Cel2Time = newUint64(cel2Time)
+		conf.Optimism = &OptimismConfig{EIP1559Elasticity: 50, EIP1559Denominator: 10}
+		return &conf
+	}
 )
 
 // NetworkNames are user friendly names to use in the chain spec banner.
@@ -752,7 +793,11 @@ func (c *ChainConfig) IsCel2(time uint64) bool {
 }
 
 func (c *ChainConfig) IsPreCel2(time uint64) bool {
-	return !c.IsCel2(time)
+	if c.Cel2Time == nil {
+		return false
+	}
+	cel2Time := *(c.Cel2Time)
+	return cel2Time > 0 && !c.IsCel2(time)
 }
 
 // IsGingerbread returns whether num represents a block number after the Gingerbread fork

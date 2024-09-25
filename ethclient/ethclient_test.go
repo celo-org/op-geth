@@ -41,6 +41,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/eth"
 	"github.com/ethereum/go-ethereum/eth/ethconfig"
+	"github.com/ethereum/go-ethereum/eth/tracers"
 	"github.com/ethereum/go-ethereum/node"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -203,7 +204,7 @@ var genesis = &core.Genesis{
 
 var genesisForHistorical = &core.Genesis{
 	Config:    params.OptimismTestConfig,
-	Alloc:     core.GenesisAlloc{testAddr: {Balance: testBalance}},
+	Alloc:     types.GenesisAlloc{testAddr: {Balance: testBalance}},
 	ExtraData: []byte("test genesis"),
 	Timestamp: 9000,
 	BaseFee:   big.NewInt(params.InitialBaseFee),
@@ -250,9 +251,103 @@ func (m *mockHistoricalBackend) EstimateGas(ctx context.Context, args ethapi.Tra
 	return 0, ethereum.NotFound
 }
 
+func (m *mockHistoricalBackend) TraceBlockByNumber(ctx context.Context, blockNr rpc.BlockNumber) (interface{}, error) {
+	if blockNr == 1 {
+		return "traceBlockByNumberResult", nil
+	}
+	return nil, ethereum.NotFound
+}
+
+func (m *mockHistoricalBackend) TraceBlockByHash(ctx context.Context, blockHash common.Hash) (interface{}, error) {
+	if blockHash == common.HexToHash("0x1") {
+		return "traceBlockByHashResult", nil
+	}
+	return nil, ethereum.NotFound
+}
+
+func (m *mockHistoricalBackend) TraceCall(ctx context.Context, args ethapi.TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash, overrides *ethapi.StateOverride) (interface{}, error) {
+	num, ok := blockNrOrHash.Number()
+	if ok && num == 1 {
+		return "traceCallResult", nil
+	}
+	return nil, ethereum.NotFound
+}
+
+func (m *mockHistoricalBackend) TraceTransaction(ctx context.Context, txHash common.Hash) (interface{}, error) {
+	if txHash == common.HexToHash("0x1") {
+		return "traceTransactionResult", nil
+	}
+	return nil, ethereum.NotFound
+}
+
+func (m *mockHistoricalBackend) GetBalance(ctx context.Context, account common.Address, blockNrOrHash rpc.BlockNumberOrHash) (*hexutil.Big, error) {
+	num, ok := blockNrOrHash.Number()
+	if ok && num == 1 {
+		return (*hexutil.Big)(big.NewInt(1000)), nil
+	}
+	return nil, ethereum.NotFound
+}
+
+func (m *mockHistoricalBackend) GetProof(ctx context.Context, account common.Address, storageKeys []common.Hash, blockNrOrHash rpc.BlockNumberOrHash) (*ethapi.AccountResult, error) {
+	num, ok := blockNrOrHash.Number()
+	if ok && num == 1 {
+		return &ethapi.AccountResult{
+			Nonce: hexutil.Uint64(12345),
+		}, nil
+	}
+	return nil, ethereum.NotFound
+}
+
+func (m *mockHistoricalBackend) GetCode(ctx context.Context, account common.Address, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
+	num, ok := blockNrOrHash.Number()
+	if ok && num == 1 {
+		return hexutil.Bytes("testGetCode"), nil
+	}
+	return nil, ethereum.NotFound
+}
+
+func (m *mockHistoricalBackend) GetStorageAt(ctx context.Context, account common.Address, key common.Hash, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Bytes, error) {
+	num, ok := blockNrOrHash.Number()
+	if ok && num == 1 {
+		return hexutil.Bytes("testGetStorageAt"), nil
+	}
+	return nil, ethereum.NotFound
+}
+
+type accessListResult struct {
+	Accesslist *types.AccessList `json:"accessList"`
+	Error      string            `json:"error,omitempty"`
+	GasUsed    hexutil.Uint64    `json:"gasUsed"`
+}
+
+func (m *mockHistoricalBackend) CreateAccessList(ctx context.Context, args ethapi.TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash, overrides *ethapi.StateOverride) (*accessListResult, error) {
+	num, ok := blockNrOrHash.Number()
+	if ok && num == 1 {
+		return &accessListResult{
+			Accesslist: &types.AccessList{},
+			GasUsed:    12345,
+		}, nil
+	}
+	return nil, ethereum.NotFound
+}
+
+func (m *mockHistoricalBackend) GetTransactionCount(ctx context.Context, account common.Address, blockNrOrHash rpc.BlockNumberOrHash) (hexutil.Uint64, error) {
+	num, ok := blockNrOrHash.Number()
+	if ok && num == 1 {
+		return hexutil.Uint64(12345), nil
+	}
+	return 0, ethereum.NotFound
+}
+
 func newMockHistoricalBackend(t *testing.T) string {
 	s := rpc.NewServer()
 	err := node.RegisterApis([]rpc.API{
+		{
+			Namespace:     "debug",
+			Service:       new(mockHistoricalBackend),
+			Public:        true,
+			Authenticated: false,
+		},
 		{
 			Namespace:     "eth",
 			Service:       new(mockHistoricalBackend),
@@ -286,7 +381,7 @@ func newMockHistoricalBackend(t *testing.T) string {
 }
 
 func newTestBackend(t *testing.T, enableHistoricalState bool) (*node.Node, []*types.Block) {
-	histAddr := newMockHistoricalBackend(t)
+	histAddr := newMockHistoricalBackend(t) // TODO(Alec)
 
 	var consensusEngine consensus.Engine
 	var actualGenesis *core.Genesis
@@ -301,6 +396,21 @@ func newTestBackend(t *testing.T, enableHistoricalState bool) (*node.Node, []*ty
 		chainLength = 2
 	}
 
+	// n.RegisterAPIs([]rpc.API{
+	// 	{
+	// 		Namespace:     "debug",
+	// 		Service:       n,
+	// 		Public:        true,
+	// 		Authenticated: false,
+	// 	},
+	// 	{
+	// 		Namespace:     "eth",
+	// 		Service:       n,
+	// 		Public:        true,
+	// 		Authenticated: false,
+	// 	},
+	// })
+
 	// Generate test chain
 	blocks := generateTestChain(consensusEngine, actualGenesis, chainLength)
 
@@ -309,8 +419,32 @@ func newTestBackend(t *testing.T, enableHistoricalState bool) (*node.Node, []*ty
 	if err != nil {
 		t.Fatalf("can't create new node: %v", err)
 	}
+
+	// server, err := n.RPCHandler()
+	// if err != nil {
+	// 	t.Fatalf("can't create new rpc handler: %v", err)
+	// }
+
+	// n.RegisterAPIs([]rpc.API{
+	// 	{
+	// 		Namespace:     "debug",
+	// 		Service:       server,
+	// 		Public:        true,
+	// 		Authenticated: false,
+	// 	},
+	// 	{
+	// 		Namespace:     "eth",
+	// 		Service:       server,
+	// 		Public:        true,
+	// 		Authenticated: false,
+	// 	},
+	// })
+
 	// Create Ethereum Service
-	config := &ethconfig.Config{Genesis: actualGenesis}
+	config := &ethconfig.Config{
+		Genesis:              actualGenesis,
+		OverrideOptimismCel2: new(uint64),
+	}
 	if enableHistoricalState {
 		config.RollupHistoricalRPC = histAddr
 		config.RollupHistoricalRPCTimeout = time.Second * 5
@@ -319,6 +453,7 @@ func newTestBackend(t *testing.T, enableHistoricalState bool) (*node.Node, []*ty
 	if err != nil {
 		t.Fatalf("can't create new ethereum service: %v", err)
 	}
+
 	if enableHistoricalState { // swap to the pre-bedrock consensus-engine that we used to generate the historical blocks
 		ethservice.BlockChain().Engine().(*beacon.Beacon).SwapInner(ethash.NewFaker())
 	}
@@ -366,12 +501,22 @@ func generateTestChain(consensusEngine consensus.Engine, genesis *core.Genesis, 
 
 func TestEthClientHistoricalBackend(t *testing.T) {
 	backend, _ := newTestBackend(t, true)
+
 	client := backend.Attach()
 	defer backend.Close()
 	defer client.Close()
 
 	testHistoricalRPC(t, client)
 }
+
+// func TestEthClientHistoricalBackendFull(t *testing.T) {
+// 	backend, _ := newTestBackend(t, true)
+// 	client := backend.Attach()
+// 	defer backend.Close()
+// 	defer client.Close()
+
+// 	testHistoricalRPCFull(t, client) // TODO(Alec)
+// }
 
 func TestEthClient(t *testing.T) {
 	backend, chain := newTestBackend(t, false)
@@ -903,6 +1048,216 @@ func testHistoricalRPC(t *testing.T, client *rpc.Client) {
 	}
 	if string(histVal) != "test" {
 		t.Fatalf("expected %s to equal test", string(histVal))
+	}
+}
+
+func TestEthClientHistoricalBackendFull(t *testing.T) {
+	backend, _ := newTestBackend(t, true)
+	client := backend.Attach()
+	defer backend.Close()
+	defer client.Close()
+
+	// _supportedModules, err := client.SupportedModules()
+	// if err != nil {
+	// 	t.Fatalf("unexpected error fetching modules: %v", err)
+	// }
+	// log.Info("Supported modules", "modules", _supportedModules)
+
+	// backend.RegisterAPIs([]rpc.API{
+	// 	{
+	// 		Namespace:     "eth",
+	// 		Service:       new(eth.EthAPIBackend),
+	// 		Public:        true,
+	// 		Authenticated: false,
+	// 	},
+	// 	{
+	// 		Namespace:     "debug",
+	// 		Service:       new(eth.EthAPIBackend),
+	// 		Public:        true,
+	// 		Authenticated: false,
+	// 	},
+	// })
+
+	testHistoricalRPCFull(t, client) // TODO(Alec)
+}
+
+func testHistoricalRPCFull(t *testing.T, client *rpc.Client) {
+	tests := map[string]struct {
+		args []interface{}
+		test func(t *testing.T, client *rpc.Client, method string, args []interface{})
+	}{
+		"eth_call": {
+			args: []interface{}{toCallArg(ethereum.CallMsg{From: testAddr, To: &common.Address{}, Gas: 21000, Value: big.NewInt(1)}), rpc.BlockNumberOrHashWithNumber(1)},
+			test: func(t *testing.T, client *rpc.Client, method string, args []interface{}) {
+				var result hexutil.Bytes
+				err := client.CallContext(context.Background(), &result, method, args...)
+				if err != nil {
+					t.Fatalf("RPC call %s failed: %v", method, err)
+				}
+				expectedResult := "test"
+				if string(result) != expectedResult {
+					t.Errorf("RPC call %s returned unexpected result: got %v, want %v", method, result, expectedResult)
+				}
+			},
+		},
+		"eth_estimateGas": {
+			args: []interface{}{toCallArg(ethereum.CallMsg{From: testAddr, To: &common.Address{}, Gas: 21000, Value: big.NewInt(1)}), rpc.BlockNumberOrHashWithNumber(1)},
+			test: func(t *testing.T, client *rpc.Client, method string, args []interface{}) {
+				var result hexutil.Uint64
+				err := client.CallContext(context.Background(), &result, method, args...)
+				if err != nil {
+					t.Fatalf("RPC call %s failed: %v", method, err)
+				}
+				expectedResult := uint64(12345)
+				if uint64(result) != expectedResult {
+					t.Errorf("RPC call %s returned unexpected result: got %v, want %v", method, result.String(), expectedResult)
+				}
+			},
+		},
+		"eth_getBalance": {
+			args: []interface{}{testAddr, rpc.BlockNumberOrHashWithNumber(1)},
+			test: func(t *testing.T, client *rpc.Client, method string, args []interface{}) {
+				var result hexutil.Big
+				err := client.CallContext(context.Background(), &result, method, args...)
+				if err != nil {
+					t.Fatalf("RPC call %s failed: %v", method, err)
+				}
+				expectedResult := big.NewInt(1000)
+				if result.ToInt().Cmp(expectedResult) != 0 {
+					t.Errorf("RPC call %s returned unexpected result: got %v, want %v", method, result.String(), expectedResult)
+				}
+			},
+		},
+		"eth_getProof": {
+			args: []interface{}{testAddr, []common.Hash{}, rpc.BlockNumberOrHashWithNumber(1)},
+			test: func(t *testing.T, client *rpc.Client, method string, args []interface{}) {
+				var result ethapi.AccountResult
+				err := client.CallContext(context.Background(), &result, method, args...)
+				if err != nil {
+					t.Fatalf("RPC call %s failed: %v", method, err)
+				}
+				expectedResult := ethapi.AccountResult{
+					Nonce: hexutil.Uint64(12345),
+				}
+				if result.Nonce != expectedResult.Nonce {
+					t.Errorf("RPC call %s returned unexpected result: got %v, want %v", method, result, nil)
+				}
+			},
+		},
+		"eth_getCode": {
+			args: []interface{}{testAddr, rpc.BlockNumberOrHashWithNumber(1)},
+			test: func(t *testing.T, client *rpc.Client, method string, args []interface{}) {
+				var result hexutil.Bytes
+				err := client.CallContext(context.Background(), &result, method, args...)
+				if err != nil {
+					t.Fatalf("RPC call %s failed: %v", method, err)
+				}
+				expectedResult := "testGetCode"
+				if string(result) != expectedResult {
+					t.Errorf("RPC call %s returned unexpected result: got %v, want %v", method, result, expectedResult)
+				}
+			},
+		},
+		"eth_getStorageAt": {
+			args: []interface{}{testAddr, common.Hash{}, rpc.BlockNumberOrHashWithNumber(1)},
+			test: func(t *testing.T, client *rpc.Client, method string, args []interface{}) {
+				var result hexutil.Bytes
+				err := client.CallContext(context.Background(), &result, method, args...)
+				if err != nil {
+					t.Fatalf("RPC call %s failed: %v", method, err)
+				}
+				expectedResult := "testGetStorageAt"
+				if string(result) != expectedResult {
+					t.Errorf("RPC call %s returned unexpected result: got %v, want %v", method, result, expectedResult)
+				}
+			},
+		},
+		"eth_createAccessList": {
+			args: []interface{}{toCallArg(ethereum.CallMsg{From: testAddr, To: &common.Address{}, Gas: 21000, Value: big.NewInt(1)}), rpc.BlockNumberOrHashWithNumber(1)},
+			test: func(t *testing.T, client *rpc.Client, method string, args []interface{}) {
+				var result accessListResult
+				err := client.CallContext(context.Background(), &result, method, args...)
+				if err != nil {
+					t.Fatalf("RPC call %s failed: %v", method, err)
+				}
+				if result.GasUsed != 12345 {
+					t.Errorf("RPC call %s returned unexpected result: got %v, want %v", method, result, nil)
+				}
+			},
+		},
+		"eth_getTransactionCount": {
+			args: []interface{}{testAddr, rpc.BlockNumberOrHashWithNumber(1)},
+			test: func(t *testing.T, client *rpc.Client, method string, args []interface{}) {
+				var result hexutil.Uint64
+				err := client.CallContext(context.Background(), &result, method, args...)
+				if err != nil {
+					t.Fatalf("RPC call %s failed: %v", method, err)
+				}
+				expectedResult := hexutil.Uint64(12345)
+				if result != expectedResult {
+					t.Errorf("RPC call %s returned unexpected result: got %v, want %v", method, result.String(), expectedResult)
+				}
+			},
+		},
+		"debug_traceBlockByNumber": {
+			args: []interface{}{rpc.BlockNumber(1), tracers.TraceConfig{}},
+			test: func(t *testing.T, client *rpc.Client, method string, args []interface{}) {
+				var result interface{}
+
+				err := client.CallContext(context.Background(), &result, method, args...)
+				if err != nil {
+					t.Fatalf("RPC call %s failed: %v", method, err)
+				}
+				if result != nil {
+					t.Errorf("RPC call %s returned unexpected result: got %v, want %v", method, result, nil)
+				}
+			},
+		},
+		// "debug_traceBlockByHash": {
+		// 	args: []interface{}{common.HexToHash("0x1")},
+		// 	test: func(t *testing.T, client *rpc.Client, method string, args []interface{}) {
+		// 		var result interface{}
+		// 		err := client.CallContext(context.Background(), &result, method, args...)
+		// 		if err != nil {
+		// 			t.Fatalf("RPC call %s failed: %v", method, err)
+		// 		}
+		// 		if result != nil {
+		// 			t.Errorf("RPC call %s returned unexpected result: got %v, want %v", method, result, nil)
+		// 		}
+		// 	},
+		// },
+		// "debug_traceCall": {
+		// 	args: []interface{}{toCallArg(ethereum.CallMsg{From: testAddr, To: &common.Address{}, Gas: 21000, Value: big.NewInt(1)}), rpc.BlockNumberOrHashWithNumber(1)},
+		// 	test: func(t *testing.T, client *rpc.Client, method string, args []interface{}) {
+		// 		var result interface{}
+		// 		err := client.CallContext(context.Background(), &result, method, args...)
+		// 		if err != nil {
+		// 			t.Fatalf("RPC call %s failed: %v", method, err)
+		// 		}
+		// 		if result != nil {
+		// 			t.Errorf("RPC call %s returned unexpected result: got %v, want %v", method, result, nil)
+		// 		}
+		// 	},
+		// },
+		// "debug_traceTransaction": {
+		// 	args: []interface{}{common.HexToHash("0x1")},
+		// 	test: func(t *testing.T, client *rpc.Client, method string, args []interface{}) {
+		// 		var result interface{}
+		// 		err := client.CallContext(context.Background(), &result, method, args...)
+		// 		if err != nil {
+		// 			t.Fatalf("RPC call %s failed: %v", method, err)
+		// 		}
+		// 		if result != nil {
+		// 			t.Errorf("RPC call %s returned unexpected result: got %v, want %v", method, result, nil)
+		// 		}
+		// 	},
+		// },
+	}
+
+	for method, tt := range tests {
+		t.Run(method, func(t *testing.T) {
+			tt.test(t, client, method, tt.args)
+		})
 	}
 }
 
