@@ -168,7 +168,7 @@ type storedReceiptRLP struct {
 	DepositReceiptVersion *uint64 `rlp:"optional"`
 }
 
-type celoDynamicFeeStoredReceiptRLP struct {
+type CeloDynamicFeeStoredReceiptRLP struct {
 	CeloDynamicReceiptMarker []interface{} // Marker to distinguish this from storedReceiptRLP
 	PostStateOrStatus        []byte
 	CumulativeGasUsed        uint64
@@ -465,7 +465,7 @@ func (r *ReceiptForStorage) EncodeRLP(_w io.Writer) error {
 // Detect CeloDynamicFee receipts by looking at the first list element
 // To distinguish these receipts from the very similar normal receipts, an
 // empty list is added as the first element of the RLP-serialized struct.
-func isCeloDynamicFeeReceipt(blob []byte) bool {
+func IsCeloDynamicFeeReceipt(blob []byte) bool {
 	listHeaderSize := 1 // Length of the list header representing the struct in bytes
 	if blob[0] > 0xf7 {
 		listHeaderSize += int(blob[0]) - 0xf7
@@ -483,7 +483,7 @@ func (r *ReceiptForStorage) DecodeRLP(s *rlp.Stream) error {
 		return err
 	}
 	// First try to decode the latest receipt database format, try the pre-bedrock Optimism legacy format otherwise.
-	if isCeloDynamicFeeReceipt(blob) {
+	if IsCeloDynamicFeeReceipt(blob) {
 		return decodeStoredCeloDynamicFeeReceiptRLP(r, blob)
 	}
 	if err := decodeStoredReceiptRLP(r, blob); err == nil {
@@ -523,7 +523,7 @@ func decodeLegacyOptimismReceiptRLP(r *ReceiptForStorage, blob []byte) error {
 }
 
 func decodeStoredCeloDynamicFeeReceiptRLP(r *ReceiptForStorage, blob []byte) error {
-	var stored celoDynamicFeeStoredReceiptRLP
+	var stored CeloDynamicFeeStoredReceiptRLP
 	if err := rlp.DecodeBytes(blob, &stored); err != nil {
 		return err
 	}

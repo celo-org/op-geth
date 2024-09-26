@@ -694,8 +694,21 @@ type receiptLogs struct {
 
 // DecodeRLP implements rlp.Decoder.
 func (r *receiptLogs) DecodeRLP(s *rlp.Stream) error {
+	// Retrieve the entire receipt blob as we need to try multiple decoders
+	blob, err := s.Raw()
+	if err != nil {
+		return err
+	}
+	// Check to see if this is a celo dynamic fee receipt.
+	if types.IsCeloDynamicFeeReceipt(blob) {
+		var stored types.CeloDynamicFeeStoredReceiptRLP
+		err := rlp.DecodeBytes(blob, &stored)
+		r.Logs = stored.Logs
+		return err
+	}
+
 	var stored storedReceiptRLP
-	if err := s.Decode(&stored); err != nil {
+	if err := rlp.DecodeBytes(blob, &stored); err != nil {
 		return err
 	}
 	r.Logs = stored.Logs
