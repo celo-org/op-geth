@@ -86,6 +86,7 @@ type environment struct {
 	// Celo specific
 	multiGasPool         *core.MultiGasPool // available per-fee-currency gas used to pack transactions
 	feeCurrencyAllowlist common.AddressSet
+	exchangeRates        common.ExchangeRates
 }
 
 const (
@@ -330,6 +331,7 @@ func (miner *Miner) prepareWork(genParams *generateParams, witness bool) (*envir
 		common.CurrencyAllowlist(context.FeeCurrencyContext.ExchangeRates),
 		header,
 	)
+	env.exchangeRates = context.FeeCurrencyContext.ExchangeRates
 	if header.ParentBeaconRoot != nil {
 		vmenv := vm.NewEVM(context, vm.TxContext{}, env.state, miner.chainConfig, vm.Config{})
 		core.ProcessBeaconBlockRoot(*header.ParentBeaconRoot, vmenv, env.state)
@@ -729,16 +731,16 @@ func (miner *Miner) fillTransactions(interrupt *atomic.Int32, env *environment) 
 	}
 	// Fill the block with all available pending transactions.
 	if len(localPlainTxs) > 0 || len(localBlobTxs) > 0 {
-		plainTxs := newTransactionsByPriceAndNonce(env.signer, localPlainTxs, env.header.BaseFee)
-		blobTxs := newTransactionsByPriceAndNonce(env.signer, localBlobTxs, env.header.BaseFee)
+		plainTxs := newTransactionsByPriceAndNonce(env.signer, localPlainTxs, env.header.BaseFee, env.exchangeRates)
+		blobTxs := newTransactionsByPriceAndNonce(env.signer, localBlobTxs, env.header.BaseFee, env.exchangeRates)
 
 		if err := miner.commitTransactions(env, plainTxs, blobTxs, interrupt); err != nil {
 			return err
 		}
 	}
 	if len(remotePlainTxs) > 0 || len(remoteBlobTxs) > 0 {
-		plainTxs := newTransactionsByPriceAndNonce(env.signer, remotePlainTxs, env.header.BaseFee)
-		blobTxs := newTransactionsByPriceAndNonce(env.signer, remoteBlobTxs, env.header.BaseFee)
+		plainTxs := newTransactionsByPriceAndNonce(env.signer, remotePlainTxs, env.header.BaseFee, env.exchangeRates)
+		blobTxs := newTransactionsByPriceAndNonce(env.signer, remoteBlobTxs, env.header.BaseFee, env.exchangeRates)
 
 		if err := miner.commitTransactions(env, plainTxs, blobTxs, interrupt); err != nil {
 			return err
