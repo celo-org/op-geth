@@ -79,7 +79,11 @@ func (api *EthereumAPI) GasPrice(ctx context.Context) (*hexutil.Big, error) {
 	if head := api.b.CurrentHeader(); head.BaseFee != nil {
 		tipcap.Add(tipcap, head.BaseFee)
 	}
-	return (*hexutil.Big)(tipcap), err
+
+	tipcapWithMultiplier := new(big.Int).Mul(tipcap, big.NewInt(120))
+	res := new(big.Int).Div(tipcapWithMultiplier, big.NewInt(100))
+
+	return (*hexutil.Big)(res), err
 }
 
 // MaxPriorityFeePerGas returns a suggestion for a gas tip cap for dynamic fee transactions.
