@@ -132,7 +132,7 @@ describe("viem send tx", () => {
 			gas: 90000,
 			feeCurrency: process.env.FEE_CURRENCY,
 			maxFeePerGas: 2000000000n,
-			maxPriorityFeePerGas: 0n,
+			maxPriorityFeePerGas: 1n,
 		});
 		const signature = await walletClient.signTransaction(request);
 		const hash = await walletClient.sendRawTransaction({
@@ -188,7 +188,7 @@ describe("viem send tx", () => {
 			value: 2,
 			feeCurrency: process.env.FEE_CURRENCY,
 			maxFeePerGas: 2000000000n,
-			maxPriorityFeePerGas: 0n,
+			maxPriorityFeePerGas: 1n,
 		});
 		const signature = await walletClient.signTransaction(request);
 		const hash = await walletClient.sendRawTransaction({
@@ -253,7 +253,7 @@ describe("viem send tx", () => {
 			gas: 90000,
 			feeCurrency: "0x000000000000000000000000000000000badc310",
 			maxFeePerGas: 1000000000n,
-			maxPriorityFeePerGas: 0n,
+			maxPriorityFeePerGas: 1n,
 		});
 		const signature = await walletClient.signTransaction(request);
 		try {
