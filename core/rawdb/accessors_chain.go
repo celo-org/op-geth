@@ -703,8 +703,11 @@ func (r *receiptLogs) DecodeRLP(s *rlp.Stream) error {
 	if types.IsCeloDynamicFeeReceipt(blob) {
 		var stored types.CeloDynamicFeeStoredReceiptRLP
 		err := rlp.DecodeBytes(blob, &stored)
+		if err != nil {
+			return err
+		}
 		r.Logs = stored.Logs
-		return err
+		return nil
 	}
 
 	var stored storedReceiptRLP
