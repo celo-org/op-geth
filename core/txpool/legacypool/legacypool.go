@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/exchange"
 	"github.com/ethereum/go-ethereum/common/prque"
 	"github.com/ethereum/go-ethereum/consensus/misc/eip1559"
 	"github.com/ethereum/go-ethereum/contracts"
@@ -575,7 +576,8 @@ func (pool *LegacyPool) Pending(filter txpool.PendingFilter) map[common.Address]
 		// If the miner requests tip enforcement, cap the lists now
 		if minTipBig != nil && !pool.locals.contains(addr) {
 			for i, tx := range txs {
-				if tx.EffectiveGasTipIntCmp(minTipBig, pool.priced.urgent.GetBaseFeeIn(tx.FeeCurrency())) < 0 {
+				minTipInFeeCurrency, err := exchange.ConvertCeloToCurrency(pool.feeCurrencyContext.ExchangeRates, tx.FeeCurrency(), minTipBig)
+				if err != nil || tx.EffectiveGasTipIntCmp(minTipInFeeCurrency, pool.priced.urgent.GetBaseFeeIn(tx.FeeCurrency())) < 0 {
 					txs = txs[:i]
 					break
 				}
