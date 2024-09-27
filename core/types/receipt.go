@@ -454,7 +454,7 @@ func (r *ReceiptForStorage) DecodeRLP(s *rlp.Stream) error {
 		return err
 	}
 	// First try to decode the latest receipt database format, try the pre-bedrock Optimism legacy format otherwise.
-	if isCeloDynamicFeeReceipt(blob) {
+	if IsCeloDynamicFeeReceipt(blob) {
 		return decodeStoredCeloDynamicFeeReceiptRLP(r, blob)
 	}
 	if err := decodeStoredReceiptRLP(r, blob); err == nil {
