@@ -18,7 +18,7 @@ var (
 
 // ConvertCurrency does an exchange conversion from currencyFrom to currencyTo of the value given.
 func ConvertCurrency(exchangeRates common.ExchangeRates, val1 *big.Int, currencyFrom *common.Address, currencyTo *common.Address) *big.Int {
-	celoAmount, err := ConvertCurrencyToCelo(exchangeRates, val1, currencyFrom)
+	celoAmount, err := ConvertCurrencyToCelo(exchangeRates, currencyFrom, val1)
 	if err != nil {
 		log.Error("Error trying to convert from currency to CELO.", "value", val1, "fromCurrency", currencyFrom.Hex())
 	}
@@ -29,7 +29,7 @@ func ConvertCurrency(exchangeRates common.ExchangeRates, val1 *big.Int, currency
 	return toAmount
 }
 
-func ConvertCurrencyToCelo(exchangeRates common.ExchangeRates, currencyAmount *big.Int, feeCurrency *common.Address) (*big.Int, error) {
+func ConvertCurrencyToCelo(exchangeRates common.ExchangeRates, feeCurrency *common.Address, currencyAmount *big.Int) (*big.Int, error) {
 	if feeCurrency == nil {
 		return currencyAmount, nil
 	}
