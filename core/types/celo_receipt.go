@@ -15,7 +15,7 @@ type celoDynamicReceiptRLP struct {
 	BaseFee *big.Int `rlp:"optional"`
 }
 
-type celoDynamicFeeStoredReceiptRLP struct {
+type CeloDynamicFeeStoredReceiptRLP struct {
 	CeloDynamicReceiptMarker []interface{} // Marker to distinguish this from storedReceiptRLP
 	PostStateOrStatus        []byte
 	CumulativeGasUsed        uint64
@@ -26,7 +26,7 @@ type celoDynamicFeeStoredReceiptRLP struct {
 // Detect CeloDynamicFee receipts by looking at the first list element
 // To distinguish these receipts from the very similar normal receipts, an
 // empty list is added as the first element of the RLP-serialized struct.
-func isCeloDynamicFeeReceipt(blob []byte) bool {
+func IsCeloDynamicFeeReceipt(blob []byte) bool {
 	listHeaderSize := 1 // Length of the list header representing the struct in bytes
 	if blob[0] > 0xf7 {
 		listHeaderSize += int(blob[0]) - 0xf7
@@ -36,7 +36,7 @@ func isCeloDynamicFeeReceipt(blob []byte) bool {
 }
 
 func decodeStoredCeloDynamicFeeReceiptRLP(r *ReceiptForStorage, blob []byte) error {
-	var stored celoDynamicFeeStoredReceiptRLP
+	var stored CeloDynamicFeeStoredReceiptRLP
 	if err := rlp.DecodeBytes(blob, &stored); err != nil {
 		return err
 	}
