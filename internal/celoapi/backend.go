@@ -73,5 +73,5 @@ func (b *CeloAPIBackend) ConvertToCelo(ctx context.Context, blockNumOrHash rpc.B
 	if err != nil {
 		return nil, err
 	}
-	return exchange.ConvertCurrencyToCelo(er, currencyAmount, fromFeeCurrency)
+	return exchange.ConvertCurrencyToCelo(er, fromFeeCurrency, currencyAmount)
 }
