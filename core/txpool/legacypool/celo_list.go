@@ -125,3 +125,10 @@ func (h *priceHeap) GetNativeBaseFee() *big.Int {
 	}
 	return h.ratesAndFees.GetNativeBaseFee()
 }
+
+func (h *priceHeap) GetBaseFeeIn(feeCurrency *common.Address) *big.Int {
+	if h.ratesAndFees == nil {
+		return nil
+	}
+	return h.ratesAndFees.GetBaseFeeIn(feeCurrency)
+}
