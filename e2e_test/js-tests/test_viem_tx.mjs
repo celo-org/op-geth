@@ -270,4 +270,28 @@ describe("viem send tx", () => {
 			}
 		}
 	}).timeout(10_000);
+
+	it("send fee currency tx with just high enough gas price", async () => {
+		const block = await publicClient.getBlock({});
+		// Actually, the base fee will be a bit lower next block, since our blocks
+		// are always mostly empty. But the difference will be much less than the
+		// exchange rate of 2, so the test will still check that we take the fee
+		// currency into account everywhere.
+		const maxFeePerGas = block.baseFeePerGas / 2n;
+		const request = await walletClient.prepareTransactionRequest({
+			account,
+			to: "0x00000000000000000000000000000000DeaDBeef",
+			value: 2,
+			gas: 90000,
+			feeCurrency: process.env.FEE_CURRENCY2,
+			maxFeePerGas,
+			maxPriorityFeePerGas: 1n,
+		});
+		const signature = await walletClient.signTransaction(request);
+		const hash = await walletClient.sendRawTransaction({
+			serializedTransaction: signature,
+		});
+		const receipt = await publicClient.waitForTransactionReceipt({ hash });
+		assert.equal(receipt.status, "success", "receipt status 'failure'");
+	}).timeout(5_000);
 });
