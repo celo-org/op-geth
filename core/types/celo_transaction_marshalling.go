@@ -108,8 +108,12 @@ func celoTransactionMarshal(tx *Transaction) ([]byte, bool, error) {
 func celoTransactionUnmarshal(dec txJSON, inner *TxData) (bool, error) {
 	switch dec.Type {
 	case LegacyTxType:
-		// EthCompatible is only set to false for celo legacy transactions, otherwise its not set. So not set means it is ethCompatible.
-		if dec.EthCompatible == nil {
+		// EthCompatible is only set to false for celo legacy transactions in the op-geth codebase, otherwise its not
+		// set. So not set means it is ethCompatible. However in order to support correct unmarshaling of a celo legacy
+		// transaction, retrieved from a celo node (for the purposes of running our api compatibility test) we also need to
+		// handle the case where EthCompatible is set to true.
+		// TODO update this check after all chains have been migrated to be L2s see - https://github.com/celo-org/op-geth/issues/237
+		if dec.EthCompatible == nil || *dec.EthCompatible {
 			return false, nil
 		}
 		var itx LegacyTx
