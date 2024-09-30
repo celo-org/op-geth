@@ -10,7 +10,7 @@ TEST_GLOB=$1
 cd "$SCRIPT_DIR/.." || exit 1
 make geth
 trap 'kill %%' EXIT # kill bg job at exit
-build/bin/geth --dev --http --http.api eth,web3,net &>"$SCRIPT_DIR/geth.log" &
+build/bin/geth --dev --http --http.api eth,web3,net --txpool.nolocals &>"$SCRIPT_DIR/geth.log" &
 
 # Wait for geth to be ready
 for _ in {1..10}; do
