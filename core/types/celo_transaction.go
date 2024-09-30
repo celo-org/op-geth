@@ -125,3 +125,20 @@ func copyBigInt(b *big.Int) *big.Int {
 	}
 	return new(big.Int).Set(b)
 }
+
+// SetYNullStyleBigIfZero is for use by tests only, it sets the Y (AKA V) field of the transaction to big.NewInt(0)
+// which internally ensures that the abs field of the big int is null as opposed to an empty slice. The reason for doing
+// this is to facilitate direct deep equal comparisons of transactions, which although they may share the same value for
+// V have different internal representations.
+func SetYNullStyleBigIfZero(tx *Transaction) {
+	switch itx := tx.inner.(type) {
+	case *DynamicFeeTx:
+		if itx.V.Sign() == 0 {
+			itx.V = big.NewInt(0)
+		}
+	case *AccessListTx:
+		if itx.V.Sign() == 0 {
+			itx.V = big.NewInt(0)
+		}
+	}
+}
