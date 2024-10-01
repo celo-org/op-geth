@@ -125,7 +125,7 @@ func NewL1CostFunc(config *params.ChainConfig, statedb StateGetter) L1CostFunc {
 	var cachedFunc l1CostFunc
 	selectFunc := func(blockTime uint64) l1CostFunc {
 		if config.IsCel2(blockTime) {
-			return func(rcd RollupCostData) (fee, gasUsed *big.Int) { return nil, nil }
+			return func(rcd RollupCostData) (fee, gasUsed *big.Int) { return new(big.Int), new(big.Int) }
 		}
 		if !config.IsOptimismEcotone(blockTime) {
 			return newL1CostFuncBedrock(config, statedb, blockTime)
