@@ -295,14 +295,6 @@ func newTestBackend(t *testing.T, enableHistoricalState bool) (*node.Node, []*ty
 		actualGenesis = genesisForHistorical
 		consensusEngine = beacon.New(ethash.NewFaker())
 		chainLength = 10
-
-		// Set Cel2Time so that we are in the pre-migration case
-		var cel2Time uint64 = 10000
-		actualGenesis.Config.Cel2Time = &cel2Time
-		// These two changes are a workaround to compensate for the Cel2Time
-		// check in Genesis.ToBlock(). Ideally we remove this and fix it there.
-		actualGenesis.GasLimit = params.GenesisGasLimit
-		actualGenesis.Difficulty = params.GenesisDifficulty
 	} else {
 		actualGenesis = genesis
 		consensusEngine = ethash.NewFaker()
