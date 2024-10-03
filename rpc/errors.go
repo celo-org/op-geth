@@ -80,7 +80,7 @@ type NoHistoricalFallbackError struct{}
 func (e NoHistoricalFallbackError) ErrorCode() int { return -32801 }
 
 func (e NoHistoricalFallbackError) Error() string {
-	return "no historical RPC is available for this historical (pre-cel2) execution request"
+	return "no historical RPC is available for this historical (pre-bedrock) execution request"
 }
 
 type methodNotFoundError struct{ method string }
