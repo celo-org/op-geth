@@ -99,17 +99,17 @@ $ celotool send --rpc-url $RPC_URL --private-key $PRIVATE_KEY $TO $FEECURRENCY -
 
 		chainId, err := client.ChainID(context.Background())
 		if err != nil {
-			return err
+			return fmt.Errorf("Can't get chain-id: %w", err)
 		}
 
 		nonce, err := client.PendingNonceAt(context.Background(), crypto.PubkeyToAddress(privateKey.PublicKey))
 		if err != nil {
-			return err
+			return fmt.Errorf("Can't get pending nonce: %w", err)
 		}
 
 		feeCap, err := client.SuggestGasPriceForCurrency(context.Background(), &feeCurrencyAddress)
 		if err != nil {
-			return err
+			return fmt.Errorf("Can't suggest gas price: %w", err)
 		}
 
 		txdata := &types.CeloDynamicFeeTxV2{
@@ -126,12 +126,12 @@ $ celotool send --rpc-url $RPC_URL --private-key $PRIVATE_KEY $TO $FEECURRENCY -
 		signer := types.LatestSignerForChainID(chainId)
 		tx, err := types.SignNewTx(privateKey, signer, txdata)
 		if err != nil {
-			return err
+			return fmt.Errorf("Can't sign tx: %w", err)
 		}
 
 		err = client.SendTransaction(context.Background(), tx)
 		if err != nil {
-			return err
+			return fmt.Errorf("Can't send tx: %w", err)
 		}
 
 		fmt.Printf("tx sent: %s\n", tx.Hash().Hex())
