@@ -63,12 +63,12 @@ type mockHistoricalBackend struct {
 
 // mockHistoricalBackend does not have a TraceCall, because pre-bedrock there is no debug_traceCall available
 
-func (m *mockHistoricalBackend) TraceBlockByNumber(ctx context.Context, number rpc.BlockNumber, config *TraceConfig) ([]*txTraceResult, error) {
+func (m *mockHistoricalBackend) TraceBlockByNumber(ctx context.Context, number rpc.BlockNumber, config *TraceConfig) ([]*TxTraceResult, error) {
 	ret := m.Mock.MethodCalled("TraceBlockByNumber", number, config)
-	return ret[0].([]*txTraceResult), *ret[1].(*error)
+	return ret[0].([]*TxTraceResult), *ret[1].(*error)
 }
 
-func (m *mockHistoricalBackend) ExpectTraceBlockByNumber(number rpc.BlockNumber, config *TraceConfig, out []*txTraceResult, err error) {
+func (m *mockHistoricalBackend) ExpectTraceBlockByNumber(number rpc.BlockNumber, config *TraceConfig, out []*TxTraceResult, err error) {
 	m.Mock.On("TraceBlockByNumber", number, config).Once().Return(out, &err)
 }
 
@@ -708,7 +708,7 @@ func TestTraceBlockHistorical(t *testing.T) {
 	var config *TraceConfig
 	blockNumber := rpc.BlockNumber(3)
 	want := `[{"txHash":"0x0000000000000000000000000000000000000000000000000000000000000000","result":{"failed":false,"gas":21000,"returnValue":"","structLogs":[]}}]`
-	var ret []*txTraceResult
+	var ret []*TxTraceResult
 	_ = json.Unmarshal([]byte(want), &ret)
 
 	backend.mockHistorical.ExpectTraceBlockByNumber(blockNumber, config, ret, nil)
