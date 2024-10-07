@@ -677,6 +677,7 @@ func (api *API) traceBlockParallel(ctx context.Context, block *types.Block, stat
 	if threads > len(txs) {
 		threads = len(txs)
 	}
+	exchangeRates := core.GetExchangeRates(block.Header(), api.backend.ChainConfig(), statedb)
 	jobs := make(chan *txTraceTask, threads)
 	for th := 0; th < threads; th++ {
 		pend.Add(1)
@@ -684,7 +685,6 @@ func (api *API) traceBlockParallel(ctx context.Context, block *types.Block, stat
 			defer pend.Done()
 			// Fetch and execute the next transaction trace tasks
 			for task := range jobs {
-				exchangeRates := core.GetExchangeRates(block.Header(), api.backend.ChainConfig(), statedb)
 				msg, _ := core.TransactionToMessage(txs[task.index], signer, block.BaseFee(), exchangeRates)
 				txctx := &Context{
 					BlockHash:   blockHash,
