@@ -23,18 +23,29 @@ const devChain = defineChain({
   },
 });
 
+var chain;
+switch(process.env.NETWORK) {
+	case "alfajores":
+		chain = celoAlfajores;
+		break;
+	default:
+		chain = devChain;
+		// Code to run if no cases match
+};
+
 const account = privateKeyToAccount(privateKey);
 
 const publicClient = createPublicClient({
   account,
-  chain: devChain,
+  chain: chain,
   transport: http(),
 });
 const walletClient = createWalletClient({
   account,
-  chain: devChain,
+  chain: chain,
   transport: http(),
 });
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
