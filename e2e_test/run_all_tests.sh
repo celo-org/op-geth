@@ -34,7 +34,7 @@ cast send --json --private-key "$ACC_PRIVKEY" "$TOKEN_ADDR" 'transfer(address to
 failures=0
 tests=0
 for f in test_*"$TEST_GLOB"*; do
-	if [ -n $NETWORK ]; then
+	if [[ -n $NETWORK ]]; then
 		case $f in
 		  # Skip tests that require a local network.
 		  test_fee_currency_fails_on_credit.sh|test_fee_currency_fails_on_debit.sh|test_fee_currency_fails_intrinsic.sh)
