@@ -22,16 +22,14 @@ const devChain = defineChain({
 	},
 });
 
-var chain
-
-switch(process.env.NETWORK) {
-  case 'alfajores':
-		chain = celoAlfajores
-    break;
-  case '':
-		chain = devChain
-    break;
-}
+const chain = (() => {
+	switch (process.env.NETWORK) {
+		case 'alfajores':
+			return celoAlfajores
+		default:
+			return devChain
+	};
+})();
 
 // Set up clients/wallet
 const publicClient = createPublicClient({
