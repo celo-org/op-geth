@@ -238,19 +238,14 @@ describe("viem send tx", () => {
 
 	it("send overlapping nonce tx in different currencies", async () => {
 		const priceBump = 1.1;
-		const rate = 2;
+
+		const rate = await getRate(process.env.FEE_CURRENCY);
 		// Native to FEE_CURRENCY
 		const nativeCap = 30_000_000_000;
-		const bumpCurrencyCap = BigInt(Math.round(nativeCap * rate * priceBump));
-		const failToBumpCurrencyCap = BigInt(
-			Math.round(nativeCap * rate * priceBump) - 1,
-		);
-		// FEE_CURRENCY to Native
-		const currencyCap = 60_000_000_000;
-		const bumpNativeCap = BigInt(Math.round((currencyCap * priceBump) / rate));
-		const failToBumpNativeCap = BigInt(
-			Math.round((currencyCap * priceBump) / rate) - 1,
-		);
+		const bumpCurrencyCap = rate.toFeeCurrency(BigInt(Math.round(nativeCap * priceBump)));
+		const failToBumpCurrencyCap = rate.toFeeCurrency(BigInt(
+			Math.round(nativeCap * priceBump) - 1,
+		));
 		const tokenCurrency = process.env.FEE_CURRENCY;
 		const nativeCurrency = null;
 		await testNonceBump(
@@ -267,6 +262,13 @@ describe("viem send tx", () => {
 			tokenCurrency,
 			false,
 		);
+
+		// FEE_CURRENCY to Native
+		const currencyCap = 60_000_000_000;
+		const bumpNativeCap = rate.toNative(BigInt(Math.round(currencyCap * priceBump)));
+		const failToBumpNativeCap = rate.toNative(BigInt(
+			Math.round(currencyCap * priceBump) - 1,
+		));
 		await testNonceBump(
 			currencyCap,
 			tokenCurrency,
@@ -309,3 +311,17 @@ describe("viem send tx", () => {
 		}
 	}).timeout(20_000);
 });
+
+async function getRate() {
+		const abi = parseAbi(['function getExchangeRate(address token) public view returns (uint256 numerator, uint256 denominator)']);
+		const [numerator, denominator] = await publicClient.readContract({
+			address: process.env.FEE_CURRENCY_DIRECTORY_ADDR,
+			abi: abi,
+			functionName: 'getExchangeRate',
+			args: [process.env.FEE_CURRENCY],
+		});
+	return {
+		toFeeCurrency: (v) => (v * numerator) / denominator,
+		toNative: (v) => (v * denominator) / numerator,
+	};
+}
