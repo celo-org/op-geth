@@ -184,7 +184,7 @@ describe("viem send tx", () => {
 		);
 
 		// viem's getGasPrice does not expose additional request parameters, but
-		// Celo's override 'chain.fees.estimateFeesPerGas' action does. this will
+		// Celo's override 'chain.fees.estimateFeesPerGas' action does. This will
 		// call the eth_gasPrice and eth_maxPriorityFeePerGas methods with the
 		// additional feeCurrency parameter internally, it also multiplies the
 		// gasPriceInFeeCurrency by 12n/10n.
