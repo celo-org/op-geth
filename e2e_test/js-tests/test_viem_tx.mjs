@@ -96,7 +96,7 @@ const testNonceBump = async (
 			shouldReplace
 		) {
 			throw err; // Only throw if unexpected error.
-		}
+
 	}
 	const syncBarrierSignature =
 		await walletClient.signTransaction(syncBarrierRequest);
@@ -114,53 +114,53 @@ const testNonceBump = async (
 };
 
 describe("viem send tx", () => {
-	// it("send basic tx and check receipt", async () => {
-	// 	const request = await walletClient.prepareTransactionRequest({
-	// 		account,
-	// 		to: "0x00000000000000000000000000000000DeaDBeef",
-	// 		value: 1,
-	// 		gas: 21000,
-	// 	});
-	// 	const signature = await walletClient.signTransaction(request);
-	// 	const hash = await walletClient.sendRawTransaction({
-	// 		serializedTransaction: signature,
-	// 	});
-	// 	const receipt = await publicClient.waitForTransactionReceipt({ hash });
-	// 	assert.equal(receipt.status, "success", "receipt status 'failure'");
-	// }).timeout(20_000);
+	 it("send basic tx and check receipt", async () => {
+	 	const request = await walletClient.prepareTransactionRequest({
+	 		account,
+	 		to: "0x00000000000000000000000000000000DeaDBeef",
+	 		value: 1,
+	 		gas: 21000,
+	 	});
+	 	const signature = await walletClient.signTransaction(request);
+	 	const hash = await walletClient.sendRawTransaction({
+	 		serializedTransaction: signature,
+	 	});
+	 	const receipt = await publicClient.waitForTransactionReceipt({ hash });
+	 	assert.equal(receipt.status, "success", "receipt status 'failure'");
+	 }).timeout(20_000);
 
-	// it("send basic tx using viem gas estimation and check receipt", async () => {
-	// 	const request = await walletClient.prepareTransactionRequest({
-	// 		account,
-	// 		to: "0x00000000000000000000000000000000DeaDBeef",
-	// 		value: 1,
-	// 	});
-	// 	const signature = await walletClient.signTransaction(request);
-	// 	const hash = await walletClient.sendRawTransaction({
-	// 		serializedTransaction: signature,
-	// 	});
-	// 	const receipt = await publicClient.waitForTransactionReceipt({ hash });
-	// 	assert.equal(receipt.status, "success", "receipt status 'failure'");
-	// }).timeout(20_000);
+	 it("send basic tx using viem gas estimation and check receipt", async () => {
+	 	const request = await walletClient.prepareTransactionRequest({
+	 		account,
+	 		to: "0x00000000000000000000000000000000DeaDBeef",
+	 		value: 1,
+	 	});
+	 	const signature = await walletClient.signTransaction(request);
+	 	const hash = await walletClient.sendRawTransaction({
+	 		serializedTransaction: signature,
+	 	});
+	 	const receipt = await publicClient.waitForTransactionReceipt({ hash });
+	 	assert.equal(receipt.status, "success", "receipt status 'failure'");
+	 }).timeout(20_000);
 
-	// it("send fee currency tx with explicit gas fields and check receipt", async () => {
-	// 	const [maxFeePerGas, tip] = await getGasFees(publicClient, 2n);
-	// 	const request = await walletClient.prepareTransactionRequest({
-	// 		account,
-	// 		to: "0x00000000000000000000000000000000DeaDBeef",
-	// 		value: 2,
-	// 		gas: 171000,
-	// 		feeCurrency: process.env.FEE_CURRENCY,
-	// 		maxFeePerGas: maxFeePerGas,
-	// 		maxPriorityFeePerGas: tip,
-	// 	});
-	// 	const signature = await walletClient.signTransaction(request);
-	// 	const hash = await walletClient.sendRawTransaction({
-	// 		serializedTransaction: signature,
-	// 	});
-	// 	const receipt = await publicClient.waitForTransactionReceipt({ hash });
-	// 	assert.equal(receipt.status, "success", "receipt status 'failure'");
-	// }).timeout(100_000);
+	 it("send fee currency tx with explicit gas fields and check receipt", async () => {
+	 	const [maxFeePerGas, tip] = await getGasFees(publicClient, 2n);
+	 	const request = await walletClient.prepareTransactionRequest({
+	 		account,
+	 		to: "0x00000000000000000000000000000000DeaDBeef",
+	 		value: 2,
+	 		gas: 171000,
+	 		feeCurrency: process.env.FEE_CURRENCY,
+	 		maxFeePerGas: maxFeePerGas,
+	 		maxPriorityFeePerGas: tip,
+	 	});
+	 	const signature = await walletClient.signTransaction(request);
+	 	const hash = await walletClient.sendRawTransaction({
+	 		serializedTransaction: signature,
+	 	});
+	 	const receipt = await publicClient.waitForTransactionReceipt({ hash });
+	 	assert.equal(receipt.status, "success", "receipt status 'failure'");
+	 }).timeout(100_000);
 
 	it("test gas price difference for fee currency", async () => {
 		const request = await walletClient.prepareTransactionRequest({
@@ -218,93 +218,93 @@ describe("viem send tx", () => {
 		assert.equal(request.maxPriorityFeePerGas, fees.maxPriorityFeePerGas);
 	}).timeout(20_000);
 
-	// it("send fee currency with gas estimation tx and check receipt", async () => {
-	// 	const request = await walletClient.prepareTransactionRequest({
-	// 		account,
-	// 		to: "0x00000000000000000000000000000000DeaDBeef",
-	// 		value: 2,
-	// 		feeCurrency: process.env.FEE_CURRENCY,
-	// 		maxFeePerGas: 50000000000n,
-	// 		maxPriorityFeePerGas: 0n,
-	// 	});
-	// 	const signature = await walletClient.signTransaction(request);
-	// 	const hash = await walletClient.sendRawTransaction({
-	// 		serializedTransaction: signature,
-	// 	});
-	// 	const receipt = await publicClient.waitForTransactionReceipt({ hash });
-	// 	assert.equal(receipt.status, "success", "receipt status 'failure'");
-	// }).timeout(20_000);
+	 it("send fee currency with gas estimation tx and check receipt", async () => {
+	 	const request = await walletClient.prepareTransactionRequest({
+	 		account,
+	 		to: "0x00000000000000000000000000000000DeaDBeef",
+	 		value: 2,
+	 		feeCurrency: process.env.FEE_CURRENCY,
+	 		maxFeePerGas: 50000000000n,
+	 		maxPriorityFeePerGas: 0n,
+	 	});
+	 	const signature = await walletClient.signTransaction(request);
+	 	const hash = await walletClient.sendRawTransaction({
+	 		serializedTransaction: signature,
+	 	});
+	 	const receipt = await publicClient.waitForTransactionReceipt({ hash });
+	 	assert.equal(receipt.status, "success", "receipt status 'failure'");
+	 }).timeout(20_000);
 
-	// it("send overlapping nonce tx in different currencies", async () => {
-	// 	const priceBump = 1.1;
-	// 	const rate = 2;
-	// 	// Native to FEE_CURRENCY
-	// 	const nativeCap = 30_000_000_000;
-	// 	const bumpCurrencyCap = BigInt(Math.round(nativeCap * rate * priceBump));
-	// 	const failToBumpCurrencyCap = BigInt(
-	// 		Math.round(nativeCap * rate * priceBump) - 1,
-	// 	);
-	// 	// FEE_CURRENCY to Native
-	// 	const currencyCap = 60_000_000_000;
-	// 	const bumpNativeCap = BigInt(Math.round((currencyCap * priceBump) / rate));
-	// 	const failToBumpNativeCap = BigInt(
-	// 		Math.round((currencyCap * priceBump) / rate) - 1,
-	// 	);
-	// 	const tokenCurrency = process.env.FEE_CURRENCY;
-	// 	const nativeCurrency = null;
-	// 	await testNonceBump(
-	// 		nativeCap,
-	// 		nativeCurrency,
-	// 		bumpCurrencyCap,
-	// 		tokenCurrency,
-	// 		true,
-	// 	);
-	// 	await testNonceBump(
-	// 		nativeCap,
-	// 		nativeCurrency,
-	// 		failToBumpCurrencyCap,
-	// 		tokenCurrency,
-	// 		false,
-	// 	);
-	// 	await testNonceBump(
-	// 		currencyCap,
-	// 		tokenCurrency,
-	// 		bumpNativeCap,
-	// 		nativeCurrency,
-	// 		true,
-	// 	);
-	// 	await testNonceBump(
-	// 		currencyCap,
-	// 		tokenCurrency,
-	// 		failToBumpNativeCap,
-	// 		nativeCurrency,
-	// 		false,
-	// 	);
-	// }).timeout(20_000);
+	 it("send overlapping nonce tx in different currencies", async () => {
+	 	const priceBump = 1.1;
+	 	const rate = 2;
+	 	// Native to FEE_CURRENCY
+	 	const nativeCap = 30_000_000_000;
+	 	const bumpCurrencyCap = BigInt(Math.round(nativeCap * rate * priceBump));
+	 	const failToBumpCurrencyCap = BigInt(
+	 		Math.round(nativeCap * rate * priceBump) - 1,
+	 	);
+	 	// FEE_CURRENCY to Native
+	 	const currencyCap = 60_000_000_000;
+	 	const bumpNativeCap = BigInt(Math.round((currencyCap * priceBump) / rate));
+	 	const failToBumpNativeCap = BigInt(
+	 		Math.round((currencyCap * priceBump) / rate) - 1,
+	 	);
+	 	const tokenCurrency = process.env.FEE_CURRENCY;
+	 	const nativeCurrency = null;
+	 	await testNonceBump(
+	 		nativeCap,
+	 		nativeCurrency,
+	 		bumpCurrencyCap,
+	 		tokenCurrency,
+	 		true,
+	 	);
+	 	await testNonceBump(
+	 		nativeCap,
+	 		nativeCurrency,
+	 		failToBumpCurrencyCap,
+	 		tokenCurrency,
+	 		false,
+	 	);
+	 	await testNonceBump(
+	 		currencyCap,
+	 		tokenCurrency,
+	 		bumpNativeCap,
+	 		nativeCurrency,
+	 		true,
+	 	);
+	 	await testNonceBump(
+	 		currencyCap,
+	 		tokenCurrency,
+	 		failToBumpNativeCap,
+	 		nativeCurrency,
+	 		false,
+	 	);
+	 }).timeout(20_000);
 
-	// it("send tx with unregistered fee currency", async () => {
-	// 	const request = await walletClient.prepareTransactionRequest({
-	// 		account,
-	// 		to: "0x00000000000000000000000000000000DeaDBeef",
-	// 		value: 2,
-	// 		gas: 171000,
-	// 		feeCurrency: "0x000000000000000000000000000000000badc310",
-	// 		maxFeePerGas: 1000000000n,
-	// 		maxPriorityFeePerGas: 0n,
-	// 	});
-	// 	const signature = await walletClient.signTransaction(request);
-	// 	try {
-	// 		await walletClient.sendRawTransaction({
-	// 			serializedTransaction: signature,
-	// 		});
-	// 		assert.fail("Failed to filter unregistered feeCurrency");
-	// 	} catch (err) {
-	// 		// TODO: find a better way to check the error type
-	// 		if (err.cause.details.indexOf("unregistered fee-currency address") >= 0) {
-	// 			// Test success
-	// 		} else {
-	// 			throw err;
-	// 		}
-	// 	}
-	// }).timeout(20_000);
+	 it("send tx with unregistered fee currency", async () => {
+	 	const request = await walletClient.prepareTransactionRequest({
+	 		account,
+	 		to: "0x00000000000000000000000000000000DeaDBeef",
+	 		value: 2,
+	 		gas: 171000,
+	 		feeCurrency: "0x000000000000000000000000000000000badc310",
+	 		maxFeePerGas: 1000000000n,
+	 		maxPriorityFeePerGas: 0n,
+	 	});
+	 	const signature = await walletClient.signTransaction(request);
+	 	try {
+	 		await walletClient.sendRawTransaction({
+	 			serializedTransaction: signature,
+	 		});
+	 		assert.fail("Failed to filter unregistered feeCurrency");
+	 	} catch (err) {
+	 		// TODO: find a better way to check the error type
+	 		if (err.cause.details.indexOf("unregistered fee-currency address") >= 0) {
+	 			// Test success
+	 		} else {
+	 			throw err;
+	 		}
+	 	}
+	 }).timeout(20_000);
 });
