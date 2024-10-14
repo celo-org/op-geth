@@ -96,7 +96,7 @@ const testNonceBump = async (
 			shouldReplace
 		) {
 			throw err; // Only throw if unexpected error.
-
+	  }
 	}
 	const syncBarrierSignature =
 		await walletClient.signTransaction(syncBarrierRequest);
@@ -203,13 +203,13 @@ describe("viem send tx", () => {
 			abi: abi,
 			functionName: 'getExchangeRate',
 			args: [process.env.FEE_CURRENCY],
-		})
+		});
 
 		// TODO fix this when viem is fixed - https://github.com/celo-org/viem/pull/20
 		// The expected value for the max fee should be the (baseFeePerGas * multiplier) + maxPriorityFeePerGas
 		// Instead what is currently returned is (maxFeePerGas * multiplier) + maxPriorityFeePerGas
 		const maxPriorityFeeInFeeCurrency = (maxPriorityFeePerGasNative * numerator) / denominator;
-    const maxFeeInFeeCurrency = ((block.baseFeePerGas +maxPriorityFeePerGasNative)*numerator)/denominator
+    const maxFeeInFeeCurrency = ((block.baseFeePerGas +maxPriorityFeePerGasNative)*numerator) /denominator;
 		assert.equal(fees.maxFeePerGas, ((maxFeeInFeeCurrency*12n)/10n) + maxPriorityFeeInFeeCurrency);
 		assert.equal(fees.maxPriorityFeePerGas, maxPriorityFeeInFeeCurrency);
 
