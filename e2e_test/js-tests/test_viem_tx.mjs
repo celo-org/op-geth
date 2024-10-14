@@ -171,20 +171,31 @@ describe("viem send tx", () => {
 			feeCurrency: process.env.FEE_CURRENCY,
 		});
 
+		// Get the raw gas price and maxPriorityFeePerGas
 		const gasPriceNative = await publicClient.getGasPrice({});
 		var maxPriorityFeePerGasNative =
 			await publicClient.estimateMaxPriorityFeePerGas({});
 		const block = await publicClient.getBlock({});
+
+		// Check them against the base fee.
 		assert.equal(
 			BigInt(block.baseFeePerGas) + maxPriorityFeePerGasNative,
 			gasPriceNative,
 		);
 
-		console.log("gasPriceNative", gasPriceNative);
-		console.log("maxPriorityFeePerGasNative", )
-		console.log("baseFeePerGas", block.baseFeePerGas);
-		console.log("maxPriorityFeePerGasNative", maxPriorityFeePerGasNative);
+		// viem's getGasPrice does not expose additional request parameters, but
+		// Celo's override 'chain.fees.estimateFeesPerGas' action does. this will
+		// call the eth_gasPrice and eth_maxPriorityFeePerGas methods with the
+		// additional feeCurrency parameter internally, it also multiplies the
+		// gasPriceInFeeCurrency by 12n/10n.
+		var fees = await publicClient.estimateFeesPerGas({
+			type: "eip1559",
+			request: {
+				feeCurrency: process.env.FEE_CURRENCY,
+			},
+		});
 
+		// Get the exchange rates for the fee currency.
 		const abi = parseAbi(['function getExchangeRate(address token) public view returns (uint256 numerator, uint256 denominator)']);
 		const [numerator, denominator] = await publicClient.readContract({
 			address: process.env.FEE_CURRENCY_DIRECTORY_ADDR,
@@ -193,51 +204,13 @@ describe("viem send tx", () => {
 			args: [process.env.FEE_CURRENCY],
 		})
 
-		// const data = await publicClient.call({
-		// 	to: process.env.FEE_CURRENCY_DIRECTORY_ADDR,
-		// 	data: encodeFunctionData({
-		// 		abi: abi,
-		// 		functionName: 'getExchangeRate',
-		// 		args: [process.env.FEE_CURRENCY],
-		// 	}),
-		// })
-		// // Decode the result
-		// const decodedResult = decodeFunctionResult({
-		// 	abi,
-		// 	functionName: 'getExchangeRate',
-		// 	data,  // Encoded result from the call
-		// });
-
-		// The defualt base fee multiplier is 1.2 internlly viem converts this to a big number by multiplying by 10 and dividing by 10 to get 12n/10n.
-		//
-		const baseFeeInFeeCurrency = (block.baseFeePerGas * numerator) / denominator;
-		const priorityFeeInFeeCurrency = (maxPriorityFeePerGasNative * numerator) / denominator;
-		const gasPriceInFeeCurrency = (gasPriceNative * numerator) / denominator;
-		console.log("baseFeeInFeeCurrency", baseFeeInFeeCurrency);
-		const adjustedBaseFee = (block.baseFeePerGas * 12n) / 10n;
-		const adjustedPriorityFee = (block.baseFeePerGas * 12n) / 10n;
-
-
-		const adjustedFee = adjustedBaseFee + adjustedPriorityFee;
-		// viem's getGasPrice does not expose additional request parameters,
-		// but Celo's override 'chain.fees.estimateFeesPerGas' action does.
-		// this will call the eth_gasPrice and eth_maxPriorityFeePerGas methods
-		// with the additional feeCurrency parameter internally
-		var fees = await publicClient.estimateFeesPerGas({
-			type: "eip1559",
-			request: {
-				feeCurrency: process.env.FEE_CURRENCY,
-			},
-		});
-
-
-		console.log("maxFeePerGas", fees.maxFeePerGas);
-		console.log("maxPriorityFeePerGas", fees.maxPriorityFeePerGas);
-
-		assert.equal(fees.maxFeePerGas, ((gasPriceInFeeCurrency*12n)/10n) + priorityFeeInFeeCurrency); ;
-		assert.equal(fees.maxFeePerGas, (((gasPriceNative * numerator) / denominator)*12n)/10n) ;
-		assert.equal(fees.maxFeePerGas, (((gasPriceNative * numerator) / denominator)*12n)/10n) ;
-		assert.equal(fees.maxPriorityFeePerGas, maxPriorityFeePerGasNative * (6n/5n)  * numerator / denominator);
+		// TODO fix this when viem is fixed - https://github.com/celo-org/viem/pull/20
+		// The expected value for the max fee should be the (baseFeePerGas * multiplier) + maxPriorityFeePerGas
+		// Instead what is currently returned is (maxFeePerGas * multiplier) + maxPriorityFeePerGas
+		const maxPriorityFeeInFeeCurrency = (maxPriorityFeePerGasNative * numerator) / denominator;
+    const maxFeeInFeeCurrency = ((block.baseFeePerGas +maxPriorityFeePerGasNative)*numerator)/denominator
+		assert.equal(fees.maxFeePerGas, ((maxFeeInFeeCurrency*12n)/10n) + maxPriorityFeeInFeeCurrency);
+		assert.equal(fees.maxPriorityFeePerGas, maxPriorityFeeInFeeCurrency);
 
 		// check that the prepared transaction request uses the
 		// converted gas price internally
