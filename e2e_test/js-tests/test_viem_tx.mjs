@@ -186,8 +186,9 @@ describe("viem send tx", () => {
 		// viem's getGasPrice does not expose additional request parameters, but
 		// Celo's override 'chain.fees.estimateFeesPerGas' action does. This will
 		// call the eth_gasPrice and eth_maxPriorityFeePerGas methods with the
-		// additional feeCurrency parameter internally, it also multiplies the
-		// gasPriceInFeeCurrency by 12n/10n.
+		// additional feeCurrency parameter internally, it also multiplies the base
+		// fee component of the maxFeePerGas by a multiplier which by default is
+		// 1.2 or (12n/10n).
 		var fees = await publicClient.estimateFeesPerGas({
 			type: "eip1559",
 			request: {
