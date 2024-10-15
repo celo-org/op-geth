@@ -150,7 +150,10 @@ func (ec *Client) getBlock(ctx context.Context, method string, args ...interface
 	if head.UncleHash == types.EmptyUncleHash && len(body.UncleHashes) > 0 {
 		return nil, errors.New("server returned non-empty uncle list but block header indicates no uncles")
 	}
-	if head.UncleHash != types.EmptyUncleHash && len(body.UncleHashes) == 0 {
+	// In celo before the ginerbread hardfork, blocks had no uncles hash and no
+	// uncles, so in those cases it is legitimate to have an empty uncles hash.
+	var emptyHash common.Hash
+	if head.UncleHash != emptyHash && head.UncleHash != types.EmptyUncleHash && len(body.UncleHashes) == 0 {
 		return nil, errors.New("server returned empty uncle list but block header indicates uncles")
 	}
 	if head.TxHash == types.EmptyTxsHash && len(body.Transactions) > 0 {
@@ -562,11 +565,31 @@ func (ec *Client) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
 	return (*big.Int)(&hex), nil
 }
 
+// SuggestGasPriceForCurrency retrieves the currently suggested gas price to allow a timely
+// execution of a transaction in the given fee currency.
+func (ec *Client) SuggestGasPriceForCurrency(ctx context.Context, feeCurrency *common.Address) (*big.Int, error) {
+	var hex hexutil.Big
+	if err := ec.c.CallContext(ctx, &hex, "eth_gasPrice", feeCurrency); err != nil {
+		return nil, err
+	}
+	return (*big.Int)(&hex), nil
+}
+
 // SuggestGasTipCap retrieves the currently suggested gas tip cap after 1559 to
 // allow a timely execution of a transaction.
 func (ec *Client) SuggestGasTipCap(ctx context.Context) (*big.Int, error) {
 	var hex hexutil.Big
 	if err := ec.c.CallContext(ctx, &hex, "eth_maxPriorityFeePerGas"); err != nil {
+		return nil, err
+	}
+	return (*big.Int)(&hex), nil
+}
+
+// SuggestGasTipCapForCurrency retrieves the currently suggested gas tip cap after 1559 to
+// allow a timely execution of a transaction in the given fee currency.
+func (ec *Client) SuggestGasTipCapForCurrency(ctx context.Context, feeCurrency *common.Address) (*big.Int, error) {
+	var hex hexutil.Big
+	if err := ec.c.CallContext(ctx, &hex, "eth_maxPriorityFeePerGas", feeCurrency); err != nil {
 		return nil, err
 	}
 	return (*big.Int)(&hex), nil

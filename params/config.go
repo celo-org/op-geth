@@ -35,6 +35,7 @@ var (
 const (
 	OPMainnetChainID        = 10
 	OPGoerliChainID         = 420
+	CeloMainnetChainID      = 42220
 	BaseMainnetChainID      = 8453
 	BaseGoerliChainID       = 84531
 	baseSepoliaChainID      = 84532
@@ -210,6 +211,8 @@ var (
 		GrayGlacierBlock:              big.NewInt(0),
 		ShanghaiTime:                  newUint64(0),
 		CancunTime:                    newUint64(0),
+		Cel2Time:                      newUint64(0),
+		GingerbreadBlock:              big.NewInt(0),
 		TerminalTotalDifficulty:       big.NewInt(0),
 		TerminalTotalDifficultyPassed: true,
 	}
@@ -268,6 +271,39 @@ var (
 		CancunTime:                    nil,
 		PragueTime:                    nil,
 		VerkleTime:                    nil,
+		GingerbreadBlock:              big.NewInt(0),
+		Cel2Time:                      newUint64(0),
+		TerminalTotalDifficulty:       nil,
+		TerminalTotalDifficultyPassed: false,
+		Ethash:                        new(EthashConfig),
+		Clique:                        nil,
+	}
+
+	// TestChainConfigNoCel2 contains every protocol change (EIPs) introduced
+	// and accepted by the Ethereum core developers for testing purposes.
+	TestChainConfigNoCel2 = &ChainConfig{
+		ChainID:                       big.NewInt(1),
+		HomesteadBlock:                big.NewInt(0),
+		DAOForkBlock:                  nil,
+		DAOForkSupport:                false,
+		EIP150Block:                   big.NewInt(0),
+		EIP155Block:                   big.NewInt(0),
+		EIP158Block:                   big.NewInt(0),
+		ByzantiumBlock:                big.NewInt(0),
+		ConstantinopleBlock:           big.NewInt(0),
+		PetersburgBlock:               big.NewInt(0),
+		IstanbulBlock:                 big.NewInt(0),
+		MuirGlacierBlock:              big.NewInt(0),
+		BerlinBlock:                   big.NewInt(0),
+		LondonBlock:                   big.NewInt(0),
+		ArrowGlacierBlock:             big.NewInt(0),
+		GrayGlacierBlock:              big.NewInt(0),
+		MergeNetsplitBlock:            nil,
+		ShanghaiTime:                  nil,
+		CancunTime:                    nil,
+		PragueTime:                    nil,
+		VerkleTime:                    nil,
+		Cel2Time:                      nil,
 		TerminalTotalDifficulty:       nil,
 		TerminalTotalDifficultyPassed: false,
 		Ethash:                        new(EthashConfig),
@@ -294,6 +330,7 @@ var (
 		ArrowGlacierBlock:             big.NewInt(0),
 		GrayGlacierBlock:              big.NewInt(0),
 		MergeNetsplitBlock:            big.NewInt(0),
+		GingerbreadBlock:              big.NewInt(0),
 		ShanghaiTime:                  newUint64(0),
 		CancunTime:                    newUint64(0),
 		PragueTime:                    nil,
@@ -390,6 +427,8 @@ type ChainConfig struct {
 	PragueTime   *uint64 `json:"pragueTime,omitempty"`   // Prague switch time (nil = no fork, 0 = already on prague)
 	VerkleTime   *uint64 `json:"verkleTime,omitempty"`   // Verkle switch time (nil = no fork, 0 = already on verkle)
 
+	// Note that the bedrock block is also the first block of the celo L2, because it must be set for the celo l2 to
+	// function correctly and it can't be set before we migrate to the L2.
 	BedrockBlock *big.Int `json:"bedrockBlock,omitempty"` // Bedrock switch block (nil = no fork, 0 = already on optimism bedrock)
 	RegolithTime *uint64  `json:"regolithTime,omitempty"` // Regolith switch time (nil = no fork, 0 = already on optimism regolith)
 	CanyonTime   *uint64  `json:"canyonTime,omitempty"`   // Canyon switch time (nil = no fork, 0 = already on optimism canyon)
@@ -400,6 +439,9 @@ type ChainConfig struct {
 	HoloceneTime *uint64 `json:"holoceneTime,omitempty"` // Holocene switch time (nil = no fork, 0 = already on Optimism Holocene)
 
 	InteropTime *uint64 `json:"interopTime,omitempty"` // Interop switch time (nil = no fork, 0 = already on optimism interop)
+
+	Cel2Time         *uint64  `json:"cel2Time,omitempty"`         // Cel2 switch time (nil = no fork, 0 = already on optimism cel2)
+	GingerbreadBlock *big.Int `json:"gingerbreadBlock,omitempty"` // Gingerbread switch block (nil = no fork, 0 = already activated)
 
 	// TerminalTotalDifficulty is the amount of total difficulty reached by
 	// the network that triggers the consensus upgrade.
@@ -418,6 +460,8 @@ type ChainConfig struct {
 
 	// Optimism config, nil if not active
 	Optimism *OptimismConfig `json:"optimism,omitempty"`
+	// Celo config, nil if not active
+	Celo *CeloConfig `json:"celo,omitempty"`
 }
 
 // EthashConfig is the consensus engine configs for proof-of-work based sealing.
@@ -448,7 +492,21 @@ type OptimismConfig struct {
 
 // String implements the stringer interface, returning the optimism fee config details.
 func (o *OptimismConfig) String() string {
-	return "optimism"
+	denominatorCanyonStr := "nil"
+	if o.EIP1559DenominatorCanyon != nil {
+		denominatorCanyonStr = fmt.Sprintf("%d", *o.EIP1559DenominatorCanyon)
+	}
+	return fmt.Sprintf("optimism(eip1559Elasticity: %d, eip1559Denominator: %d, eip1559DenominatorCanyon: %s)",
+		o.EIP1559Elasticity, o.EIP1559Denominator, denominatorCanyonStr)
+}
+
+type CeloConfig struct {
+	EIP1559BaseFeeFloor uint64 `json:"eip1559BaseFeeFloor"`
+}
+
+// String implements the stringer interface, returning the celo config details.
+func (o *CeloConfig) String() string {
+	return fmt.Sprintf("celo(eip1559BaseFeeFloor: %d)", o.EIP1559BaseFeeFloor)
 }
 
 // Description returns a human-readable description of ChainConfig.
@@ -464,6 +522,8 @@ func (c *ChainConfig) Description() string {
 	switch {
 	case c.Optimism != nil:
 		banner += "Consensus: Optimism\n"
+		banner += fmt.Sprintf(" - %s\n", c.Optimism)
+		banner += fmt.Sprintf(" - %s\n", c.Celo)
 	case c.Ethash != nil:
 		if c.TerminalTotalDifficulty == nil {
 			banner += "Consensus: Ethash (proof-of-work)\n"
@@ -562,6 +622,9 @@ func (c *ChainConfig) Description() string {
 	}
 	if c.InteropTime != nil {
 		banner += fmt.Sprintf(" - Interop:                     @%-10v\n", *c.InteropTime)
+	}
+	if c.Cel2Time != nil {
+		banner += fmt.Sprintf(" - Cel2:                        @%-10v\n", *c.Cel2Time)
 	}
 	return banner
 }
@@ -702,6 +765,15 @@ func (c *ChainConfig) IsHolocene(time uint64) bool {
 
 func (c *ChainConfig) IsInterop(time uint64) bool {
 	return isTimestampForked(c.InteropTime, time)
+}
+
+func (c *ChainConfig) IsCel2(time uint64) bool {
+	return isTimestampForked(c.Cel2Time, time)
+}
+
+// IsGingerbread returns whether num represents a block number after the Gingerbread fork
+func (c *ChainConfig) IsGingerbread(num *big.Int) bool {
+	return isBlockForked(c.GingerbreadBlock, num)
 }
 
 // IsOptimism returns whether the node is an optimism node or not.
@@ -1123,6 +1195,7 @@ type Rules struct {
 	IsOptimismBedrock, IsOptimismRegolith                   bool
 	IsOptimismCanyon, IsOptimismFjord                       bool
 	IsOptimismGranite, IsOptimismHolocene                   bool
+	IsCel2                                                  bool
 }
 
 // Rules ensures c's ChainID is not nil.
@@ -1160,5 +1233,7 @@ func (c *ChainConfig) Rules(num *big.Int, isMerge bool, timestamp uint64) Rules 
 		IsOptimismFjord:    isMerge && c.IsOptimismFjord(timestamp),
 		IsOptimismGranite:  isMerge && c.IsOptimismGranite(timestamp),
 		IsOptimismHolocene: isMerge && c.IsOptimismHolocene(timestamp),
+		// Celo
+		IsCel2: c.IsCel2(timestamp),
 	}
 }

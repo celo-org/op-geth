@@ -69,6 +69,15 @@ func opConfig() *params.ChainConfig {
 	return config
 }
 
+func celoConfig() *params.ChainConfig {
+	config := copyConfig(params.TestChainConfig)
+	ct := uint64(10)
+	config.Cel2Time = &ct
+	config.Celo = &params.CeloConfig{EIP1559BaseFeeFloor: params.InitialBaseFee}
+
+	return config
+}
+
 // TestBlockGasLimits tests the gasLimit checks for blocks both across
 // the EIP-1559 boundary and post-1559 blocks
 func TestBlockGasLimits(t *testing.T) {
@@ -172,6 +181,33 @@ func TestCalcBaseFeeOptimism(t *testing.T) {
 			parent.Time = 8
 		}
 		if have, want := CalcBaseFee(opConfig(), parent, parent.Time+2), big.NewInt(test.expectedBaseFee); have.Cmp(want) != 0 {
+			t.Errorf("test %d: have %d  want %d, ", i, have, want)
+		}
+	}
+}
+
+// TestCalcBaseFeeCeloFloor assumes all blocks are 1559-blocks
+func TestCalcBaseFeeCeloFloor(t *testing.T) {
+	config := celoConfig()
+	tests := []struct {
+		parentBaseFee   int64
+		parentGasLimit  uint64
+		parentGasUsed   uint64
+		expectedBaseFee int64
+	}{
+		{params.InitialBaseFee, 20000000, 10000000, params.InitialBaseFee}, // usage == target
+		{params.InitialBaseFee, 20000000, 7000000, params.InitialBaseFee},  // usage below target
+		{params.InitialBaseFee, 20000000, 11000000, 1012500000},            // usage above target
+	}
+	for i, test := range tests {
+		parent := &types.Header{
+			Number:   common.Big32,
+			GasLimit: test.parentGasLimit,
+			GasUsed:  test.parentGasUsed,
+			BaseFee:  big.NewInt(test.parentBaseFee),
+			Time:     *config.Cel2Time,
+		}
+		if have, want := CalcBaseFee(config, parent, parent.Time+2), big.NewInt(test.expectedBaseFee); have.Cmp(want) != 0 {
 			t.Errorf("test %d: have %d  want %d, ", i, have, want)
 		}
 	}

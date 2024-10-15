@@ -32,6 +32,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus/misc/eip1559"
 	"github.com/ethereum/go-ethereum/consensus/misc/eip4844"
+	"github.com/ethereum/go-ethereum/contracts"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/txpool"
@@ -116,7 +117,7 @@ func newBlobTxMeta(id uint64, size uint32, tx *types.Transaction) *blobTxMeta {
 		id:         id,
 		size:       size,
 		nonce:      tx.Nonce(),
-		costCap:    uint256.MustFromBig(tx.Cost()),
+		costCap:    uint256.MustFromBig(tx.NativeCost()),
 		execTipCap: uint256.MustFromBig(tx.GasTipCap()),
 		execFeeCap: uint256.MustFromBig(tx.GasFeeCap()),
 		blobFeeCap: uint256.MustFromBig(tx.BlobGasFeeCap()),
@@ -315,6 +316,10 @@ type BlobPool struct {
 	insertFeed   event.Feed // Event feed to send out new tx events on pool inclusion (reorg included)
 
 	lock sync.RWMutex // Mutex protecting the pool during reorg handling
+
+	// Celo specific
+	celoBackend        *contracts.CeloBackend // For fee currency balances & exchange rate calculation
+	feeCurrencyContext common.FeeCurrencyContext
 }
 
 // New creates a new blob transaction pool to gather, sort and filter inbound
@@ -370,6 +375,7 @@ func (p *BlobPool) Init(gasTip uint64, head *types.Header, reserve txpool.Addres
 		return err
 	}
 	p.head, p.state = head, state
+	p.recreateCeloProperties()
 
 	// Index all transactions on disk and delete anything unprocessable
 	var fails []uint64
@@ -796,6 +802,7 @@ func (p *BlobPool) Reset(oldHead, newHead *types.Header) {
 	}
 	p.head = newHead
 	p.state = statedb
+	p.recreateCeloProperties()
 
 	// Run the reorg between the old and new head and figure out which accounts
 	// need to be rechecked and which transactions need to be readded
@@ -1081,13 +1088,13 @@ func (p *BlobPool) SetGasTip(tip *big.Int) {
 func (p *BlobPool) validateTx(tx *types.Transaction) error {
 	// Ensure the transaction adheres to basic pool filters (type, size, tip) and
 	// consensus rules
-	baseOpts := &txpool.ValidationOptions{
-		Config:  p.chain.Config(),
-		Accept:  1 << types.BlobTxType,
-		MaxSize: txMaxSize,
-		MinTip:  p.gasTip.ToBig(),
+	baseOpts := &txpool.CeloValidationOptions{
+		Config:    p.chain.Config(),
+		AcceptSet: txpool.NewAcceptSet(types.BlobTxType),
+		MaxSize:   txMaxSize,
+		MinTip:    p.gasTip.ToBig(),
 	}
-	if err := txpool.ValidateTransaction(tx, p.head, p.signer, baseOpts); err != nil {
+	if err := txpool.CeloValidateTransaction(tx, p.head, p.signer, baseOpts, p.feeCurrencyContext); err != nil {
 		return err
 	}
 	// Ensure the transaction adheres to the stateful pool filters (nonce, balance)
@@ -1107,20 +1114,24 @@ func (p *BlobPool) validateTx(tx *types.Transaction) error {
 			}
 			return have, maxTxsPerAccount - have
 		},
-		ExistingExpenditure: func(addr common.Address) *big.Int {
+		ExistingExpenditure: func(addr common.Address) (*big.Int, *big.Int) {
 			if spent := p.spent[addr]; spent != nil {
-				return spent.ToBig()
+				return new(big.Int), spent.ToBig()
 			}
-			return new(big.Int)
+			return new(big.Int), new(big.Int)
 		},
-		ExistingCost: func(addr common.Address, nonce uint64) *big.Int {
+		ExistingCost: func(addr common.Address, nonce uint64) (*big.Int, *big.Int) {
 			next := p.state.GetNonce(addr)
 			if uint64(len(p.index[addr])) > nonce-next {
-				return p.index[addr][int(nonce-next)].costCap.ToBig()
+				return new(big.Int), p.index[addr][int(nonce-next)].costCap.ToBig()
 			}
-			return nil
+			return nil, nil
+		},
+		ExistingBalance: func(addr common.Address, feeCurrency *common.Address) *big.Int {
+			return contracts.GetFeeBalance(p.celoBackend, addr, feeCurrency)
 		},
 	}
+
 	if err := txpool.ValidateTransactionWithState(tx, p.signer, stateOpts); err != nil {
 		return err
 	}

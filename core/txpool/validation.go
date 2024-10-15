@@ -74,7 +74,8 @@ type ValidationOptions struct {
 //
 // This check is public to allow different transaction pools to check the basic
 // rules without duplicating code and running the risk of missed updates.
-func ValidateTransaction(tx *types.Transaction, head *types.Header, signer types.Signer, opts *ValidationOptions) error {
+// ONLY TO BE CALLED FROM "CeloValidateTransaction"
+func ValidateTransaction(tx *types.Transaction, head *types.Header, signer types.Signer, opts *CeloValidationOptions, currencyCtx common.FeeCurrencyContext) error {
 	// No unauthenticated deposits allowed in the transaction pool.
 	// This is for spam protection, not consensus,
 	// as the external engine-API user authenticates deposits.
@@ -85,7 +86,7 @@ func ValidateTransaction(tx *types.Transaction, head *types.Header, signer types
 		return core.ErrTxTypeNotSupported
 	}
 	// Ensure transactions not implemented by the calling pool are rejected
-	if opts.Accept&(1<<tx.Type()) == 0 {
+	if !opts.Accepts(tx.Type()) {
 		return fmt.Errorf("%w: tx type %v not supported by this pool", core.ErrTxTypeNotSupported, tx.Type())
 	}
 	// Before performing any expensive validations, sanity check that the tx is
@@ -133,7 +134,16 @@ func ValidateTransaction(tx *types.Transaction, head *types.Header, signer types
 	}
 	// Ensure the transaction has more gas than the bare minimum needed to cover
 	// the transaction metadata
-	intrGas, err := core.IntrinsicGas(tx.Data(), tx.AccessList(), tx.To() == nil, true, opts.Config.IsIstanbul(head.Number), opts.Config.IsShanghai(head.Number, head.Time))
+	intrGas, err := core.IntrinsicGas(
+		tx.Data(),
+		tx.AccessList(),
+		tx.To() == nil,
+		true,
+		opts.Config.IsIstanbul(head.Number),
+		opts.Config.IsShanghai(head.Number, head.Time),
+		tx.FeeCurrency(),
+		currencyCtx.IntrinsicGasCosts,
+	)
 	if err != nil {
 		return err
 	}
@@ -202,7 +212,7 @@ func validateBlobSidecar(hashes []common.Hash, sidecar *types.BlobTxSidecar) err
 // ValidationOptionsWithState define certain differences between stateful transaction
 // validation across the different pools without having to duplicate those checks.
 type ValidationOptionsWithState struct {
-	State *state.StateDB // State database to check nonces and balances against
+	State *state.StateDB // State database to check nonces
 
 	// FirstNonceGap is an optional callback to retrieve the first nonce gap in
 	// the list of pooled transactions of a specific account. If this method is
@@ -217,14 +227,27 @@ type ValidationOptionsWithState struct {
 
 	// ExistingExpenditure is a mandatory callback to retrieve the cumulative
 	// cost of the already pooled transactions to check for overdrafts.
-	ExistingExpenditure func(addr common.Address) *big.Int
+	// Returns (feeCurrencySpent, nativeSpent), where feeCurrencySpent only
+	// includes the spending for txs with the relevant feeCurrency.
+	// The feeCurrency relevant for feeCurrencySpent is fixed for every
+	// instance of ExistingExpenditure and therefore not passed in as a
+	// parameter.
+	ExistingExpenditure func(addr common.Address) (*big.Int, *big.Int)
 
 	// ExistingCost is a mandatory callback to retrieve an already pooled
 	// transaction's cost with the given nonce to check for overdrafts.
-	ExistingCost func(addr common.Address, nonce uint64) *big.Int
+	// Returns (feeCurrencyCost, nativeCost), where feeCurrencyCost only
+	// includes the spending for txs with the relevant feeCurrency.
+	// The feeCurrency relevant for feeCurrencyCost is fixed for every
+	// instance of ExistingCost, and therefore not passed in as a
+	// parameter.
+	ExistingCost func(addr common.Address, nonce uint64) (*big.Int, *big.Int)
 
 	// L1CostFn is an optional extension, to validate L1 rollup costs of a tx
 	L1CostFn L1CostFunc
+
+	// ExistingBalance for a currency, to check for balance to cover transaction costs.
+	ExistingBalance func(addr common.Address, feeCurrency *common.Address) *big.Int
 }
 
 // ValidateTransactionWithState is a helper method to check whether a transaction
@@ -252,30 +275,48 @@ func ValidateTransactionWithState(tx *types.Transaction, signer types.Signer, op
 	}
 	// Ensure the transactor has enough funds to cover the transaction costs
 	var (
-		balance = opts.State.GetBalance(from).ToBig()
-		cost    = tx.Cost()
+		feeCurrencyBalance          = opts.ExistingBalance(from, tx.FeeCurrency())
+		nativeBalance               = opts.ExistingBalance(from, &common.ZeroAddress)
+		feeCurrencyCost, nativeCost = tx.Cost()
 	)
+	if feeCurrencyBalance == nil {
+		return fmt.Errorf("feeCurrencyBalance is nil for FeeCurrency %x", tx.FeeCurrency())
+	}
 	if opts.L1CostFn != nil {
 		if l1Cost := opts.L1CostFn(tx.RollupCostData()); l1Cost != nil { // add rollup cost
-			cost = cost.Add(cost, l1Cost)
+			nativeCost = nativeCost.Add(nativeCost, l1Cost)
 		}
 	}
-	if balance.Cmp(cost) < 0 {
-		return fmt.Errorf("%w: balance %v, tx cost %v, overshot %v", core.ErrInsufficientFunds, balance, cost, new(big.Int).Sub(cost, balance))
+	if feeCurrencyBalance.Cmp(feeCurrencyCost) < 0 {
+		return fmt.Errorf("%w: balance %v, tx cost %v, overshot %v, fee currency: %v", core.ErrInsufficientFunds, feeCurrencyBalance, feeCurrencyCost, new(big.Int).Sub(feeCurrencyCost, feeCurrencyBalance), tx.FeeCurrency().Hex())
+	}
+	if nativeBalance.Cmp(nativeCost) < 0 {
+		return fmt.Errorf("%w: balance %v, tx cost %v, overshot %v", core.ErrInsufficientFunds, nativeBalance, nativeCost, new(big.Int).Sub(nativeCost, nativeBalance))
 	}
 	// Ensure the transactor has enough funds to cover for replacements or nonce
 	// expansions without overdrafts
-	spent := opts.ExistingExpenditure(from)
-	if prev := opts.ExistingCost(from, tx.Nonce()); prev != nil {
-		bump := new(big.Int).Sub(cost, prev)
-		need := new(big.Int).Add(spent, bump)
-		if balance.Cmp(need) < 0 {
-			return fmt.Errorf("%w: balance %v, queued cost %v, tx bumped %v, overshot %v", core.ErrInsufficientFunds, balance, spent, bump, new(big.Int).Sub(need, balance))
+	feeCurrencySpent, nativeSpent := opts.ExistingExpenditure(from)
+	if feeCurrencyPrev, nativePrev := opts.ExistingCost(from, tx.Nonce()); feeCurrencyPrev != nil {
+		// Costs from all transactions refer to the same currency,
+		// which is ensured by ExistingCost and ExistingExpenditure.
+		feeCurrencyBump := new(big.Int).Sub(feeCurrencyCost, feeCurrencyPrev)
+		feeCurrencyNeed := new(big.Int).Add(feeCurrencySpent, feeCurrencyBump)
+		nativeBump := new(big.Int).Sub(nativeCost, nativePrev)
+		nativeNeed := new(big.Int).Add(nativeSpent, nativeBump)
+		if feeCurrencyBalance.Cmp(feeCurrencyNeed) < 0 {
+			return fmt.Errorf("%w: balance %v, queued cost %v, tx bumped %v, overshot %v, feeCurrency %v", core.ErrInsufficientFunds, feeCurrencyBalance, feeCurrencySpent, feeCurrencyBump, new(big.Int).Sub(feeCurrencyNeed, feeCurrencyBalance), tx.FeeCurrency())
+		}
+		if nativeBalance.Cmp(nativeNeed) < 0 {
+			return fmt.Errorf("%w: balance %v, queued cost %v, tx bumped %v, overshot %v", core.ErrInsufficientFunds, nativeBalance, nativeSpent, nativeBump, new(big.Int).Sub(nativeNeed, nativeBalance))
 		}
 	} else {
-		need := new(big.Int).Add(spent, cost)
-		if balance.Cmp(need) < 0 {
-			return fmt.Errorf("%w: balance %v, queued cost %v, tx cost %v, overshot %v", core.ErrInsufficientFunds, balance, spent, cost, new(big.Int).Sub(need, balance))
+		feeCurrencyNeed := new(big.Int).Add(feeCurrencySpent, feeCurrencyCost)
+		nativeNeed := new(big.Int).Add(nativeSpent, nativeCost)
+		if feeCurrencyBalance.Cmp(feeCurrencyNeed) < 0 {
+			return fmt.Errorf("%w: balance %v, queued cost %v, tx cost %v, overshot %v, feeCurrency %v", core.ErrInsufficientFunds, feeCurrencyBalance, feeCurrencySpent, feeCurrencyCost, new(big.Int).Sub(feeCurrencyNeed, feeCurrencyBalance), tx.FeeCurrency())
+		}
+		if nativeBalance.Cmp(nativeNeed) < 0 {
+			return fmt.Errorf("%w: balance %v, queued cost %v, tx cost %v, overshot %v", core.ErrInsufficientFunds, nativeBalance, nativeSpent, nativeCost, new(big.Int).Sub(nativeNeed, nativeBalance))
 		}
 		// Transaction takes a new nonce value out of the pool. Ensure it doesn't
 		// overflow the number of permitted transactions from a single account

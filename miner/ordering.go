@@ -21,6 +21,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/exchange"
 	"github.com/ethereum/go-ethereum/core/txpool"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/holiman/uint256"
@@ -36,10 +37,19 @@ type txWithMinerFee struct {
 // newTxWithMinerFee creates a wrapped transaction, calculating the effective
 // miner gasTipCap if a base fee is provided.
 // Returns error in case of a negative effective miner gasTipCap.
-func newTxWithMinerFee(tx *txpool.LazyTransaction, from common.Address, baseFee *uint256.Int) (*txWithMinerFee, error) {
+func newTxWithMinerFee(tx *txpool.LazyTransaction, from common.Address, baseFee *uint256.Int, rates common.ExchangeRates) (*txWithMinerFee, error) {
 	tip := new(uint256.Int).Set(tx.GasTipCap)
 	if baseFee != nil {
-		if tx.GasFeeCap.Cmp(baseFee) < 0 {
+		baseFeeConverted := baseFee
+		if tx.FeeCurrency != nil {
+			baseFeeBig, err := exchange.ConvertCeloToCurrency(rates, tx.FeeCurrency, baseFee.ToBig())
+			if err != nil {
+				return nil, err
+			}
+			baseFeeConverted = uint256.MustFromBig(baseFeeBig)
+		}
+
+		if tx.GasFeeCap.Cmp(baseFeeConverted) < 0 {
 			return nil, types.ErrGasFeeCapTooLow
 		}
 		tip = new(uint256.Int).Sub(tx.GasFeeCap, baseFee)
@@ -47,6 +57,16 @@ func newTxWithMinerFee(tx *txpool.LazyTransaction, from common.Address, baseFee 
 			tip = tx.GasTipCap
 		}
 	}
+
+	// Convert tip back into celo if the transaction is in a different currency
+	if tx.FeeCurrency != nil {
+		tipBig, err := exchange.ConvertCurrencyToCelo(rates, tx.FeeCurrency, tip.ToBig())
+		if err != nil {
+			return nil, err
+		}
+		tip = uint256.MustFromBig(tipBig)
+	}
+
 	return &txWithMinerFee{
 		tx:   tx,
 		from: from,
@@ -87,10 +107,11 @@ func (s *txByPriceAndTime) Pop() interface{} {
 // transactions in a profit-maximizing sorted order, while supporting removing
 // entire batches of transactions for non-executable accounts.
 type transactionsByPriceAndNonce struct {
-	txs     map[common.Address][]*txpool.LazyTransaction // Per account nonce-sorted list of transactions
-	heads   txByPriceAndTime                             // Next transaction for each unique account (price heap)
-	signer  types.Signer                                 // Signer for the set of transactions
-	baseFee *uint256.Int                                 // Current base fee
+	txs           map[common.Address][]*txpool.LazyTransaction // Per account nonce-sorted list of transactions
+	heads         txByPriceAndTime                             // Next transaction for each unique account (price heap)
+	signer        types.Signer                                 // Signer for the set of transactions
+	baseFee       *uint256.Int                                 // Current base fee
+	exchangeRates common.ExchangeRates
 }
 
 // newTransactionsByPriceAndNonce creates a transaction set that can retrieve
@@ -98,7 +119,7 @@ type transactionsByPriceAndNonce struct {
 //
 // Note, the input map is reowned so the caller should not interact any more with
 // if after providing it to the constructor.
-func newTransactionsByPriceAndNonce(signer types.Signer, txs map[common.Address][]*txpool.LazyTransaction, baseFee *big.Int) *transactionsByPriceAndNonce {
+func newTransactionsByPriceAndNonce(signer types.Signer, txs map[common.Address][]*txpool.LazyTransaction, baseFee *big.Int, rates common.ExchangeRates) *transactionsByPriceAndNonce {
 	// Convert the basefee from header format to uint256 format
 	var baseFeeUint *uint256.Int
 	if baseFee != nil {
@@ -107,7 +128,7 @@ func newTransactionsByPriceAndNonce(signer types.Signer, txs map[common.Address]
 	// Initialize a price and received time based heap with the head transactions
 	heads := make(txByPriceAndTime, 0, len(txs))
 	for from, accTxs := range txs {
-		wrapped, err := newTxWithMinerFee(accTxs[0], from, baseFeeUint)
+		wrapped, err := newTxWithMinerFee(accTxs[0], from, baseFeeUint, rates)
 		if err != nil {
 			delete(txs, from)
 			continue
@@ -119,10 +140,11 @@ func newTransactionsByPriceAndNonce(signer types.Signer, txs map[common.Address]
 
 	// Assemble and return the transaction set
 	return &transactionsByPriceAndNonce{
-		txs:     txs,
-		heads:   heads,
-		signer:  signer,
-		baseFee: baseFeeUint,
+		txs:           txs,
+		heads:         heads,
+		signer:        signer,
+		baseFee:       baseFeeUint,
+		exchangeRates: rates,
 	}
 }
 
@@ -138,7 +160,7 @@ func (t *transactionsByPriceAndNonce) Peek() (*txpool.LazyTransaction, *uint256.
 func (t *transactionsByPriceAndNonce) Shift() {
 	acc := t.heads[0].from
 	if txs, ok := t.txs[acc]; ok && len(txs) > 0 {
-		if wrapped, err := newTxWithMinerFee(txs[0], acc, t.baseFee); err == nil {
+		if wrapped, err := newTxWithMinerFee(txs[0], acc, t.baseFee, t.exchangeRates); err == nil {
 			t.heads[0], t.txs[acc] = wrapped, txs[1:]
 			heap.Fix(&t.heads, 0)
 			return

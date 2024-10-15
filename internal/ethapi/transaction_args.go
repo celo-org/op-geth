@@ -25,6 +25,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/exchange"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/consensus/misc/eip4844"
@@ -74,6 +75,10 @@ type TransactionArgs struct {
 
 	// This configures whether blobs are allowed to be passed.
 	blobSidecarAllowed bool
+
+	// Celo specific:
+	FeeCurrency         *common.Address `json:"feeCurrency,omitempty"`         // CIP-64, CIP-66
+	MaxFeeInFeeCurrency *hexutil.Big    `json:"maxFeeInFeeCurrency,omitempty"` // CIP-66
 }
 
 // from retrieves the transaction sender address.
@@ -96,7 +101,7 @@ func (args *TransactionArgs) data() []byte {
 }
 
 // setDefaults fills in default values for unspecified tx fields.
-func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend, skipGasEstimation bool) error {
+func (args *TransactionArgs) setDefaults(ctx context.Context, b CeloBackend, skipGasEstimation bool) error {
 	if err := args.setBlobTxSidecar(ctx); err != nil {
 		return err
 	}
@@ -158,6 +163,9 @@ func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend, skipGas
 				AccessList:           args.AccessList,
 				BlobFeeCap:           args.BlobFeeCap,
 				BlobHashes:           args.BlobHashes,
+
+				FeeCurrency:         args.FeeCurrency,
+				MaxFeeInFeeCurrency: args.MaxFeeInFeeCurrency,
 			}
 			latestBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.LatestBlockNumber)
 			estimated, err := DoEstimateGas(ctx, b, callArgs, latestBlockNr, nil, b.RPCGasCap())
@@ -183,7 +191,7 @@ func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend, skipGas
 }
 
 // setFeeDefaults fills in default fee values for unspecified tx fields.
-func (args *TransactionArgs) setFeeDefaults(ctx context.Context, b Backend) error {
+func (args *TransactionArgs) setFeeDefaults(ctx context.Context, b CeloBackend) error {
 	head := b.CurrentHeader()
 	// Sanity check the EIP-4844 fee parameters.
 	if args.BlobFeeCap != nil && args.BlobFeeCap.ToInt().Sign() == 0 {
@@ -201,6 +209,10 @@ func (args *TransactionArgs) setFeeDefaults(ctx context.Context, b Backend) erro
 	// other tx values. See https://github.com/ethereum/go-ethereum/pull/23274
 	// for more information.
 	eip1559ParamsSet := args.MaxFeePerGas != nil && args.MaxPriorityFeePerGas != nil
+
+	if args.MaxFeeInFeeCurrency != nil && args.FeeCurrency == nil {
+		return errors.New("feeCurrency must be set when maxFeeInFeeCurrency is given")
+	}
 	// Sanity check the EIP-1559 fee parameters if present.
 	if args.GasPrice == nil && eip1559ParamsSet {
 		if args.MaxFeePerGas.ToInt().Sign() == 0 {
@@ -243,7 +255,7 @@ func (args *TransactionArgs) setFeeDefaults(ctx context.Context, b Backend) erro
 }
 
 // setCancunFeeDefaults fills in reasonable default fee values for unspecified fields.
-func (args *TransactionArgs) setCancunFeeDefaults(ctx context.Context, head *types.Header, b Backend) error {
+func (args *TransactionArgs) setCancunFeeDefaults(ctx context.Context, head *types.Header, b CeloBackend) error {
 	// Set maxFeePerBlobGas if it is missing.
 	if args.BlobHashes != nil && args.BlobFeeCap == nil {
 		var excessBlobGas uint64
@@ -252,6 +264,20 @@ func (args *TransactionArgs) setCancunFeeDefaults(ctx context.Context, head *typ
 		}
 		// ExcessBlobGas must be set for a Cancun block.
 		blobBaseFee := eip4844.CalcBlobFee(excessBlobGas)
+		if args.IsFeeCurrencyDenominated() {
+			// wether the blob-fee will be used like that in Cel2 or not,
+			// at least this keeps it consistent with the rest of the gas-fees
+			var err error
+			blobBaseFee, err = b.ConvertToCurrency(
+				ctx,
+				rpc.BlockNumberOrHashWithHash(head.Hash(), false),
+				blobBaseFee,
+				args.FeeCurrency,
+			)
+			if err != nil {
+				return fmt.Errorf("can't convert blob-fee to fee-currency: %w", err)
+			}
+		}
 		// Set the max fee to be 2 times larger than the previous block's blob base fee.
 		// The additional slack allows the tx to not become invalidated if the base
 		// fee is rising.
@@ -262,12 +288,23 @@ func (args *TransactionArgs) setCancunFeeDefaults(ctx context.Context, head *typ
 }
 
 // setLondonFeeDefaults fills in reasonable default fee values for unspecified fields.
-func (args *TransactionArgs) setLondonFeeDefaults(ctx context.Context, head *types.Header, b Backend) error {
+func (args *TransactionArgs) setLondonFeeDefaults(ctx context.Context, head *types.Header, b CeloBackend) error {
 	// Set maxPriorityFeePerGas if it is missing.
 	if args.MaxPriorityFeePerGas == nil {
 		tip, err := b.SuggestGasTipCap(ctx)
 		if err != nil {
 			return err
+		}
+		if args.IsFeeCurrencyDenominated() {
+			tip, err = b.ConvertToCurrency(
+				ctx,
+				rpc.BlockNumberOrHashWithHash(head.Hash(), false),
+				tip,
+				args.FeeCurrency,
+			)
+			if err != nil {
+				return fmt.Errorf("can't convert suggested gasTipCap to fee-currency: %w", err)
+			}
 		}
 		args.MaxPriorityFeePerGas = (*hexutil.Big)(tip)
 	}
@@ -276,9 +313,22 @@ func (args *TransactionArgs) setLondonFeeDefaults(ctx context.Context, head *typ
 		// Set the max fee to be 2 times larger than the previous block's base fee.
 		// The additional slack allows the tx to not become invalidated if the base
 		// fee is rising.
+		baseFee := head.BaseFee
+		if args.IsFeeCurrencyDenominated() {
+			var err error
+			baseFee, err = b.ConvertToCurrency(
+				ctx,
+				rpc.BlockNumberOrHashWithHash(head.Hash(), false),
+				baseFee,
+				args.FeeCurrency,
+			)
+			if err != nil {
+				return fmt.Errorf("can't convert base-fee to fee-currency: %w", err)
+			}
+		}
 		val := new(big.Int).Add(
 			args.MaxPriorityFeePerGas.ToInt(),
-			new(big.Int).Mul(head.BaseFee, big.NewInt(2)),
+			new(big.Int).Mul(baseFee, big.NewInt(2)),
 		)
 		args.MaxFeePerGas = (*hexutil.Big)(val)
 	}
@@ -421,11 +471,14 @@ func (args *TransactionArgs) CallDefaults(globalGasCap uint64, baseFee *big.Int,
 // core evm. This method is used in calls and traces that do not require a real
 // live transaction.
 // Assumes that fields are not nil, i.e. setDefaults or CallDefaults has been called.
-func (args *TransactionArgs) ToMessage(baseFee *big.Int) *core.Message {
+func (args *TransactionArgs) ToMessage(baseFee *big.Int, exchangeRates common.ExchangeRates) *core.Message {
 	var (
 		gasPrice  *big.Int
 		gasFeeCap *big.Int
 		gasTipCap *big.Int
+
+		// Celo specific
+		maxFeeInFeeCurrency *big.Int
 	)
 	if baseFee == nil {
 		gasPrice = args.GasPrice.ToInt()
@@ -443,6 +496,14 @@ func (args *TransactionArgs) ToMessage(baseFee *big.Int) *core.Message {
 			// Backfill the legacy gasPrice for EVM execution, unless we're all zeroes
 			gasPrice = new(big.Int)
 			if gasFeeCap.BitLen() > 0 || gasTipCap.BitLen() > 0 {
+				if args.IsFeeCurrencyDenominated() {
+					var err error
+					baseFee, err = exchange.ConvertCeloToCurrency(exchangeRates, args.FeeCurrency, baseFee)
+					if err != nil {
+						log.Error("can't convert base-fee to fee-currency", "err", err)
+						baseFee = common.Big1
+					}
+				}
 				gasPrice = math.BigMin(new(big.Int).Add(gasTipCap, baseFee), gasFeeCap)
 			}
 		}
@@ -450,6 +511,9 @@ func (args *TransactionArgs) ToMessage(baseFee *big.Int) *core.Message {
 	var accessList types.AccessList
 	if args.AccessList != nil {
 		accessList = *args.AccessList
+	}
+	if args.MaxFeeInFeeCurrency != nil {
+		maxFeeInFeeCurrency = args.MaxFeeInFeeCurrency.ToInt()
 	}
 	return &core.Message{
 		From:              args.from(),
@@ -464,6 +528,9 @@ func (args *TransactionArgs) ToMessage(baseFee *big.Int) *core.Message {
 		BlobGasFeeCap:     (*big.Int)(args.BlobFeeCap),
 		BlobHashes:        args.BlobHashes,
 		SkipAccountChecks: true,
+		// Celo specific:
+		FeeCurrency:         args.FeeCurrency,
+		MaxFeeInFeeCurrency: maxFeeInFeeCurrency,
 	}
 }
 
@@ -503,16 +570,47 @@ func (args *TransactionArgs) ToTransaction() *types.Transaction {
 		if args.AccessList != nil {
 			al = *args.AccessList
 		}
-		data = &types.DynamicFeeTx{
-			To:         args.To,
-			ChainID:    (*big.Int)(args.ChainID),
-			Nonce:      uint64(*args.Nonce),
-			Gas:        uint64(*args.Gas),
-			GasFeeCap:  (*big.Int)(args.MaxFeePerGas),
-			GasTipCap:  (*big.Int)(args.MaxPriorityFeePerGas),
-			Value:      (*big.Int)(args.Value),
-			Data:       args.data(),
-			AccessList: al,
+		if args.FeeCurrency != nil {
+			if args.IsFeeCurrencyDenominated() {
+				data = &types.CeloDynamicFeeTxV2{
+					To:          args.To,
+					ChainID:     (*big.Int)(args.ChainID),
+					Nonce:       uint64(*args.Nonce),
+					Gas:         uint64(*args.Gas),
+					GasFeeCap:   (*big.Int)(args.MaxFeePerGas),
+					GasTipCap:   (*big.Int)(args.MaxPriorityFeePerGas),
+					Value:       (*big.Int)(args.Value),
+					Data:        args.data(),
+					AccessList:  al,
+					FeeCurrency: args.FeeCurrency,
+				}
+			} else {
+				data = &types.CeloDenominatedTx{
+					To:                  args.To,
+					ChainID:             (*big.Int)(args.ChainID),
+					Nonce:               uint64(*args.Nonce),
+					Gas:                 uint64(*args.Gas),
+					GasFeeCap:           (*big.Int)(args.MaxFeePerGas),
+					GasTipCap:           (*big.Int)(args.MaxPriorityFeePerGas),
+					Value:               (*big.Int)(args.Value),
+					Data:                args.data(),
+					AccessList:          al,
+					FeeCurrency:         args.FeeCurrency,
+					MaxFeeInFeeCurrency: (*big.Int)(args.MaxFeeInFeeCurrency),
+				}
+			}
+		} else {
+			data = &types.DynamicFeeTx{
+				To:         args.To,
+				ChainID:    (*big.Int)(args.ChainID),
+				Nonce:      uint64(*args.Nonce),
+				Gas:        uint64(*args.Gas),
+				GasFeeCap:  (*big.Int)(args.MaxFeePerGas),
+				GasTipCap:  (*big.Int)(args.MaxPriorityFeePerGas),
+				Value:      (*big.Int)(args.Value),
+				Data:       args.data(),
+				AccessList: al,
+			}
 		}
 
 	case args.AccessList != nil:
@@ -543,4 +641,11 @@ func (args *TransactionArgs) ToTransaction() *types.Transaction {
 // IsEIP4844 returns an indicator if the args contains EIP4844 fields.
 func (args *TransactionArgs) IsEIP4844() bool {
 	return args.BlobHashes != nil || args.BlobFeeCap != nil
+}
+
+// IsFeeCurrencyDenominated returns whether the gas-price related
+// fields are denominated in a given fee currency or in the native token.
+// This effectively is only true for CIP-64 transactions.
+func (args *TransactionArgs) IsFeeCurrencyDenominated() bool {
+	return args.FeeCurrency != nil && args.MaxFeeInFeeCurrency == nil
 }

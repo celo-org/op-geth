@@ -93,6 +93,8 @@ func newPrestateTracer(ctx *tracers.Context, cfg json.RawMessage) (*tracers.Trac
 			OnTxStart: t.OnTxStart,
 			OnTxEnd:   t.OnTxEnd,
 			OnOpcode:  t.OnOpcode,
+			// Celo
+			TraceDebitCredit: true,
 		},
 		GetResult: t.GetResult,
 		Stop:      t.Stop,
@@ -158,6 +160,9 @@ func (t *prestateTracer) OnTxStart(env *tracing.VMContext, tx *types.Transaction
 	t.lookupAccount(from)
 	t.lookupAccount(t.to)
 	t.lookupAccount(env.Coinbase)
+	if tx.FeeCurrency() != nil {
+		t.lookupAccount(*tx.FeeCurrency())
+	}
 }
 
 func (t *prestateTracer) OnTxEnd(receipt *types.Receipt, err error) {

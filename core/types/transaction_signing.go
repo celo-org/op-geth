@@ -53,6 +53,10 @@ func MakeSigner(config *params.ChainConfig, blockNumber *big.Int, blockTime uint
 	default:
 		signer = FrontierSigner{}
 	}
+
+	// Apply the celo overlay signer, if no celo forks have been enabled then the given signer is returned.
+	signer = makeCeloSigner(config, blockTime, signer)
+
 	return signer
 }
 
@@ -65,6 +69,14 @@ func MakeSigner(config *params.ChainConfig, blockNumber *big.Int, blockTime uint
 // have the current block number available, use MakeSigner instead.
 func LatestSigner(config *params.ChainConfig) Signer {
 	if config.ChainID != nil {
+		if config.Cel2Time != nil {
+			if config.CancunTime != nil {
+				// This branch is only used in testing
+				return latestCeloSigner(config.ChainID, NewCancunSigner(config.ChainID))
+			} else {
+				return latestCeloSigner(config.ChainID, NewLondonSigner(config.ChainID))
+			}
+		}
 		if config.CancunTime != nil && !config.IsOptimism() {
 			return NewCancunSigner(config.ChainID)
 		}
@@ -92,7 +104,7 @@ func LatestSignerForChainID(chainID *big.Int) Signer {
 	if chainID == nil {
 		return HomesteadSigner{}
 	}
-	return NewCancunSigner(chainID)
+	return latestCeloSigner(chainID, NewCancunSigner(chainID))
 }
 
 // SignTx signs the transaction using the given signer and private key.

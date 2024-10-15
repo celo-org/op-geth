@@ -58,6 +58,7 @@ import (
 const estimateGasErrorRatio = 0.015
 
 var errBlobTxNotSupported = errors.New("signing blob transactions not supported")
+var emptyExchangeRates = make(common.ExchangeRates)
 
 // EthereumAPI provides an API to access Ethereum related information.
 type EthereumAPI struct {
@@ -303,11 +304,11 @@ func (api *EthereumAccountAPI) Accounts() []common.Address {
 type PersonalAccountAPI struct {
 	am        *accounts.Manager
 	nonceLock *AddrLocker
-	b         Backend
+	b         CeloBackend
 }
 
 // NewPersonalAccountAPI creates a new PersonalAccountAPI.
-func NewPersonalAccountAPI(b Backend, nonceLock *AddrLocker) *PersonalAccountAPI {
+func NewPersonalAccountAPI(b CeloBackend, nonceLock *AddrLocker) *PersonalAccountAPI {
 	return &PersonalAccountAPI{
 		am:        b.AccountManager(),
 		nonceLock: nonceLock,
@@ -637,11 +638,11 @@ func (api *PersonalAccountAPI) Unpair(ctx context.Context, url string, pin strin
 
 // BlockChainAPI provides an API to access Ethereum blockchain data.
 type BlockChainAPI struct {
-	b Backend
+	b CeloBackend
 }
 
 // NewBlockChainAPI creates a new Ethereum blockchain API.
-func NewBlockChainAPI(b Backend) *BlockChainAPI {
+func NewBlockChainAPI(b CeloBackend) *BlockChainAPI {
 	return &BlockChainAPI{b}
 }
 
@@ -1031,7 +1032,8 @@ func (api *BlockChainAPI) GetBlockReceipts(ctx context.Context, blockNrOrHash rp
 		return nil, err
 	}
 	txs := block.Transactions()
-	if len(txs) != len(receipts) {
+	// Legacy Celo blocks sometimes include an extra block receipt. See https://docs.celo.org/developer/migrate/from-ethereum#core-contract-calls
+	if len(txs) != len(receipts) && len(txs)+1 != len(receipts) {
 		return nil, fmt.Errorf("receipts length mismatch: %d vs %d", len(txs), len(receipts))
 	}
 
@@ -1040,9 +1042,12 @@ func (api *BlockChainAPI) GetBlockReceipts(ctx context.Context, blockNrOrHash rp
 
 	result := make([]map[string]interface{}, len(receipts))
 	for i, receipt := range receipts {
-		result[i] = marshalReceipt(receipt, block.Hash(), block.NumberU64(), signer, txs[i], i, api.b.ChainConfig())
+		if i == len(txs) {
+			result[i] = marshalBlockReceipt(receipt, block.Hash(), block.NumberU64(), i)
+		} else {
+			result[i] = marshalReceipt(receipt, block.Hash(), block.NumberU64(), signer, txs[i], i, api.b.ChainConfig())
+		}
 	}
-
 	return result, nil
 }
 
@@ -1202,7 +1207,7 @@ func doCall(ctx context.Context, b Backend, args TransactionArgs, state *state.S
 	if err := args.CallDefaults(globalGasCap, blockCtx.BaseFee, b.ChainConfig().ChainID); err != nil {
 		return nil, err
 	}
-	msg := args.ToMessage(blockCtx.BaseFee)
+	msg := args.ToMessage(blockCtx.BaseFee, blockCtx.FeeCurrencyContext.ExchangeRates)
 	evm := b.GetEVM(ctx, msg, state, header, &vm.Config{NoBaseFee: true}, &blockCtx)
 
 	// Wait for the context to be done and cancel the evm. Even if the
@@ -1229,7 +1234,7 @@ func doCall(ctx context.Context, b Backend, args TransactionArgs, state *state.S
 	return result, nil
 }
 
-func DoCall(ctx context.Context, b Backend, args TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash, overrides *StateOverride, blockOverrides *BlockOverrides, timeout time.Duration, globalGasCap uint64) (*core.ExecutionResult, error) {
+func DoCall(ctx context.Context, b CeloBackend, args TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash, overrides *StateOverride, blockOverrides *BlockOverrides, timeout time.Duration, globalGasCap uint64) (*core.ExecutionResult, error) {
 	defer func(start time.Time) { log.Debug("Executing EVM call finished", "runtime", time.Since(start)) }(time.Now())
 
 	state, header, err := b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
@@ -1285,7 +1290,7 @@ func (api *BlockChainAPI) Call(ctx context.Context, args TransactionArgs, blockN
 // successfully at block `blockNrOrHash`. It returns error if the transaction would revert, or if
 // there are unexpected failures. The gas limit is capped by both `args.Gas` (if non-nil &
 // non-zero) and `gasCap` (if non-zero).
-func DoEstimateGas(ctx context.Context, b Backend, args TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash, overrides *StateOverride, gasCap uint64) (hexutil.Uint64, error) {
+func DoEstimateGas(ctx context.Context, b CeloBackend, args TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash, overrides *StateOverride, gasCap uint64) (hexutil.Uint64, error) {
 	// Retrieve the base state and mutate it with any overrides
 	state, header, err := b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
 	if state == nil || err != nil {
@@ -1310,10 +1315,28 @@ func DoEstimateGas(ctx context.Context, b Backend, args TransactionArgs, blockNr
 	if err := args.CallDefaults(gasCap, header.BaseFee, b.ChainConfig().ChainID); err != nil {
 		return 0, err
 	}
-	call := args.ToMessage(header.BaseFee)
+
+	// Celo specific: get exchange rates if fee currency is specified
+	exchangeRates := emptyExchangeRates
+	if args.FeeCurrency != nil {
+		// It is debatable whether we should use the block itself or the parent block here.
+		// Usually, user would probably like the recent rates after the block, so we use the block itself.
+		exchangeRates, err = b.GetExchangeRates(ctx, blockNrOrHash)
+		if err != nil {
+			return 0, fmt.Errorf("get exchange rates for block: %v err: %w", header.Hash(), err)
+		}
+	}
+
+	call := args.ToMessage(header.BaseFee, exchangeRates)
+
+	// Celo specific: get balance
+	balance, err := b.GetFeeBalance(ctx, blockNrOrHash, call.From, args.FeeCurrency)
+	if err != nil {
+		return 0, err
+	}
 
 	// Run the gas estimation and wrap any revertals into a custom return
-	estimate, revert, err := gasestimator.Estimate(ctx, call, opts, gasCap)
+	estimate, revert, err := gasestimator.Estimate(ctx, call, opts, gasCap, exchangeRates, balance)
 	if err != nil {
 		if len(revert) > 0 {
 			return 0, newRevertError(revert)
@@ -1481,6 +1504,13 @@ type RPCTransaction struct {
 	IsSystemTx *bool        `json:"isSystemTx,omitempty"`
 	// deposit-tx post-Canyon only
 	DepositReceiptVersion *hexutil.Uint64 `json:"depositReceiptVersion,omitempty"`
+
+	// Celo
+	FeeCurrency         *common.Address `json:"feeCurrency,omitempty"`
+	MaxFeeInFeeCurrency *hexutil.Big    `json:"maxFeeInFeeCurrency,omitempty"`
+	EthCompatible       *bool           `json:"ethCompatible,omitempty"`
+	GatewayFee          *hexutil.Big    `json:"gatewayFee,omitempty"`
+	GatewayFeeRecipient *common.Address `json:"gatewayFeeRecipient,omitempty"`
 }
 
 // newRPCTransaction returns a transaction that will serialize to the RPC
@@ -1502,6 +1532,17 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 		V:        (*hexutil.Big)(v),
 		R:        (*hexutil.Big)(r),
 		S:        (*hexutil.Big)(s),
+		// Celo
+		FeeCurrency:         tx.FeeCurrency(),
+		MaxFeeInFeeCurrency: (*hexutil.Big)(tx.MaxFeeInFeeCurrency()),
+		// Unfortunately we need to set the gateway fee since this
+		// (0x3f33789ee7c52eacfe8b1a2afab8455aaf65f860dfa36f1afa466eb69bfa312e)
+		// tx on alfajores actually set it.
+		GatewayFee: (*hexutil.Big)(tx.GatewayFee()),
+		// Unfortunately we need to set the gateway fee recipient since this
+		// (0x7a2624134a8c634b38520dbb61f8fe2013e0817d446224f3d866ce3de92f4e98)
+		// tx on alfajores actually set it.
+		GatewayFeeRecipient: tx.GatewayFeeRecipient(),
 	}
 	if blockHash != (common.Hash{}) {
 		result.BlockHash = &blockHash
@@ -1536,6 +1577,11 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 			result.ChainID = (*hexutil.Big)(id)
 		}
 
+		if tx.IsCeloLegacy() {
+			// If this is a celo legacy transaction then set eth compatible to false
+			result.EthCompatible = new(bool)
+		}
+
 	case types.AccessListTxType:
 		al := tx.AccessList()
 		yparity := hexutil.Uint64(v.Sign())
@@ -1543,7 +1589,7 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 		result.ChainID = (*hexutil.Big)(tx.ChainId())
 		result.YParity = &yparity
 
-	case types.DynamicFeeTxType:
+	case types.DynamicFeeTxType, types.CeloDynamicFeeTxType, types.CeloDynamicFeeTxV2Type, types.CeloDenominatedTxType:
 		al := tx.AccessList()
 		yparity := hexutil.Uint64(v.Sign())
 		result.Accesses = &al
@@ -1551,14 +1597,34 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 		result.YParity = &yparity
 		result.GasFeeCap = (*hexutil.Big)(tx.GasFeeCap())
 		result.GasTipCap = (*hexutil.Big)(tx.GasTipCap())
-		// if the transaction has been mined, compute the effective gas price
-		if baseFee != nil && blockHash != (common.Hash{}) {
-			// price = min(gasTipCap + baseFee, gasFeeCap)
-			result.GasPrice = (*hexutil.Big)(effectiveGasPrice(tx, baseFee))
-		} else {
-			result.GasPrice = (*hexutil.Big)(tx.GasFeeCap())
-		}
 
+		// Note that celo denominated txs always have the gas price denominated in celo (the native currency)
+		isNativeFeeCurrency := tx.FeeCurrency() == nil || tx.Type() == types.CeloDenominatedTxType
+		isGingerbread := config.IsGingerbread(new(big.Int).SetUint64(blockNumber))
+		isCel2 := config.IsCel2(blockTime)
+
+		if blockHash == (common.Hash{}) {
+			// This is a pending transaction, for pending transactions we set the gas price to gas fee cap.
+			result.GasPrice = (*hexutil.Big)(tx.GasFeeCap())
+		} else if isGingerbread && isNativeFeeCurrency {
+			// Post gingerbread mined transaction with a native fee currency, we can compute the effective gas price.
+			result.GasPrice = (*hexutil.Big)(effectiveGasPrice(tx, baseFee))
+		} else if isCel2 && tx.Type() == types.CeloDynamicFeeTxV2Type {
+			// Mined post Cel2 celoDynamicFeeTxV2 transaction, we can get the gas price from the receipt
+			// Assert that we should have a receipt
+			if receipt == nil {
+				panic(fmt.Sprintf("no corresponding receipt provided for celoDynamicFeeTxV2 transaction %s", tx.Hash().Hex()))
+			}
+			result.GasPrice = (*hexutil.Big)(receipt.EffectiveGasPrice)
+		} else {
+			// Otherwise this is either a:
+			// -  pre-gingerbread transaction
+			// -  post-gingerbread native fee currency transaction but no base fee was provided
+			// -  post-gingerbread pre-cel2 transaction with a non-native fee currency
+			//
+			// In these cases we can't calculate the gas price.
+			result.GasPrice = nil
+		}
 	case types.BlobTxType:
 		al := tx.AccessList()
 		yparity := hexutil.Uint64(v.Sign())
@@ -1613,12 +1679,12 @@ func newRPCTransactionFromBlockIndex(ctx context.Context, b *types.Block, index 
 		return nil
 	}
 	tx := txs[index]
-	rcpt := depositTxReceipt(ctx, b.Hash(), index, backend, tx)
+	rcpt := txReceipt(ctx, b.Hash(), index, backend, tx)
 	return newRPCTransaction(tx, b.Hash(), b.NumberU64(), b.Time(), index, b.BaseFee(), config, rcpt)
 }
 
-func depositTxReceipt(ctx context.Context, blockHash common.Hash, index uint64, backend Backend, tx *types.Transaction) *types.Receipt {
-	if tx.Type() != types.DepositTxType {
+func txReceipt(ctx context.Context, blockHash common.Hash, index uint64, backend Backend, tx *types.Transaction) *types.Receipt {
+	if tx.Type() != types.DepositTxType && tx.Type() != types.CeloDynamicFeeTxV2Type {
 		return nil
 	}
 	receipts, err := backend.GetReceipts(ctx, blockHash)
@@ -1686,7 +1752,7 @@ func (api *BlockChainAPI) CreateAccessList(ctx context.Context, args Transaction
 // AccessList creates an access list for the given transaction.
 // If the accesslist creation fails an error is returned.
 // If the transaction itself fails, an vmErr is returned.
-func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrHash, args TransactionArgs) (acl types.AccessList, gasUsed uint64, vmErr error, err error) {
+func AccessList(ctx context.Context, b CeloBackend, blockNrOrHash rpc.BlockNumberOrHash, args TransactionArgs) (acl types.AccessList, gasUsed uint64, vmErr error, err error) {
 	// Retrieve the execution context
 	db, header, err := b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
 	if db == nil || err != nil {
@@ -1724,7 +1790,17 @@ func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrH
 		statedb := db.Copy()
 		// Set the accesslist to the last al
 		args.AccessList = &accessList
-		msg := args.ToMessage(header.BaseFee)
+		exchangeRates := emptyExchangeRates
+		if args.FeeCurrency != nil {
+			// Always use the header's parent here, since we want to create the list at the
+			// queried block, but want to use the exchange rates before (at the beginning of)
+			// the queried block
+			exchangeRates, err = b.GetExchangeRates(ctx, rpc.BlockNumberOrHashWithHash(header.ParentHash, false))
+			if err != nil {
+				return nil, 0, nil, fmt.Errorf("get exchange rates for block: %v err: %w", header.Hash(), err)
+			}
+		}
+		msg := args.ToMessage(header.BaseFee, exchangeRates)
 
 		// Apply the transaction with the access list tracer
 		tracer := logger.NewAccessListTracer(accessList, args.from(), to, precompiles)
@@ -1743,13 +1819,13 @@ func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrH
 
 // TransactionAPI exposes methods for reading and creating transaction data.
 type TransactionAPI struct {
-	b         Backend
+	b         CeloBackend
 	nonceLock *AddrLocker
 	signer    types.Signer
 }
 
 // NewTransactionAPI creates a new RPC service with methods for interacting with transactions.
-func NewTransactionAPI(b Backend, nonceLock *AddrLocker) *TransactionAPI {
+func NewTransactionAPI(b CeloBackend, nonceLock *AddrLocker) *TransactionAPI {
 	// The signer used by the API should always be the 'latest' known one because we expect
 	// signers to be backwards-compatible with old transactions.
 	signer := types.LatestSigner(b.ChainConfig())
@@ -1862,7 +1938,7 @@ func (api *TransactionAPI) GetTransactionByHash(ctx context.Context, hash common
 	if err != nil {
 		return nil, err
 	}
-	rcpt := depositTxReceipt(ctx, blockHash, index, api.b, tx)
+	rcpt := txReceipt(ctx, blockHash, index, api.b, tx)
 	return newRPCTransaction(tx, blockHash, blockNumber, header.Time, index, header.BaseFee, api.b.ChainConfig(), rcpt), nil
 }
 
@@ -1926,13 +2002,24 @@ func marshalReceipt(receipt *types.Receipt, blockHash common.Hash, blockNumber u
 		"logs":              receipt.Logs,
 		"logsBloom":         receipt.Bloom,
 		"type":              hexutil.Uint(tx.Type()),
-		"effectiveGasPrice": (*hexutil.Big)(receipt.EffectiveGasPrice),
+	}
+
+	// omit the effectiveGasPrice when it is nil, for Celo L1 backwards compatibility.
+	if receipt.EffectiveGasPrice != nil || chainConfig.IsGingerbread(new(big.Int).SetUint64(blockNumber)) {
+		fields["effectiveGasPrice"] = (*hexutil.Big)(receipt.EffectiveGasPrice)
 	}
 
 	if chainConfig.Optimism != nil && !tx.IsDepositTx() {
-		fields["l1GasPrice"] = (*hexutil.Big)(receipt.L1GasPrice)
-		fields["l1GasUsed"] = (*hexutil.Big)(receipt.L1GasUsed)
-		fields["l1Fee"] = (*hexutil.Big)(receipt.L1Fee)
+		// These three fields are not present receipts migrated from l1 Celo
+		if receipt.L1GasPrice != nil {
+			fields["l1GasPrice"] = (*hexutil.Big)(receipt.L1GasPrice)
+		}
+		if receipt.L1GasUsed != nil {
+			fields["l1GasUsed"] = (*hexutil.Big)(receipt.L1GasUsed)
+		}
+		if receipt.L1Fee != nil {
+			fields["l1Fee"] = (*hexutil.Big)(receipt.L1Fee)
+		}
 		// Fields removed with Ecotone
 		if receipt.FeeScalar != nil {
 			fields["l1FeeScalar"] = receipt.FeeScalar.String()

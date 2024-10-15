@@ -584,6 +584,50 @@ func newTestAccountManager(t *testing.T) (*accounts.Manager, accounts.Account) {
 	return am, acc
 }
 
+var errCeloNotImplemented error = errors.New("Celo backend test functionality not implemented")
+
+type celoTestBackend struct {
+	*testBackend
+}
+
+func (c *celoTestBackend) GetFeeBalance(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash, account common.Address, feeCurrency *common.Address) (*big.Int, error) {
+	if feeCurrency == nil {
+		header, err := c.HeaderByNumberOrHash(ctx, blockNumOrHash)
+		if err != nil {
+			return nil, fmt.Errorf("retrieve header by hash in testBackend: %w", err)
+		}
+
+		state, _, err := c.StateAndHeaderByNumber(ctx, rpc.BlockNumber(header.Number.Int64()))
+		if err != nil {
+			return nil, err
+		}
+		return state.GetBalance(account).ToBig(), nil
+	}
+	// Celo specific backend features are currently not tested
+	return nil, errCeloNotImplemented
+}
+
+func (c *celoTestBackend) GetExchangeRates(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash) (common.ExchangeRates, error) {
+	var er common.ExchangeRates
+	return er, nil
+}
+
+func (c *celoTestBackend) ConvertToCurrency(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash, value *big.Int, feeCurrency *common.Address) (*big.Int, error) {
+	if feeCurrency == nil {
+		return value, nil
+	}
+	// Celo specific backend features are currently not tested
+	return nil, errCeloNotImplemented
+}
+
+func (c *celoTestBackend) ConvertToCelo(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash, value *big.Int, feeCurrency *common.Address) (*big.Int, error) {
+	if feeCurrency == nil {
+		return value, nil
+	}
+	// Celo specific backend features are currently not tested
+	return nil, errCeloNotImplemented
+}
+
 type testBackend struct {
 	db      ethdb.Database
 	chain   *core.BlockChain
@@ -592,7 +636,7 @@ type testBackend struct {
 	acc     accounts.Account
 }
 
-func newTestBackend(t *testing.T, n int, gspec *core.Genesis, engine consensus.Engine, generator func(i int, b *core.BlockGen)) *testBackend {
+func newTestBackend(t *testing.T, n int, gspec *core.Genesis, engine consensus.Engine, generator func(i int, b *core.BlockGen)) *celoTestBackend {
 	var (
 		cacheConfig = &core.CacheConfig{
 			TrieCleanLimit:    256,
@@ -616,7 +660,9 @@ func newTestBackend(t *testing.T, n int, gspec *core.Genesis, engine consensus.E
 	}
 
 	backend := &testBackend{db: db, chain: chain, accman: accman, acc: acc}
-	return backend
+	return &celoTestBackend{
+		testBackend: backend,
+	}
 }
 
 func (b *testBackend) setPendingBlock(block *types.Block) {
@@ -1550,7 +1596,7 @@ func TestRPCMarshalBlock(t *testing.T) {
 		}
 		txs = append(txs, tx)
 	}
-	block := types.NewBlock(&types.Header{Number: big.NewInt(100)}, &types.Body{Transactions: txs}, nil, blocktest.NewHasher())
+	block := types.NewBlock(&types.Header{Number: big.NewInt(100), GasLimit: 10}, &types.Body{Transactions: txs}, nil, blocktest.NewHasher())
 
 	var testSuite = []struct {
 		inclTx bool
@@ -1564,9 +1610,9 @@ func TestRPCMarshalBlock(t *testing.T) {
 			want: `{
 				"difficulty": "0x0",
 				"extraData": "0x",
-				"gasLimit": "0x0",
+				"gasLimit": "0xa",
 				"gasUsed": "0x0",
-				"hash": "0x9b73c83b25d0faf7eab854e3684c7e394336d6e135625aafa5c183f27baa8fee",
+				"hash": "0x7117849518bf9484dae1b1e0aeb9f37b4fa81550061e2057614bec1a022e4596",
 				"logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
 				"miner": "0x0000000000000000000000000000000000000000",
 				"mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
@@ -1589,9 +1635,9 @@ func TestRPCMarshalBlock(t *testing.T) {
 			want: `{
 				"difficulty": "0x0",
 				"extraData": "0x",
-				"gasLimit": "0x0",
+				"gasLimit": "0xa",
 				"gasUsed": "0x0",
-				"hash": "0x9b73c83b25d0faf7eab854e3684c7e394336d6e135625aafa5c183f27baa8fee",
+				"hash": "0x7117849518bf9484dae1b1e0aeb9f37b4fa81550061e2057614bec1a022e4596",
 				"logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
 				"miner": "0x0000000000000000000000000000000000000000",
 				"mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
@@ -1620,9 +1666,9 @@ func TestRPCMarshalBlock(t *testing.T) {
 			want: `{
 				"difficulty": "0x0",
 				"extraData": "0x",
-				"gasLimit": "0x0",
+				"gasLimit": "0xa",
 				"gasUsed": "0x0",
-				"hash": "0x9b73c83b25d0faf7eab854e3684c7e394336d6e135625aafa5c183f27baa8fee",
+				"hash": "0x7117849518bf9484dae1b1e0aeb9f37b4fa81550061e2057614bec1a022e4596",
 				"logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
 				"miner": "0x0000000000000000000000000000000000000000",
 				"mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
@@ -1636,7 +1682,7 @@ func TestRPCMarshalBlock(t *testing.T) {
 				"timestamp": "0x0",
 				"transactions": [
 					{
-						"blockHash": "0x9b73c83b25d0faf7eab854e3684c7e394336d6e135625aafa5c183f27baa8fee",
+						"blockHash": "0x7117849518bf9484dae1b1e0aeb9f37b4fa81550061e2057614bec1a022e4596",
 						"blockNumber": "0x64",
 						"from": "0x0000000000000000000000000000000000000000",
 						"gas": "0x457",
@@ -1656,7 +1702,7 @@ func TestRPCMarshalBlock(t *testing.T) {
 						"yParity": "0x0"
 					},
 					{
-						"blockHash": "0x9b73c83b25d0faf7eab854e3684c7e394336d6e135625aafa5c183f27baa8fee",
+						"blockHash": "0x7117849518bf9484dae1b1e0aeb9f37b4fa81550061e2057614bec1a022e4596",
 						"blockNumber": "0x64",
 						"from": "0x0000000000000000000000000000000000000000",
 						"gas": "0x457",
@@ -1674,7 +1720,7 @@ func TestRPCMarshalBlock(t *testing.T) {
 						"s": "0x0"
 					},
 					{
-						"blockHash": "0x9b73c83b25d0faf7eab854e3684c7e394336d6e135625aafa5c183f27baa8fee",
+						"blockHash": "0x7117849518bf9484dae1b1e0aeb9f37b4fa81550061e2057614bec1a022e4596",
 						"blockNumber": "0x64",
 						"from": "0x0000000000000000000000000000000000000000",
 						"gas": "0x457",
@@ -1694,7 +1740,7 @@ func TestRPCMarshalBlock(t *testing.T) {
 						"yParity": "0x0"
 					},
 					{
-						"blockHash": "0x9b73c83b25d0faf7eab854e3684c7e394336d6e135625aafa5c183f27baa8fee",
+						"blockHash": "0x7117849518bf9484dae1b1e0aeb9f37b4fa81550061e2057614bec1a022e4596",
 						"blockNumber": "0x64",
 						"from": "0x0000000000000000000000000000000000000000",
 						"gas": "0x457",
@@ -1743,7 +1789,10 @@ func TestRPCGetBlockOrHeader(t *testing.T) {
 		acc1Addr   = crypto.PubkeyToAddress(acc1Key.PublicKey)
 		acc2Addr   = crypto.PubkeyToAddress(acc2Key.PublicKey)
 		genesis    = &core.Genesis{
-			Config: params.TestChainConfig,
+			// Use a config which disables the Cel2 flag
+			// This is necessary because Cel2 enables sending of fees to the fee handler,
+			// which in turn changes the state tree which leads to changes in hashes.
+			Config: params.TestChainConfigNoCel2,
 			Alloc: types.GenesisAlloc{
 				acc1Addr: {Balance: big.NewInt(params.Ether)},
 				acc2Addr: {Balance: big.NewInt(params.Ether)},
@@ -1765,7 +1814,7 @@ func TestRPCGetBlockOrHeader(t *testing.T) {
 			Address:   common.Address{0x12, 0x34},
 			Amount:    10,
 		}
-		pending = types.NewBlock(&types.Header{Number: big.NewInt(11), Time: 42}, &types.Body{Transactions: types.Transactions{tx}, Withdrawals: types.Withdrawals{withdrawal}}, nil, blocktest.NewHasher())
+		pending = types.NewBlock(&types.Header{Number: big.NewInt(11), Time: 42, GasLimit: 10}, &types.Body{Transactions: types.Transactions{tx}, Withdrawals: types.Withdrawals{withdrawal}}, nil, blocktest.NewHasher())
 	)
 	backend := newTestBackend(t, genBlocks, genesis, ethash.NewFaker(), func(i int, b *core.BlockGen) {
 		// Transfer from account[0] to account[1]
@@ -1987,7 +2036,7 @@ func TestRPCGetBlockOrHeader(t *testing.T) {
 	}
 }
 
-func setupReceiptBackend(t *testing.T, genBlocks int) (*testBackend, []common.Hash) {
+func setupReceiptBackend(t *testing.T, genBlocks int) (*celoTestBackend, []common.Hash) {
 	config := *params.MergedTestChainConfig
 	var (
 		acc1Key, _ = crypto.HexToECDSA("8a1f9a8f95be41cd7ccb6168179afb4504aefe388d1e14474d32c45c72ce7b7a")
@@ -2258,4 +2307,84 @@ func testRPCResponseWithFile(t *testing.T, testid int, result interface{}, rpc s
 		t.Fatalf("error reading expected test file: %s output: %v", outputFile, err)
 	}
 	require.JSONEqf(t, string(want), string(data), "test %d: json not match, want: %s, have: %s", testid, string(want), string(data))
+}
+
+func TestCeloTransaction_RoundTripRpcJSON(t *testing.T) {
+	var (
+		config = params.TestChainConfig
+		signer = types.LatestSigner(config)
+		key, _ = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
+		tests  = celoTransactionTypes(common.Address{0xde, 0xad}, config)
+	)
+	t.Parallel()
+	for i, tt := range tests {
+		tx, err := types.SignNewTx(key, signer, tt)
+		if err != nil {
+			t.Fatalf("test %d: signing failed: %v", i, err)
+		}
+
+		// Regular transaction
+		{
+			var tx2 types.Transaction
+			if data, err := json.Marshal(tx); err != nil {
+				t.Fatalf("test %d: marshalling failed; %v", i, err)
+			} else if err = tx2.UnmarshalJSON(data); err != nil {
+				t.Fatalf("test %d: sunmarshal failed: %v", i, err)
+			} else if want, have := tx.Hash(), tx2.Hash(); want != have {
+				t.Fatalf("test %d: stx changed, want %x have %x", i, want, have)
+			}
+		}
+
+		//  rpcTransaction
+		{
+			var tx2 types.Transaction
+			rpcTx := newRPCTransaction(tx, common.Hash{}, 0, 0, 0, nil, config, nil)
+			if data, err := json.Marshal(rpcTx); err != nil {
+				t.Fatalf("test %d: marshalling failed; %v", i, err)
+			} else if err = tx2.UnmarshalJSON(data); err != nil {
+				t.Fatalf("test %d: unmarshal failed: %v", i, err)
+			} else if want, have := tx.Hash(), tx2.Hash(); want != have {
+				t.Fatalf("test %d: tx changed, want %x have %x", i, want, have)
+			}
+		}
+	}
+}
+func celoTransactionTypes(addr common.Address, config *params.ChainConfig) []types.TxData {
+	return []types.TxData{
+		&types.CeloDynamicFeeTxV2{
+			ChainID:     config.ChainID,
+			Nonce:       5,
+			GasTipCap:   big.NewInt(6),
+			GasFeeCap:   big.NewInt(9),
+			Gas:         7,
+			FeeCurrency: nil,
+			To:          &addr,
+			Value:       big.NewInt(8),
+			Data:        []byte{0, 1, 2, 3, 4},
+			AccessList: types.AccessList{
+				types.AccessTuple{
+					Address:     common.Address{0x2},
+					StorageKeys: []common.Hash{types.EmptyRootHash},
+				},
+			},
+			V: big.NewInt(32),
+			R: big.NewInt(10),
+			S: big.NewInt(11),
+		},
+		&types.CeloDynamicFeeTxV2{
+			ChainID:     config.ChainID,
+			Nonce:       5,
+			GasTipCap:   big.NewInt(6),
+			GasFeeCap:   big.NewInt(9),
+			Gas:         7,
+			FeeCurrency: &common.Address{0x42},
+			To:          nil,
+			Value:       big.NewInt(8),
+			Data:        []byte{0, 1, 2, 3, 4},
+			AccessList:  types.AccessList{},
+			V:           big.NewInt(32),
+			R:           big.NewInt(10),
+			S:           big.NewInt(11),
+		},
+	}
 }

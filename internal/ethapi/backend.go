@@ -37,8 +37,16 @@ import (
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
-// Backend interface provides the common API services (that are provided by
-// both full and light clients) with access to necessary functions.
+type CeloBackend interface {
+	Backend
+
+	GetFeeBalance(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash, account common.Address, feeCurrency *common.Address) (*big.Int, error)
+	GetExchangeRates(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (common.ExchangeRates, error)
+	ConvertToCurrency(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash, value *big.Int, feeCurrency *common.Address) (*big.Int, error)
+	ConvertToCelo(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash, value *big.Int, feeCurrency *common.Address) (*big.Int, error)
+}
+
+// Backend interface provides the common API services (that are provided by both full and light clients) with access to necessary functions.
 type Backend interface {
 	// General Ethereum API
 	SyncProgress() ethereum.SyncProgress
@@ -101,7 +109,7 @@ type Backend interface {
 	ServiceFilter(ctx context.Context, session *bloombits.MatcherSession)
 }
 
-func GetAPIs(apiBackend Backend) []rpc.API {
+func GetAPIs(apiBackend CeloBackend) []rpc.API {
 	nonceLock := new(AddrLocker)
 	return []rpc.API{
 		{

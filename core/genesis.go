@@ -61,8 +61,8 @@ type Genesis struct {
 	Nonce      uint64              `json:"nonce"`
 	Timestamp  uint64              `json:"timestamp"`
 	ExtraData  []byte              `json:"extraData"`
-	GasLimit   uint64              `json:"gasLimit"   gencodec:"required"`
-	Difficulty *big.Int            `json:"difficulty" gencodec:"required"`
+	GasLimit   uint64              `json:"gasLimit"`
+	Difficulty *big.Int            `json:"difficulty"`
 	Mixhash    common.Hash         `json:"mixHash"`
 	Coinbase   common.Address      `json:"coinbase"`
 	Alloc      types.GenesisAlloc  `json:"alloc"      gencodec:"required"`
@@ -265,6 +265,8 @@ type ChainOverrides struct {
 	OverrideOptimismHolocene *uint64
 	OverrideOptimismInterop  *uint64
 	ApplySuperchainUpgrades  bool
+	// celo
+	OverrideOptimismCel2 *uint64
 }
 
 // SetupGenesisBlock writes or updates the genesis block in db.
@@ -340,6 +342,9 @@ func SetupGenesisBlockWithOverride(db ethdb.Database, triedb *triedb.Database, g
 			}
 			if overrides != nil && overrides.OverrideOptimismInterop != nil {
 				config.InteropTime = overrides.OverrideOptimismInterop
+			}
+			if overrides != nil && overrides.OverrideOptimismCel2 != nil {
+				config.Cel2Time = overrides.OverrideOptimismCel2
 			}
 		}
 	}
@@ -520,11 +525,19 @@ func (g *Genesis) ToBlock() *types.Block {
 		Coinbase:   g.Coinbase,
 		Root:       root,
 	}
-	if g.GasLimit == 0 {
-		head.GasLimit = params.GenesisGasLimit
-	}
-	if g.Difficulty == nil && g.Mixhash == (common.Hash{}) {
-		head.Difficulty = params.GenesisDifficulty
+	// Don't set defaults for gas limit and difficulty for migrated celo chains.
+	// I.E. when Cel2Time is set & non zero. Since migrated celo chains can
+	// have gas limit and difficulty unset in the genesis.
+	if g.Config.Cel2Time == nil || g.Config.IsCel2(0) {
+		if g.GasLimit == 0 {
+			head.GasLimit = params.GenesisGasLimit
+		}
+		if g.Difficulty == nil && g.Mixhash == (common.Hash{}) {
+			head.Difficulty = params.GenesisDifficulty
+		}
+	} else if g.Difficulty == nil {
+		// In the case of migrated chains we ensure a zero rather than nil difficulty.
+		head.Difficulty = new(big.Int)
 	}
 	if g.Config != nil && g.Config.IsLondon(common.Big0) {
 		if g.BaseFee != nil {
@@ -680,6 +693,12 @@ func DeveloperGenesisBlock(gasLimit uint64, faucet *common.Address) *Genesis {
 	if faucet != nil {
 		genesis.Alloc[*faucet] = types.Account{Balance: new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(9))}
 	}
+
+	// Add state from celoGenesisAccounts
+	for addr, data := range celoGenesisAccounts(common.HexToAddress("0x2")) {
+		genesis.Alloc[addr] = data
+	}
+
 	return genesis
 }
 
