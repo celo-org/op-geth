@@ -6,23 +6,25 @@ source "$SCRIPT_DIR/shared.sh"
 
 TEST_GLOB=$1
 
-## Start geth
-cd "$SCRIPT_DIR/.." || exit 1
-make geth
-trap 'kill %%' EXIT # kill bg job at exit
-build/bin/geth --dev --http --http.api eth,web3,net --txpool.nolocals &>"$SCRIPT_DIR/geth.log" &
-
-# Wait for geth to be ready
-for _ in {1..10}; do
-	if cast block &>/dev/null; then
-		break
-	fi
-	sleep 0.2
-done
-
-## Run tests
-echo Geth ready, start tests
-cd "$SCRIPT_DIR" || exit 1
+if [ -z $NETWORK ]; then
+    ## Start geth
+    cd "$SCRIPT_DIR/.." || exit 1
+    make geth
+    trap 'kill %%' EXIT # kill bg job at exit
+    build/bin/geth --dev --http --http.api eth,web3,net --txpool.nolocals &>"$SCRIPT_DIR/geth.log" &
+    
+    # Wait for geth to be ready
+    for _ in {1..10}; do
+    	if cast block &>/dev/null; then
+    		break
+    	fi
+    	sleep 0.2
+    done
+    
+    ## Run tests
+    echo Geth ready, start tests
+    cd "$SCRIPT_DIR" || exit 1
+fi
 
 # There's a problem with geth return errors on the first transaction sent.
 # See https://github.com/ethereum/web3.py/issues/3212
@@ -32,6 +34,14 @@ cast send --async --json --private-key "$ACC_PRIVKEY" "$TOKEN_ADDR" 'transfer(ad
 failures=0
 tests=0
 for f in test_*"$TEST_GLOB"*; do
+	if [[ -n $NETWORK ]]; then
+		case $f in
+		  # Skip tests that require a local network.
+		  test_fee_currency_fails_on_credit.sh|test_fee_currency_fails_on_debit.sh|test_fee_currency_fails_intrinsic.sh)
+		  continue
+		  ;;
+	    esac
+	fi
 	echo -e "\nRun $f"
 	if "./$f"; then
 		tput setaf 2 || true

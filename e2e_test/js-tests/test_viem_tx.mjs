@@ -22,15 +22,24 @@ const devChain = defineChain({
 	},
 });
 
+const chain = (() => {
+	switch (process.env.NETWORK) {
+		case 'alfajores':
+			return celoAlfajores
+		default:
+			return devChain
+	};
+})();
+
 // Set up clients/wallet
 const publicClient = createPublicClient({
-	chain: devChain,
+	chain: chain,
 	transport: http(),
 });
 const account = privateKeyToAccount(process.env.ACC_PRIVKEY);
 const walletClient = createWalletClient({
 	account,
-	chain: devChain,
+	chain: chain,
 	transport: http(),
 });
 
