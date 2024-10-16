@@ -41,9 +41,13 @@ jobs:
           with:
             version: nightly-f625d0fa7c51e65b4bf1e8f7931cd1c6e2e285e9
 
-        - name: Run e2e tests
+        - name: Run e2e tests local
           shell: bash
           run: e2e_test/run_all_tests.sh
+
+        - name: Run e2e tests alfajores
+          shell: bash
+          run: NETWORK=alfajores e2e_test/run_all_tests.sh
 
   Lint:
     runs-on: ["8-cpu","self-hosted","org"]
