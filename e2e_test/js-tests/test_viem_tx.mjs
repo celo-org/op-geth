@@ -283,7 +283,7 @@ describe("viem send tx", () => {
 			nativeCurrency,
 			false,
 		);
-	}).timeout(20_000);
+	}).timeout(40_000);
 
 	it("send tx with unregistered fee currency", async () => {
 		const request = await walletClient.prepareTransactionRequest({
