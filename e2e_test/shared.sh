@@ -9,16 +9,16 @@ case $NETWORK in
       export ETH_RPC_URL=https://alfajores-forno.celo-testnet.org
       export TOKEN_ADDR=0xF194afDf50B03e69Bd7D057c1Aa9e10c9954E4C9
       export FEE_HANDLER=0xEAaFf71AB67B5d0eF34ba62Ea06Ac3d3E2dAAA38
-	  export FEE_CURRENCY=0x4822e58de6f5e485eF90df51C41CE01721331dC0
-	  echo "Using Alfajores network"
-  	  ;;
+      export FEE_CURRENCY=0x4822e58de6f5e485eF90df51C41CE01721331dC0
+      echo "Using Alfajores network"
+        ;;
     '')
       export ETH_RPC_URL=http://127.0.0.1:8545
       export TOKEN_ADDR=0x471ece3750da237f93b8e339c536989b8978a438
       export FEE_HANDLER=0xcd437749e43a154c07f3553504c68fbfd56b8778
-	  export FEE_CURRENCY=0x000000000000000000000000000000000000ce16
-	  echo "Using local network"
-  	  ;;
+      export FEE_CURRENCY=0x000000000000000000000000000000000000ce16
+      echo "Using local network"
+        ;;
 esac
 
 export ACC_ADDR=0x42cf1bbc38BaAA3c4898ce8790e21eD2738c6A4a
