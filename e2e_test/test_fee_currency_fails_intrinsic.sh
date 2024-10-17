@@ -7,6 +7,7 @@ source debug-fee-currency/lib.sh
 
 # Expect that the creditGasFees failed and is logged by geth
 tail -F -n 0 geth.log >debug-fee-currency/geth.intrinsic.log & # start log capture
+# trap 'kill %%' EXIT # kill bg job at exit
 (
 	sleep 0.2
 	fee_currency=$(deploy_fee_currency false false true)

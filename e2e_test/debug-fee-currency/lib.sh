@@ -13,16 +13,16 @@ set -xeo pipefail
 # returns:
 # 	deployed fee-currency address
 function deploy_fee_currency() {
-	(
-		local fee_currency=$(
+	(set -e;
+		local fee_currency=$(set -e;
 			forge create --root "$SCRIPT_DIR/debug-fee-currency" --contracts "$SCRIPT_DIR/debug-fee-currency" --private-key $ACC_PRIVKEY DebugFeeCurrency.sol:DebugFeeCurrency --constructor-args '100000000000000000000000000' $1 $2 $3 --json | jq .deployedTo -r
 		)
 		if [ -z "${fee_currency}" ]; then
 			exit 1
 		fi
 		# this always resets the token address for the predeployed oracle3
-		cast send --private-key $ACC_PRIVKEY $ORACLE3 'setExchangeRate(address, uint256, uint256)' $fee_currency 2ether 1ether &>/dev/null
-		cast send --private-key $ACC_PRIVKEY $FEE_CURRENCY_DIRECTORY_ADDR 'setCurrencyConfig(address, address, uint256)' $fee_currency $ORACLE3 60000 &>/dev/null
+		cast send --private-key $ACC_PRIVKEY $ORACLE3 'setExchangeRate(address, uint256, uint256)' $fee_currency 2ether 1ether > /dev/null
+		cast send --private-key $ACC_PRIVKEY $FEE_CURRENCY_DIRECTORY_ADDR 'setCurrencyConfig(address, address, uint256)' $fee_currency $ORACLE3 60000 > /dev/null
 		echo "$fee_currency"
 	)
 }
