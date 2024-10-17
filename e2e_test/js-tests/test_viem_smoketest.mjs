@@ -44,85 +44,85 @@ const walletClient = createWalletClient({
 	transport: http(),
 });
 
-async function checkReceipt(txHash) {
-	console.log("wiating for receipt", txHash);
-	const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
-	console.log("got receipt", receipt);
+
+async function checkReceipt(txHash, client) {
+	const receipt = await client.waitForTransactionReceipt({ hash: txHash });
+	const transaction = await client.getTransaction({ hash: txHash });
+	console.log("transaction", transaction);
+	console.log("receipt", receipt);
 	assert.equal(receipt.status, "success", "receipt status 'failure'");
-	console.log("asserted receipt");
 }
 
-// const checkReceipt = async (txHash, publicClient) =>  {
-// 	console.log("wiating for receipt", txHash)
-// 	const receipt = await publicClient.waitForTransactionReceipt({ txHash });
-// 	console.log("got receipt", receipt)
-// 	assert.equal(receipt.status, "success", "receipt status 'failure'");
-// 	console.log("asserted receipt")
-// }
-
-async function getReceipt(txHash) {
-	console.log("wiating for receipt", txHash);
-	const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
-	console.log("got receipt", receipt);
-	return receipt;
-}
-
-
-describe("viem send tx", () => {
-
-	// it("send basic tx and check receipt", async () => {
-	// 	const request = await walletClient.prepareTransactionRequest({
-	// 		account,
-	// 		to: "0x00000000000000000000000000000000DeaDBeef",
-	// 		value: 1,
-	// 		gas: 21000,
-	// 	});
-	// 	console.log("txrequest", request)
-	// 	const signature = await walletClient.signTransaction(request);
-	// 	const hash = await walletClient.sendRawTransaction({
-	// 		serializedTransaction: signature,
-	// 	});
-	// 	const receipt = await publicClient.waitForTransactionReceipt({ hash });
-	// 	assert.equal(receipt.status, "success", "receipt status 'failure'");
-	// }).timeout(10_000);
-
-	it("send basic tx", async () => {
-		// const tx = await walletClient.prepareTransactionRequest({
-		// });
-
+describe("viem smoke test", () => {
+	it("send legacy tx", async () => {
 		const hash = await walletClient.sendTransaction({
-			account,
 			to: "0x00000000000000000000000000000000DeaDBeef",
 			value: 1,
+			type: "legacy",
 		});
-
-		console.log("txHash", hash)
-		// const receipt = await getReceipt(hash);
-		await checkReceipt(hash);
-	// const receipt = await publicClient.waitForTransactionReceipt({ hash });
-	// assert.equal(receipt.status, "success", "receipt status 'failure'");
+		await checkReceipt(hash, publicClient);
 	}).timeout(30_000);
 
-	it("get receipt", async () => {
-		const receipt = await publicClient.waitForTransactionReceipt({ hash: "0x069215ccc4827aab86c8120bf78839469532cc6d7994995884c67f410e877f9b" });
-		console.log("receipt", receipt);
-		const receipt2 = await getReceipt("0x069215ccc4827aab86c8120bf78839469532cc6d7994995884c67f410e877f9b");
-		console.log("receipt2", receipt2);
+	it("send legacy tx with fee currency", async () => {
+		const hash = await walletClient.sendTransaction({
+			to: "0x00000000000000000000000000000000DeaDBeef",
+			value: 1,
+			feeCurrency: process.env.FEE_CURRENCY,
+			type: "legacy",
+		});
+		await checkReceipt(hash, publicClient);
+	}).timeout(30_000);
 
+	it("send eip2930 tx", async () => {
+		const hash = await walletClient.sendTransaction({
+			to: "0x00000000000000000000000000000000DeaDBeef",
+			value: 1,
+			type: "eip2930",
+		});
+		await checkReceipt(hash, publicClient);
 	}).timeout(10_000);
 
-	// it("send tx with explicit gas fields", async () => {
-	// 	const block = Await publicClient.getBlock({});
-	// 	const hash = await walletClient.sendTransaction({
-	// 		account,
-	// 		to: "0x00000000000000000000000000000000DeaDBeef",
-	// 		value: 1,
-	// 		gas: 171000,
-	// 		maxFeePerGas: block.baseFeePerGas *12n/10n,
-	// 		maxPriorityFeePerGas: 1n,
-	// 	});
-	// 	await checkReceipt(hash, publicClient);
-	// }).timeout(10_000);
+	it("send eip1559 tx", async () => {
+		const hash = await walletClient.sendTransaction({
+			to: "0x00000000000000000000000000000000DeaDBeef",
+			value: 1,
+			type: "eip1559",
+		});
+		await checkReceipt(hash, publicClient);
+	}).timeout(10_000);
+
+	it.only("send cip42 tx", async () => {
+		const hash = await walletClient.sendTransaction({
+			to: "0x00000000000000000000000000000000DeaDBeef",
+			value: 1,
+			feeCurrency: process.env.FEE_CURRENCY,
+			type: "cip42",
+		});
+		await checkReceipt(hash, publicClient);
+	}).timeout(10_000);
+
+	it("send cip64 tx", async () => {
+		const hash = await walletClient.sendTransaction({
+			to: "0x00000000000000000000000000000000DeaDBeef",
+			value: 1,
+			feeCurrency: process.env.FEE_CURRENCY,
+			type: "cip64",
+		});
+		await checkReceipt(hash, publicClient);
+	}).timeout(10_000);
+
+	it("send eip1559 tx with explicit gas fields", async () => {
+		const block = await publicClient.getBlock({});
+		const hash = await walletClient.sendTransaction({
+			to: "0x00000000000000000000000000000000DeaDBeef",
+			value: 1,
+			gas: 21000,
+			maxFeePerGas: block.baseFeePerGas *12n/10n,
+			maxPriorityFeePerGas: 1n,
+			type: "eip1559",
+		});
+		await checkReceipt(hash, publicClient);
+	}).timeout(10_000);
 
 	// it("send fee currency tx and check receipt", async () => {
 	// 	const request = await walletClient.prepareTransactionRequest({
