@@ -33,11 +33,14 @@ cast send --json --private-key "$ACC_PRIVKEY" "$TOKEN_ADDR" 'transfer(address to
 
 failures=0
 tests=0
+echo "Globbing with \"$TEST_GLOB\""
 for f in test_*"$TEST_GLOB"*; do
+	echo "for file $f"
 	if [[ -n $NETWORK ]]; then
 		case $f in
 		  # Skip tests that require a local network.
 		  test_fee_currency_fails_on_credit.sh|test_fee_currency_fails_on_debit.sh|test_fee_currency_fails_intrinsic.sh)
+		  echo "skipping file $f"
 		  continue
 		  ;;
 	    esac
