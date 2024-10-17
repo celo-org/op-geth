@@ -13,7 +13,7 @@ gas_used=$(echo $block | jq -r '.gasUsed' | cast to-dec)
 base_fee=$(echo $block | jq -r '.baseFeePerGas' | cast to-dec)
 if [[ -n $NETWORK  ]]; then
 	# Every block in a non dev system contains a system tx that pays nothing for gas so we must subtract this from the total gas per block
-	system_tx_hash=$(echo $block | jq -r '.transactions[] | select(.from == "0xDeaDDEaDDeAdDeAdDEAdDEaddeAddEAdDEAd0001") | .hash')
+	system_tx_hash=$(echo $block | jq -r '.transactions[] | select(.from | ascii_downcase  == "0xdeaddeaddeaddeaddeaddeaddeaddeaddead0001") | .hash')
 	system_tx_gas=$(cast receipt --json $system_tx_hash | jq -r '.cumulativeGasUsed' | cast to-dec)
 	gas_used=$((gas_used - system_tx_gas))
 fi
