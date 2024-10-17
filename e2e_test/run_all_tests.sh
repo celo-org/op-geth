@@ -23,9 +23,9 @@ if [ -z $NETWORK ]; then
     
     ## Run tests
     echo Geth ready, start tests
-    cd "$SCRIPT_DIR" || exit 1
 fi
 
+cd "$SCRIPT_DIR" || exit 1
 # There's a problem with geth return errors on the first transaction sent.
 # See https://github.com/ethereum/web3.py/issues/3212
 # To work around this, send a transaction before running tests
