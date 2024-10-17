@@ -145,3 +145,4 @@ async function main() {
   return receipt;
 }
 await main();
+process.exit(0);
