@@ -309,22 +309,18 @@ describe("viem send tx", () => {
 		}
 	}).timeout(10_000);
 
-	it("send fee currency tx with just high enough gas price", async () => {
+	it("send fee currency tx with just high enough gas price mine", async () => {
 		const rate = await getRate(process.env.FEE_CURRENCY);
 		const block = await publicClient.getBlock({});
-		// Actually, the base fee will be a bit lower next block, since our blocks
-		// are always mostly empty. But the difference will be much less than the
-		// exchange rate of 2, so the test will still check that we take the fee
-		// currency into account everywhere.
-		const maxFeePerGas = rate.toFeeCurrency(block.baseFeePerGas);
+		const maxFeePerGas = rate.toFeeCurrency(block.baseFeePerGas)+2n;
 		const request = await walletClient.prepareTransactionRequest({
 			account,
 			to: "0x00000000000000000000000000000000DeaDBeef",
 			value: 2,
 			gas: 171000,
 			feeCurrency: process.env.FEE_CURRENCY,
-			maxFeePerGas,
-			maxPriorityFeePerGas: 1n,
+			maxFeePerGas: maxFeePerGas,
+			maxPriorityFeePerGas: 2n,
 		});
 		const signature = await walletClient.signTransaction(request);
 		const hash = await walletClient.sendRawTransaction({
@@ -341,7 +337,7 @@ async function getRate(feeCurrencyAddress) {
 			address: process.env.FEE_CURRENCY_DIRECTORY_ADDR,
 			abi: abi,
 			functionName: 'getExchangeRate',
-			args: [process.env.FEE_CURRENCY],
+			args: [feeCurrencyAddress],
 		});
 	return {
 		toFeeCurrency: (v) => (v * numerator) / denominator,
