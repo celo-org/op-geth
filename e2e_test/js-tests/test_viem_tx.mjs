@@ -45,9 +45,11 @@ const walletClient = createWalletClient({
 });
 
 // Returns the base fee per gas for the current block multiplied by 2 to account for any increase in the subsequent block.
-async function getGasFees(publicClient, tip) {
+async function getGasFees(publicClient, tip, feeCurrency) {
+	const rate = await getRate(feeCurrency);
 	const b = await publicClient.getBlock();
-	return [BigInt(b.baseFeePerGas) * 2n + tip, tip];
+	const tipInFeeCurrency = rate.toFeeCurrency(tip);
+	return [rate.toFeeCurrency(b.baseFeePerGas) + tipInFeeCurrency, tipInFeeCurrency];
 }
 
 const testNonceBump = async (
@@ -142,7 +144,7 @@ describe("viem send tx", () => {
 	}).timeout(10_000);
 
 	it("send fee currency tx with explicit gas fields and check receipt", async () => {
-		const [maxFeePerGas, tip] = await getGasFees(publicClient, 2n);
+		const [maxFeePerGas, tip] = await getGasFees(publicClient, 2n, process.env.FEE_CURRENCY);
 		const request = await walletClient.prepareTransactionRequest({
 			account,
 			to: "0x00000000000000000000000000000000DeaDBeef",
@@ -309,7 +311,7 @@ describe("viem send tx", () => {
 		}
 	}).timeout(10_000);
 
-	it.only("send fee currency tx with just high enough gas price", async () => {
+	it("send fee currency tx with just high enough gas price", async () => {
 		// The idea of this test is to check that the fee currency is taken into
 		// account by the server. We do this by using a fee currency that has a
 		// value greater than celo, so that the base fee in fee currency becomes a
