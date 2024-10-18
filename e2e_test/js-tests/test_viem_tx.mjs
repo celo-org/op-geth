@@ -309,10 +309,20 @@ describe("viem send tx", () => {
 		}
 	}).timeout(10_000);
 
-	it("send fee currency tx with just high enough gas price", async () => {
+	it.only("send fee currency tx with just high enough gas price", async () => {
+		// The idea of this test is to check that the fee currency is taken into
+		// account by the server. We do this by using a fee currency that has a
+		// value greater than celo, so that the base fee in fee currency becomes a
+		// number significantly lower than the base fee in celo. If the server
+		// doesn't take into account the fee currency then it will reject the
+		// transaction because the maxFeePerGas will be too low. Currently we use
+		// USDC as the fee currency and it is worth more than celo, we may need to
+		// update this test if that situation changes in the future.
 		const rate = await getRate(process.env.FEE_CURRENCY);
 		const block = await publicClient.getBlock({});
+		console.log("baseFeePerGas", block.baseFeePerGas);
 		const maxFeePerGas = rate.toFeeCurrency(block.baseFeePerGas)+2n;
+		console.log("maxFeePerGas", maxFeePerGas);
 		const request = await walletClient.prepareTransactionRequest({
 			account,
 			to: "0x00000000000000000000000000000000DeaDBeef",
