@@ -309,7 +309,7 @@ describe("viem send tx", () => {
 		}
 	}).timeout(10_000);
 
-	it("send fee currency tx with just high enough gas price mine", async () => {
+	it("send fee currency tx with just high enough gas price", async () => {
 		const rate = await getRate(process.env.FEE_CURRENCY);
 		const block = await publicClient.getBlock({});
 		const maxFeePerGas = rate.toFeeCurrency(block.baseFeePerGas)+2n;
