@@ -7,7 +7,7 @@ source debug-fee-currency/lib.sh
 
 # Expect that the creditGasFees failed and is logged by geth
 tail -F -n 0 geth.log >debug-fee-currency/geth.intrinsic.log & # start log capture
-# trap 'kill %%' EXIT # kill bg job at exit
+trap 'kill %%' EXIT # kill bg tail job on exit
 (
 	sleep 0.2
 	fee_currency=$(deploy_fee_currency false false true)
@@ -28,7 +28,6 @@ tail -F -n 0 geth.log >debug-fee-currency/geth.intrinsic.log & # start log captu
 	cleanup_fee_currency $fee_currency
 )
 sleep 0.5
-kill %1 # stop log capture
 # although we sent a transaction wih faulty fee-currency twice,
 # the EVM call should have been executed only once
 if [ "$(grep -Ec "fee-currency EVM execution error, temporarily blocking fee-currency in local txpools .+ surpassed maximum allowed intrinsic gas for CreditFees\(\) in fee-currency" debug-fee-currency/geth.intrinsic.log)" -ne 1 ]; then exit 1; fi

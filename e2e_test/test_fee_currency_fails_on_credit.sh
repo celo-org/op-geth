@@ -6,6 +6,7 @@ source shared.sh
 source debug-fee-currency/lib.sh
 
 tail -F -n0 geth.log >debug-fee-currency/geth.partial.log & # start log capture
+trap 'kill %%' EXIT # kill bg tail job on exit
 (
 	sleep 0.2
 	fee_currency=$(deploy_fee_currency false true false)
@@ -26,7 +27,6 @@ tail -F -n0 geth.log >debug-fee-currency/geth.partial.log & # start log capture
 	cleanup_fee_currency $fee_currency
 )
 sleep 0.5
-kill %1 # stop log capture
 # although we sent a transaction wih faulty fee-currency twice,
 # the EVM call should have been executed only once
 grep "" debug-fee-currency/geth.partial.log
