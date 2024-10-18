@@ -13,8 +13,8 @@ set -xeo pipefail
 # returns:
 # 	deployed fee-currency address
 function deploy_fee_currency() {
-	(set -e;
-		local fee_currency=$(set -e;
+	(
+		local fee_currency=$(
 			forge create --root "$SCRIPT_DIR/debug-fee-currency" --contracts "$SCRIPT_DIR/debug-fee-currency" --private-key $ACC_PRIVKEY DebugFeeCurrency.sol:DebugFeeCurrency --constructor-args '100000000000000000000000000' $1 $2 $3 --json | jq .deployedTo -r
 		)
 		if [ -z "${fee_currency}" ]; then
