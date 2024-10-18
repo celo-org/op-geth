@@ -41,8 +41,8 @@ var (
 	DevAddr          = common.BytesToAddress(DevAddr32.Bytes())
 	DevAddr32        = common.HexToHash("0x42cf1bbc38BaAA3c4898ce8790e21eD2738c6A4a")
 
-	DevFeeCurrencyAddr  = common.HexToAddress("0xce16") // worth half as much as native CELO
-	DevFeeCurrencyAddr2 = common.HexToAddress("0xce17") // worth twice as much as native CELO
+	DevFeeCurrencyAddr  = common.HexToAddress("0x000000000000000000000000000000000000ce16") // worth half as much as native CELO
+	DevFeeCurrencyAddr2 = common.HexToAddress("0x000000000000000000000000000000000000ce17") // worth twice as much as native CELO
 	DevBalance, _       = new(big.Int).SetString("100000000000000000000", 10)
 	rateNumerator, _    = new(big.Int).SetString("2000000000000000000000000", 10)
 	rateNumerator2, _   = new(big.Int).SetString("500000000000000000000000", 10)
