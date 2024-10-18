@@ -321,9 +321,7 @@ describe("viem send tx", () => {
 		// update this test if that situation changes in the future.
 		const rate = await getRate(process.env.FEE_CURRENCY);
 		const block = await publicClient.getBlock({});
-		console.log("baseFeePerGas", block.baseFeePerGas);
 		const maxFeePerGas = rate.toFeeCurrency(block.baseFeePerGas)+2n;
-		console.log("maxFeePerGas", maxFeePerGas);
 		const request = await walletClient.prepareTransactionRequest({
 			account,
 			to: "0x00000000000000000000000000000000DeaDBeef",
