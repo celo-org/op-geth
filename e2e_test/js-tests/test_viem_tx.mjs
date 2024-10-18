@@ -81,7 +81,6 @@ const testNonceBump = async (
 			account,
 			to: "0x00000000000000000000000000000000DeaDBeef",
 			value: 3,
-			// dynaimcally retrieve intrinsic gas from feeCurrency directory "feeCurrencyConfig"
 			gas: 171000,
 			maxFeePerGas: secondCap,
 			maxPriorityFeePerGas: secondCap,
