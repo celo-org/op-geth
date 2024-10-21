@@ -96,7 +96,7 @@ describe("viem smoke test", () => {
 	it("send legacy tx", async () => {
 		const type = "legacy";
 		await verifyTypedTransactions(type);
-	}).timeout(30_000);
+	}).timeout(10_000);
 
 	it("send eip2930 tx", async () => {
 		const type = "eip2930";
