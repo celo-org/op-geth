@@ -316,19 +316,30 @@ describe("viem send tx", () => {
 		// value greater than celo, so that the base fee in fee currency becomes a
 		// number significantly lower than the base fee in celo. If the server
 		// doesn't take into account the fee currency then it will reject the
-		// transaction because the maxFeePerGas will be too low. Currently we use
-		// USDC as the fee currency and it is worth more than celo, we may need to
-		// update this test if that situation changes in the future.
-		const rate = await getRate(process.env.FEE_CURRENCY);
+		// transaction because the maxFeePerGas will be too low.
+
+		// If we are running local tests we use FEE_CURRENCY2 since it is worth
+		// double the value of celo, otherwise we use FEE_CURRENCY which is USDC
+		// end currently worth roughly double the value of celo.
+		const fc = process.env.NETWORK == null ? process.env.FEE_CURRENCY2 : process.env.FEE_CURRENCY;
+		const rate = await getRate(fc);
 		const block = await publicClient.getBlock({});
-		const maxFeePerGas = rate.toFeeCurrency(block.baseFeePerGas)+2n;
+		// We increment the base fee by 10% to cover the case where the base fee increases next block.
+		const convertedBaseFee = rate.toFeeCurrency(block.baseFeePerGas * 11n/10n);
+
+		// Check that the converted base fee value is still below the native base
+		// fee value, if this check fails we will need to consider an alternative
+		// fee currency to USDC for network tests.
+		if (convertedBaseFee >= block.baseFeePerGas) {
+			assert.fail(`Converted base fee (${convertedBaseFee}) not less than native base fee (${block.baseFeePerGas})`);
+		}
 		const request = await walletClient.prepareTransactionRequest({
 			account,
 			to: "0x00000000000000000000000000000000DeaDBeef",
 			value: 2,
 			gas: 171000,
 			feeCurrency: process.env.FEE_CURRENCY,
-			maxFeePerGas: maxFeePerGas,
+			maxFeePerGas: convertedBaseFee +2n,
 			maxPriorityFeePerGas: 2n,
 		});
 		const signature = await walletClient.signTransaction(request);
