@@ -132,6 +132,8 @@ describe("viem smoke test", () => {
 			let blockNumber = await publicClient.getBlockNumber();
 			const oldBlockNumber = blockNumber;
 			while(blockNumber == oldBlockNumber){
+				// Sleep 100ms
+				await new Promise(r => setTimeout(r, 100));
 				blockNumber = await publicClient.getBlockNumber();
 			}
 			const tx = await publicClient.getTransaction({ hash: hash });
