@@ -120,7 +120,7 @@ describe("viem smoke test", () => {
 		await verifyTypedTransactions(type);
 	}).timeout(10_000);
 
-	it.only("legacy tx with fee currency not supported", async () => {
+	it("legacy tx with fee currency not supported", async () => {
 		const type = "legacy";
 		try {
 			const hash = await sendTypedTransaction(type,process.env.FEE_CURRENCY);
@@ -144,7 +144,7 @@ describe("viem smoke test", () => {
 			assert.fail("Managed to send unsupported legacy tx with fee currency");
 	}).timeout(10_000);
 
-	it.only("legacy create tx with fee currency not supported", async () => {
+	it("legacy create tx with fee currency not supported", async () => {
 		const type = "legacy";
 		try {
 			const hash = await sendTypedCreateTransaction(type,process.env.FEE_CURRENCY);
