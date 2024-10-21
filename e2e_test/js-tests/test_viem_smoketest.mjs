@@ -96,29 +96,29 @@ describe("viem smoke test", () => {
 	it("send legacy tx", async () => {
 		const type = "legacy";
 		await verifyTypedTransactions(type);
-	}).timeout(10_000);
+	});
 
 	it("send eip2930 tx", async () => {
 		const type = "eip2930";
 		await verifyTypedTransactions(type);
-	}).timeout(10_000);
+	});
 
 	it("send eip1559 tx", async () => {
 		const type = "eip1559";
 		await verifyTypedTransactions(type);
-	}).timeout(10_000);
+	});
 
 	it("send cip64 tx", async () => {
 		const type = "cip64";
 		await verifyTypedTransactions(type, process.env.FEE_CURRENCY);
-	}).timeout(10_000);
+	});
 
 	// This test is failing because the produced transaction is of type cip64.
 	// I guess this is a problem with the viem internals.
 	it.skip("cip42 not supported", async () => {
 		const type = "cip42";
 		await verifyTypedTransactions(type);
-	}).timeout(10_000);
+	});
 
 	it("legacy tx with fee currency not supported", async () => {
 		const type = "legacy";
@@ -144,7 +144,7 @@ describe("viem smoke test", () => {
 			// exceptionThrown += 1;
 		}
 			assert.fail("Managed to send unsupported legacy tx with fee currency");
-	}).timeout(10_000);
+	});
 
 	it("legacy create tx with fee currency not supported", async () => {
 		const type = "legacy";
@@ -168,5 +168,5 @@ describe("viem smoke test", () => {
 			// exceptionThrown += 1;
 		}
 			assert.fail("Managed to send unsupported legacy tx with fee currency");
-	}).timeout(10_000);
+	});
 });
