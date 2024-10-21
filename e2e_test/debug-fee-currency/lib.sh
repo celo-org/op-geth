@@ -21,8 +21,8 @@ function deploy_fee_currency() {
 			exit 1
 		fi
 		# this always resets the token address for the predeployed oracle3
-		cast send --private-key $ACC_PRIVKEY $ORACLE3 'setExchangeRate(address, uint256, uint256)' $fee_currency 2ether 1ether &>/dev/null
-		cast send --private-key $ACC_PRIVKEY $FEE_CURRENCY_DIRECTORY_ADDR 'setCurrencyConfig(address, address, uint256)' $fee_currency $ORACLE3 60000 &>/dev/null
+		cast send --private-key $ACC_PRIVKEY $ORACLE3 'setExchangeRate(address, uint256, uint256)' $fee_currency 2ether 1ether > /dev/null
+		cast send --private-key $ACC_PRIVKEY $FEE_CURRENCY_DIRECTORY_ADDR 'setCurrencyConfig(address, address, uint256)' $fee_currency $ORACLE3 60000 > /dev/null
 		echo "$fee_currency"
 	)
 }
