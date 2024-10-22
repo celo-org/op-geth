@@ -62,56 +62,52 @@ async function check(txHash, type) {
 
 // sendTypedTransaction sends a transaction with the given type and an optional
 // feeCurrency.
-async function sendTypedTransaction(type, feeCurrency){
-		 return await walletClient.sendTransaction({
-			to: "0x00000000000000000000000000000000DeaDBeef",
-			value: 1,
-			type: type,
-			feeCurrency: feeCurrency,
-		});
+async function sendTypedTransaction(type, feeCurrency) {
+	return await walletClient.sendTransaction({
+		to: "0x00000000000000000000000000000000DeaDBeef",
+		value: 1,
+		type: type,
+		feeCurrency: feeCurrency,
+	});
 }
 
 // sendTypedSmartContractTransaction initiates a token transfer with the given type
 // and an optional feeCurrency.
-async function sendTypedSmartContractTransaction(type, feeCurrency){
+async function sendTypedSmartContractTransaction(type, feeCurrency) {
 	const abi = parseAbi(['function transfer(address to, uint256 value) external returns (bool)']);
-	const data = encodeFunctionData({
+	return await walletClient.writeContract({
 		abi: abi,
+		address: process.env.TOKEN_ADDR,
 		functionName: 'transfer',
-		args: ['0x00000000000000000000000000000000DeaDBeef', 1n]
-	  });
-	const hash = await walletClient.sendTransaction({
+		args: ['0x00000000000000000000000000000000DeaDBeef', 1n],
 		type: type,
-		to: process.env.TOKEN_ADDR,
 		feeCurrency: feeCurrency,
-		data:data,
 	});
-	return hash;
 }
 
 // sendTypedCreateTransaction sends a create transaction with the given type
 // and an optional feeCurrency.
-async function sendTypedCreateTransaction(type, feeCurrency){
-		 return await walletClient.deployContract({
-			type: type,
-			feeCurrency: feeCurrency,
-			bytecode: testContractJSON.bytecode.object,
-			abi: testContractJSON.abi,
-			 // The constructor args for the test contract at ../debug-fee-currency/DebugFeeCurrency.sol
-			args:[1n, true, true, true],
-		});
+async function sendTypedCreateTransaction(type, feeCurrency) {
+	return await walletClient.deployContract({
+		type: type,
+		feeCurrency: feeCurrency,
+		bytecode: testContractJSON.bytecode.object,
+		abi: testContractJSON.abi,
+		// The constructor args for the test contract at ../debug-fee-currency/DebugFeeCurrency.sol
+		args: [1n, true, true, true],
+	});
 }
 
 // verifyTypedTransactions is a helper function that submits a send and create
 // transaction of the given type with optional feeCurrency and checks the
 // results.
-async function verifyTypedTransactions(type, feeCurrency){
-		const send = await sendTypedTransaction(type, feeCurrency);
-		await check(send, type);
-		const create = await sendTypedCreateTransaction(type, feeCurrency);
-		await check(create, type);
-		const contract = await sendTypedSmartContractTransaction(type, feeCurrency);
-		await check(contract, type);
+async function verifyTypedTransactions(type, feeCurrency) {
+	const send = await sendTypedTransaction(type, feeCurrency);
+	await check(send, type);
+	const create = await sendTypedCreateTransaction(type, feeCurrency);
+	await check(create, type);
+	const contract = await sendTypedSmartContractTransaction(type, feeCurrency);
+	await check(contract, type);
 }
 
 describe("viem smoke test", () => {
@@ -145,7 +141,7 @@ describe("viem smoke test", () => {
 	it("legacy tx with fee currency not supported", async () => {
 		const type = "legacy";
 		try {
-			const hash = await sendTypedTransaction(type,process.env.FEE_CURRENCY);
+			const hash = await sendTypedTransaction(type, process.env.FEE_CURRENCY);
 
 			// When using the devnet an exception is thrown from
 			// sendTypedTransaction, on alfajores the transaction is submitted so we
@@ -153,7 +149,7 @@ describe("viem smoke test", () => {
 			// transaction was not included.
 			let blockNumber = await publicClient.getBlockNumber();
 			const oldBlockNumber = blockNumber;
-			while(blockNumber == oldBlockNumber){
+			while (blockNumber == oldBlockNumber) {
 				// Sleep 100ms
 				await new Promise(r => setTimeout(r, 100));
 				blockNumber = await publicClient.getBlockNumber();
@@ -165,13 +161,13 @@ describe("viem smoke test", () => {
 			return
 			// exceptionThrown += 1;
 		}
-			assert.fail("Managed to send unsupported legacy tx with fee currency");
+		assert.fail("Managed to send unsupported legacy tx with fee currency");
 	});
 
 	it("legacy create tx with fee currency not supported", async () => {
 		const type = "legacy";
 		try {
-			const hash = await sendTypedCreateTransaction(type,process.env.FEE_CURRENCY);
+			const hash = await sendTypedCreateTransaction(type, process.env.FEE_CURRENCY);
 
 			// When using the devnet an exception is thrown from
 			// sendTypedTransaction, on alfajores the transaction is submitted so we
@@ -179,7 +175,7 @@ describe("viem smoke test", () => {
 			// transaction was not included.
 			let blockNumber = await publicClient.getBlockNumber();
 			const oldBlockNumber = blockNumber;
-			while(blockNumber == oldBlockNumber){
+			while (blockNumber == oldBlockNumber) {
 				blockNumber = await publicClient.getBlockNumber();
 			}
 			const tx = await publicClient.getTransaction({ hash: hash });
@@ -189,6 +185,6 @@ describe("viem smoke test", () => {
 			return
 			// exceptionThrown += 1;
 		}
-			assert.fail("Managed to send unsupported legacy tx with fee currency");
+		assert.fail("Managed to send unsupported legacy tx with fee currency");
 	});
 });
