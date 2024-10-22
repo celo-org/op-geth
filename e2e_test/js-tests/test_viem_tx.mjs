@@ -286,12 +286,12 @@ describe("viem send tx", () => {
 		if (convertedBaseFee >= block.baseFeePerGas) {
 			assert.fail(`Converted base fee (${convertedBaseFee}) not less than native base fee (${block.baseFeePerGas})`);
 		}
-		const maxFeePerGas = rate.toFeeCurrency(block.baseFeePerGas) + 2n;
 		const request = await walletClient.prepareTransactionRequest({
 			to: "0x00000000000000000000000000000000DeaDBeef",
 			value: 2,
 			gas: 171000,
 			feeCurrency: process.env.FEE_CURRENCY,
+			feeCurrency: fc,
 			maxFeePerGas: convertedBaseFee +2n,
 			maxPriorityFeePerGas: 2n,
 		});
