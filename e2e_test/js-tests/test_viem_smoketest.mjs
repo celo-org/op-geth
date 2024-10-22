@@ -79,7 +79,7 @@ describe("viem smoke test, unsupported txs", () => {
 	// I guess this is a problem with the viem internals.
 	it.skip("cip42", async () => {
 		const type = "cip42";
-		await verifyTypedTransactions(type);
+		await sendTypedTransaction(type);
 	});
 
 	it("legacy tx with fee currency", async () => {
