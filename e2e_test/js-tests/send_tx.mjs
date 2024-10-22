@@ -2,7 +2,7 @@
 import {
   TransactionReceiptNotFoundError,
 } from "viem";
-import {publicClient, walletClient, account} from "./viem_setup.mjs"
+import { publicClient, walletClient, account } from "./viem_setup.mjs"
 
 const [feeCurrency, waitBlocks, replaceTxAfterWait] = process.argv.slice(2);
 

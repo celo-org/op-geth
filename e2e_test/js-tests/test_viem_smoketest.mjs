@@ -4,7 +4,7 @@ import {
 	parseAbi,
 } from "viem";
 import fs from "fs";
-import {publicClient, walletClient} from "./viem_setup.mjs"
+import { publicClient, walletClient } from "./viem_setup.mjs"
 
 // Load compiled contract
 const testContractJSON = JSON.parse(fs.readFileSync(process.env.COMPILED_TEST_CONTRACT, 'utf8'));

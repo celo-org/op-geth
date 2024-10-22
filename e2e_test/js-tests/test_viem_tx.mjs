@@ -3,7 +3,7 @@ import "mocha";
 import {
 	parseAbi,
 } from "viem";
-import {publicClient, walletClient} from "./viem_setup.mjs"
+import { publicClient, walletClient } from "./viem_setup.mjs"
 
 // Returns the base fee per gas for the current block multiplied by 2 to account for any increase in the subsequent block.
 async function getGasFees(publicClient, tip, feeCurrency) {
@@ -54,7 +54,7 @@ const testNonceBump = async (
 			shouldReplace
 		) {
 			throw err; // Only throw if unexpected error.
-	  }
+		}
 	}
 	const syncBarrierSignature =
 		await walletClient.signTransaction(syncBarrierRequest);
@@ -163,8 +163,8 @@ describe("viem send tx", () => {
 		// The expected value for the max fee should be the (baseFeePerGas * multiplier) + maxPriorityFeePerGas
 		// Instead what is currently returned is (maxFeePerGas * multiplier) + maxPriorityFeePerGas
 		const maxPriorityFeeInFeeCurrency = (maxPriorityFeePerGasNative * numerator) / denominator;
-    const maxFeeInFeeCurrency = ((block.baseFeePerGas +maxPriorityFeePerGasNative)*numerator) /denominator;
-		assert.equal(fees.maxFeePerGas, ((maxFeeInFeeCurrency*12n)/10n) + maxPriorityFeeInFeeCurrency);
+		const maxFeeInFeeCurrency = ((block.baseFeePerGas + maxPriorityFeePerGasNative) * numerator) / denominator;
+		assert.equal(fees.maxFeePerGas, ((maxFeeInFeeCurrency * 12n) / 10n) + maxPriorityFeeInFeeCurrency);
 		assert.equal(fees.maxPriorityFeePerGas, maxPriorityFeeInFeeCurrency);
 
 		// check that the prepared transaction request uses the
@@ -286,6 +286,7 @@ describe("viem send tx", () => {
 		if (convertedBaseFee >= block.baseFeePerGas) {
 			assert.fail(`Converted base fee (${convertedBaseFee}) not less than native base fee (${block.baseFeePerGas})`);
 		}
+		const maxFeePerGas = rate.toFeeCurrency(block.baseFeePerGas) + 2n;
 		const request = await walletClient.prepareTransactionRequest({
 			to: "0x00000000000000000000000000000000DeaDBeef",
 			value: 2,
@@ -304,13 +305,13 @@ describe("viem send tx", () => {
 });
 
 async function getRate(feeCurrencyAddress) {
-		const abi = parseAbi(['function getExchangeRate(address token) public view returns (uint256 numerator, uint256 denominator)']);
-		const [numerator, denominator] = await publicClient.readContract({
-			address: process.env.FEE_CURRENCY_DIRECTORY_ADDR,
-			abi: abi,
-			functionName: 'getExchangeRate',
-			args: [feeCurrencyAddress],
-		});
+	const abi = parseAbi(['function getExchangeRate(address token) public view returns (uint256 numerator, uint256 denominator)']);
+	const [numerator, denominator] = await publicClient.readContract({
+		address: process.env.FEE_CURRENCY_DIRECTORY_ADDR,
+		abi: abi,
+		functionName: 'getExchangeRate',
+		args: [feeCurrencyAddress],
+	});
 	return {
 		toFeeCurrency: (v) => (v * numerator) / denominator,
 		toNative: (v) => (v * denominator) / numerator,
