@@ -57,47 +57,32 @@ async function sendTypedCreateTransaction(type, feeCurrency) {
 	});
 }
 
-// verifyTypedTransactions is a helper function that submits a send and create
-// transaction of the given type with optional feeCurrency and checks the
-// results.
-async function verifyTypedTransactions(type, feeCurrency) {
-	const send = await sendTypedTransaction(type, feeCurrency);
-	await check(send, type);
-	const create = await sendTypedCreateTransaction(type, feeCurrency);
-	await check(create, type);
-	const contract = await sendTypedSmartContractTransaction(type, feeCurrency);
-	await check(contract, type);
-}
-
-describe("viem smoke test", () => {
-	it("send legacy tx", async () => {
-		const type = "legacy";
-		await verifyTypedTransactions(type);
+["legacy", "eip2930", "eip1559", "cip64"].forEach(function (type) {
+	describe("viem smoke test, tx type " + type, () => {
+		const feeCurrency = type == "cip64" ? process.env.FEE_CURRENCY : undefined;
+		it("send tx", async () => {
+			const send = await sendTypedTransaction(type, feeCurrency);
+			await check(send, type);
+		});
+		it("send create tx", async () => {
+			const create = await sendTypedCreateTransaction(type, feeCurrency);
+			await check(create, type);
+		});
+		it("send contract interaction tx", async () => {
+			const contract = await sendTypedSmartContractTransaction(type, feeCurrency);
+			await check(contract, type);
+		});
 	});
-
-	it("send eip2930 tx", async () => {
-		const type = "eip2930";
-		await verifyTypedTransactions(type);
-	});
-
-	it("send eip1559 tx", async () => {
-		const type = "eip1559";
-		await verifyTypedTransactions(type);
-	});
-
-	it("send cip64 tx", async () => {
-		const type = "cip64";
-		await verifyTypedTransactions(type, process.env.FEE_CURRENCY);
-	});
-
+});
+describe("viem smoke test, unsupported txs", () => {
 	// This test is failing because the produced transaction is of type cip64.
 	// I guess this is a problem with the viem internals.
-	it.skip("cip42 not supported", async () => {
+	it.skip("cip42", async () => {
 		const type = "cip42";
 		await verifyTypedTransactions(type);
 	});
 
-	it("legacy tx with fee currency not supported", async () => {
+	it("legacy tx with fee currency", async () => {
 		const type = "legacy";
 		try {
 			const hash = await sendTypedTransaction(type, process.env.FEE_CURRENCY);
@@ -123,7 +108,7 @@ describe("viem smoke test", () => {
 		assert.fail("Managed to send unsupported legacy tx with fee currency");
 	});
 
-	it("legacy create tx with fee currency not supported", async () => {
+	it("legacy create tx with fee currency", async () => {
 		const type = "legacy";
 		try {
 			const hash = await sendTypedCreateTransaction(type, process.env.FEE_CURRENCY);
