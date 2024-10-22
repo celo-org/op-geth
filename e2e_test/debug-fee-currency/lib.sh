@@ -50,7 +50,7 @@ function cleanup_fee_currency() {
 # 		replace the transaction with a transaction of higher priority-fee when
 # 		there is no receipt after the `waitBlocks` time passed
 function cip_64_tx() {
-	$SCRIPT_DIR/js-tests/send_tx.mjs "$(cast chain-id)" $ACC_PRIVKEY $1 $2 $3
+	$SCRIPT_DIR/js-tests/send_tx.mjs $1 $2 $3
 }
 
 # use this function to assert the cip_64_tx return value, by using a pipe like

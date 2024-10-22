@@ -1,54 +1,13 @@
 import { assert } from "chai";
 import "mocha";
 import {
-	createPublicClient,
-	createWalletClient,
-	http,
-	defineChain,
 	parseAbi,
-	encodeFunctionData,
 } from "viem";
-import { celoAlfajores } from "viem/chains";
-import { privateKeyToAccount } from "viem/accounts";
 import fs from "fs";
+import {publicClient, walletClient} from "./viem_setup.mjs"
 
 // Load compiled contract
 const testContractJSON = JSON.parse(fs.readFileSync(process.env.COMPILED_TEST_CONTRACT, 'utf8'));
-
-
-// Setup up chain
-const devChain = defineChain({
-	...celoAlfajores,
-	id: 1337,
-	name: "local dev chain",
-	network: "dev",
-	rpcUrls: {
-		default: {
-			http: [process.env.ETH_RPC_URL],
-		},
-	},
-});
-
-const chain = (() => {
-	switch (process.env.NETWORK) {
-		case 'alfajores':
-			return celoAlfajores
-		default:
-			return devChain
-	};
-})();
-
-// Set up clients/wallet
-const publicClient = createPublicClient({
-	chain: chain,
-	transport: http(),
-});
-const account = privateKeyToAccount(process.env.ACC_PRIVKEY);
-const walletClient = createWalletClient({
-	account,
-	chain: chain,
-	transport: http(),
-});
 
 // check checks that the receipt has status success and that the transaction
 // type matches the expected type, since viem sometimes mangles the type when
