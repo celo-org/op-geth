@@ -5,6 +5,8 @@ import {
 	createWalletClient,
 	http,
 	defineChain,
+	parseAbi,
+	encodeFunctionData,
 } from "viem";
 import { celoAlfajores } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
@@ -69,6 +71,24 @@ async function sendTypedTransaction(type, feeCurrency){
 		});
 }
 
+// sendTypedSmartContractTransaction initiates a token transfer with the given type
+// and an optional feeCurrency.
+async function sendTypedSmartContractTransaction(type, feeCurrency){
+	const abi = parseAbi(['function transfer(address to, uint256 value) external returns (bool)']);
+	const data = encodeFunctionData({
+		abi: abi,
+		functionName: 'transfer',
+		args: ['0x00000000000000000000000000000000DeaDBeef', 1n]
+	  });
+	const hash = await walletClient.sendTransaction({
+		type: type,
+		to: process.env.TOKEN_ADDR,
+		feeCurrency: feeCurrency,
+		data:data,
+	});
+	return hash;
+}
+
 // sendTypedCreateTransaction sends a create transaction with the given type
 // and an optional feeCurrency.
 async function sendTypedCreateTransaction(type, feeCurrency){
@@ -90,6 +110,8 @@ async function verifyTypedTransactions(type, feeCurrency){
 		await check(send, type);
 		const create = await sendTypedCreateTransaction(type, feeCurrency);
 		await check(create, type);
+		const contract = await sendTypedSmartContractTransaction(type, feeCurrency);
+		await check(contract, type);
 }
 
 describe("viem smoke test", () => {
