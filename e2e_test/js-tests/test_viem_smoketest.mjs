@@ -14,9 +14,9 @@ const testContractJSON = JSON.parse(fs.readFileSync(process.env.COMPILED_TEST_CO
 // building txs.
 async function check(txHash, type) {
 	const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+	assert.equal(receipt.status, "success", "receipt status 'failure'");
 	const transaction = await publicClient.getTransaction({ hash: txHash });
 	assert.equal(transaction.type, type, "transaction type does not match");
-	assert.equal(receipt.status, "success", "receipt status 'failure'");
 }
 
 // sendTypedTransaction sends a transaction with the given type and an optional
