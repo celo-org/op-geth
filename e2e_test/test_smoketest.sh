@@ -4,7 +4,7 @@ set -eo pipefail
 source shared.sh
 prepare_node
 
-(cd debug-fee-currency && forge build)
+(cd debug-fee-currency && forge build .)
 export COMPILED_TEST_CONTRACT=../debug-fee-currency/out/DebugFeeCurrency.sol/DebugFeeCurrency.json
 
 echo "debug-fee-currency-tree"

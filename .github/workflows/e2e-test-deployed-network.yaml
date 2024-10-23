@@ -35,7 +35,7 @@ jobs:
         - name: Install Foundry
           uses: foundry-rs/foundry-toolchain@v1
           with:
-            version: nightly-f625d0fa7c51e65b4bf1e8f7931cd1c6e2e285e9
+            version: nightly-143abd6a768eeb52a5785240b763d72a56987b4a
 
         - name: Install tree
           run: sudo apt-get update && sudo apt-get install tree
