@@ -1,3 +1,5 @@
+//go:build smoketest
+
 package smoketestunsupportedtxs
 
 import (
