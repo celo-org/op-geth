@@ -12,11 +12,16 @@ const testContractJSON = JSON.parse(fs.readFileSync(process.env.COMPILED_TEST_CO
 // check checks that the receipt has status success and that the transaction
 // type matches the expected type, since viem sometimes mangles the type when
 // building txs.
-async function check(txHash, type) {
+async function check(txHash, tx_checks, receipt_checks) {
 	const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
 	assert.equal(receipt.status, "success", "receipt status 'failure'");
 	const transaction = await publicClient.getTransaction({ hash: txHash });
-	assert.equal(transaction.type, type, "transaction type does not match");
+	for (const [key, expected] of Object.entries(tx_checks ?? {})) {
+		assert.equal(transaction[key], expected, `transaction ${key} does not match`);
+	}
+	for (const [key, expected] of Object.entries(receipt_checks ?? {})) {
+		assert.equal(receipt[key], expected, `receipt ${key} does not match`);
+	}
 }
 
 // sendTypedTransaction sends a transaction with the given type and an optional
@@ -59,18 +64,23 @@ async function sendTypedCreateTransaction(type, feeCurrency) {
 
 ["legacy", "eip2930", "eip1559", "cip64"].forEach(function (type) {
 	describe("viem smoke test, tx type " + type, () => {
-		const feeCurrency = type == "cip64" ? process.env.FEE_CURRENCY : undefined;
+		const feeCurrency = type == "cip64" ? process.env.FEE_CURRENCY.toLowerCase() : undefined;
+		let l1Fee = 0n;
+		if (!process.env.NETWORK) {
+			// Local dev chain does not have L1 fees (Optimism is unset)
+			l1Fee = undefined;
+		}
 		it("send tx", async () => {
 			const send = await sendTypedTransaction(type, feeCurrency);
-			await check(send, type);
+			await check(send, {type, feeCurrency}, {l1Fee});
 		});
 		it("send create tx", async () => {
 			const create = await sendTypedCreateTransaction(type, feeCurrency);
-			await check(create, type);
+			await check(create, {type, feeCurrency}, {l1Fee});
 		});
 		it("send contract interaction tx", async () => {
 			const contract = await sendTypedSmartContractTransaction(type, feeCurrency);
-			await check(contract, type);
+			await check(contract, {type, feeCurrency}, {l1Fee});
 		});
 	});
 });

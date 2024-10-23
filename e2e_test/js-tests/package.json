@@ -9,7 +9,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "chai": "^5.0.0",
+    "chai": "^5.1.2",
     "ethers": "^6.10.0",
     "mocha": "^10.2.0",
     "viem": "^2.21.18"
