@@ -42,7 +42,7 @@ jobs:
             version: nightly-f625d0fa7c51e65b4bf1e8f7931cd1c6e2e285e9
 
         - name: Install tree
-          run: sudo apt-get install tree
+          run: sudo apt-get update && sudo apt-get install tree
 
         - name: Run e2e tests local
           shell: bash
