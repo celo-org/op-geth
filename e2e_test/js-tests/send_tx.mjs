@@ -1,50 +1,10 @@
 #!/usr/bin/env node
 import {
-  createWalletClient,
-  createPublicClient,
-  http,
-  defineChain,
   TransactionReceiptNotFoundError,
 } from "viem";
-import { celoAlfajores } from "viem/chains";
-import { privateKeyToAccount } from "viem/accounts";
+import { publicClient, walletClient, account } from "./viem_setup.mjs"
 
-const [chainId, privateKey, feeCurrency, waitBlocks, replaceTxAfterWait] =
-  process.argv.slice(2);
-const devChain = defineChain({
-  ...celoAlfajores,
-  id: parseInt(chainId, 10),
-  name: "local dev chain",
-  network: "dev",
-  rpcUrls: {
-    default: {
-      http: ["http://127.0.0.1:8545"],
-    },
-  },
-});
-
-var chain;
-switch(process.env.NETWORK) {
-	case "alfajores":
-		chain = celoAlfajores;
-		break;
-	default:
-		chain = devChain;
-		// Code to run if no cases match
-};
-
-const account = privateKeyToAccount(privateKey);
-
-const publicClient = createPublicClient({
-  account,
-  chain: chain,
-  transport: http(),
-});
-const walletClient = createWalletClient({
-  account,
-  chain: chain,
-  transport: http(),
-});
+const [feeCurrency, waitBlocks, replaceTxAfterWait] = process.argv.slice(2);
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
