@@ -64,6 +64,7 @@ type environment struct {
 	feeCurrencyAllowlist common.AddressSet
 	exchangeRates        common.ExchangeRates
 	coinbase             common.Address
+	blockContext         vm.BlockContext
 
 	header   *types.Header
 	txs      []*types.Transaction
@@ -128,6 +129,8 @@ func (miner *Miner) generateWork(params *generateParams) *newPayloadResult {
 			miner.config.FeeCurrencyLimits,
 		)
 	}
+	// Create a new context to be used in the EVM environment
+	work.blockContext = core.NewEVMBlockContext(work.header, miner.chain, &work.coinbase, miner.chainConfig, work.state)
 
 	misc.EnsureCreate2Deployer(miner.chainConfig, work.header.Time, work.state)
 
@@ -365,7 +368,7 @@ func (miner *Miner) applyTransaction(env *environment, tx *types.Transaction) (*
 		snap = env.state.Snapshot()
 		gp   = env.gasPool.Gas()
 	)
-	receipt, err := core.ApplyTransaction(miner.chainConfig, miner.chain, &env.coinbase, env.gasPool, env.state, env.header, tx, &env.header.GasUsed, vm.Config{})
+	receipt, err := core.ApplyTransaction(miner.chainConfig, miner.chain, &env.coinbase, env.gasPool, env.state, env.header, tx, &env.header.GasUsed, vm.Config{}, &env.blockContext)
 	if err != nil {
 		env.state.RevertToSnapshot(snap)
 		env.gasPool.SetGas(gp)

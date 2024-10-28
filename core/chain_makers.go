@@ -39,11 +39,12 @@ import (
 // BlockGen creates blocks for testing.
 // See GenerateChain for a detailed explanation.
 type BlockGen struct {
-	i       int
-	cm      *chainMaker
-	parent  *types.Block
-	header  *types.Header
-	statedb *state.StateDB
+	i            int
+	cm           *chainMaker
+	parent       *types.Block
+	header       *types.Header
+	statedb      *state.StateDB
+	blockContext *vm.BlockContext
 
 	gasPool     *GasPool
 	txs         []*types.Transaction
@@ -52,6 +53,11 @@ type BlockGen struct {
 	withdrawals []*types.Withdrawal
 
 	engine consensus.Engine
+}
+
+func (b *BlockGen) updateBlockContext() {
+	blockContext := NewEVMBlockContext(b.header, b.cm, &b.header.Coinbase, b.cm.config, b.statedb)
+	b.blockContext = &blockContext
 }
 
 // SetCoinbase sets the coinbase of the generated block.
@@ -117,7 +123,7 @@ func (b *BlockGen) addTx(bc *BlockChain, vmConfig vm.Config, tx *types.Transacti
 		b.SetCoinbase(common.Address{})
 	}
 	b.statedb.SetTxContext(tx.Hash(), len(b.txs))
-	receipt, err := ApplyTransaction(b.cm.config, bc, &b.header.Coinbase, b.gasPool, b.statedb, b.header, tx, &b.header.GasUsed, vmConfig)
+	receipt, err := ApplyTransaction(b.cm.config, bc, &b.header.Coinbase, b.gasPool, b.statedb, b.header, tx, &b.header.GasUsed, vmConfig, b.blockContext)
 	if err != nil {
 		panic(err)
 	}
@@ -329,6 +335,8 @@ func GenerateChain(config *params.ChainConfig, parent *types.Block, engine conse
 				b.header.Difficulty = big.NewInt(0)
 			}
 		}
+		b.updateBlockContext()
+
 		// Mutate the state and block according to any hard-fork specs
 		if daoBlock := config.DAOForkBlock; daoBlock != nil {
 			limit := new(big.Int).Add(daoBlock, params.DAOForkExtraRange)
@@ -430,6 +438,7 @@ func GenerateVerkleChain(config *params.ChainConfig, parent *types.Block, engine
 	genblock := func(i int, parent *types.Block, triedb *triedb.Database, statedb *state.StateDB) (*types.Block, types.Receipts) {
 		b := &BlockGen{i: i, cm: cm, parent: parent, statedb: statedb, engine: engine}
 		b.header = cm.makeHeader(parent, statedb, b.engine)
+		b.updateBlockContext()
 
 		// TODO uncomment when proof generation is merged
 		// Save pre state for proof generation
