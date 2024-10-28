@@ -678,6 +678,7 @@ func (api *API) traceBlockParallel(ctx context.Context, block *types.Block, stat
 		threads = len(txs)
 	}
 	exchangeRates := core.GetExchangeRates(block.Header(), api.backend.ChainConfig(), statedb)
+	feeCurrencyContext := core.GetFeeCurrencyContext(block.Header(), api.backend.ChainConfig(), statedb)
 	jobs := make(chan *txTraceTask, threads)
 	for th := 0; th < threads; th++ {
 		pend.Add(1)
@@ -696,7 +697,7 @@ func (api *API) traceBlockParallel(ctx context.Context, block *types.Block, stat
 				// as the GetHash function of BlockContext is not safe for
 				// concurrent use.
 				// See: https://github.com/ethereum/go-ethereum/issues/29114
-				blockCtx := core.NewEVMBlockContext(block.Header(), api.chainContext(ctx), nil, api.backend.ChainConfig(), task.statedb)
+				blockCtx := core.NewBlockContextOverridingCeloFields(block.Header(), api.chainContext(ctx), nil, api.backend.ChainConfig(), task.statedb, feeCurrencyContext)
 				res, err := api.traceTx(ctx, txs[task.index], msg, txctx, blockCtx, task.statedb, config)
 				if err != nil {
 					results[task.index] = &txTraceResult{TxHash: txs[task.index].Hash(), Error: err.Error()}
@@ -709,7 +710,7 @@ func (api *API) traceBlockParallel(ctx context.Context, block *types.Block, stat
 
 	// Feed the transactions into the tracers and return
 	var failed error
-	blockCtx := core.NewEVMBlockContext(block.Header(), api.chainContext(ctx), nil, api.backend.ChainConfig(), statedb)
+	blockCtx := core.NewBlockContextOverridingCeloFields(block.Header(), api.chainContext(ctx), nil, api.backend.ChainConfig(), statedb, feeCurrencyContext)
 txloop:
 	for i, tx := range txs {
 		// Send the trace task over for execution

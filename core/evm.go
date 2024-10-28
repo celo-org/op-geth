@@ -78,8 +78,21 @@ func NewEVMBlockContext(header *types.Header, chain ChainContext, author *common
 		L1CostFunc:  types.NewL1CostFunc(config, statedb),
 	}
 
-	setCeloFieldsInBlockContext(&blockContext, header, config, statedb)
+	if config.IsCel2(header.Time) {
+		blockContext.FeeCurrencyContext = *GetFeeCurrencyContext(header, config, statedb)
+	}
 
+	return blockContext
+}
+
+// NewBlockContextOverridingCeloFields creates a new context for use in the EVM, overriding the FeeCurrencyContext with the provided one.
+// It will create first the FeeCurrencyContext to override it later, but as this is only used for tracers (due to a bug in making parallel calls and
+// the GetHash not being thread safe), I prefered to maintain as less as possible the code changes from upstream.
+func NewBlockContextOverridingCeloFields(header *types.Header, chain ChainContext, author *common.Address, config *params.ChainConfig, statedb vm.StateDB, celoFields *common.FeeCurrencyContext) vm.BlockContext {
+	blockContext := NewEVMBlockContext(header, chain, author, config, statedb)
+	if config.IsCel2(header.Time) {
+		blockContext.FeeCurrencyContext = *celoFields
+	}
 	return blockContext
 }
 
