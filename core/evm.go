@@ -41,8 +41,6 @@ type ChainContext interface {
 
 // NewEVMBlockContext creates a new context for use in the EVM.
 func NewEVMBlockContext(header *types.Header, chain ChainContext, author *common.Address, config *params.ChainConfig, statedb vm.StateDB, feeCurrencyContext *common.FeeCurrencyContext) vm.BlockContext {
-	// statedbCpy := vm.StateDB(statedb.(*state.StateDB).Copy())
-
 	var (
 		beneficiary common.Address
 		baseFee     *big.Int
