@@ -199,12 +199,12 @@ func ApplyTransactionWithEVM(msg *Message, config *params.ChainConfig, gp *GasPo
 // for the transaction, gas used and an error if the transaction failed,
 // indicating the block was invalid.
 func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *common.Address, gp *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *uint64, cfg vm.Config, feeCurrencyContext *common.FeeCurrencyContext) (*types.Receipt, error) {
-	// Create a new context to be used in the EVM environment
-	blockContext := NewEVMBlockContext(header, bc, author, config, statedb, feeCurrencyContext)
-	msg, err := TransactionToMessage(tx, types.MakeSigner(config, header.Number, header.Time), header.BaseFee, blockContext.FeeCurrencyContext.ExchangeRates)
+	msg, err := TransactionToMessage(tx, types.MakeSigner(config, header.Number, header.Time), header.BaseFee, feeCurrencyContext.ExchangeRates)
 	if err != nil {
 		return nil, err
 	}
+	// Create a new context to be used in the EVM environment
+	blockContext := NewEVMBlockContext(header, bc, author, config, statedb, feeCurrencyContext)
 	txContext := NewEVMTxContext(msg)
 	vmenv := vm.NewEVM(blockContext, txContext, statedb, config, cfg)
 	return ApplyTransactionWithEVM(msg, config, gp, statedb, header.Number, header.Hash(), tx, usedGas, vmenv)
