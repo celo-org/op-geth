@@ -63,7 +63,7 @@ type environment struct {
 	multiGasPool         *core.MultiGasPool // available per-fee-currency gas used to pack transactions
 	feeCurrencyAllowlist common.AddressSet
 	coinbase             common.Address
-	blockContext         vm.BlockContext
+	feeCurrencyContext   *common.FeeCurrencyContext
 
 	header   *types.Header
 	txs      []*types.Transaction
@@ -261,7 +261,8 @@ func (miner *Miner) prepareWork(genParams *generateParams) (*environment, error)
 		log.Error("Failed to create sealing context", "err", err)
 		return nil, err
 	}
-	env.blockContext = core.NewEVMBlockContext(header, miner.chain, nil, miner.chainConfig, env.state)
+	env.feeCurrencyContext = core.GetFeeCurrencyContext(header, miner.chainConfig, env.state)
+	context := core.NewEVMBlockContext(header, miner.chain, nil, miner.chainConfig, env.state, env.feeCurrencyContext)
 	if evicted := miner.feeCurrencyBlocklist.Evict(parent); len(evicted) > 0 {
 		log.Warn(
 			"Evicted temporarily blocked fee-currencies from local block-list",
@@ -270,12 +271,12 @@ func (miner *Miner) prepareWork(genParams *generateParams) (*environment, error)
 		)
 	}
 	env.feeCurrencyAllowlist = miner.feeCurrencyBlocklist.FilterAllowlist(
-		common.CurrencyAllowlist(env.blockContext.FeeCurrencyContext.ExchangeRates),
+		common.CurrencyAllowlist(env.feeCurrencyContext.ExchangeRates),
 		header,
 	)
 
 	if header.ParentBeaconRoot != nil {
-		vmenv := vm.NewEVM(env.blockContext, vm.TxContext{}, env.state, miner.chainConfig, vm.Config{})
+		vmenv := vm.NewEVM(context, vm.TxContext{}, env.state, miner.chainConfig, vm.Config{})
 		core.ProcessBeaconBlockRoot(*header.ParentBeaconRoot, vmenv, env.state)
 	}
 	return env, nil
@@ -364,7 +365,7 @@ func (miner *Miner) applyTransaction(env *environment, tx *types.Transaction) (*
 		snap = env.state.Snapshot()
 		gp   = env.gasPool.Gas()
 	)
-	receipt, err := core.ApplyTransaction(miner.chainConfig, miner.chain, &env.coinbase, env.gasPool, env.state, env.header, tx, &env.header.GasUsed, vm.Config{}, &env.blockContext)
+	receipt, err := core.ApplyTransaction(miner.chainConfig, miner.chain, &env.coinbase, env.gasPool, env.state, env.header, tx, &env.header.GasUsed, vm.Config{}, env.feeCurrencyContext)
 	if err != nil {
 		env.state.RevertToSnapshot(snap)
 		env.gasPool.SetGas(gp)
@@ -555,16 +556,16 @@ func (miner *Miner) fillTransactions(interrupt *atomic.Int32, env *environment) 
 	}
 	// Fill the block with all available pending transactions.
 	if len(localPlainTxs) > 0 || len(localBlobTxs) > 0 {
-		plainTxs := newTransactionsByPriceAndNonce(env.signer, localPlainTxs, env.header.BaseFee, env.blockContext.FeeCurrencyContext.ExchangeRates)
-		blobTxs := newTransactionsByPriceAndNonce(env.signer, localBlobTxs, env.header.BaseFee, env.blockContext.FeeCurrencyContext.ExchangeRates)
+		plainTxs := newTransactionsByPriceAndNonce(env.signer, localPlainTxs, env.header.BaseFee, env.feeCurrencyContext.ExchangeRates)
+		blobTxs := newTransactionsByPriceAndNonce(env.signer, localBlobTxs, env.header.BaseFee, env.feeCurrencyContext.ExchangeRates)
 
 		if err := miner.commitTransactions(env, plainTxs, blobTxs, interrupt); err != nil {
 			return err
 		}
 	}
 	if len(remotePlainTxs) > 0 || len(remoteBlobTxs) > 0 {
-		plainTxs := newTransactionsByPriceAndNonce(env.signer, remotePlainTxs, env.header.BaseFee, env.blockContext.FeeCurrencyContext.ExchangeRates)
-		blobTxs := newTransactionsByPriceAndNonce(env.signer, remoteBlobTxs, env.header.BaseFee, env.blockContext.FeeCurrencyContext.ExchangeRates)
+		plainTxs := newTransactionsByPriceAndNonce(env.signer, remotePlainTxs, env.header.BaseFee, env.feeCurrencyContext.ExchangeRates)
+		blobTxs := newTransactionsByPriceAndNonce(env.signer, remoteBlobTxs, env.header.BaseFee, env.feeCurrencyContext.ExchangeRates)
 
 		if err := miner.commitTransactions(env, plainTxs, blobTxs, interrupt); err != nil {
 			return err

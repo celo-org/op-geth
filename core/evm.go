@@ -40,7 +40,9 @@ type ChainContext interface {
 }
 
 // NewEVMBlockContext creates a new context for use in the EVM.
-func NewEVMBlockContext(header *types.Header, chain ChainContext, author *common.Address, config *params.ChainConfig, statedb vm.StateDB) vm.BlockContext {
+func NewEVMBlockContext(header *types.Header, chain ChainContext, author *common.Address, config *params.ChainConfig, statedb vm.StateDB, feeCurrencyContext *common.FeeCurrencyContext) vm.BlockContext {
+	// statedbCpy := vm.StateDB(statedb.(*state.StateDB).Copy())
+
 	var (
 		beneficiary common.Address
 		baseFee     *big.Int
@@ -79,20 +81,9 @@ func NewEVMBlockContext(header *types.Header, chain ChainContext, author *common
 	}
 
 	if config.IsCel2(header.Time) {
-		blockContext.FeeCurrencyContext = *GetFeeCurrencyContext(header, config, statedb)
+		blockContext.FeeCurrencyContext = *feeCurrencyContext
 	}
 
-	return blockContext
-}
-
-// NewBlockContextOverridingCeloFields creates a new context for use in the EVM, overriding the FeeCurrencyContext with the provided one.
-// It will create first the FeeCurrencyContext to override it later, but as this is only used for tracers (due to a bug in making parallel calls and
-// the GetHash not being thread safe), I prefered to maintain as less as possible the code changes from upstream.
-func NewBlockContextOverridingCeloFields(header *types.Header, chain ChainContext, author *common.Address, config *params.ChainConfig, statedb vm.StateDB, celoFields *common.FeeCurrencyContext) vm.BlockContext {
-	blockContext := NewEVMBlockContext(header, chain, author, config, statedb)
-	if config.IsCel2(header.Time) {
-		blockContext.FeeCurrencyContext = *celoFields
-	}
 	return blockContext
 }
 

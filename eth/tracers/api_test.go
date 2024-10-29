@@ -246,9 +246,10 @@ func (b *testBackend) StateAtTransaction(ctx context.Context, block *types.Block
 	if txIndex == 0 && len(block.Transactions()) == 0 {
 		return nil, vm.BlockContext{}, statedb, release, nil
 	}
+	feeCurrencyContext := core.GetFeeCurrencyContext(block.Header(), b.chainConfig, statedb)
 	// Recompute transactions up to the target index.
 	signer := types.MakeSigner(b.chainConfig, block.Number(), block.Time())
-	context := core.NewEVMBlockContext(block.Header(), b.chain, nil, b.chainConfig, statedb)
+	context := core.NewEVMBlockContext(block.Header(), b.chain, nil, b.chainConfig, statedb, feeCurrencyContext)
 	for idx, tx := range block.Transactions() {
 		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee(), context.FeeCurrencyContext.ExchangeRates)
 		txContext := core.NewEVMTxContext(msg)
