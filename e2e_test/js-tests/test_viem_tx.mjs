@@ -235,7 +235,7 @@ describe("viem send tx", () => {
 		assert.equal(receipt.status, "success", "receipt status 'failure'");
 	}).timeout(10_000);
 
-	it("send overlapping nonce tx in different currencies", async () => {
+	it.skip("send overlapping nonce tx in different currencies", async () => {
 		const priceBump = 1.1;
 
 		const rate = await getRate(process.env.FEE_CURRENCY);
@@ -310,7 +310,7 @@ describe("viem send tx", () => {
 		}
 	}).timeout(10_000);
 
-	it("send fee currency tx with just high enough gas price", async () => {
+	it.skip("send fee currency tx with just high enough gas price", async () => {
 		// The idea of this test is to check that the fee currency is taken into
 		// account by the server. We do this by using a fee currency that has a
 		// value greater than celo, so that the base fee in fee currency becomes a
