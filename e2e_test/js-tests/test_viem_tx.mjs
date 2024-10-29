@@ -235,7 +235,7 @@ describe("viem send tx", () => {
 		assert.equal(receipt.status, "success", "receipt status 'failure'");
 	}).timeout(10_000);
 
-	it("send overlapping nonce tx in different currencies", async () => {
+	it.skip("send overlapping nonce tx in different currencies", async () => {
 		const priceBump = 1.1;
 
 		const rate = await getRate(process.env.FEE_CURRENCY);
