@@ -261,7 +261,6 @@ func (miner *Miner) prepareWork(genParams *generateParams) (*environment, error)
 		log.Error("Failed to create sealing context", "err", err)
 		return nil, err
 	}
-	env.feeCurrencyContext = core.GetFeeCurrencyContext(header, miner.chainConfig, env.state)
 	context := core.NewEVMBlockContext(header, miner.chain, nil, miner.chainConfig, env.state, env.feeCurrencyContext)
 	if evicted := miner.feeCurrencyBlocklist.Evict(parent); len(evicted) > 0 {
 		log.Warn(
@@ -301,13 +300,15 @@ func (miner *Miner) makeEnv(parent *types.Header, header *types.Header, coinbase
 			release()
 		}
 	}
+	feeCurrencyContext := core.GetFeeCurrencyContext(header, miner.chainConfig, state)
 
 	// Note the passed coinbase may be different with header.Coinbase.
 	return &environment{
-		signer:   types.MakeSigner(miner.chainConfig, header.Number, header.Time),
-		state:    state,
-		coinbase: coinbase,
-		header:   header,
+		signer:             types.MakeSigner(miner.chainConfig, header.Number, header.Time),
+		state:              state,
+		coinbase:           coinbase,
+		header:             header,
+		feeCurrencyContext: feeCurrencyContext,
 	}, nil
 }
 

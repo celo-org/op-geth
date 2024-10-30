@@ -10,6 +10,10 @@ import (
 )
 
 func GetFeeCurrencyContext(header *types.Header, config *params.ChainConfig, statedb vm.StateDB) *common.FeeCurrencyContext {
+	if !config.IsCel2(header.Time) {
+		return &common.FeeCurrencyContext{}
+	}
+
 	caller := &contracts.CeloBackend{ChainConfig: config, State: statedb}
 
 	feeCurrencyContext, err := contracts.GetFeeCurrencyContext(caller)
