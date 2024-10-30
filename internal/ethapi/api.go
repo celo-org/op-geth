@@ -1199,8 +1199,9 @@ func doCall(ctx context.Context, b Backend, args TransactionArgs, state *state.S
 	// this makes sure resources are cleaned up.
 	defer cancel()
 
+	feeCurrencyContext := core.GetFeeCurrencyContext(header, b.ChainConfig(), state)
 	// Get a new instance of the EVM.
-	blockCtx := core.NewEVMBlockContext(header, NewChainContext(ctx, b), nil, b.ChainConfig(), state)
+	blockCtx := core.NewEVMBlockContext(header, NewChainContext(ctx, b), nil, b.ChainConfig(), state, feeCurrencyContext)
 	if blockOverrides != nil {
 		blockOverrides.Apply(&blockCtx)
 	}
