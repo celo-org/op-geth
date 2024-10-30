@@ -266,12 +266,13 @@ func (api *API) traceChain(start, end *types.Block, config *TraceConfig, closed 
 			// Fetch and execute the block trace taskCh
 			for task := range taskCh {
 				var (
-					signer   = types.MakeSigner(api.backend.ChainConfig(), task.block.Number(), task.block.Time())
-					blockCtx = core.NewEVMBlockContext(task.block.Header(), api.chainContext(ctx), nil, api.backend.ChainConfig(), task.statedb)
+					feeCurrencyContext = core.GetFeeCurrencyContext(end.Header(), api.backend.ChainConfig(), task.statedb)
+					signer             = types.MakeSigner(api.backend.ChainConfig(), task.block.Number(), task.block.Time())
+					blockCtx           = core.NewEVMBlockContext(task.block.Header(), api.chainContext(ctx), nil, api.backend.ChainConfig(), task.statedb, feeCurrencyContext)
 				)
 				// Trace all the transactions contained within
 				for i, tx := range task.block.Transactions() {
-					msg, _ := core.TransactionToMessage(tx, signer, task.block.BaseFee(), blockCtx.FeeCurrencyContext.ExchangeRates)
+					msg, _ := core.TransactionToMessage(tx, signer, task.block.BaseFee(), feeCurrencyContext.ExchangeRates)
 					txctx := &Context{
 						BlockHash:   task.block.Hash(),
 						BlockNumber: task.block.Number(),
@@ -379,7 +380,8 @@ func (api *API) traceChain(start, end *types.Block, config *TraceConfig, closed 
 			// Insert block's parent beacon block root in the state
 			// as per EIP-4788.
 			if beaconRoot := next.BeaconRoot(); beaconRoot != nil {
-				context := core.NewEVMBlockContext(next.Header(), api.chainContext(ctx), nil, api.backend.ChainConfig(), statedb)
+				feeCurrencyContext := core.GetFeeCurrencyContext(end.Header(), api.backend.ChainConfig(), statedb)
+				context := core.NewEVMBlockContext(next.Header(), api.chainContext(ctx), nil, api.backend.ChainConfig(), statedb, feeCurrencyContext)
 				vmenv := vm.NewEVM(context, vm.TxContext{}, statedb, api.backend.ChainConfig(), vm.Config{})
 				core.ProcessBeaconBlockRoot(*beaconRoot, vmenv, statedb)
 			}
@@ -557,7 +559,8 @@ func (api *API) IntermediateRoots(ctx context.Context, hash common.Hash, config 
 		roots              []common.Hash
 		signer             = types.MakeSigner(api.backend.ChainConfig(), block.Number(), block.Time())
 		chainConfig        = api.backend.ChainConfig()
-		vmctx              = core.NewEVMBlockContext(block.Header(), api.chainContext(ctx), nil, chainConfig, statedb)
+		feeCurrencyContext = core.GetFeeCurrencyContext(block.Header(), chainConfig, statedb)
+		vmctx              = core.NewEVMBlockContext(block.Header(), api.chainContext(ctx), nil, chainConfig, statedb, feeCurrencyContext)
 		deleteEmptyObjects = chainConfig.IsEIP158(block.Number())
 	)
 	if beaconRoot := block.BeaconRoot(); beaconRoot != nil {
@@ -633,11 +636,12 @@ func (api *API) traceBlock(ctx context.Context, block *types.Block, config *Trac
 	}
 	// Native tracers have low overhead
 	var (
-		txs       = block.Transactions()
-		blockHash = block.Hash()
-		blockCtx  = core.NewEVMBlockContext(block.Header(), api.chainContext(ctx), nil, api.backend.ChainConfig(), statedb)
-		signer    = types.MakeSigner(api.backend.ChainConfig(), block.Number(), block.Time())
-		results   = make([]*txTraceResult, len(txs))
+		txs                = block.Transactions()
+		blockHash          = block.Hash()
+		feeCurrencyContext = core.GetFeeCurrencyContext(block.Header(), api.backend.ChainConfig(), statedb)
+		blockCtx           = core.NewEVMBlockContext(block.Header(), api.chainContext(ctx), nil, api.backend.ChainConfig(), statedb, feeCurrencyContext)
+		signer             = types.MakeSigner(api.backend.ChainConfig(), block.Number(), block.Time())
+		results            = make([]*txTraceResult, len(txs))
 	)
 	if beaconRoot := block.BeaconRoot(); beaconRoot != nil {
 		vmenv := vm.NewEVM(blockCtx, vm.TxContext{}, statedb, api.backend.ChainConfig(), vm.Config{})
@@ -645,7 +649,7 @@ func (api *API) traceBlock(ctx context.Context, block *types.Block, config *Trac
 	}
 	for i, tx := range txs {
 		// Generate the next state snapshot fast without tracing
-		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee(), blockCtx.FeeCurrencyContext.ExchangeRates)
+		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee(), feeCurrencyContext.ExchangeRates)
 		txctx := &Context{
 			BlockHash:   blockHash,
 			BlockNumber: block.Number(),
@@ -678,6 +682,7 @@ func (api *API) traceBlockParallel(ctx context.Context, block *types.Block, stat
 		threads = len(txs)
 	}
 	exchangeRates := core.GetExchangeRates(block.Header(), api.backend.ChainConfig(), statedb)
+	feeCurrencyContext := core.GetFeeCurrencyContext(block.Header(), api.backend.ChainConfig(), statedb)
 	jobs := make(chan *txTraceTask, threads)
 	for th := 0; th < threads; th++ {
 		pend.Add(1)
@@ -696,7 +701,7 @@ func (api *API) traceBlockParallel(ctx context.Context, block *types.Block, stat
 				// as the GetHash function of BlockContext is not safe for
 				// concurrent use.
 				// See: https://github.com/ethereum/go-ethereum/issues/29114
-				blockCtx := core.NewEVMBlockContext(block.Header(), api.chainContext(ctx), nil, api.backend.ChainConfig(), task.statedb)
+				blockCtx := core.NewEVMBlockContext(block.Header(), api.chainContext(ctx), nil, api.backend.ChainConfig(), task.statedb, feeCurrencyContext)
 				res, err := api.traceTx(ctx, txs[task.index], msg, txctx, blockCtx, task.statedb, config)
 				if err != nil {
 					results[task.index] = &txTraceResult{TxHash: txs[task.index].Hash(), Error: err.Error()}
@@ -709,7 +714,7 @@ func (api *API) traceBlockParallel(ctx context.Context, block *types.Block, stat
 
 	// Feed the transactions into the tracers and return
 	var failed error
-	blockCtx := core.NewEVMBlockContext(block.Header(), api.chainContext(ctx), nil, api.backend.ChainConfig(), statedb)
+	blockCtx := core.NewEVMBlockContext(block.Header(), api.chainContext(ctx), nil, api.backend.ChainConfig(), statedb, feeCurrencyContext)
 txloop:
 	for i, tx := range txs {
 		// Send the trace task over for execution
@@ -783,11 +788,12 @@ func (api *API) standardTraceBlockToFile(ctx context.Context, block *types.Block
 
 	// Execute transaction, either tracing all or just the requested one
 	var (
-		dumps       []string
-		signer      = types.MakeSigner(api.backend.ChainConfig(), block.Number(), block.Time())
-		chainConfig = api.backend.ChainConfig()
-		vmctx       = core.NewEVMBlockContext(block.Header(), api.chainContext(ctx), nil, chainConfig, statedb)
-		canon       = true
+		dumps              []string
+		signer             = types.MakeSigner(api.backend.ChainConfig(), block.Number(), block.Time())
+		chainConfig        = api.backend.ChainConfig()
+		feeCurrencyContext = core.GetFeeCurrencyContext(block.Header(), chainConfig, statedb)
+		vmctx              = core.NewEVMBlockContext(block.Header(), api.chainContext(ctx), nil, chainConfig, statedb, feeCurrencyContext)
+		canon              = true
 	)
 	// Check if there are any overrides: the caller may wish to enable a future
 	// fork when executing this block. Note, such overrides are only applicable to the
@@ -989,7 +995,8 @@ func (api *API) TraceCall(ctx context.Context, args ethapi.TransactionArgs, bloc
 	}
 	defer release()
 
-	vmctx := core.NewEVMBlockContext(block.Header(), api.chainContext(ctx), nil, api.backend.ChainConfig(), statedb)
+	feeCurrencyContext := core.GetFeeCurrencyContext(block.Header(), api.backend.ChainConfig(), statedb)
+	vmctx := core.NewEVMBlockContext(block.Header(), api.chainContext(ctx), nil, api.backend.ChainConfig(), statedb, feeCurrencyContext)
 	// Apply the customization rules if required.
 	if config != nil {
 		if err := config.StateOverrides.Apply(statedb); err != nil {
@@ -1002,7 +1009,7 @@ func (api *API) TraceCall(ctx context.Context, args ethapi.TransactionArgs, bloc
 		return nil, err
 	}
 	var (
-		msg         = args.ToMessage(vmctx.BaseFee, vmctx.FeeCurrencyContext.ExchangeRates)
+		msg         = args.ToMessage(vmctx.BaseFee, feeCurrencyContext.ExchangeRates)
 		tx          = args.ToTransaction()
 		traceConfig *TraceConfig
 	)

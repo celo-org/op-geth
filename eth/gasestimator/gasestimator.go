@@ -235,8 +235,9 @@ func execute(ctx context.Context, call *core.Message, opts *Options, gasLimit ui
 func run(ctx context.Context, call *core.Message, opts *Options) (*core.ExecutionResult, error) {
 	// Assemble the call and the call context
 	var (
-		msgContext = core.NewEVMTxContext(call)
-		evmContext = core.NewEVMBlockContext(opts.Header, opts.Chain, nil, opts.Config, opts.State)
+		feeCurrencyContext = core.GetFeeCurrencyContext(opts.Header, opts.Config, opts.State)
+		msgContext         = core.NewEVMTxContext(call)
+		evmContext         = core.NewEVMBlockContext(opts.Header, opts.Chain, nil, opts.Config, opts.State, feeCurrencyContext)
 
 		dirtyState = opts.State.Copy()
 		evm        = vm.NewEVM(evmContext, msgContext, dirtyState, opts.Config, vm.Config{NoBaseFee: true})

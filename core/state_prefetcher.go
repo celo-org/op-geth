@@ -46,11 +46,12 @@ func newStatePrefetcher(config *params.ChainConfig, chain *HeaderChain) *statePr
 // only goal is to pre-cache transaction signatures and state trie nodes.
 func (p *statePrefetcher) Prefetch(block *types.Block, statedb *state.StateDB, cfg vm.Config, interrupt *atomic.Bool) {
 	var (
-		header       = block.Header()
-		gaspool      = new(GasPool).AddGas(block.GasLimit())
-		blockContext = NewEVMBlockContext(header, p.chain, nil, p.config, statedb)
-		evm          = vm.NewEVM(blockContext, vm.TxContext{}, statedb, p.config, cfg)
-		signer       = types.MakeSigner(p.config, header.Number, header.Time)
+		header             = block.Header()
+		gaspool            = new(GasPool).AddGas(block.GasLimit())
+		feeCurrencyContext = GetFeeCurrencyContext(header, p.config, statedb)
+		blockContext       = NewEVMBlockContext(header, p.chain, nil, p.config, statedb, feeCurrencyContext)
+		evm                = vm.NewEVM(blockContext, vm.TxContext{}, statedb, p.config, cfg)
+		signer             = types.MakeSigner(p.config, header.Number, header.Time)
 	)
 	// Iterate over and process the individual transactions
 	byzantium := p.config.IsByzantium(block.Number())
