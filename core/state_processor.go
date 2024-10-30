@@ -76,7 +76,8 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 		signer  = types.MakeSigner(p.config, header.Number, header.Time)
 		err     error
 	)
-	context = NewEVMBlockContext(header, p.chain, nil, p.config, statedb)
+	feeCurrencyContext := GetFeeCurrencyContext(header, p.config, statedb)
+	context = NewEVMBlockContext(header, p.chain, nil, p.config, statedb, feeCurrencyContext)
 	vmenv := vm.NewEVM(context, vm.TxContext{}, statedb, p.config, cfg)
 	if beaconRoot := block.BeaconRoot(); beaconRoot != nil {
 		ProcessBeaconBlockRoot(*beaconRoot, vmenv, statedb)
@@ -222,24 +223,24 @@ func MakeReceipt(evm *vm.EVM, result *ExecutionResult, statedb *state.StateDB, b
 // and uses the input parameters for its environment. It returns the receipt
 // for the transaction, gas used and an error if the transaction failed,
 // indicating the block was invalid.
-func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *common.Address, gp *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *uint64, cfg vm.Config) (*types.Receipt, error) {
-	return ApplyTransactionExtended(config, bc, author, gp, statedb, header, tx, usedGas, cfg, nil)
+func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *common.Address, gp *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *uint64, cfg vm.Config, feeCurrencyContext *common.FeeCurrencyContext) (*types.Receipt, error) {
+	return ApplyTransactionExtended(config, bc, author, gp, statedb, header, tx, usedGas, cfg, nil, feeCurrencyContext)
 }
 
 type ApplyTransactionOpts struct {
 	PostValidation func(evm *vm.EVM, result *ExecutionResult) error
 }
 
-func ApplyTransactionExtended(config *params.ChainConfig, bc ChainContext, author *common.Address, gp *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *uint64, cfg vm.Config, extraOpts *ApplyTransactionOpts) (*types.Receipt, error) {
-	// Create a new context to be used in the EVM environment
-	blockContext := NewEVMBlockContext(header, bc, author, config, statedb)
-	msg, err := TransactionToMessage(tx, types.MakeSigner(config, header.Number, header.Time), header.BaseFee, blockContext.FeeCurrencyContext.ExchangeRates)
+func ApplyTransactionExtended(config *params.ChainConfig, bc ChainContext, author *common.Address, gp *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *uint64, cfg vm.Config, extraOpts *ApplyTransactionOpts, feeCurrencyContext *common.FeeCurrencyContext) (*types.Receipt, error) {
+	msg, err := TransactionToMessage(tx, types.MakeSigner(config, header.Number, header.Time), header.BaseFee, feeCurrencyContext.ExchangeRates)
 	if err != nil {
 		return nil, err
 	}
 	if extraOpts != nil {
 		msg.PostValidation = extraOpts.PostValidation
 	}
+	// Create a new context to be used in the EVM environment
+	blockContext := NewEVMBlockContext(header, bc, author, config, statedb, feeCurrencyContext)
 	txContext := NewEVMTxContext(msg)
 	vmenv := vm.NewEVM(blockContext, txContext, statedb, config, cfg)
 	return ApplyTransactionWithEVM(msg, config, gp, statedb, header.Number, header.Hash(), tx, usedGas, vmenv)

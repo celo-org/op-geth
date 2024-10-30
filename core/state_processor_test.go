@@ -585,11 +585,13 @@ func TestProcessParentBlockHash(t *testing.T) {
 		statedb.SetCode(params.HistoryStorageAddress, params.HistoryStorageCode)
 		statedb.IntermediateRoot(true)
 
-		vmContext := NewEVMBlockContext(header, nil, &coinbase, chainConfig, statedb)
+		feeCurrencyContext := GetFeeCurrencyContext(header, chainConfig, statedb)
+
+		vmContext := NewEVMBlockContext(header, nil, &coinbase, chainConfig, statedb, feeCurrencyContext)
 		evm := vm.NewEVM(vmContext, vm.TxContext{}, statedb, chainConfig, vm.Config{})
 		ProcessParentBlockHash(header.ParentHash, evm, statedb)
 
-		vmContext = NewEVMBlockContext(parent, nil, &coinbase, chainConfig, statedb)
+		vmContext = NewEVMBlockContext(parent, nil, &coinbase, chainConfig, statedb, feeCurrencyContext)
 		evm = vm.NewEVM(vmContext, vm.TxContext{}, statedb, chainConfig, vm.Config{})
 		ProcessParentBlockHash(parent.ParentHash, evm, statedb)
 
