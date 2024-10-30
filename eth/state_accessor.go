@@ -233,9 +233,10 @@ func (eth *Ethereum) stateAtTransaction(ctx context.Context, block *types.Block,
 	if err != nil {
 		return nil, vm.BlockContext{}, nil, nil, err
 	}
+	feeCurrencyContext := core.GetFeeCurrencyContext(block.Header(), eth.blockchain.Config(), statedb)
 	// Insert parent beacon block root in the state as per EIP-4788.
 	if beaconRoot := block.BeaconRoot(); beaconRoot != nil {
-		context := core.NewEVMBlockContext(block.Header(), eth.blockchain, nil, eth.blockchain.Config(), statedb)
+		context := core.NewEVMBlockContext(block.Header(), eth.blockchain, nil, eth.blockchain.Config(), statedb, feeCurrencyContext)
 		vmenv := vm.NewEVM(context, vm.TxContext{}, statedb, eth.blockchain.Config(), vm.Config{})
 		core.ProcessBeaconBlockRoot(*beaconRoot, vmenv, statedb)
 	}
@@ -245,7 +246,7 @@ func (eth *Ethereum) stateAtTransaction(ctx context.Context, block *types.Block,
 	// Recompute transactions up to the target index.
 	signer := types.MakeSigner(eth.blockchain.Config(), block.Number(), block.Time())
 	for idx, tx := range block.Transactions() {
-		context := core.NewEVMBlockContext(block.Header(), eth.blockchain, nil, eth.blockchain.Config(), statedb)
+		context := core.NewEVMBlockContext(block.Header(), eth.blockchain, nil, eth.blockchain.Config(), statedb, feeCurrencyContext)
 		// Assemble the transaction call message and return if the requested offset
 		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee(), context.FeeCurrencyContext.ExchangeRates)
 		txContext := core.NewEVMTxContext(msg)
