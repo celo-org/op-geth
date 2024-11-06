@@ -39,7 +39,7 @@ for f in test_*"$TEST_GLOB"*; do
 	if [[ -n $NETWORK ]]; then
 		case $f in
 		  # Skip tests that require a local network.
-		  test_fee_currency_fails_on_credit.sh|test_fee_currency_fails_on_debit.sh|test_fee_currency_fails_intrinsic.sh)
+		  test_fee_currency_fails_on_credit.sh|test_fee_currency_fails_on_debit.sh|test_fee_currency_fails_intrinsic.sh|test_value_and_fee_currency_balance_check.sh)
 		  echo "skipping file $f"
 		  continue
 		  ;;
