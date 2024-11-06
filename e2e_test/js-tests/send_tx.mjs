@@ -9,7 +9,7 @@ import {
 import { celoAlfajores } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 
-const [chainId, privateKey, feeCurrency, waitBlocks, replaceTxAfterWait] =
+const [chainId, privateKey, feeCurrency, waitBlocks, replaceTxAfterWait, celoValue] =
   process.argv.slice(2);
 const devChain = defineChain({
   ...celoAlfajores,
@@ -89,13 +89,17 @@ async function replaceTransaction(tx) {
 }
 
 async function main() {
+  let value = 2n
+  if (celoValue !== "") {
+    value = BigInt(celoValue)
+  }
   const request = await walletClient.prepareTransactionRequest({
     account,
     to: "0x00000000000000000000000000000000DeaDBeef",
-    value: 2n,
+    value: value,
     gas: 90000,
     feeCurrency,
-    maxFeePerGas: 2000000000n,
+    maxFeePerGas: 25000000000n,
     maxPriorityFeePerGas: 100n, // should be >= 1wei even after conversion to native tokens
   });
 

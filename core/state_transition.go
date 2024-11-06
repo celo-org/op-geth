@@ -333,7 +333,8 @@ func (st *stateTransition) buyGas() error {
 			balanceCheck.Add(balanceCheck, l1Cost)
 		}
 	}
-	balanceCheck.Add(balanceCheck, st.msg.Value)
+	// Moved to canPayFee
+	// balanceCheck.Add(balanceCheck, st.msg.Value)
 
 	if st.evm.ChainConfig().IsCancun(st.evm.Context.BlockNumber, st.evm.Context.Time) {
 		if blobGas := st.blobGasUsed(); blobGas > 0 {
@@ -347,12 +348,7 @@ func (st *stateTransition) buyGas() error {
 			mgval.Add(mgval, blobFee)
 		}
 	}
-	balanceCheckU256, overflow := uint256.FromBig(balanceCheck)
-	if overflow {
-		return fmt.Errorf("%w: address %v required balance exceeds 256 bits", ErrInsufficientFunds, st.msg.From.Hex())
-	}
-
-	if err := st.canPayFee(balanceCheckU256); err != nil {
+	if err := st.canPayFee(balanceCheck); err != nil {
 		return err
 	}
 	if err := st.gp.SubGas(st.msg.GasLimit); err != nil {
