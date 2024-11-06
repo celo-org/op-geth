@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/exchange"
 	"github.com/ethereum/go-ethereum/contracts"
 	"github.com/ethereum/go-ethereum/contracts/addresses"
@@ -14,14 +15,33 @@ import (
 )
 
 // canPayFee checks whether accountOwner's balance can cover transaction fee.
-func (st *StateTransition) canPayFee(checkAmount *uint256.Int) error {
+func (st *StateTransition) canPayFee(checkAmountForGas *big.Int) error {
+	var checkAmountInCelo, checkAmountInAlternativeCurrency *big.Int
 	if st.msg.FeeCurrency == nil {
+		checkAmountInCelo = new(big.Int).Add(checkAmountForGas, st.msg.Value)
+		checkAmountInAlternativeCurrency = common.Big0
+	} else {
+		checkAmountInCelo = st.msg.Value
+		checkAmountInAlternativeCurrency = checkAmountForGas
+	}
+
+	if checkAmountInCelo.Cmp(common.Big0) > 0 {
+		balanceInCeloU256, overflow := uint256.FromBig(checkAmountInCelo)
+		if overflow {
+			return fmt.Errorf("%w: address %v required balance exceeds 256 bits", ErrInsufficientFunds, st.msg.From.Hex())
+		}
+
 		balance := st.state.GetBalance(st.msg.From)
 
-		if balance.Cmp(checkAmount) < 0 {
-			return fmt.Errorf("%w: address %v have %v want %v", ErrInsufficientFunds, st.msg.From.Hex(), balance, checkAmount)
+		if balance.Cmp(balanceInCeloU256) < 0 {
+			return fmt.Errorf("%w: address %v have %v want %v", ErrInsufficientFunds, st.msg.From.Hex(), balance, checkAmountInCelo)
 		}
-	} else {
+	}
+	if checkAmountInAlternativeCurrency.Cmp(common.Big0) > 0 {
+		_, overflow := uint256.FromBig(checkAmountInAlternativeCurrency)
+		if overflow {
+			return fmt.Errorf("%w: address %v required balance exceeds 256 bits", ErrInsufficientFunds, st.msg.From.Hex())
+		}
 		backend := &contracts.CeloBackend{
 			ChainConfig: st.evm.ChainConfig(),
 			State:       st.state,
@@ -31,10 +51,8 @@ func (st *StateTransition) canPayFee(checkAmount *uint256.Int) error {
 			return err
 		}
 
-		// Token amount can't be bigger than 256 bit
-		balanceU256, _ := uint256.FromBig(balance)
-		if balanceU256.Cmp(checkAmount) < 0 {
-			return fmt.Errorf("%w: address %v have %v want %v, fee currency: %v", ErrInsufficientFunds, st.msg.From.Hex(), balance, checkAmount, st.msg.FeeCurrency.Hex())
+		if balance.Cmp(checkAmountInAlternativeCurrency) < 0 {
+			return fmt.Errorf("%w: address %v have %v want %v, fee currency: %v", ErrInsufficientFunds, st.msg.From.Hex(), balance, checkAmountInAlternativeCurrency, st.msg.FeeCurrency.Hex())
 		}
 	}
 	return nil
