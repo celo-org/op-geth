@@ -208,36 +208,41 @@ func TestCorrectTransactionSortWithFeeCurrency(t *testing.T) {
 
 	groups := map[common.Address][]*txpool.LazyTransaction{}
 
+	baseFee := big.NewInt(10)
+
 	addr1 := crypto.PubkeyToAddress(user1.PublicKey)
+	user1GasFeeCap := uint256.NewInt(950)
 	// user1 pays 950 feeCurrency, rate is 10/1, baseFee is 10 in feeCurrency is 100,
 	// 950 - 100 = 850 feeCurrency tip => 85 celo tip
 	// without converting the tip (error fixed): 950 - 10 = 940 feeCurrency tip => 94 celo tip (this test fails)
 	groups[addr1] = append(groups[addr1], &txpool.LazyTransaction{
-		GasFeeCap:   uint256.NewInt(950),
-		GasTipCap:   uint256.NewInt(950),
+		GasFeeCap:   user1GasFeeCap,
+		GasTipCap:   user1GasFeeCap,
 		Gas:         100,
 		FeeCurrency: &feeCurrency,
 	})
 
 	addr2 := crypto.PubkeyToAddress(user2.PublicKey)
+	user2GasFeeCap := uint256.NewInt(100)
 	// user2 pays 100 celos, baseFee is 10, tip is 90
 	groups[addr2] = append(groups[addr2], &txpool.LazyTransaction{
-		GasFeeCap: uint256.NewInt(100),
-		GasTipCap: uint256.NewInt(100),
+		GasFeeCap: user2GasFeeCap,
+		GasTipCap: user2GasFeeCap,
 		Gas:       100,
 	})
 
 	// Sort the transactions and cross check the nonce ordering
-	txset := newTransactionsByPriceAndNonce(signer, groups, big.NewInt(10), rates)
+	txset := newTransactionsByPriceAndNonce(signer, groups, baseFee, rates)
 
 	var auxTx *txpool.LazyTransaction
-	auxTx, _ = txset.Peek()
-	if auxTx.FeeCurrency != nil {
+	var fees *uint256.Int
+	auxTx, fees = txset.Peek()
+	if auxTx.FeeCurrency != nil || auxTx.GasFeeCap.Cmp(user2GasFeeCap) != 0 || fees.Cmp(uint256.NewInt(90)) != 0 {
 		t.Error("expected tx from user2, got the tx from user1")
 	}
 	txset.Shift()
-	auxTx, _ = txset.Peek()
-	if auxTx.FeeCurrency == nil || *auxTx.FeeCurrency != feeCurrency {
+	auxTx, fees = txset.Peek()
+	if auxTx.FeeCurrency == nil || *auxTx.FeeCurrency != feeCurrency || auxTx.GasFeeCap.Cmp(user1GasFeeCap) != 0 || fees.Cmp(uint256.NewInt(85)) != 0 {
 		t.Error("expected tx from user1, got the tx from user2")
 	}
 }
