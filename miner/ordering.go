@@ -52,7 +52,7 @@ func newTxWithMinerFee(tx *txpool.LazyTransaction, from common.Address, baseFee 
 		if tx.GasFeeCap.Cmp(baseFeeConverted) < 0 {
 			return nil, types.ErrGasFeeCapTooLow
 		}
-		tip = new(uint256.Int).Sub(tx.GasFeeCap, baseFee)
+		tip = new(uint256.Int).Sub(tx.GasFeeCap, baseFeeConverted)
 		if tip.Gt(tx.GasTipCap) {
 			tip = tx.GasTipCap
 		}
