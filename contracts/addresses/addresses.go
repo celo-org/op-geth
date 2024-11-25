@@ -12,7 +12,4 @@ var (
 
 	CeloTokenBaklavaAddress  = common.HexToAddress("0xdDc9bE57f553fe75752D61606B94CBD7e0264eF8")
 	FeeHandlerBaklavaAddress = common.HexToAddress("0xeed0A69c51079114C280f7b936C79e24bD94013e")
-
-	AlfajoresChainID uint64 = 44787
-	BaklavaChainID   uint64 = 62320
 )

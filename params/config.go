@@ -36,6 +36,8 @@ const (
 	OPMainnetChainID        = 10
 	OPGoerliChainID         = 420
 	CeloMainnetChainID      = 42220
+	CeloBaklavaChainID      = 62320
+	CeloAlfajoresChainID    = 44787
 	BaseMainnetChainID      = 8453
 	BaseGoerliChainID       = 84531
 	baseSepoliaChainID      = 84532
