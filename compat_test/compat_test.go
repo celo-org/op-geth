@@ -19,6 +19,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/stretchr/testify/require"
@@ -40,7 +41,7 @@ var (
 	celoRpcURL        string
 	opGethRpcURL      string
 	startBlock        uint64
-	gingerbreadBlocks = map[uint64]uint64{42220: 21616000, 62320: 18785000, 44787: 19814000}
+	gingerbreadBlocks = map[uint64]uint64{params.CeloMainnetChainID: 21616000, params.CeloBaklavaChainID: 18785000, params.CeloAlfajoresChainID: 19814000}
 )
 
 func init() {
