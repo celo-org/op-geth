@@ -6,7 +6,7 @@ footer: |
 base:
   name: op-geth
   url: https://github.com/ethereum-optimism/op-geth
-  hash: 110c433a2469
+  hash: 641e996a2dcf1f81bac9416cb6124f86a69f1de7
 fork:
   name: Celo
   url: https://github.com/celo-org/op-geth
