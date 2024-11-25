@@ -769,6 +769,9 @@ func (st *StateTransition) distributeTxFees() error {
 	if st.evm.ChainConfig().ChainID != nil && st.evm.ChainConfig().ChainID.Uint64() == params.CeloAlfajoresChainID {
 		feeHandlerAddress = addresses.FeeHandlerAlfajoresAddress
 	}
+	if st.evm.ChainConfig().ChainID != nil && st.evm.ChainConfig().ChainID.Uint64() == params.CeloBaklavaChainID {
+		feeHandlerAddress = addresses.FeeHandlerBaklavaAddress
+	}
 
 	log.Trace("distributeTxFees", "from", from, "refund", refund, "feeCurrency", st.msg.FeeCurrency,
 		"coinbaseFeeRecipient", st.evm.Context.Coinbase, "coinbaseFee", tipTxFee,

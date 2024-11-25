@@ -51,6 +51,10 @@ func (ctx *celoPrecompileContext) IsCallerCeloToken() (bool, error) {
 	if ctx.evm.ChainConfig().ChainID != nil && ctx.evm.ChainConfig().ChainID.Uint64() == params.CeloAlfajoresChainID {
 		tokenAddress = addresses.CeloTokenAlfajoresAddress
 	}
+	if ctx.evm.ChainConfig().ChainID != nil && ctx.evm.ChainConfig().ChainID.Uint64() == params.CeloBaklavaChainID {
+		tokenAddress = addresses.CeloTokenBaklavaAddress
+	}
+
 	return tokenAddress == ctx.caller, nil
 }
 
