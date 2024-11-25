@@ -766,7 +766,7 @@ func (st *StateTransition) distributeTxFees() error {
 
 	feeCurrency := st.msg.FeeCurrency
 	feeHandlerAddress := addresses.FeeHandlerAddress
-	if st.evm.ChainConfig().ChainID != nil && st.evm.ChainConfig().ChainID.Uint64() == addresses.AlfajoresChainID {
+	if st.evm.ChainConfig().ChainID != nil && st.evm.ChainConfig().ChainID.Uint64() == params.CeloAlfajoresChainID {
 		feeHandlerAddress = addresses.FeeHandlerAlfajoresAddress
 	}
 

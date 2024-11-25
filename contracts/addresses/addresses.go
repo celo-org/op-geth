@@ -9,6 +9,4 @@ var (
 
 	CeloTokenAlfajoresAddress  = common.HexToAddress("0xF194afDf50B03e69Bd7D057c1Aa9e10c9954E4C9")
 	FeeHandlerAlfajoresAddress = common.HexToAddress("0xEAaFf71AB67B5d0eF34ba62Ea06Ac3d3E2dAAA38")
-
-	AlfajoresChainID uint64 = 44787
 )
