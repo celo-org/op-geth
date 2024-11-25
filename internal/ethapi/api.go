@@ -1610,18 +1610,16 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 		} else if isGingerbread && isNativeFeeCurrency {
 			// Post gingerbread mined transaction with a native fee currency, we can compute the effective gas price.
 			result.GasPrice = (*hexutil.Big)(effectiveGasPrice(tx, baseFee))
-		} else if isCel2 && tx.Type() == types.CeloDynamicFeeTxV2Type {
-			// Mined post Cel2 celoDynamicFeeTxV2 transaction, we can get the gas price from the receipt
-			// Assert that we should have a receipt
-			if receipt == nil {
-				panic(fmt.Sprintf("no corresponding receipt provided for celoDynamicFeeTxV2 transaction %s", tx.Hash().Hex()))
-			}
+		} else if isCel2 && tx.Type() == types.CeloDynamicFeeTxV2Type && receipt != nil {
+			// Mined post Cel2 celoDynamicFeeTxV2 transaction with non native fee currency, we get the gas price from
+			// the receipt.
 			result.GasPrice = (*hexutil.Big)(receipt.EffectiveGasPrice)
 		} else {
 			// Otherwise this is either a:
 			// -  pre-gingerbread transaction
 			// -  post-gingerbread native fee currency transaction but no base fee was provided
 			// -  post-gingerbread pre-cel2 transaction with a non-native fee currency
+			// -  post cel2 transaction with a non-native fee currency in a bad block (and therefore without a receipt)
 			//
 			// In these cases we can't calculate the gas price.
 			result.GasPrice = nil
