@@ -50,7 +50,7 @@ type Options struct {
 // Estimate returns the lowest possible gas limit that allows the transaction to
 // run successfully with the provided context options. It returns an error if the
 // transaction would always revert, or if there are unexpected failures.
-func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uint64, exchangeRates common.ExchangeRates, balance *big.Int) (uint64, []byte, error) {
+func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uint64, exchangeRates common.ExchangeRates, alternativeFeeBalance *big.Int) (uint64, []byte, error) {
 	// Binary search the gas limit, as it may need to be higher than the amount used
 	var (
 		lo uint64 // lowest-known gas limit where tx execution fails
@@ -72,7 +72,8 @@ func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uin
 	}
 	// Recap the highest gas limit with account's available balance.
 	if feeCap.BitLen() != 0 {
-		available := balance
+		celoBalance := opts.State.GetBalance(call.From).ToBig()
+		available := celoBalance
 		if call.FeeCurrency != nil {
 			if !call.IsFeeCurrencyDenominated() {
 				// CIP-66, prices are given in native token.
@@ -82,12 +83,15 @@ func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uin
 				if err != nil {
 					return 0, nil, err
 				}
+			} else {
+				available = alternativeFeeBalance
 			}
-		} else {
-			if call.Value != nil {
-				if call.Value.Cmp(available) >= 0 {
-					return 0, nil, core.ErrInsufficientFundsForTransfer
-				}
+		}
+		if call.Value != nil {
+			if call.Value.Cmp(celoBalance) >= 0 {
+				return 0, nil, core.ErrInsufficientFundsForTransfer
+			}
+			if call.FeeCurrency == nil || !call.IsFeeCurrencyDenominated() {
 				available.Sub(available, call.Value)
 			}
 		}
@@ -114,8 +118,8 @@ func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uin
 			if transfer == nil {
 				transfer = new(big.Int)
 			}
-			log.Debug("Gas estimation capped by limited funds", "original", hi, "balance", balance,
-				"sent", transfer, "maxFeePerGas", feeCap, "fundable", allowance,
+			log.Debug("Gas estimation capped by limited funds", "original", hi, "celo balance", celoBalance,
+				"feeCurrency balance", alternativeFeeBalance, "sent", transfer, "maxFeePerGas", feeCap, "fundable", allowance,
 				"feeCurrency", call.FeeCurrency, "maxFeeInFeeCurrency", call.MaxFeeInFeeCurrency,
 			)
 			hi = allowance.Uint64()
