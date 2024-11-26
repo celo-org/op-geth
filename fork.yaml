@@ -6,7 +6,7 @@ footer: |
 base:
   name: op-geth
   url: https://github.com/celo-org/op-geth
-  ref: refs/heads/celo10-upstream
+  ref: refs/remotes/origin/celo10-upstream
 fork:
   name: Celo
   url: https://github.com/celo-org/op-geth
