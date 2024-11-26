@@ -50,6 +50,7 @@ devtools:
 forkdiff:
 	docker run --rm \
 		--mount src=$(shell pwd),target=/host-pwd,type=bind \
+		--platform linux/amd64 \
 		protolambda/forkdiff:latest \
 		-repo /host-pwd/ -fork /host-pwd/fork.yaml -out /host-pwd/forkdiff.html
 
