@@ -4,6 +4,8 @@ on:
     branches:
       - celo[0-9]+
 
+  workflow_dispatch:
+
 permissions:
   contents: read
 
