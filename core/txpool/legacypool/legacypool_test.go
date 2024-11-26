@@ -2235,6 +2235,42 @@ func TestReplacement(t *testing.T) {
 	}
 }
 
+// Tests that the pool accepts replacement transactions if the account only owns Celo.
+func TestCeloReplacement(t *testing.T) {
+	t.Parallel()
+
+	// Create the pool to test the pricing enforcement with
+	statedb, _ := state.New(types.EmptyRootHash, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
+	blockchain := newTestBlockChain(params.TestChainConfig, 1000000, statedb, new(event.Feed))
+
+	pool := New(testTxPoolConfig, blockchain)
+	pool.Init(testTxPoolConfig.PriceLimit, blockchain.CurrentBlock(), makeAddressReserver())
+	defer pool.Close()
+
+	// Keep track of transaction events to ensure all executables get announced
+	events := make(chan core.NewTxsEvent, 32)
+	sub := pool.txFeed.Subscribe(events)
+	defer sub.Unsubscribe()
+
+	// Create a test account to add transactions with
+	key, _ := crypto.GenerateKey()
+	testAddBalance(pool, crypto.PubkeyToAddress(key.PublicKey), big.NewInt(600000))
+
+	// Add pending transactions, ensuring the minimum price bump is enforced for replacement (for ultra low prices too)
+	price := int64(10)
+	priceBumped := (price * (100 + int64(testTxPoolConfig.PriceBump))) / 100
+
+	if err := pool.addRemoteSync(pricedTransaction(0, 50000, big.NewInt(price), key)); err != nil {
+		t.Fatalf("failed to add original cheap pending transaction: %v", err)
+	}
+	if err := pool.addRemoteSync(pricedTransaction(0, 50000, big.NewInt(priceBumped), key)); err != nil {
+		t.Fatalf("failed to replace original transaction: %v", err)
+	}
+	if err := validateEvents(events, 2); err != nil {
+		t.Fatalf("replacement event firing failed: %v", err)
+	}
+}
+
 // Tests that the pool rejects replacement dynamic fee transactions that don't
 // meet the minimum price bump required.
 func TestReplacementDynamicFee(t *testing.T) {
