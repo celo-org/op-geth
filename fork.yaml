@@ -5,8 +5,8 @@ footer: |
   a fork of [Optimism's `op-geth`](https://github.com/ethereum-optimism/op-geth).
 base:
   name: op-geth
-  url: https://github.com/ethereum-optimism/op-geth
-  hash: 110c433a2469
+  url: https://github.com/celo-org/op-geth
+  ref: refs/heads/celo10-upstream
 fork:
   name: Celo
   url: https://github.com/celo-org/op-geth
