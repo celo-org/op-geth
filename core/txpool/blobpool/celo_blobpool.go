@@ -10,7 +10,7 @@ func (pool *BlobPool) recreateCeloProperties() {
 		ChainConfig: pool.chain.Config(),
 		State:       pool.state,
 	}
-	currencyContext, err := contracts.GetFeeCurrencyContext(pool.celoBackend)
+	currencyContext, err := contracts.GetFeeCurrencyContext(pool.celoBackend, pool.chain.Config().ChainID)
 	if err != nil {
 		log.Error("Error trying to get fee currency context in txpool.", "cause", err)
 	}

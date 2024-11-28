@@ -53,7 +53,7 @@ func (b *CeloAPIBackend) GetExchangeRates(ctx context.Context, blockNumOrHash rp
 	if err != nil {
 		return nil, err
 	}
-	er, err := contracts.GetExchangeRates(contractBackend)
+	er, err := contracts.GetExchangeRates(contractBackend, b.ChainConfig().ChainID)
 	if err != nil {
 		return nil, err
 	}

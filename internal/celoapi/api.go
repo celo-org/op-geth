@@ -58,7 +58,7 @@ func (c *CeloAPI) convertCeloToCurrency(nativePrice *big.Int, feeCurrency *commo
 	if err != nil {
 		return nil, err
 	}
-	er, err := contracts.GetExchangeRates(cb)
+	er, err := contracts.GetExchangeRates(cb, cb.ChainConfig.ChainID)
 	if err != nil {
 		return nil, fmt.Errorf("retrieve exchange rates from current state: %w", err)
 	}
