@@ -16,7 +16,7 @@ func GetFeeCurrencyContext(header *types.Header, config *params.ChainConfig, sta
 
 	caller := &contracts.CeloBackend{ChainConfig: config, State: statedb}
 
-	feeCurrencyContext, err := contracts.GetFeeCurrencyContext(caller, config.ChainID)
+	feeCurrencyContext, err := contracts.GetFeeCurrencyContext(caller)
 	if err != nil {
 		log.Error("Error fetching exchange rates!", "err", err)
 	}
@@ -30,7 +30,7 @@ func GetExchangeRates(header *types.Header, config *params.ChainConfig, statedb 
 
 	caller := &contracts.CeloBackend{ChainConfig: config, State: statedb}
 
-	feeCurrencyContext, err := contracts.GetFeeCurrencyContext(caller, config.ChainID)
+	feeCurrencyContext, err := contracts.GetFeeCurrencyContext(caller)
 	if err != nil {
 		log.Error("Error fetching exchange rates!", "err", err)
 	}

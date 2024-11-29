@@ -78,3 +78,7 @@ func (b *CeloBackend) NewEVM(feeCurrencyContext *common.FeeCurrencyContext) *vm.
 	vmConfig := vm.Config{}
 	return vm.NewEVM(blockCtx, txCtx, b.State, b.ChainConfig, vmConfig)
 }
+
+func (b *CeloBackend) Config() *params.ChainConfig {
+	return b.ChainConfig
+}

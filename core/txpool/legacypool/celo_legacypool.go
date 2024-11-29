@@ -34,7 +34,7 @@ func (pool *LegacyPool) recreateCeloProperties() {
 		ChainConfig: pool.chainconfig,
 		State:       pool.currentState,
 	}
-	feeCurrencyContext, err := contracts.GetFeeCurrencyContext(pool.celoBackend, pool.chainconfig.ChainID)
+	feeCurrencyContext, err := contracts.GetFeeCurrencyContext(pool.celoBackend)
 	if err != nil {
 		log.Error("Error trying to get fee currency context in txpool.", "cause", err)
 	}
