@@ -58,11 +58,11 @@ func (c *CeloAPI) convertCeloToCurrency(nativePrice *big.Int, feeCurrency *commo
 	if err != nil {
 		return nil, err
 	}
-	er, err := contracts.GetExchangeRates(cb)
+	exchangeRates, err := contracts.GetExchangeRates(cb)
 	if err != nil {
 		return nil, fmt.Errorf("retrieve exchange rates from current state: %w", err)
 	}
-	return exchange.ConvertCeloToCurrency(er, feeCurrency, nativePrice)
+	return exchange.ConvertCeloToCurrency(exchangeRates, feeCurrency, nativePrice)
 }
 
 // GasPrice wraps the original JSON RPC `eth_gasPrice` and adds an additional

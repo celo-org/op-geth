@@ -1,15 +1,14 @@
-name: CI
+name: e2e-test-deployed-network
 
 on:
-  push:
-    branches:
-      - master
-      - celo*
-
+  schedule:
+    - cron: "0 14 * * *"
   pull_request:
     branches:
       - master
       - celo*
+    paths:
+      - 'e2e_test/**'
 
   workflow_dispatch:
 
@@ -17,7 +16,7 @@ permissions:
   contents: read
 
 jobs:
-  Test:
+  e2e-tests:
     runs-on: ["8-cpu","self-hosted","org"]
     steps:
         - uses: actions/checkout@v4
@@ -29,9 +28,6 @@ jobs:
         - name: Build
           run: make all
 
-        - name: Test
-          run: make test
-
         - uses: actions/setup-node@v4
           with:
             node-version: 18
@@ -41,19 +37,6 @@ jobs:
           with:
             version: nightly-143abd6a768eeb52a5785240b763d72a56987b4a
 
-        - name: Run e2e tests local
+        - name: Run e2e tests alfajores
           shell: bash
-          run: e2e_test/run_all_tests.sh
-
-  Lint:
-    runs-on: ["8-cpu","self-hosted","org"]
-    steps:
-        - uses: actions/checkout@v4
-
-        - uses: actions/setup-go@v5
-          with:
-            go-version: '1.21'
-            cache: false
-
-        - name: Lint
-          run: make lint
+          run: NETWORK=alfajores e2e_test/run_all_tests.sh
