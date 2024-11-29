@@ -22,12 +22,6 @@ var feeCurrencyABI *abi.ABI
 
 var ErrFeeCurrencyEVMCall = errors.New("fee-currency contract error during internal EVM call")
 
-type CeloContractCaller interface {
-	bind.ContractCaller
-
-	Config() *params.ChainConfig
-}
-
 func init() {
 	var err error
 	feeCurrencyABI, err = abigen.FeeCurrencyMetaData.GetAbi()
@@ -37,6 +31,7 @@ func init() {
 }
 
 func getDirectoryAddress(chainId *big.Int) common.Address {
+	// ChainId can be uninitialized in some tests
 	if chainId == nil {
 		return addresses.FeeCurrencyDirectoryAddress
 	}
@@ -210,8 +205,8 @@ func GetRegisteredCurrencies(caller *abigen.FeeCurrencyDirectoryCaller) ([]commo
 }
 
 // GetExchangeRates returns the exchange rates for the provided gas currencies
-func GetExchangeRates(caller CeloContractCaller) (common.ExchangeRates, error) {
-	directory, err := abigen.NewFeeCurrencyDirectoryCaller(getDirectoryAddress(caller.Config().ChainID), caller)
+func GetExchangeRates(caller *CeloBackend) (common.ExchangeRates, error) {
+	directory, err := abigen.NewFeeCurrencyDirectoryCaller(getDirectoryAddress(caller.ChainConfig.ChainID), caller)
 	if err != nil {
 		return common.ExchangeRates{}, fmt.Errorf("failed to access FeeCurrencyDirectory: %w", err)
 	}
@@ -223,9 +218,9 @@ func GetExchangeRates(caller CeloContractCaller) (common.ExchangeRates, error) {
 }
 
 // GetFeeCurrencyContext returns the fee currency block context for all registered gas currencies from CELO
-func GetFeeCurrencyContext(caller CeloContractCaller) (common.FeeCurrencyContext, error) {
+func GetFeeCurrencyContext(caller *CeloBackend) (common.FeeCurrencyContext, error) {
 	var feeContext common.FeeCurrencyContext
-	directory, err := abigen.NewFeeCurrencyDirectoryCaller(getDirectoryAddress(caller.Config().ChainID), caller)
+	directory, err := abigen.NewFeeCurrencyDirectoryCaller(getDirectoryAddress(caller.ChainConfig.ChainID), caller)
 	if err != nil {
 		return feeContext, fmt.Errorf("failed to access FeeCurrencyDirectory: %w", err)
 	}
