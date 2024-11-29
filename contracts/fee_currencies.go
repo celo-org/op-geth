@@ -198,17 +198,16 @@ func CreditFees(
 func GetRegisteredCurrencies(caller *abigen.FeeCurrencyDirectoryCaller) ([]common.Address, error) {
 	currencies, err := caller.GetCurrencies(&bind.CallOpts{})
 	if err != nil {
-		return currencies, fmt.Errorf("Failed to get registered tokens: %w", err)
+		return currencies, fmt.Errorf("failed to get registered tokens: %w", err)
 	}
 	return currencies, nil
 }
 
 // GetExchangeRates returns the exchange rates for the provided gas currencies
-	exchangeRates := map[common.Address]*big.Rat{}
 func GetExchangeRates(caller bind.ContractCaller, chainId *big.Int) (common.ExchangeRates, error) {
 	directory, err := abigen.NewFeeCurrencyDirectoryCaller(getDirectoryAddress(chainId), caller)
 	if err != nil {
-		return exchangeRates, fmt.Errorf("Failed to access FeeCurrencyDirectory: %w", err)
+		return common.ExchangeRates{}, fmt.Errorf("failed to access FeeCurrencyDirectory: %w", err)
 	}
 	currencies, err := GetRegisteredCurrencies(directory)
 	if err != nil {
@@ -222,7 +221,7 @@ func GetFeeCurrencyContext(caller bind.ContractCaller, chainId *big.Int) (common
 	var feeContext common.FeeCurrencyContext
 	directory, err := abigen.NewFeeCurrencyDirectoryCaller(getDirectoryAddress(chainId), caller)
 	if err != nil {
-		return feeContext, fmt.Errorf("Failed to access FeeCurrencyDirectory: %w", err)
+		return feeContext, fmt.Errorf("failed to access FeeCurrencyDirectory: %w", err)
 	}
 
 	currencies, err := GetRegisteredCurrencies(directory)
