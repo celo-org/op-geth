@@ -50,7 +50,7 @@ type Options struct {
 // Estimate returns the lowest possible gas limit that allows the transaction to
 // run successfully with the provided context options. It returns an error if the
 // transaction would always revert, or if there are unexpected failures.
-func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uint64, exchangeRates common.ExchangeRates, alternativeFeeBalance *big.Int) (uint64, []byte, error) {
+func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uint64, exchangeRates common.ExchangeRates, feeCurrencyBalance *big.Int) (uint64, []byte, error) {
 	// Binary search the gas limit, as it may need to be higher than the amount used
 	var (
 		lo uint64 // lowest-known gas limit where tx execution fails
@@ -84,7 +84,7 @@ func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uin
 					return 0, nil, err
 				}
 			}
-			available = alternativeFeeBalance
+			available = feeCurrencyBalance
 		}
 		if call.Value != nil {
 			if call.Value.Cmp(celoBalance) >= 0 {
@@ -118,7 +118,7 @@ func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uin
 				transfer = new(big.Int)
 			}
 			log.Debug("Gas estimation capped by limited funds", "original", hi, "celo balance", celoBalance,
-				"feeCurrency balance", alternativeFeeBalance, "sent", transfer, "maxFeePerGas", feeCap, "fundable", allowance,
+				"feeCurrency balance", feeCurrencyBalance, "sent", transfer, "maxFeePerGas", feeCap, "fundable", allowance,
 				"feeCurrency", call.FeeCurrency, "maxFeeInFeeCurrency", call.MaxFeeInFeeCurrency,
 			)
 			hi = allowance.Uint64()
