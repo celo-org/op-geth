@@ -83,15 +83,14 @@ func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uin
 				if err != nil {
 					return 0, nil, err
 				}
-			} else {
-				available = alternativeFeeBalance
 			}
+			available = alternativeFeeBalance
 		}
 		if call.Value != nil {
 			if call.Value.Cmp(celoBalance) >= 0 {
 				return 0, nil, core.ErrInsufficientFundsForTransfer
 			}
-			if call.FeeCurrency == nil || !call.IsFeeCurrencyDenominated() {
+			if call.FeeCurrency == nil {
 				available.Sub(available, call.Value)
 			}
 		}
