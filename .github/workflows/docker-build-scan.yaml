@@ -8,35 +8,51 @@ permissions:
 
 jobs:
   build-scan-container-geth:
+    runs-on: ['self-hosted', 'org', '8-cpu']
     permissions:
       contents: read
       security-events: write
       id-token: write
-    uses: celo-org/reusable-workflows/.github/workflows/container-cicd.yaml@main
-    name: Build us-west1-docker.pkg.dev/blockchaintestsglobaltestnet/dev-images/op-geth:${{ github.sha }}
-    with:
-      workload-id-provider: projects/1094498259535/locations/global/workloadIdentityPools/gh-op-geth/providers/github-by-repos
-      service-account: 'op-geth-dev@blockchaintestsglobaltestnet.iam.gserviceaccount.com'
-      artifact-registry: us-west1-docker.pkg.dev/blockchaintestsglobaltestnet/dev-images/op-geth
-      tags: ${{ github.sha }}
-      platforms: linux/amd64,linux/arm64
-      context: .
-      file: Dockerfile
-      trivy: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login at GCP Artifact Registry
+        uses: celo-org/reusable-workflows/.github/actions/auth-gcp-artifact-registry@v2.0.5
+        with:
+          workload-id-provider: projects/1094498259535/locations/global/workloadIdentityPools/gh-op-geth/providers/github-by-repos
+          service-account: op-geth-dev@blockchaintestsglobaltestnet.iam.gserviceaccount.com
+          docker-gcp-registries: us-west1-docker.pkg.dev
+      - name: Build and push container
+        uses: celo-org/reusable-workflows/.github/actions/build-container@v2.0.5
+        with:
+          platforms: linux/amd64,linux/arm64
+          registry: us-west1-docker.pkg.dev/blockchaintestsglobaltestnet/dev-images/op-geth
+          tags: ${{ github.sha }}
+          context: .
+          dockerfile: Dockerfile
+          push: true
+          trivy: ${{ startsWith(github.ref, 'refs/heads/celo') }}
 
   build-scan-container-bootnode:
+    runs-on: ['self-hosted', 'org', '8-cpu']
     permissions:
       contents: read
       security-events: write
       id-token: write
-    uses: celo-org/reusable-workflows/.github/workflows/container-cicd.yaml@main
-    name: Build us-west1-docker.pkg.dev/blockchaintestsglobaltestnet/dev-images/op-geth-bootnode:${{ github.sha }}
-    with:
-      workload-id-provider: projects/1094498259535/locations/global/workloadIdentityPools/gh-op-geth/providers/github-by-repos
-      service-account: 'op-geth-dev@blockchaintestsglobaltestnet.iam.gserviceaccount.com'
-      artifact-registry: us-west1-docker.pkg.dev/blockchaintestsglobaltestnet/dev-images/op-geth-bootnode
-      tags: ${{ github.sha }}
-      platforms: linux/amd64,linux/arm64
-      context: .
-      file: Dockerfile.bootnode
-      trivy: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login at GCP Artifact Registry
+        uses: celo-org/reusable-workflows/.github/actions/auth-gcp-artifact-registry@v2.0.5
+        with:
+          workload-id-provider: projects/1094498259535/locations/global/workloadIdentityPools/gh-op-geth/providers/github-by-repos
+          service-account: op-geth-dev@blockchaintestsglobaltestnet.iam.gserviceaccount.com
+          docker-gcp-registries: us-west1-docker.pkg.dev
+      - name: Build and push container
+        uses: celo-org/reusable-workflows/.github/actions/build-container@v2.0.5
+        with:
+          platforms: linux/amd64,linux/arm64
+          registry: us-west1-docker.pkg.dev/blockchaintestsglobaltestnet/dev-images/op-geth-bootnode
+          tags: ${{ github.sha }}
+          context: .
+          dockerfile: Dockerfile.bootnode
+          push: true
+          trivy: ${{ startsWith(github.ref, 'refs/heads/celo') }}
