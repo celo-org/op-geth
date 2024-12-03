@@ -53,11 +53,11 @@ func (b *CeloAPIBackend) GetExchangeRates(ctx context.Context, blockNumOrHash rp
 	if err != nil {
 		return nil, err
 	}
-	er, err := contracts.GetExchangeRates(contractBackend)
+	exchangeRates, err := contracts.GetExchangeRates(contractBackend)
 	if err != nil {
 		return nil, err
 	}
-	return er, nil
+	return exchangeRates, nil
 }
 
 func (b *CeloAPIBackend) ConvertToCurrency(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash, celoAmount *big.Int, toFeeCurrency *common.Address) (*big.Int, error) {
