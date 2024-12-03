@@ -72,7 +72,7 @@ func getRate(exchangeRates common.ExchangeRates, feeCurrency *common.Address) (*
 // returns -1 0 or 1 depending if val1 < val2, val1 == val2, or val1 > val2 respectively.
 func CompareValue(exchangeRates common.ExchangeRates, val1 *big.Int, feeCurrency1 *common.Address, val2 *big.Int, feeCurrency2 *common.Address) (int, error) {
 	// Short circuit if the fee currency is the same.
-	if feeCurrency1 == feeCurrency2 {
+	if common.AreSameAddress(feeCurrency1, feeCurrency2) {
 		return val1.Cmp(val2), nil
 	}
 
