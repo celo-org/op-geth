@@ -671,17 +671,27 @@ func (pool *LegacyPool) validateTx(tx *types.Transaction) error {
 		UsedAndLeftSlots: nil, // Pool has own mechanism to limit the number of transactions
 		ExistingExpenditure: func(addr common.Address) (*big.Int, *big.Int) {
 			if list := pool.pending[addr]; list != nil {
-				return list.TotalCostFor(tx.FeeCurrency()).ToBig(), list.TotalCostFor(nil).ToBig()
+				if tx.FeeCurrency() != nil {
+					return list.TotalCostFor(tx.FeeCurrency()).ToBig(), list.TotalCostFor(nil).ToBig()
+				} else {
+					return common.Big0, list.TotalCostFor(nil).ToBig()
+				}
 			}
 			return new(big.Int), new(big.Int)
 		},
 		ExistingCost: func(addr common.Address, nonce uint64) (*big.Int, *big.Int) {
 			if list := pool.pending[addr]; list != nil {
+				feeCurrency := tx.FeeCurrency()
 				if tx := list.txs.Get(nonce); tx != nil {
 					// The total cost is guaranteed to not overflow because it got already
 					// successfully added to the list.
 					cost, _ := txpool.TotalTxCost(tx, pool.rollupCostFn)
-					return tx.FeeCurrencyCost(), cost.ToBig()
+					feeCurrencyCost := tx.FeeCurrencyCost()
+					if !common.AreSameAddress(tx.FeeCurrency(), feeCurrency) {
+						// We are only interested in costs in the same currency
+						feeCurrencyCost = new(big.Int)
+					}
+					return feeCurrencyCost, cost.ToBig()
 				}
 			}
 			return nil, nil
