@@ -275,10 +275,13 @@ func ValidateTransactionWithState(tx *types.Transaction, signer types.Signer, op
 	}
 	// Ensure the transactor has enough funds to cover the transaction costs
 	var (
-		feeCurrencyBalance          = opts.ExistingBalance(from, tx.FeeCurrency())
+		feeCurrencyBalance          = common.Big0
 		nativeBalance               = opts.ExistingBalance(from, &common.ZeroAddress)
 		feeCurrencyCost, nativeCost = tx.Cost()
 	)
+	if tx.FeeCurrency() != nil {
+		feeCurrencyBalance = opts.ExistingBalance(from, tx.FeeCurrency())
+	}
 	if feeCurrencyBalance == nil {
 		return fmt.Errorf("feeCurrencyBalance is nil for FeeCurrency %x", tx.FeeCurrency())
 	}
