@@ -2235,6 +2235,50 @@ func TestReplacement(t *testing.T) {
 	}
 }
 
+// Tests that the pool accepts replacement transactions if the account only owns Celo.
+func TestCeloReplacement(t *testing.T) {
+	t.Parallel()
+
+	// Create the pool to test the pricing enforcement with
+	statedb, _ := state.New(types.EmptyRootHash, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
+	blockchain := newTestBlockChain(params.TestChainConfig, 1000000, statedb, new(event.Feed))
+
+	pool := New(testTxPoolConfig, blockchain)
+	pool.Init(testTxPoolConfig.PriceLimit, blockchain.CurrentBlock(), makeAddressReserver())
+	defer pool.Close()
+
+	// Keep track of transaction events to ensure all executables get announced
+	events := make(chan core.NewTxsEvent, 32)
+	sub := pool.txFeed.Subscribe(events)
+	defer sub.Unsubscribe()
+
+	// Create a test account to add transactions with
+	key, _ := crypto.GenerateKey()
+	balance := big.NewInt(6000000)
+	testAddBalance(pool, crypto.PubkeyToAddress(key.PublicKey), balance)
+
+	// Add pending transactions, ensuring the minimum price bump is enforced for replacement (for ultra low prices too)
+	price := int64(100)
+	priceBumped := (price * (100 + int64(testTxPoolConfig.PriceBump))) / 100
+
+	if err := pool.addRemoteSync(pricedTransaction(0, 50000, big.NewInt(price), key)); err != nil {
+		t.Fatalf("failed to add original cheap pending transaction: %v", err)
+	}
+	if err := pool.addRemoteSync(pricedTransaction(0, 50000, big.NewInt(priceBumped-1), key)); err != txpool.ErrReplaceUnderpriced {
+		t.Fatalf("original cheap queued transaction replacement error mismatch: have %v, want %v", err, txpool.ErrReplaceUnderpriced)
+	}
+	if err := pool.addRemoteSync(pricedTransaction(0, 50000, big.NewInt(priceBumped), key)); err != nil {
+		t.Fatalf("failed to replace original transaction: %v", err)
+	}
+	if err := pool.addRemoteSync(pricedTransaction(0, 50000, big.NewInt(price*2), key)); !errors.Is(err, core.ErrInsufficientFunds) {
+		txCost := big.NewInt(price*2*50000 + 100) // 100 is the amount default of the pricedTransaction function
+		t.Fatalf("second queue replacement error mismatch: have %v, want %v", err, fmt.Errorf("%w: balance %v, tx cost %v, overshot %v", core.ErrInsufficientFunds, balance, txCost, new(big.Int).Sub(txCost, balance)))
+	}
+	if err := validateEvents(events, 2); err != nil {
+		t.Fatalf("replacement event firing failed: %v", err)
+	}
+}
+
 // Tests that the pool rejects replacement dynamic fee transactions that don't
 // meet the minimum price bump required.
 func TestReplacementDynamicFee(t *testing.T) {
