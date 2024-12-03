@@ -92,6 +92,9 @@ func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uin
 			}
 			if call.FeeCurrency == nil {
 				available.Sub(available, call.Value)
+				if available.Cmp(big.NewInt(0)) <= 0 {
+					return 0, nil, core.ErrInsufficientFundsForTransfer
+				}
 			}
 		}
 
