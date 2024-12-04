@@ -689,7 +689,11 @@ func (pool *LegacyPool) validateTx(tx *types.Transaction, local bool) error {
 		},
 		ExistingExpenditure: func(addr common.Address) (*big.Int, *big.Int) {
 			if list := pool.pending[addr]; list != nil {
-				return list.TotalCostFor(tx.FeeCurrency()).ToBig(), list.TotalCostFor(nil).ToBig()
+				if tx.FeeCurrency() != nil {
+					return list.TotalCostFor(tx.FeeCurrency()).ToBig(), list.TotalCostFor(nil).ToBig()
+				} else {
+					return common.Big0, list.TotalCostFor(nil).ToBig()
+				}
 			}
 			return new(big.Int), new(big.Int)
 		},
@@ -703,7 +707,7 @@ func (pool *LegacyPool) validateTx(tx *types.Transaction, local bool) error {
 							nativeCost = nativeCost.Add(nativeCost, l1Cost)
 						}
 					}
-					if tx.FeeCurrency() != feeCurrency {
+					if !common.AreSameAddress(tx.FeeCurrency(), feeCurrency) {
 						// We are only interested in costs in the same currency
 						feeCurrencyCost = new(big.Int)
 					}
