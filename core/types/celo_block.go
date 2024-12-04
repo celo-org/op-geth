@@ -8,9 +8,12 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 )
 
+//go:generate go run ../../rlp/rlpgen -type BeforeGingerbreadHeader --encoder --decoder -out gen_before_gingerbread_header_rlp.go
+//go:generate go run ../../rlp/rlpgen -type AfterGingerbreadHeader --encoder --decoder -out gen_after_gingerbread_header_rlp.go
+
 type IstanbulExtra rlp.RawValue
 
-type beforeGingerbreadHeader struct {
+type BeforeGingerbreadHeader struct {
 	ParentHash  common.Hash    `json:"parentHash"       gencodec:"required"`
 	Coinbase    common.Address `json:"miner"            gencodec:"required"`
 	Root        common.Hash    `json:"stateRoot"        gencodec:"required"`
@@ -24,7 +27,7 @@ type beforeGingerbreadHeader struct {
 }
 
 // This type is required to avoid an infinite loop when decoding
-type afterGingerbreadHeader Header
+type AfterGingerbreadHeader Header
 
 func (h *Header) DecodeRLP(s *rlp.Stream) error {
 	var raw rlp.RawValue
@@ -40,7 +43,7 @@ func (h *Header) DecodeRLP(s *rlp.Stream) error {
 
 	if preGingerbread { // Address
 		// Before gingerbread
-		decodedHeader := beforeGingerbreadHeader{}
+		decodedHeader := BeforeGingerbreadHeader{}
 		err = rlp.DecodeBytes(raw, &decodedHeader)
 
 		h.ParentHash = decodedHeader.ParentHash
@@ -56,7 +59,7 @@ func (h *Header) DecodeRLP(s *rlp.Stream) error {
 		h.Difficulty = new(big.Int)
 	} else {
 		// After gingerbread
-		decodedHeader := afterGingerbreadHeader{}
+		decodedHeader := AfterGingerbreadHeader{}
 		err = rlp.DecodeBytes(raw, &decodedHeader)
 
 		h.ParentHash = decodedHeader.ParentHash
@@ -87,8 +90,7 @@ func (h *Header) DecodeRLP(s *rlp.Stream) error {
 // EncodeRLP implements encodes the Header to an RLP data stream.
 func (h *Header) EncodeRLP(w io.Writer) error {
 	if h.IsPreGingerbread() {
-		// Encode the header
-		encodedHeader := beforeGingerbreadHeader{
+		encodedHeader := BeforeGingerbreadHeader{
 			ParentHash:  h.ParentHash,
 			Coinbase:    h.Coinbase,
 			Root:        h.Root,
@@ -105,7 +107,7 @@ func (h *Header) EncodeRLP(w io.Writer) error {
 	}
 
 	// After gingerbread
-	encodedHeader := afterGingerbreadHeader{
+	encodedHeader := AfterGingerbreadHeader{
 		ParentHash:       h.ParentHash,
 		UncleHash:        h.UncleHash,
 		Coinbase:         h.Coinbase,
