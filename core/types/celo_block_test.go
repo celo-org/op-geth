@@ -15,6 +15,7 @@ import (
 // but doesn't implement EncodeRLP and DecodeRLP
 type mockOldBeforeGingerbreadHeader BeforeGingerbreadHeader
 
+// mockOldAfterGingerbreadHeader is also same as AfterGingerbreadHeader
 type mockOldAfterGingerbreadHeader Header
 
 var (
@@ -120,7 +121,7 @@ func TestRLPDecodeHeaderCompatibility(t *testing.T) {
 			err := rlp.Encode(r, test.oldHeader)
 			assert.NoError(t, err, "failed RLP encode")
 
-			// decode by
+			// decode by generated code
 			decodedHeader := &Header{}
 			rlp.DecodeBytes(r.Bytes(), decodedHeader)
 			assert.NoError(t, err, "failed RLP decode")
