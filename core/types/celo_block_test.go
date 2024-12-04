@@ -11,6 +11,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// mockOldBeforeGingerbreadHeader is same as BeforeGingerbreadHeader
+// but doesn't implement EncodeRLP and DecodeRLP
+type mockOldBeforeGingerbreadHeader BeforeGingerbreadHeader
+
+type mockOldAfterGingerbreadHeader Header
+
 var (
 	mockBeforeGingerbreadHeader = &BeforeGingerbreadHeader{
 		ParentHash:  common.HexToHash("0x112233445566778899001122334455667788990011223344556677889900aabb"),
@@ -53,6 +59,21 @@ var (
 	}
 )
 
+func ToMockOldBeforeGingerbreadHeader(h *BeforeGingerbreadHeader) *mockOldBeforeGingerbreadHeader {
+	return &mockOldBeforeGingerbreadHeader{
+		ParentHash:  h.ParentHash,
+		Coinbase:    h.Coinbase,
+		Root:        h.Root,
+		TxHash:      h.TxHash,
+		ReceiptHash: h.ReceiptHash,
+		Bloom:       h.Bloom,
+		Number:      h.Number,
+		GasUsed:     h.GasUsed,
+		Time:        h.Time,
+		Extra:       h.Extra,
+	}
+}
+
 func BeforeGingerbreadHeaderToHeader(h *BeforeGingerbreadHeader) *Header {
 	return &Header{
 		ParentHash:  h.ParentHash,
@@ -71,19 +92,19 @@ func BeforeGingerbreadHeaderToHeader(h *BeforeGingerbreadHeader) *Header {
 
 func TestRLPDecodeHeaderCompatibility(t *testing.T) {
 	tests := []struct {
-		name          string
-		subTypeHeader interface{}
-		header        *Header
+		name      string
+		oldHeader interface{}
+		newHeader *Header
 	}{
 		{
-			name:          "BeforeGingerbreadHeader",
-			subTypeHeader: mockBeforeGingerbreadHeader,
-			header:        BeforeGingerbreadHeaderToHeader(mockBeforeGingerbreadHeader),
+			name:      "BeforeGingerbreadHeader",
+			oldHeader: ToMockOldBeforeGingerbreadHeader(mockBeforeGingerbreadHeader),
+			newHeader: BeforeGingerbreadHeaderToHeader(mockBeforeGingerbreadHeader),
 		},
 		{
-			name:          "AfterGingerbreadHeader",
-			subTypeHeader: mockAfterGingerbreadHeader,
-			header:        (*Header)(mockAfterGingerbreadHeader),
+			name:      "AfterGingerbreadHeader",
+			oldHeader: (*mockOldAfterGingerbreadHeader)(mockAfterGingerbreadHeader),
+			newHeader: (*Header)(mockAfterGingerbreadHeader),
 		},
 	}
 
@@ -95,33 +116,35 @@ func TestRLPDecodeHeaderCompatibility(t *testing.T) {
 
 			r := bytes.NewBuffer([]byte{})
 
-			err := rlp.Encode(r, test.subTypeHeader)
-			assert.NoError(t, err, "failed rlp.Encode for sub type Header")
+			// encode by reflection style
+			err := rlp.Encode(r, test.oldHeader)
+			assert.NoError(t, err, "failed RLP encode")
 
+			// decode by
 			decodedHeader := &Header{}
-			err = decodedHeader.DecodeRLP(rlp.NewStream(r, uint64(r.Len())))
-			assert.NoError(t, err, "failed DecodeRLP of Header")
+			rlp.DecodeBytes(r.Bytes(), decodedHeader)
+			assert.NoError(t, err, "failed RLP decode")
 
-			assert.Equal(t, test.header, decodedHeader)
+			assert.Equal(t, test.newHeader, decodedHeader)
 		})
 	}
 }
 
 func TestRlpEncodeHeaderCompatibility(t *testing.T) {
 	tests := []struct {
-		name          string
-		subTypeHeader interface{}
-		header        *Header
+		name      string
+		oldHeader interface{} // header type which doesn't implement EncodeRLP
+		newHeader *Header     // header type which implements EncodeRLP
 	}{
 		{
-			name:          "BeforeGingerbreadHeader",
-			subTypeHeader: mockBeforeGingerbreadHeader,
-			header:        BeforeGingerbreadHeaderToHeader(mockBeforeGingerbreadHeader),
+			name:      "BeforeGingerbreadHeader",
+			oldHeader: ToMockOldBeforeGingerbreadHeader(mockBeforeGingerbreadHeader),
+			newHeader: BeforeGingerbreadHeaderToHeader(mockBeforeGingerbreadHeader),
 		},
 		{
-			name:          "AfterGingerbreadHeader",
-			subTypeHeader: mockAfterGingerbreadHeader,
-			header:        (*Header)(mockAfterGingerbreadHeader),
+			name:      "AfterGingerbreadHeader",
+			oldHeader: (*mockOldAfterGingerbreadHeader)(mockAfterGingerbreadHeader),
+			newHeader: (*Header)(mockAfterGingerbreadHeader),
 		},
 	}
 
@@ -134,15 +157,15 @@ func TestRlpEncodeHeaderCompatibility(t *testing.T) {
 			r := bytes.NewBuffer([]byte{})
 
 			// old RLP encoding
-			err := rlp.Encode(r, test.subTypeHeader)
-			assert.NoError(t, err, "failed rlp.Encode for sub type Header")
+			err := rlp.Encode(r, test.oldHeader)
+			assert.NoError(t, err, "failed RLP encode by reflection style")
 			oldEncodedData := r.Bytes()
 
 			r.Reset()
 
 			// new RLP encoding
-			err = test.header.EncodeRLP(r)
-			assert.NoError(t, err, "failed EncodeRLP of Header")
+			err = rlp.Encode(r, test.newHeader)
+			assert.NoError(t, err, "failed RLP encode by generated code")
 			newEncodedData := r.Bytes()
 
 			assert.Equal(t, oldEncodedData, newEncodedData)
