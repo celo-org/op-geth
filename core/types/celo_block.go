@@ -1,7 +1,6 @@
 package types
 
 import (
-	"bytes"
 	"io"
 	"math/big"
 
@@ -45,8 +44,7 @@ func (h *Header) DecodeRLP(s *rlp.Stream) error {
 	if preGingerbread { // Address
 		// Before gingerbread
 		decodedHeader := BeforeGingerbreadHeader{}
-		str := rlp.NewStream(bytes.NewReader(raw), uint64(len(raw)))
-		err = decodedHeader.DecodeRLP(str)
+		err = rlp.DecodeBytes(raw, &decodedHeader)
 
 		h.ParentHash = decodedHeader.ParentHash
 		h.Coinbase = decodedHeader.Coinbase
@@ -62,8 +60,7 @@ func (h *Header) DecodeRLP(s *rlp.Stream) error {
 	} else {
 		// After gingerbread
 		decodedHeader := AfterGingerbreadHeader{}
-		str := rlp.NewStream(bytes.NewReader(raw), uint64(len(raw)))
-		err = decodedHeader.DecodeRLP(str)
+		err = rlp.DecodeBytes(raw, &decodedHeader)
 
 		h.ParentHash = decodedHeader.ParentHash
 		h.UncleHash = decodedHeader.UncleHash
@@ -106,7 +103,7 @@ func (h *Header) EncodeRLP(w io.Writer) error {
 			Extra:       h.Extra,
 		}
 
-		return encodedHeader.EncodeRLP(w)
+		return rlp.Encode(w, &encodedHeader)
 	}
 
 	// After gingerbread
@@ -133,7 +130,7 @@ func (h *Header) EncodeRLP(w io.Writer) error {
 		ParentBeaconRoot: h.ParentBeaconRoot,
 	}
 
-	return encodedHeader.EncodeRLP(w)
+	return rlp.Encode(w, &encodedHeader)
 }
 
 // isPreGingerbreadHeader introspects the header rlp to check the length of the
