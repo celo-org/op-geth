@@ -488,6 +488,11 @@ func filterCeloBlock(blockNumber uint64, block map[string]interface{}, gingerbre
 		// from the celo block.
 		delete(block, "gasLimit")
 	}
+	// Some non archive nodes on mainnet have blocks with baseFeePerGas
+	if block["baseFeePerGas"] != nil {
+		delete(block, "baseFeePerGas")
+		fmt.Printf("WARN baseFeePerGas field in l1 block %d\n", blockNumber)
+	}
 	transactions, ok := block["transactions"].([]interface{})
 	if ok {
 		for _, tx := range transactions {
