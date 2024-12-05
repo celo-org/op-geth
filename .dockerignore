@@ -1,4 +1,5 @@
 # **/*_test.go
+gha-creds-*.json
 
 build/_workspace
 build/_bin
