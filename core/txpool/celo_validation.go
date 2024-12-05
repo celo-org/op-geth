@@ -1,6 +1,7 @@
 package txpool
 
 import (
+	"errors"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -8,6 +9,10 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 )
+
+// ErrGasPriceDoesNotExceedBaseFeeFloor is returned if the gas price specified is
+// lower than the configured base-fee-floor
+var ErrGasPriceDoesNotExceedBaseFeeFloor = errors.New("gas-price is less than the base-fee-floor")
 
 // AcceptSet is a set of accepted transaction types for a transaction subpool.
 type AcceptSet = map[uint8]struct{}
@@ -56,5 +61,19 @@ func CeloValidateTransaction(tx *types.Transaction, head *types.Header,
 		return exchange.ErrUnregisteredFeeCurrency
 	}
 
+	celoGasPrice, err := exchange.ConvertCurrencyToCelo(
+		currencyCtx.ExchangeRates,
+		tx.FeeCurrency(),
+		tx.GasFeeCap(),
+	)
+	if err != nil {
+		return err
+	}
+
+	if opts.Config.Celo != nil {
+		if new(big.Int).SetUint64(opts.Config.Celo.EIP1559BaseFeeFloor).Cmp(celoGasPrice) == 1 {
+			return ErrGasPriceDoesNotExceedBaseFeeFloor
+		}
+	}
 	return nil
 }
