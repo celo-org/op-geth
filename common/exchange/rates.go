@@ -34,7 +34,7 @@ func ConvertCurrencyToCelo(exchangeRates common.ExchangeRates, feeCurrency *comm
 		return currencyAmount, nil
 	}
 	if currencyAmount == nil {
-		return nil, fmt.Errorf("Can't convert nil amount to CELO.")
+		return nil, fmt.Errorf("could not convert nil amount to CELO")
 	}
 	exchangeRate, ok := exchangeRates[*feeCurrency]
 	if !ok {

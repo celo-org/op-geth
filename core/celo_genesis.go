@@ -80,7 +80,7 @@ func CeloGenesisAccounts(fundedAddr common.Address) GenesisAlloc {
 
 	faucetBalance, ok := new(big.Int).SetString("500000000000000000000000000", 10) // 500M
 	if !ok {
-		panic("Couldn not set faucet balance!")
+		panic("Could not set faucet balance!")
 	}
 	genesisAccounts := map[common.Address]GenesisAccount{
 		addresses.MainnetAddresses.CeloToken: {
