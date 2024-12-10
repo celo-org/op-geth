@@ -765,15 +765,9 @@ func (st *StateTransition) distributeTxFees() error {
 	tipTxFee := new(big.Int).Sub(totalTxFee, baseTxFee)
 
 	feeCurrency := st.msg.FeeCurrency
-	feeHandlerAddress := addresses.FeeHandlerAddress
-	if st.evm.ChainConfig().ChainID != nil && st.evm.ChainConfig().ChainID.Uint64() == params.CeloAlfajoresChainID {
-		feeHandlerAddress = addresses.FeeHandlerAlfajoresAddress
-	}
-	if st.evm.ChainConfig().ChainID != nil && st.evm.ChainConfig().ChainID.Uint64() == params.CeloBaklavaChainID {
-		feeHandlerAddress = addresses.FeeHandlerBaklavaAddress
-	}
+	feeHandlerAddress := addresses.GetAddresses(st.evm.ChainConfig().ChainID).FeeHandlerAddress
 
-	log.Trace("distributeTxFees", "from", from, "refund", refund, "feeCurrency", st.msg.FeeCurrency,
+	log.Trace("distributeTxFees", "from", from, "refund", refund, "feeCurrency", feeCurrency,
 		"coinbaseFeeRecipient", st.evm.Context.Coinbase, "coinbaseFee", tipTxFee,
 		"feeHandler", feeHandlerAddress, "communityFundFee", baseTxFee)
 

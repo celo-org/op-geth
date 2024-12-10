@@ -85,7 +85,7 @@ func TestPrecompileTransfer(t *testing.T) {
 			name: "Test transfer with short input",
 			args: args{
 				input: []byte("0000"),
-				ctx:   NewContext(addresses.CeloTokenAddress, mockEVM),
+				ctx:   NewContext(addresses.MainnetAddresses.CeloTokenAddress, mockEVM),
 			},
 			wantErr:     true,
 			expectedErr: "invalid input length",
@@ -98,7 +98,7 @@ func TestPrecompileTransfer(t *testing.T) {
 					0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
 					0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2,
 				},
-				ctx: NewContext(addresses.CeloTokenAddress, mockEVM),
+				ctx: NewContext(addresses.MainnetAddresses.CeloTokenAddress, mockEVM),
 			},
 			wantErr:     true,
 			expectedErr: "insufficient balance for transfer",

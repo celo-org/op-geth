@@ -47,13 +47,7 @@ func celoPrecompileAddress(index byte) common.Address {
 }
 
 func (ctx *celoPrecompileContext) IsCallerCeloToken() (bool, error) {
-	tokenAddress := addresses.CeloTokenAddress
-	if ctx.evm.ChainConfig().ChainID != nil && ctx.evm.ChainConfig().ChainID.Uint64() == params.CeloAlfajoresChainID {
-		tokenAddress = addresses.CeloTokenAlfajoresAddress
-	}
-	if ctx.evm.ChainConfig().ChainID != nil && ctx.evm.ChainConfig().ChainID.Uint64() == params.CeloBaklavaChainID {
-		tokenAddress = addresses.CeloTokenBaklavaAddress
-	}
+	tokenAddress := addresses.GetAddresses(ctx.evm.ChainConfig().ChainID).CeloTokenAddress
 
 	return tokenAddress == ctx.caller, nil
 }

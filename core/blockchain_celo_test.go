@@ -138,7 +138,7 @@ func testNativeTransferWithFeeCurrency(t *testing.T, scheme string, feeCurrencyA
 	}
 
 	// 5: Check that base fee has been moved to the fee handler.
-	actual, _ = contracts.GetBalanceERC20(&backend, addresses.FeeHandlerAddress, feeCurrencyAddr)
+	actual, _ = contracts.GetBalanceERC20(&backend, addresses.MainnetAddresses.FeeHandlerAddress, feeCurrencyAddr)
 	expected = new(big.Int).SetUint64(block.GasUsed() * baseFeeInFeeCurrency.Uint64())
 	if actual.Cmp(expected) != 0 {
 		t.Fatalf("fee handler balance incorrect: expected %d, got %d", expected, actual)

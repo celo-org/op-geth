@@ -15,7 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
 )
 
 var feeCurrencyABI *abi.ABI
@@ -27,23 +26,6 @@ func init() {
 	feeCurrencyABI, err = abigen.FeeCurrencyMetaData.GetAbi()
 	if err != nil {
 		panic(err)
-	}
-}
-
-// Returns the address of the FeeCurrencyDirectory contract for the given chainId
-func getFeeCurrencyDirectoryAddress(chainId *big.Int) common.Address {
-	// ChainId can be uninitialized in some tests
-	if chainId == nil {
-		return addresses.FeeCurrencyDirectoryAddress
-	}
-
-	switch chainId.Uint64() {
-	case params.CeloAlfajoresChainID:
-		return addresses.FeeCurrencyDirectoryAlfajoresAddress
-	case params.CeloBaklavaChainID:
-		return addresses.FeeCurrencyDirectoryBaklavaAddress
-	default:
-		return addresses.FeeCurrencyDirectoryAddress
 	}
 }
 
@@ -207,7 +189,7 @@ func GetRegisteredCurrencies(caller *abigen.FeeCurrencyDirectoryCaller) ([]commo
 
 // GetExchangeRates returns the exchange rates for the provided gas currencies
 func GetExchangeRates(caller *CeloBackend) (common.ExchangeRates, error) {
-	directory, err := abigen.NewFeeCurrencyDirectoryCaller(getFeeCurrencyDirectoryAddress(caller.ChainConfig.ChainID), caller)
+	directory, err := abigen.NewFeeCurrencyDirectoryCaller(addresses.GetAddresses(caller.ChainConfig.ChainID).FeeCurrencyDirectoryAddress, caller)
 	if err != nil {
 		return common.ExchangeRates{}, fmt.Errorf("failed to access FeeCurrencyDirectory: %w", err)
 	}
@@ -221,7 +203,7 @@ func GetExchangeRates(caller *CeloBackend) (common.ExchangeRates, error) {
 // GetFeeCurrencyContext returns the fee currency block context for all registered gas currencies from CELO
 func GetFeeCurrencyContext(caller *CeloBackend) (common.FeeCurrencyContext, error) {
 	var feeContext common.FeeCurrencyContext
-	directory, err := abigen.NewFeeCurrencyDirectoryCaller(getFeeCurrencyDirectoryAddress(caller.ChainConfig.ChainID), caller)
+	directory, err := abigen.NewFeeCurrencyDirectoryCaller(addresses.GetAddresses(caller.ChainConfig.ChainID).FeeCurrencyDirectoryAddress, caller)
 	if err != nil {
 		return feeContext, fmt.Errorf("failed to access FeeCurrencyDirectory: %w", err)
 	}
