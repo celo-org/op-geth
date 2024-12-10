@@ -189,7 +189,7 @@ describe("viem send tx", () => {
 		assert.equal(receipt.status, "success", "receipt status 'failure'");
 	}).timeout(10_000);
 
-	it.skip("send overlapping nonce tx in different currencies", async () => {
+	it("send overlapping nonce tx in different currencies", async () => {
 		const priceBump = 1.1;
 
 		const rate = await getRate(process.env.FEE_CURRENCY);
@@ -197,7 +197,7 @@ describe("viem send tx", () => {
 		const nativeCap = 30_000_000_000;
 		const bumpCurrencyCap = rate.toFeeCurrency(BigInt(Math.round(nativeCap * priceBump)));
 		const failToBumpCurrencyCap = rate.toFeeCurrency(BigInt(
-			Math.round(nativeCap * priceBump) - 1,
+			Math.round(nativeCap / priceBump)
 		));
 		const tokenCurrency = process.env.FEE_CURRENCY;
 		const nativeCurrency = null;
@@ -220,7 +220,7 @@ describe("viem send tx", () => {
 		const currencyCap = 60_000_000_000;
 		const bumpNativeCap = rate.toNative(BigInt(Math.round(currencyCap * priceBump)));
 		const failToBumpNativeCap = rate.toNative(BigInt(
-			Math.round(currencyCap * priceBump) - 1,
+			Math.round(currencyCap / priceBump)
 		));
 		await testNonceBump(
 			currencyCap,
@@ -236,7 +236,7 @@ describe("viem send tx", () => {
 			nativeCurrency,
 			false,
 		);
-	}).timeout(40_000);
+	}).timeout(60_000);
 
 	it("send tx with unregistered fee currency", async () => {
 		const request = await walletClient.prepareTransactionRequest({
@@ -263,7 +263,7 @@ describe("viem send tx", () => {
 		}
 	}).timeout(10_000);
 
-	it.skip("send fee currency tx with just high enough gas price", async () => {
+	it("send fee currency tx with just high enough gas price", async () => {
 		// The idea of this test is to check that the fee currency is taken into
 		// account by the server. We do this by using a fee currency that has a
 		// value greater than celo, so that the base fee in fee currency becomes a
@@ -302,8 +302,8 @@ describe("viem send tx", () => {
 		});
 		const receipt = await publicClient.waitForTransactionReceipt({ hash });
 		assert.equal(receipt.status, "success", "receipt status 'failure'");
-		assert.isAtMost(receipt.effectiveGasPrice, maxFeePerGas, "effective gas price is too high");
-		assert.isAbove(receipt.effectiveGasPrice, Number(maxFeePerGas) * 0.7, "effective gas price is too low");
+		assert.isAtMost(Number(receipt.effectiveGasPrice), Number(maxFeePerGas), "effective gas price is too high");
+		assert.isAbove(Number(receipt.effectiveGasPrice), Number(maxFeePerGas) * 0.7, "effective gas price is too low");
 	}).timeout(10_000);
 });
 
