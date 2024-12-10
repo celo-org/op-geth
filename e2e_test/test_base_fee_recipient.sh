@@ -8,6 +8,7 @@ source shared.sh
 # Send token and check balance
 tx_json=$(cast send --json --private-key $ACC_PRIVKEY $TOKEN_ADDR 'transfer(address to, uint256 value) returns (bool)' 0x000000000000000000000000000000000000dEaD 100)
 block_number=$(echo $tx_json | jq -r '.blockNumber' | cast to-dec)
+sleep 5 # Wait for a block to be confirmed
 block=$(cast block --json --full $block_number)
 gas_used=$(echo $block | jq -r '.gasUsed' | cast to-dec)
 base_fee=$(echo $block | jq -r '.baseFeePerGas' | cast to-dec)

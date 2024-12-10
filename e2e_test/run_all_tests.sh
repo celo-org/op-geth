@@ -31,7 +31,7 @@ cd "$SCRIPT_DIR" || exit 1
 # To work around this, send a transaction before running tests
 cast send --json --private-key "$ACC_PRIVKEY" "$TOKEN_ADDR" 'transfer(address to, uint256 value) returns (bool)' 0x000000000000000000000000000000000000dEaD 100 > /dev/null || true
 
-sleep 5
+sleep 5 # Wait for the account nonce to be updated
 
 failures=0
 tests=0
