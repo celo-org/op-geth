@@ -189,7 +189,7 @@ func GetRegisteredCurrencies(caller *abigen.FeeCurrencyDirectoryCaller) ([]commo
 
 // GetExchangeRates returns the exchange rates for the provided gas currencies
 func GetExchangeRates(caller *CeloBackend) (common.ExchangeRates, error) {
-	directory, err := abigen.NewFeeCurrencyDirectoryCaller(addresses.GetAddresses(caller.ChainConfig.ChainID).FeeCurrencyDirectoryAddress, caller)
+	directory, err := abigen.NewFeeCurrencyDirectoryCaller(addresses.GetAddresses(caller.ChainConfig.ChainID).FeeCurrencyDirectory, caller)
 	if err != nil {
 		return common.ExchangeRates{}, fmt.Errorf("failed to access FeeCurrencyDirectory: %w", err)
 	}
@@ -203,7 +203,7 @@ func GetExchangeRates(caller *CeloBackend) (common.ExchangeRates, error) {
 // GetFeeCurrencyContext returns the fee currency block context for all registered gas currencies from CELO
 func GetFeeCurrencyContext(caller *CeloBackend) (common.FeeCurrencyContext, error) {
 	var feeContext common.FeeCurrencyContext
-	directory, err := abigen.NewFeeCurrencyDirectoryCaller(addresses.GetAddresses(caller.ChainConfig.ChainID).FeeCurrencyDirectoryAddress, caller)
+	directory, err := abigen.NewFeeCurrencyDirectoryCaller(addresses.GetAddresses(caller.ChainConfig.ChainID).FeeCurrencyDirectory, caller)
 	if err != nil {
 		return feeContext, fmt.Errorf("failed to access FeeCurrencyDirectory: %w", err)
 	}

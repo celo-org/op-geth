@@ -82,7 +82,7 @@ func celoGenesisAccounts(fundedAddr common.Address) GenesisAlloc {
 		panic("Couldn not set faucet balance!")
 	}
 	genesisAccounts := map[common.Address]GenesisAccount{
-		addresses.MainnetAddresses.CeloTokenAddress: {
+		addresses.MainnetAddresses.CeloToken: {
 			Code:    celoTokenBytecode,
 			Balance: big.NewInt(0),
 		},
@@ -149,7 +149,7 @@ func celoGenesisAccounts(fundedAddr common.Address) GenesisAlloc {
 	// add entries to currencyConfig mapping
 	addFeeCurrencyToStorage(DevFeeCurrencyAddr, mockOracleAddr, feeCurrencyDirectoryStorage)
 	addFeeCurrencyToStorage(DevFeeCurrencyAddr2, mockOracleAddr2, feeCurrencyDirectoryStorage)
-	genesisAccounts[addresses.MainnetAddresses.FeeCurrencyDirectoryAddress] = GenesisAccount{
+	genesisAccounts[addresses.MainnetAddresses.FeeCurrencyDirectory] = GenesisAccount{
 		Code:    feeCurrencyDirectoryBytecode,
 		Balance: big.NewInt(0),
 		Storage: feeCurrencyDirectoryStorage,
