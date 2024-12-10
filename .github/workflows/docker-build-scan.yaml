@@ -1,0 +1,40 @@
+name: Docker Build Push
+on:
+  push:
+    branches:
+      - '**'
+    tags:
+      - '!**'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+
+jobs:
+  build-scan-container-geth:
+    runs-on: ['self-hosted', 'org', 'ubuntu-22-04']
+    permissions:
+      contents: read
+      security-events: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login at GCP Artifact Registry
+        uses: celo-org/reusable-workflows/.github/actions/auth-gcp-artifact-registry@v2.0.5
+        with:
+          workload-id-provider: projects/1094498259535/locations/global/workloadIdentityPools/gh-op-geth/providers/github-by-repos
+          service-account: op-geth-dev@blockchaintestsglobaltestnet.iam.gserviceaccount.com
+          docker-gcp-registries: us-west1-docker.pkg.dev
+      - name: Build and push container
+        uses: celo-org/reusable-workflows/.github/actions/build-container@v2.0.5
+        with:
+          platforms: ${{ startsWith(github.ref, 'refs/heads/celo') && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
+          registry: us-west1-docker.pkg.dev/blockchaintestsglobaltestnet/dev-images/op-geth
+          tags: ${{ github.sha }}
+          context: .
+          dockerfile: Dockerfile
+          push: true
+          trivy: ${{ startsWith(github.ref, 'refs/heads/celo') }}
