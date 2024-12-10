@@ -22,7 +22,7 @@ describe("ethers.js compatibility tests with state", () => {
 		// These assertions trigger on undefined or null
 		assert.notEqual(block, null);
 		assert.notEqual(block.gasLimit, null);
-	})
+	});
 
 	it("EIP-1559 transactions supported (can get feeData)", async () => {
 		const feeData = await provider.getFeeData();
@@ -40,7 +40,7 @@ describe("ethers.js compatibility tests with state", () => {
 			true,
 		]);
 		assert.isTrue(fullBlock.hasOwnProperty("gasLimit"));
-	})
+	});
 
 	it("block has baseFeePerGas", async () => {
 		const fullBlock = await provider.send("eth_getBlockByNumber", [
@@ -48,5 +48,5 @@ describe("ethers.js compatibility tests with state", () => {
 			true,
 		]);
 		assert.isTrue(fullBlock.hasOwnProperty("baseFeePerGas"));
-	})
+	});
 });
