@@ -41,16 +41,17 @@ var (
 	DevAddr          = common.BytesToAddress(DevAddr32.Bytes())
 	DevAddr32        = common.HexToHash("0x42cf1bbc38BaAA3c4898ce8790e21eD2738c6A4a")
 
-	DevFeeCurrencyAddr  = common.HexToAddress("0x000000000000000000000000000000000000ce16") // worth half as much as native CELO
-	DevFeeCurrencyAddr2 = common.HexToAddress("0x000000000000000000000000000000000000ce17") // worth twice as much as native CELO
-	DevBalance, _       = new(big.Int).SetString("100000000000000000000", 10)
-	rateNumerator, _    = new(big.Int).SetString("2000000000000000000000000", 10)
-	rateNumerator2, _   = new(big.Int).SetString("500000000000000000000000", 10)
-	rateDenominator, _  = new(big.Int).SetString("1000000000000000000000000", 10)
-	mockOracleAddr      = common.HexToAddress("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0001")
-	mockOracleAddr2     = common.HexToAddress("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0002")
-	mockOracleAddr3     = common.HexToAddress("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0003")
-	FaucetAddr          = common.HexToAddress("0xfcf982bb4015852e706100b14e21f947a5bb718e")
+	DevFeeCurrencyAddr      = common.HexToAddress("0x000000000000000000000000000000000000ce16") // worth half as much as native CELO
+	DevFeeCurrencyAddr2     = common.HexToAddress("0x000000000000000000000000000000000000ce17") // worth twice as much as native CELO
+	DevBalance, _           = new(big.Int).SetString("100000000000000000000", 10)
+	rateNumerator, _        = new(big.Int).SetString("2000000000000000000000000", 10)
+	rateNumerator2, _       = new(big.Int).SetString("500000000000000000000000", 10)
+	rateDenominator, _      = new(big.Int).SetString("1000000000000000000000000", 10)
+	mockOracleAddr          = common.HexToAddress("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0001")
+	mockOracleAddr2         = common.HexToAddress("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0002")
+	mockOracleAddr3         = common.HexToAddress("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb0003")
+	FaucetAddr              = common.HexToAddress("0xfcf982bb4015852e706100b14e21f947a5bb718e")
+	FeeCurrencyIntrinsicGas = uint64(50000)
 )
 
 func CeloGenesisAccounts(fundedAddr common.Address) GenesisAlloc {
@@ -163,6 +164,6 @@ func CeloGenesisAccounts(fundedAddr common.Address) GenesisAlloc {
 
 func addFeeCurrencyToStorage(feeCurrencyAddr common.Address, oracleAddr common.Address, storage map[common.Hash]common.Hash) {
 	structStart := CalcMapAddr(common.HexToHash("0x1"), common.BytesToHash(feeCurrencyAddr.Bytes()))
-	storage[structStart] = common.BytesToHash(oracleAddr.Bytes())          // oracle
-	storage[incHash(structStart, 1)] = common.BigToHash(big.NewInt(50000)) // intrinsicGas
+	storage[structStart] = common.BytesToHash(oracleAddr.Bytes())                                   // oracle
+	storage[incHash(structStart, 1)] = common.BigToHash(big.NewInt(int64(FeeCurrencyIntrinsicGas))) // intrinsicGas
 }
