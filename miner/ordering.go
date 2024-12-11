@@ -107,10 +107,12 @@ func (s *txByPriceAndTime) Pop() interface{} {
 // transactions in a profit-maximizing sorted order, while supporting removing
 // entire batches of transactions for non-executable accounts.
 type transactionsByPriceAndNonce struct {
-	txs           map[common.Address][]*txpool.LazyTransaction // Per account nonce-sorted list of transactions
-	heads         txByPriceAndTime                             // Next transaction for each unique account (price heap)
-	signer        types.Signer                                 // Signer for the set of transactions
-	baseFee       *uint256.Int                                 // Current base fee
+	txs     map[common.Address][]*txpool.LazyTransaction // Per account nonce-sorted list of transactions
+	heads   txByPriceAndTime                             // Next transaction for each unique account (price heap)
+	signer  types.Signer                                 // Signer for the set of transactions
+	baseFee *uint256.Int                                 // Current base fee
+
+	// Celo specific
 	exchangeRates common.ExchangeRates
 }
 
