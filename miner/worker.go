@@ -56,20 +56,22 @@ var (
 // environment is the worker's current environment and holds all
 // information of the sealing block generation.
 type environment struct {
-	signer               types.Signer
-	state                *state.StateDB     // apply state changes here
-	tcount               int                // tx count in cycle
-	gasPool              *core.GasPool      // available gas used to pack transactions
-	multiGasPool         *core.MultiGasPool // available per-fee-currency gas used to pack transactions
-	feeCurrencyAllowlist common.AddressSet
-	coinbase             common.Address
-	feeCurrencyContext   *common.FeeCurrencyContext
+	signer   types.Signer
+	state    *state.StateDB // apply state changes here
+	tcount   int            // tx count in cycle
+	gasPool  *core.GasPool  // available gas used to pack transactions
+	coinbase common.Address
 
 	header   *types.Header
 	txs      []*types.Transaction
 	receipts []*types.Receipt
 	sidecars []*types.BlobTxSidecar
 	blobs    int
+
+	// Celo specific
+	multiGasPool         *core.MultiGasPool // available per-fee-currency gas used to pack transactions
+	feeCurrencyAllowlist common.AddressSet
+	feeCurrencyContext   *common.FeeCurrencyContext
 }
 
 const (
