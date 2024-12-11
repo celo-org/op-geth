@@ -145,15 +145,6 @@ type depositReceiptRLP struct {
 	DepositReceiptVersion *uint64 `rlp:"optional"`
 }
 
-type celoDynamicReceiptRLP struct {
-	PostStateOrStatus []byte
-	CumulativeGasUsed uint64
-	Bloom             Bloom
-	Logs              []*Log
-	// BaseFee was introduced as mandatory in Cel2 ONLY for the CeloDynamicFeeTxs
-	BaseFee *big.Int `rlp:"optional"`
-}
-
 // storedReceiptRLP is the storage encoding of a receipt.
 type storedReceiptRLP struct {
 	PostStateOrStatus []byte
@@ -166,14 +157,6 @@ type storedReceiptRLP struct {
 	// DepositNonce. Post Canyon, receipts will have a non-empty DepositReceiptVersion indicating
 	// which post-Canyon receipt hash function to invoke.
 	DepositReceiptVersion *uint64 `rlp:"optional"`
-}
-
-type CeloDynamicFeeStoredReceiptRLP struct {
-	CeloDynamicReceiptMarker []interface{} // Marker to distinguish this from storedReceiptRLP
-	PostStateOrStatus        []byte
-	CumulativeGasUsed        uint64
-	Logs                     []*Log
-	BaseFee                  *big.Int `rlp:"optional"`
 }
 
 // LegacyOptimismStoredReceiptRLP is the pre bedrock storage encoding of a
@@ -462,18 +445,6 @@ func (r *ReceiptForStorage) EncodeRLP(_w io.Writer) error {
 	return w.Flush()
 }
 
-// Detect CeloDynamicFee receipts by looking at the first list element
-// To distinguish these receipts from the very similar normal receipts, an
-// empty list is added as the first element of the RLP-serialized struct.
-func IsCeloDynamicFeeReceipt(blob []byte) bool {
-	listHeaderSize := 1 // Length of the list header representing the struct in bytes
-	if blob[0] > 0xf7 {
-		listHeaderSize += int(blob[0]) - 0xf7
-	}
-	firstListElement := blob[listHeaderSize] // First byte of first list element
-	return firstListElement == 0xc0
-}
-
 // DecodeRLP implements rlp.Decoder, and loads both consensus and implementation
 // fields of a receipt from an RLP stream.
 func (r *ReceiptForStorage) DecodeRLP(s *rlp.Stream) error {
@@ -519,21 +490,6 @@ func decodeLegacyOptimismReceiptRLP(r *ReceiptForStorage, blob []byte) error {
 	r.L1GasPrice = stored.L1GasPrice
 	r.L1Fee = stored.L1Fee
 	r.FeeScalar = scalar
-	return nil
-}
-
-func decodeStoredCeloDynamicFeeReceiptRLP(r *ReceiptForStorage, blob []byte) error {
-	var stored CeloDynamicFeeStoredReceiptRLP
-	if err := rlp.DecodeBytes(blob, &stored); err != nil {
-		return err
-	}
-	if err := (*Receipt)(r).setStatus(stored.PostStateOrStatus); err != nil {
-		return err
-	}
-	r.CumulativeGasUsed = stored.CumulativeGasUsed
-	r.Logs = stored.Logs
-	r.Bloom = CreateBloom(Receipts{(*Receipt)(r)})
-	r.BaseFee = stored.BaseFee
 	return nil
 }
 
