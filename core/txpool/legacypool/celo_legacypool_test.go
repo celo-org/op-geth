@@ -30,8 +30,6 @@ func celoConfig(baseFeeFloor uint64) *params.ChainConfig {
 }
 
 var (
-	baseFeeFloor        = 100
-	celoTestChainConfig = celoConfig(uint64(baseFeeFloor))
 	// worth half as much as native celo
 	feeCurrencyOne = core.DevFeeCurrencyAddr
 	// worth twice as much as native celo
@@ -40,6 +38,7 @@ var (
 )
 
 func pricedCip64Transaction(
+	config *params.ChainConfig,
 	nonce uint64,
 	gasLimit uint64,
 	gasFeeCap *big.Int,
@@ -56,7 +55,7 @@ func pricedCip64Transaction(
 		GasTipCap:   gasTipCap,
 		FeeCurrency: feeCurrency,
 		Data:        nil,
-	}), types.LatestSigner(celoTestChainConfig), key)
+	}), types.LatestSigner(config), key)
 	return tx
 }
 
@@ -101,32 +100,48 @@ func setupCeloPoolWithConfig(config *params.ChainConfig) (*LegacyPool, *ecdsa.Pr
 	return pool, key
 }
 
-func TestBaseFeeFloorValidityCheck(t *testing.T) {
+func TestBelowBaseFeeFloorValidityCheck(t *testing.T) {
 	t.Parallel()
+	baseFeeFloor := 100
+	chainConfig := celoConfig(uint64(baseFeeFloor))
 
-	pool, key := setupCeloPoolWithConfig(celoTestChainConfig)
+	pool, key := setupCeloPoolWithConfig(chainConfig)
 	defer pool.Close()
 
 	// gas-price below base-fee-floor should return early
 	// and thus raise an error in the validation
-	t.Logf("fee-currency ctx: %v", pool.feeCurrencyContext.ExchangeRates)
 
+	// use local transactions here to skip the min-tip conversion
 	// the PriceLimit config is set to 1, so we need at least a tip of 1
-	tx := pricedCip64Transaction(0, 21000, big.NewInt(98), big.NewInt(1), nil, key)
-
-	if err, want := pool.validateTxBasics(tx, false), txpool.ErrGasPriceDoesNotExceedBaseFeeFloor; !errors.Is(err, want) {
+	tx := pricedCip64Transaction(chainConfig, 0, 21000, big.NewInt(99), big.NewInt(0), nil, key)
+	if err, want := pool.addLocal(tx), txpool.ErrGasPriceDoesNotExceedBaseFeeFloor; !errors.Is(err, want) {
 		t.Errorf("want %v have %v", want, err)
 	}
 	// also test with fee currency conversion
-	tx = pricedCip64Transaction(0, 21000+feeCurrencyIntrinsicGas, big.NewInt(198), big.NewInt(2), &feeCurrencyOne, key)
-	if err, want := pool.validateTxBasics(tx, false), txpool.ErrGasPriceDoesNotExceedBaseFeeFloor; !errors.Is(err, want) {
+	tx = pricedCip64Transaction(chainConfig, 0, 21000+feeCurrencyIntrinsicGas, big.NewInt(198), big.NewInt(0), &feeCurrencyOne, key)
+	if err, want := pool.addLocal(tx), txpool.ErrGasPriceDoesNotExceedBaseFeeFloor; !errors.Is(err, want) {
 		t.Errorf("want %v have %v", want, err)
 	}
+	tx = pricedCip64Transaction(chainConfig, 0, 21000+feeCurrencyIntrinsicGas, big.NewInt(48), big.NewInt(0), &feeCurrencyTwo, key)
+	if err, want := pool.addLocal(tx), txpool.ErrGasPriceDoesNotExceedBaseFeeFloor; !errors.Is(err, want) {
+		t.Errorf("want %v have %v", want, err)
+	}
+}
+
+func TestAboveBaseFeeFloorValidityCheck(t *testing.T) {
+	t.Parallel()
+
+	baseFeeFloor := 100
+	chainConfig := celoConfig(uint64(baseFeeFloor))
+	pool, key := setupCeloPoolWithConfig(chainConfig)
+	defer pool.Close()
 
 	// gas-price just at base-fee-floor should be valid
-	tx = pricedCip64Transaction(0, 21000+feeCurrencyIntrinsicGas, big.NewInt(100), big.NewInt(1), nil, key)
-	assert.NoError(t, pool.validateTxBasics(tx, false))
+	tx := pricedCip64Transaction(chainConfig, 0, 21000, big.NewInt(101), big.NewInt(1), nil, key)
+	assert.NoError(t, pool.addRemote(tx))
 	// also test with fee currency conversion, increase nonce because of previous tx was valid
-	tx = pricedCip64Transaction(1, 21000+feeCurrencyIntrinsicGas, big.NewInt(200), big.NewInt(2), &feeCurrencyOne, key)
-	assert.NoError(t, pool.validateTxBasics(tx, false))
+	tx = pricedCip64Transaction(chainConfig, 1, 21000+feeCurrencyIntrinsicGas, big.NewInt(202), big.NewInt(2), &feeCurrencyOne, key)
+	assert.NoError(t, pool.addRemote(tx))
+	tx = pricedCip64Transaction(chainConfig, 2, 21000+feeCurrencyIntrinsicGas, big.NewInt(51), big.NewInt(1), &feeCurrencyTwo, key)
+	assert.NoError(t, pool.addRemote(tx))
 }
