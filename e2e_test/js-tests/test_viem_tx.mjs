@@ -21,7 +21,6 @@ const testNonceBump = async (
 	shouldReplace,
 ) => {
 	const syncBarrierRequest = await walletClient.prepareTransactionRequest({
-
 		to: "0x00000000000000000000000000000000DeaDBeef",
 		value: 2,
 		gas: 22000,
@@ -189,15 +188,22 @@ describe("viem send tx", () => {
 		assert.equal(receipt.status, "success", "receipt status 'failure'");
 	}).timeout(10_000);
 
+	// The goal is this test is to ensure that fee currencies are correctly
+	// taken into account when performing tx replacements. As such we want the
+	// prices that we use for the failed and successful tx replacements to be
+	// close to the threshold value, such that an invalid currency conversion is
+	// more liable to result in a failure.
 	it("send overlapping nonce tx in different currencies", async () => {
-		const priceBump = 1.1;
+		// Note the threshold for a price bump to be accepted is 10%, i.e >= oldPrice * 1.1
+		const priceBump = 1.1; // minimum bump percentage to replace a transaction
+		const priceNearBump = 1.09; // slightly lower percentage than the price bump
 
 		const rate = await getRate(process.env.FEE_CURRENCY);
 		// Native to FEE_CURRENCY
 		const nativeCap = 30_000_000_000;
 		const bumpCurrencyCap = rate.toFeeCurrency(BigInt(Math.round(nativeCap * priceBump)));
 		const failToBumpCurrencyCap = rate.toFeeCurrency(BigInt(
-			Math.round(nativeCap / priceBump)
+			Math.round(nativeCap * priceNearBump)
 		));
 		const tokenCurrency = process.env.FEE_CURRENCY;
 		const nativeCurrency = null;
@@ -220,7 +226,7 @@ describe("viem send tx", () => {
 		const currencyCap = 60_000_000_000;
 		const bumpNativeCap = rate.toNative(BigInt(Math.round(currencyCap * priceBump)));
 		const failToBumpNativeCap = rate.toNative(BigInt(
-			Math.round(currencyCap / priceBump)
+			Math.round(currencyCap * priceNearBump)
 		));
 		await testNonceBump(
 			currencyCap,
