@@ -133,6 +133,9 @@ func CeloGenesisAccounts(fundedAddr common.Address) GenesisAlloc {
 		FaucetAddr: {
 			Balance: faucetBalance,
 		},
+		fundedAddr: {
+			Balance: DevBalance,
+		},
 	}
 
 	// FeeCurrencyDirectory
