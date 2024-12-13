@@ -84,6 +84,7 @@ func TestSmokeRPCCompatibilities(t *testing.T) {
 	// Fetching RPC data job
 	fetchingEg, jobCtx := errgroup.WithContext(globalCtx)
 	fetchingEg.SetLimit(5) // max 5 concurrent fetching
+
 	go func() {
 		clients := &clients{
 			celoEthclient: celoEthClient,
@@ -105,8 +106,13 @@ func TestSmokeRPCCompatibilities(t *testing.T) {
 			// decide block number to fetch between [currentBlockNumber, currentBlockNumber+blockInterval-1)
 			offset := uint64(0)
 			if enableRandomBlockTest {
+				randomUpperBound := blockInterval
+				if currentBlockNumber+randomUpperBound-1 >= lastCeloL1BlockHeight {
+					randomUpperBound = lastCeloL1BlockHeight - currentBlockNumber
+				}
+
 				// Int63n will return a non-negative random number
-				offset = uint64(rand.Int63n(int64(blockInterval)))
+				offset = uint64(rand.Int63n(int64(randomUpperBound)))
 			}
 
 			// Fetch data at the point of current range
