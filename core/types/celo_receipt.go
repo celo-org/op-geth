@@ -12,7 +12,7 @@ type celoDynamicReceiptRLP struct {
 	Bloom             Bloom
 	Logs              []*Log
 	// BaseFee was introduced as mandatory in Cel2 ONLY for the CeloDynamicFeeTxs
-	BaseFee *big.Int
+	BaseFee *big.Int `rlp:"optional"`
 }
 
 type celoDynamicFeeStoredReceiptRLP struct {
@@ -20,7 +20,7 @@ type celoDynamicFeeStoredReceiptRLP struct {
 	PostStateOrStatus        []byte
 	CumulativeGasUsed        uint64
 	Logs                     []*Log
-	BaseFee                  *big.Int
+	BaseFee                  *big.Int `rlp:"optional"`
 }
 
 // Detect CeloDynamicFee receipts by looking at the first list element
