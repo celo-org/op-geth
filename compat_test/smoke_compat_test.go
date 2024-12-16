@@ -92,7 +92,7 @@ func TestSmokeRPCCompatibilities(t *testing.T) {
 			opClient:      opClient,
 		}
 
-		// Fetch some random blocks between 1 to lastCeloL1BlockHeight
+		// Fetch some random blocks between 0 to lastCeloL1BlockHeight
 		for currentBlockNumber := uint64(0); currentBlockNumber < lastCeloL1BlockHeight; currentBlockNumber += blockInterval {
 			// exit loop if context is canceled
 			if isContextCanceled(jobCtx) {
