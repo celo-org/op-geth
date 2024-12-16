@@ -11,7 +11,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/sync/errgroup"
 )
@@ -83,9 +82,9 @@ func TestSmokeRPCCompatibilities(t *testing.T) {
 
 	// Fetching RPC data job
 	fetchingEg, jobCtx := errgroup.WithContext(globalCtx)
-	fetchingEg.SetLimit(5) // max 5 concurrent fetching
+	fetchingEg.SetLimit(6)
 
-	go func() {
+	fetchingEg.Go(func() error {
 		clients := &clients{
 			celoEthclient: celoEthClient,
 			opEthclient:   opEthClient,
@@ -93,17 +92,15 @@ func TestSmokeRPCCompatibilities(t *testing.T) {
 			opClient:      opClient,
 		}
 
-		// Fetch data at height 0
-		asyncFetchRpcData(t, jobCtx, fetchingEg, 0, clients, resultChan)
-
 		// Fetch some random blocks between 1 to lastCeloL1BlockHeight
-		for currentBlockNumber := uint64(1); currentBlockNumber < lastCeloL1BlockHeight; currentBlockNumber += blockInterval {
+		for currentBlockNumber := uint64(0); currentBlockNumber < lastCeloL1BlockHeight; currentBlockNumber += blockInterval {
 			// exit loop if context is canceled
 			if isContextCanceled(jobCtx) {
-				return
+				t.Logf("Context canceled, exiting fetching loop at height %d", currentBlockNumber)
+				return nil
 			}
 
-			// decide block number to fetch between [currentBlockNumber, currentBlockNumber+blockInterval-1)
+			// decide block number to fetch between [currentBlockNumber, min(currentBlockNumber+blockInterval-1, lastCeloL1BlockHeight))
 			offset := uint64(0)
 			if enableRandomBlockTest {
 				randomUpperBound := blockInterval
@@ -121,18 +118,25 @@ func TestSmokeRPCCompatibilities(t *testing.T) {
 
 		// Fetch data at the last block
 		asyncFetchRpcData(t, jobCtx, fetchingEg, lastCeloL1BlockHeight, clients, resultChan)
-	}()
+
+		return nil
+	})
 
 	// Testing fetched data job
 	testingEg, jobCtx := errgroup.WithContext(globalCtx)
-	go func() {
+	testingEg.Go(func() error {
 		for result := range resultChan {
 			if isContextCanceled(jobCtx) {
-				return
+				t.Logf("Context canceled, exiting testing loop at height %d", result.blockNumber)
+				return nil
 			}
 
 			result := result
 			testingEg.Go(func() error {
+				// Reset totalDifficulty of L1 block because totalDifficulty of L2 block is always 0x0
+				result.celoRawBlockByNumber["totalDifficulty"] = "0x0"
+				result.celoRawBlockByHash["totalDifficulty"] = "0x0"
+
 				err := result.Verify(chainId)
 				if err != nil {
 					t.Errorf("data at height %d err: %v\n", result.blockNumber, err)
@@ -140,15 +144,19 @@ func TestSmokeRPCCompatibilities(t *testing.T) {
 					return err
 				}
 
+				t.Logf("Verified data at height %d", result.blockNumber)
+
 				return nil
 			})
 		}
-	}()
+
+		return nil
+	})
 
 	// Wait for fetching and testing jobs to finish
-	assert.NoError(t, fetchingEg.Wait(), "some fetching task failed")
+	fetchingEg.Wait()
 	close(resultChan) // close resultChan to signal testingEg to end
-	assert.NoError(t, testingEg.Wait(), "some testing task failed")
+	testingEg.Wait()
 }
 
 func isContextCanceled(ctx context.Context) bool {
