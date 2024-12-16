@@ -108,7 +108,7 @@ func TestSmokeRPCCompatibilities(t *testing.T) {
 					randomUpperBound = lastCeloL1BlockHeight - currentBlockNumber
 				}
 
-				// Int63n will return a non-negative random number
+				// Int63n returns a non-negative random number
 				offset = uint64(rand.Int63n(int64(randomUpperBound)))
 			}
 
