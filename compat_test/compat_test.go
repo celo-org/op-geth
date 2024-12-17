@@ -135,7 +135,7 @@ func TestCompatibilityOfChains(t *testing.T) {
 		for i := startBlock; i <= endBlock; i++ {
 			index := i
 			g.Go(func() error {
-				err := fetchBlockElements(clients, index, resultChan)
+				err := fetchBlockElements(longCtx, clients, index, resultChan)
 				if err != nil {
 					fmt.Printf("block %d err: %v\n", index, err)
 				}
@@ -700,8 +700,8 @@ func makeTransactionsComparable(txs []*types.Transaction) {
 	}
 }
 
-func fetchBlockElements(clients *clients, blockNumber uint64, resultChan chan *blockResults) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+func fetchBlockElements(ctx context.Context, clients *clients, blockNumber uint64, resultChan chan *blockResults) error {
+	ctx, cancel := context.WithTimeout(ctx, time.Minute)
 	defer cancel()
 	blockNum := big.NewInt(int64(blockNumber))
 	blockNumberHex := hexutil.EncodeUint64(blockNumber)
@@ -735,7 +735,7 @@ func fetchBlockElements(clients *clients, blockNumber uint64, resultChan chan *b
 		var err error
 		results.opBlockByHash, err = clients.opEthclient.BlockByHash(ctx, opBlockByNumber.Hash())
 		if err != nil {
-			return fmt.Errorf("%s: %w", "op.BlockByHash", err)
+			return fmt.Errorf("opEthclient.%s: %w", "op.BlockByHash", err)
 		}
 		return nil
 	})
@@ -744,14 +744,14 @@ func fetchBlockElements(clients *clients, blockNumber uint64, resultChan chan *b
 	g.Go(func() error {
 		err := rpcCall(ctx, clients.celoClient, &results.celoRawBlockByNumber, getBlockByNumber, blockNumberHex, true)
 		if err != nil {
-			return fmt.Errorf("%s: %w", getBlockByNumber, err)
+			return fmt.Errorf("celoClient.%s: %w", getBlockByNumber, err)
 		}
 		return nil
 	})
 	g.Go(func() error {
 		err := rpcCall(ctx, clients.opClient, &results.opRawBlockByNumber, getBlockByNumber, blockNumberHex, true)
 		if err != nil {
-			return fmt.Errorf("%s: %w", getBlockByNumber, err)
+			return fmt.Errorf("opClient.%s: %w", getBlockByNumber, err)
 		}
 		return nil
 	})
@@ -760,14 +760,14 @@ func fetchBlockElements(clients *clients, blockNumber uint64, resultChan chan *b
 	g.Go(func() error {
 		err := rpcCall(ctx, clients.celoClient, &results.celoRawBlockByHash, getBlockByHash, blockHash.Hex(), true)
 		if err != nil {
-			return fmt.Errorf("%s: %w", getBlockByHash, err)
+			return fmt.Errorf("celoClient.%s: %w", getBlockByHash, err)
 		}
 		return nil
 	})
 	g.Go(func() error {
 		err := rpcCall(ctx, clients.opClient, &results.opRawBlockByHash, getBlockByHash, blockHash.Hex(), true)
 		if err != nil {
-			return fmt.Errorf("%s: %w", getBlockByHash, err)
+			return fmt.Errorf("opClient.%s: %w", getBlockByHash, err)
 		}
 		return nil
 	})
@@ -776,7 +776,7 @@ func fetchBlockElements(clients *clients, blockNumber uint64, resultChan chan *b
 	g.Go(func() error {
 		err := rpcCall(ctx, clients.celoClient, &results.celoRawBlockReceipt, getBlockReceipt, blockHash.Hex())
 		if err != nil {
-			return fmt.Errorf("%s: %w", getBlockReceipt, err)
+			return fmt.Errorf("celoClient.%s: %w", getBlockReceipt, err)
 		}
 		return nil
 	})
@@ -784,7 +784,7 @@ func fetchBlockElements(clients *clients, blockNumber uint64, resultChan chan *b
 	g.Go(func() error {
 		err := rpcCall(ctx, clients.opClient, &results.opRawBlockReceipt, getBlockReceipt, blockHash.Hex())
 		if err != nil {
-			return fmt.Errorf("%s: %w", getBlockReceipt, err)
+			return fmt.Errorf("opClient.%s: %w", getBlockReceipt, err)
 		}
 		return nil
 	})
@@ -792,7 +792,7 @@ func fetchBlockElements(clients *clients, blockNumber uint64, resultChan chan *b
 	g.Go(func() error {
 		celoBlockReceipts, err := clients.celoEthclient.BlockReceipts(ctx, rpc.BlockNumberOrHashWithHash(blockHash, true))
 		if err != nil {
-			return fmt.Errorf("BlockReceipts: %w", err)
+			return fmt.Errorf("celoEthclient.BlockReceipts: %w", err)
 		}
 		results.celoBlockReceipts = celoBlockReceipts
 		return nil
@@ -801,7 +801,7 @@ func fetchBlockElements(clients *clients, blockNumber uint64, resultChan chan *b
 	g.Go(func() error {
 		opBlockReceipts, err := clients.opEthclient.BlockReceipts(ctx, rpc.BlockNumberOrHashWithHash(blockHash, true))
 		if err != nil {
-			return fmt.Errorf("BlockReceipts: %w", err)
+			return fmt.Errorf("opEthclient.BlockReceipts: %w", err)
 		}
 		results.opBlockReceipts = opBlockReceipts
 		return nil
@@ -811,7 +811,7 @@ func fetchBlockElements(clients *clients, blockNumber uint64, resultChan chan *b
 	g.Go(func() error {
 		err := rpcCall(ctx, clients.celoClient, &results.celoRawBlockReceipts, getBlockReceipts, blockHash.Hex())
 		if err != nil {
-			return fmt.Errorf("%s: %w", getBlockReceipts, err)
+			return fmt.Errorf("celoClient.%s: %w", getBlockReceipts, err)
 		}
 		return nil
 	})
@@ -819,7 +819,7 @@ func fetchBlockElements(clients *clients, blockNumber uint64, resultChan chan *b
 	g.Go(func() error {
 		err := rpcCall(ctx, clients.opClient, &results.opRawBlockReceipts, getBlockReceipts, blockHash.Hex())
 		if err != nil {
-			return fmt.Errorf("%s: %w", getBlockReceipts, err)
+			return fmt.Errorf("opClient.%s: %w", getBlockReceipts, err)
 		}
 		return nil
 	})
@@ -854,7 +854,7 @@ func fetchBlockElements(clients *clients, blockNumber uint64, resultChan chan *b
 		g.Go(func() error {
 			err := rpcCall(ctx, clients.celoClient, &results.celoRawTxs[index], getTxByHash, hexHash)
 			if err != nil {
-				return fmt.Errorf("%s: %w", getTxByHash, err)
+				return fmt.Errorf("celoClient.%s: %w", getTxByHash, err)
 			}
 			return nil
 		})
@@ -862,7 +862,7 @@ func fetchBlockElements(clients *clients, blockNumber uint64, resultChan chan *b
 		g.Go(func() error {
 			err := rpcCall(ctx, clients.opClient, &results.opRawTxs[index], getTxByHash, hexHash)
 			if err != nil {
-				return fmt.Errorf("%s: %w", getTxByHash, err)
+				return fmt.Errorf("opClient.%s: %w", getTxByHash, err)
 			}
 			return nil
 		})
@@ -889,7 +889,7 @@ func fetchBlockElements(clients *clients, blockNumber uint64, resultChan chan *b
 		g.Go(func() error {
 			err := rpcCall(ctx, clients.celoClient, &results.celoRawReceipts[index], getTransactionReceipt, hexHash)
 			if err != nil {
-				return fmt.Errorf("%s: %w", getTransactionReceipt, err)
+				return fmt.Errorf("celoClient.%s: %w", getTransactionReceipt, err)
 			}
 			return nil
 		})
@@ -897,7 +897,7 @@ func fetchBlockElements(clients *clients, blockNumber uint64, resultChan chan *b
 		g.Go(func() error {
 			err := rpcCall(ctx, clients.opClient, &results.opRawReceipts[index], getTransactionReceipt, hexHash)
 			if err != nil {
-				return fmt.Errorf("%s: %w", getTransactionReceipt, err)
+				return fmt.Errorf("opClient.%s: %w", getTransactionReceipt, err)
 			}
 			return nil
 		})
