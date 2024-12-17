@@ -45,6 +45,9 @@ func TestSmokeRPCCompatibilities(t *testing.T) {
 	if opGethRpcURL == "" {
 		t.Fatal("op-geth rpc url not set example usage:\n go test -v ./compat_test -tags compat_test -run TestSmokeRPCCompatibilities -celo-url ws://localhost:8546 -op-geth-url ws://localhost:9994")
 	}
+	if blockInterval == 0 {
+		t.Fatal("block interval must be positive integer:\n go test -v ./compat_test -tags compat_test -run TestSmokeRPCCompatibilities -celo-url ws://localhost:8546 -op-geth-url ws://localhost:9994 -block-interval 1000000")
+	}
 
 	// Setup RPC clients for Celo L1 and Celo L2 server
 	celoClient, err := rpc.DialOptions(context.Background(), celoRpcURL, clientOpts...)
@@ -92,7 +95,11 @@ func TestSmokeRPCCompatibilities(t *testing.T) {
 			opClient:      opClient,
 		}
 
-		// Fetch some random blocks between 0 to lastCeloL1BlockHeight
+		// Fetch data of the first 2 blocks
+		asyncFetchRpcData(t, jobCtx, fetchingEg, 0, clients, resultChan)
+		asyncFetchRpcData(t, jobCtx, fetchingEg, 1, clients, resultChan)
+
+		// Fetch some random blocks between blockInterval to lastCeloL1BlockHeight
 		for currentBlockNumber := uint64(0); currentBlockNumber < lastCeloL1BlockHeight; currentBlockNumber += blockInterval {
 			// exit loop if context is canceled
 			if isContextCanceled(jobCtx) {
@@ -112,11 +119,21 @@ func TestSmokeRPCCompatibilities(t *testing.T) {
 				offset = uint64(rand.Int63n(int64(randomUpperBound)))
 			}
 
+			targetHeight := currentBlockNumber + offset
+			if targetHeight < 2 {
+				// ignore block at 0 and 1 because they're already fetched
+				if blockInterval == 1 {
+					continue
+				}
+
+				targetHeight = 2
+			}
+
 			// Fetch data at the point of current range
-			asyncFetchRpcData(t, jobCtx, fetchingEg, currentBlockNumber+offset, clients, resultChan)
+			asyncFetchRpcData(t, jobCtx, fetchingEg, targetHeight, clients, resultChan)
 		}
 
-		// Fetch data at the last block
+		// Fetch data at the last height
 		asyncFetchRpcData(t, jobCtx, fetchingEg, lastCeloL1BlockHeight, clients, resultChan)
 
 		return nil
