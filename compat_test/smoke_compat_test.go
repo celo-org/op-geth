@@ -133,10 +133,6 @@ func TestSmokeRPCCompatibilities(t *testing.T) {
 
 			result := result
 			testingEg.Go(func() error {
-				// Reset totalDifficulty of L1 block because totalDifficulty of L2 block is always 0x0
-				result.celoRawBlockByNumber["totalDifficulty"] = "0x0"
-				result.celoRawBlockByHash["totalDifficulty"] = "0x0"
-
 				err := result.Verify(chainId)
 				if err != nil {
 					t.Errorf("data at height %d err: %v\n", result.blockNumber, err)
