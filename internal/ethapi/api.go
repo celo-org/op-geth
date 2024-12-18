@@ -29,6 +29,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/accounts/scwallet"
 	"github.com/ethereum/go-ethereum/common"
@@ -53,6 +54,18 @@ import (
 	"github.com/holiman/uint256"
 	"github.com/tyler-smith/go-bip39"
 )
+
+// TODO: move
+var (
+	gasPriceMinimumABIJson = `[{"inputs":[{"internalType":"uint256","name":"gasPriceMinimum","type":"uint256"}],"name":"GasPriceMinimumUpdated","outputs":[],"type":"event"}]`
+	gasPriceMinimumABI     abi.ABI
+)
+
+func init() {
+	// TODO: error handling
+	parsedAbi, _ := abi.JSON(strings.NewReader(gasPriceMinimumABIJson))
+	gasPriceMinimumABI = parsedAbi
+}
 
 // estimateGasErrorRatio is the amount of overestimation eth_estimateGas is
 // allowed to produce in order to speed up calculations.
@@ -872,6 +885,8 @@ func (api *BlockChainAPI) GetHeaderByHash(ctx context.Context, hash common.Hash)
 //   - When fullTx is true all transactions in the block are returned, otherwise
 //     only the transaction hash is returned.
 func (api *BlockChainAPI) GetBlockByNumber(ctx context.Context, number rpc.BlockNumber, fullTx bool) (map[string]interface{}, error) {
+	fmt.Printf("\n\n\n\n##### GetBlockByNumber #####\n\n\n\n")
+
 	block, err := api.b.BlockByNumber(ctx, number)
 	if block != nil && err == nil {
 		response, err := RPCMarshalBlock(ctx, block, true, fullTx, api.b.ChainConfig(), api.b)
@@ -881,6 +896,11 @@ func (api *BlockChainAPI) GetBlockByNumber(ctx context.Context, number rpc.Block
 				response[field] = nil
 			}
 		}
+
+		if response != nil {
+			addEthCompatibilityFields(ctx, api.b, response, block)
+		}
+
 		return response, err
 	}
 	return nil, err
@@ -1139,6 +1159,91 @@ func (diff *StateOverride) Apply(statedb *state.StateDB, precompiles vm.Precompi
 	// if they were created in a transaction just before the tracing occur.
 	statedb.Finalise(false)
 	return nil
+}
+
+// TODO: move this function to proper place
+func addEthCompatibilityFields(ctx context.Context, backend CeloBackend, response map[string]interface{}, block *types.Block) {
+	header, cfg := block.Header(), backend.ChainConfig()
+	height := header.Number
+
+	fmt.Printf("\n\ncalled addEthCompatibilityFields header=%d, cfg.IsGingerbread(height)=%t\n", height.Uint64(), cfg.IsGingerbread(height))
+
+	// before Gingerbread
+	if !cfg.IsGingerbread(height) {
+		if response["gasLimit"] == "0x0" {
+			response["gasLimit"] = hexutil.Uint64(
+				params.PreGingerbreadNetworkGasLimits[cfg.ChainID.Uint64()].Limit(height),
+			)
+
+			fmt.Printf("gas limit retrieved %+v\n", response["gasLimit"])
+		}
+
+		if header.BaseFee != nil {
+			response["baseFeePerGas"] = (*hexutil.Big)(block.Header().BaseFee)
+			fmt.Printf("baseFee retrieved %+v\n\n", response["baseFeePerGas"])
+		} else {
+			// Providing nil as the currency address gets the gas price minimum for the native celo asset.
+			baseFee, err := retrieveBaseFeeOfPreGingerbreadBlock(ctx, backend, height)
+			if err != nil {
+				log.Debug("Not adding baseFeePerGas to RPC response, failed to retrieve gas price minimum", "block", height.Uint64(), "err", err)
+			}
+			if baseFee != nil {
+				response["baseFeePerGas"] = (*hexutil.Big)(baseFee)
+				fmt.Printf("baseFee retrieved %+v\n", response["baseFeePerGas"])
+			}
+		}
+	}
+
+	fmt.Printf("\n\n")
+}
+
+// TODO: rename
+func retrieveBaseFeeOfPreGingerbreadBlock(ctx context.Context, backend CeloBackend, height *big.Int) (*big.Int, error) {
+	if height.Cmp(common.Big0) <= 0 {
+		return common.Big0, nil
+	}
+
+	prevBlock, err := backend.BlockByNumber(ctx, rpc.BlockNumber(height.Uint64()-1))
+	if err != nil {
+		return nil, err
+	}
+	if prevBlock == nil {
+		return nil, fmt.Errorf("block #%d not found", height.Int64())
+	}
+
+	prevReceipts, err := backend.GetReceipts(ctx, prevBlock.Hash())
+	if err != nil {
+		return nil, err
+	}
+
+	numTxs, numReceipts := len(prevBlock.Transactions()), len(prevReceipts)
+	if numReceipts <= numTxs {
+		// no system logs
+		return common.Big0, nil
+	}
+
+	systemReceipt := prevReceipts[numTxs]
+	for idx, log := range systemReceipt.Logs {
+		values, err := gasPriceMinimumABI.Unpack("GasPriceMinimumUpdated", log.Data)
+
+		if err != nil && idx == len(systemReceipt.Logs)-1 {
+			// GasPriceMinimumUpdated is not included in receipt
+			return nil, fmt.Errorf("gas price minimum updated event is not included in a receipt of block #%d", height.Int64())
+		}
+
+		if len(values) != 1 {
+			return nil, fmt.Errorf("unexpected format of values in GasPriceMinimumUpdated event in receipt of block #%d", height.Int64())
+		}
+
+		baseFee, ok := values[0].(*big.Int)
+		if !ok {
+			return nil, fmt.Errorf("unexpected base fee type in GasPriceMinimumUpdated event: expected *big.Int, got %T", values[0])
+		}
+
+		return baseFee, nil
+	}
+
+	return common.Big0, nil
 }
 
 // BlockOverrides is a set of header fields to override.
