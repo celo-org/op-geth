@@ -64,15 +64,15 @@ type clients struct {
 // The test requires two flags to be set that provide the rpc urls to use, and the test is segregated from normal
 // execution via a build tag. So to run it you would do:
 //
-// go test -v ./compattest -tags compattest -celo-url <celo rpc url> -op-geth-url <op-geth rpc url>
+// go test -v ./compat_test -tags compat_test -celo-url <celo rpc url> -op-geth-url <op-geth rpc url>
 func TestCompatibilityOfChains(t *testing.T) {
 	flag.Parse()
 
 	if celoRpcURL == "" {
-		t.Fatal("celo rpc url not set example usage:\n go test -v ./compattest -tags compattest -celo-url ws://localhost:9546 -op-geth-url ws://localhost:8546")
+		t.Fatal("celo rpc url not set example usage:\n go test -v ./compat_test -tags compat_test -celo-url ws://localhost:9546 -op-geth-url ws://localhost:8546")
 	}
 	if opGethRpcURL == "" {
-		t.Fatal("op-geth rpc url not set example usage:\n go test -v ./compattest -tags compattest -celo-url ws://localhost:9546 -op-geth-url ws://localhost:8546")
+		t.Fatal("op-geth rpc url not set example usage:\n go test -v ./compat_test -tags compat_test -celo-url ws://localhost:9546 -op-geth-url ws://localhost:8546")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
