@@ -64,15 +64,15 @@ type clients struct {
 // The test requires two flags to be set that provide the rpc urls to use, and the test is segregated from normal
 // execution via a build tag. So to run it you would do:
 //
-// go test -v ./compat_test -tags compat_test -celo-url <celo rpc url> -op-geth-url <op-geth rpc url>
+// go test -v ./compattest -tags compattest -celo-url <celo rpc url> -op-geth-url <op-geth rpc url>
 func TestCompatibilityOfChains(t *testing.T) {
 	flag.Parse()
 
 	if celoRpcURL == "" {
-		t.Fatal("celo rpc url not set example usage:\n go test -v ./compat_test -tags compat_test -celo-url ws://localhost:9546 -op-geth-url ws://localhost:8546")
+		t.Fatal("celo rpc url not set example usage:\n go test -v ./compattest -tags compattest -celo-url ws://localhost:9546 -op-geth-url ws://localhost:8546")
 	}
 	if opGethRpcURL == "" {
-		t.Fatal("op-geth rpc url not set example usage:\n go test -v ./compat_test -tags compat_test -celo-url ws://localhost:9546 -op-geth-url ws://localhost:8546")
+		t.Fatal("op-geth rpc url not set example usage:\n go test -v ./compattest -tags compattest -celo-url ws://localhost:9546 -op-geth-url ws://localhost:8546")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
@@ -80,11 +80,15 @@ func TestCompatibilityOfChains(t *testing.T) {
 
 	clientOpts := []rpc.ClientOption{rpc.WithWebsocketMessageSizeLimit(1024 * 1024 * 256)}
 
-	celoClient, err := rpc.DialOptions(context.Background(), celoRpcURL, clientOpts...)
+	celoClient, err := retryOperation(ctx, func() (*rpc.Client, error) {
+		return rpc.DialOptions(ctx, celoRpcURL, clientOpts...)
+	}, 5, time.Minute*2)
 	require.NoError(t, err)
 	celoEthClient := ethclient.NewClient(celoClient)
 
-	opClient, err := rpc.DialOptions(context.Background(), opGethRpcURL, clientOpts...)
+	opClient, err := retryOperation(ctx, func() (*rpc.Client, error) {
+		return rpc.DialOptions(ctx, opGethRpcURL, clientOpts...)
+	}, 5, time.Minute*2)
 	require.NoError(t, err)
 	opEthClient := ethclient.NewClient(opClient)
 
@@ -142,7 +146,7 @@ func TestCompatibilityOfChains(t *testing.T) {
 		for i := startBlock; i <= endBlock; i++ {
 			index := i
 			g.Go(func() error {
-				err := fetchBlockElements(longCtx, clients, index, resultChan)
+				err := fetchBlockElementsWithRetry(longCtx, clients, index, resultChan)
 				if err != nil {
 					fmt.Printf("block %d err: %v\n", index, err)
 				}
@@ -922,6 +926,49 @@ func fetchBlockElements(ctx context.Context, clients *clients, blockNumber uint6
 
 	resultChan <- results
 	return err
+}
+
+func fetchBlockElementsWithRetry(longCtx context.Context, clients *clients, blockNumber uint64, resultChan chan *blockResults) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+	return retryOperationError(ctx, func() error {
+		return fetchBlockElements(longCtx, clients, blockNumber, resultChan)
+	}, 5, time.Minute*2)
+}
+
+func retryOperation[T any](ctx context.Context, operation func() (T, error), retries int, delay time.Duration) (T, error) {
+	var result T
+	var err error
+	for i := 0; i < retries; i++ {
+		result, err = operation()
+		if err == nil {
+			return result, nil
+		}
+		fmt.Printf("Retry %d/%d failed: %v\n", i+1, retries, err)
+		select {
+		case <-ctx.Done():
+			return result, ctx.Err()
+		case <-time.After(delay):
+		}
+	}
+	return result, fmt.Errorf("operation failed after %d retries: %w", retries, err)
+}
+
+func retryOperationError(ctx context.Context, operation func() error, retries int, delay time.Duration) error {
+	var err error
+	for i := 0; i < retries; i++ {
+		err = operation()
+		if err == nil {
+			return nil
+		}
+		fmt.Printf("Retry %d/%d failed: %v\n", i+1, retries, err)
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(delay):
+		}
+	}
+	return fmt.Errorf("operation failed after %d retries: %w", retries, err)
 }
 
 func jsonConvert(in, out any) error {
