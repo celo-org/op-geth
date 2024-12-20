@@ -36,7 +36,7 @@ var (
 		Body: deneb.BeaconBlockBody{
 			ExecutionPayload: deneb.ExecutionPayload{
 				BlockNumber: 456,
-				BlockHash:   zrntcommon.Hash32(common.HexToHash("eb8dbaf115360cbada7b6e5420bb8a340b0c7976caf0abd63a2131baf98ce3ac")),
+				BlockHash:   zrntcommon.Hash32(common.HexToHash("905ac721c4058d9ed40b27b6b9c1bdd10d4333e4f3d9769100bf9dfb80e5d1f6")),
 			},
 		},
 	})
@@ -45,7 +45,7 @@ var (
 		Body: deneb.BeaconBlockBody{
 			ExecutionPayload: deneb.ExecutionPayload{
 				BlockNumber: 457,
-				BlockHash:   zrntcommon.Hash32(common.HexToHash("e77f66ebcf4cc17211cd725ca563646d5d48f39b72de1cc233b8f0b4084fa641")),
+				BlockHash:   zrntcommon.Hash32(common.HexToHash("011703f39c664efc1c6cf5f49ca09b595581eec572d4dfddd3d6179a9e63e655")),
 			},
 		},
 	})
