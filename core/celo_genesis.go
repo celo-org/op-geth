@@ -53,7 +53,7 @@ var (
 	FaucetAddr          = common.HexToAddress("0xfcf982bb4015852e706100b14e21f947a5bb718e")
 )
 
-func celoGenesisAccounts(fundedAddr common.Address) GenesisAlloc {
+func CeloGenesisAccounts(fundedAddr common.Address) GenesisAlloc {
 	// Initialize Bytecodes
 	celoTokenBytecode, err := DecodeHex(celo.CeloTokenBytecodeRaw)
 	if err != nil {
