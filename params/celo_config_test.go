@@ -1,9 +1,10 @@
 package params
 
 import (
-	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGasLimits_Limit(t *testing.T) {
