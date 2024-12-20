@@ -77,17 +77,18 @@ func ToMockOldBeforeGingerbreadHeader(h *BeforeGingerbreadHeader) *mockOldBefore
 
 func BeforeGingerbreadHeaderToHeader(h *BeforeGingerbreadHeader) *Header {
 	return &Header{
-		ParentHash:  h.ParentHash,
-		Coinbase:    h.Coinbase,
-		Root:        h.Root,
-		TxHash:      h.TxHash,
-		ReceiptHash: h.ReceiptHash,
-		Bloom:       h.Bloom,
-		Number:      h.Number,
-		GasUsed:     h.GasUsed,
-		Time:        h.Time,
-		Extra:       h.Extra,
-		Difficulty:  new(big.Int),
+		ParentHash:     h.ParentHash,
+		Coinbase:       h.Coinbase,
+		Root:           h.Root,
+		TxHash:         h.TxHash,
+		ReceiptHash:    h.ReceiptHash,
+		Bloom:          h.Bloom,
+		Number:         h.Number,
+		GasUsed:        h.GasUsed,
+		Time:           h.Time,
+		Extra:          h.Extra,
+		Difficulty:     new(big.Int),
+		preGingerbread: true,
 	}
 }
 

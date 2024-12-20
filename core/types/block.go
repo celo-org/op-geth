@@ -104,6 +104,9 @@ type Header struct {
 
 	// RequestsHash was added by EIP-7685 and is ignored in legacy headers.
 	RequestsHash *common.Hash `json:"requestsRoot" rlp:"optional"`
+
+	// preGingerbread determines whether this is a pre-gingerbread header, which determines how this block will be encoded.
+	preGingerbread bool
 }
 
 // field type overrides for gencodec
