@@ -3,15 +3,15 @@ package ethapi
 import (
 	"context"
 	"fmt"
+	"github.com/ethereum/go-ethereum/core/rawdb"
+	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/params"
 	"math/big"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
 )
 
@@ -25,12 +25,14 @@ func init() {
 	gasPriceMinimumABI = parsedAbi
 }
 
+// PopulatePreGingerbreadBlockFields populates the baseFee and gasLimit fields of the block for pre-gingerbread blocks
 func PopulatePreGingerbreadBlockFields(ctx context.Context, backend CeloBackend, block *types.Block) *types.Block {
 	newHeader := PopulatePreGingerbreadHeaderFields(ctx, backend, block.Header())
 	block = block.WithSeal(newHeader)
 	return block
 }
 
+// PopulatePreGingerbreadHeaderFields populates the baseFee and gasLimit fields of the header for pre-gingerbread blocks
 func PopulatePreGingerbreadHeaderFields(ctx context.Context, backend CeloBackend, header *types.Header) *types.Header {
 	isGingerbread := backend.ChainConfig().IsGingerbread(header.Number)
 	if isGingerbread {
@@ -81,6 +83,7 @@ func PopulatePreGingerbreadHeaderFields(ctx context.Context, backend CeloBackend
 	return header
 }
 
+// retrievePreGingerbreadBlockBaseFee retrieves a base fee at given height from the previous block
 func retrievePreGingerbreadBlockBaseFee(ctx context.Context, backend CeloBackend, height *big.Int) (*big.Int, error) {
 	if height.Cmp(common.Big0) <= 0 {
 		return common.Big0, nil
@@ -101,26 +104,34 @@ func retrievePreGingerbreadBlockBaseFee(ctx context.Context, backend CeloBackend
 
 	numTxs, numReceipts := len(prevBlock.Transactions()), len(prevReceipts)
 	if numReceipts <= numTxs {
-		return nil, fmt.Errorf("receipts of block #%d do not contain system logs", height.Int64())
+		return nil, fmt.Errorf("receipts of block #%d don't contain system logs", height.Int64())
 	}
 
 	systemReceipt := prevReceipts[numTxs]
 	for _, logRecord := range systemReceipt.Logs {
-		baseFee, err := parseGasPriceMinimumUpdated(logRecord.Data)
-		if err == nil {
-			return baseFee, nil
+		if logRecord.Topics[0] != gasPriceMinimumABI.Events["GasPriceMinimumUpdated"].ID {
+			continue
 		}
+
+		baseFee, err := parseGasPriceMinimumUpdated(logRecord.Data)
+		if err != nil {
+			return nil, err
+		}
+
+		return baseFee, nil
 	}
 
 	return nil, fmt.Errorf("gas price minimum updated event is not included in a receipt of block #%d", height.Int64())
 }
 
+// parseGasPriceMinimumUpdated parses the data of GasPriceMinimumUpdated event
 func parseGasPriceMinimumUpdated(data []byte) (*big.Int, error) {
 	values, err := gasPriceMinimumABI.Unpack("GasPriceMinimumUpdated", data)
 	if err != nil {
 		return nil, err
 	}
 
+	// safe check, actually Unpack will parse first 32 bytes as a single value
 	if len(values) != 1 {
 		return nil, fmt.Errorf("unexpected format of values in GasPriceMinimumUpdated event")
 	}
