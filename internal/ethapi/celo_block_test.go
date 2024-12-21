@@ -24,7 +24,7 @@ func Test_parseGasPriceMinimumUpdated(t *testing.T) {
 		},
 		{
 			name:   "should return error if data is not in the expected format",
-			data:   hexutils.HexToBytes("12345"),
+			data:   hexutils.HexToBytes("123456"),
 			result: nil,
 			err:    errors.New("abi: cannot marshal in to go type: length insufficient 3 require 32"),
 		},
