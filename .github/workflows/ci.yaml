@@ -70,8 +70,11 @@ jobs:
 
         - name: Generate check
           # Run go generate and see if anything changed.
+          # We need to use || true because currently we do not install protoc
+          # and protoc-gen-go which are required for genrating some files,
+          # however despite this the non protobuf related types are generated.
           run: |
-            go generate ./...
+            go generate ./... || true
             if [ -n "$(git status --porcelain)" ]; then
               echo "Changes detected after running 'go generate ./...' run generate locally and commit the changes."
               exit 1
