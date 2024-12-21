@@ -57,3 +57,22 @@ jobs:
 
         - name: Lint
           run: make lint
+
+  Generate:
+    steps:
+        - uses: actions/checkout@v4
+
+        - uses: actions/setup-go@v5
+          with:
+            go-version: '1.22'
+            cache: false
+
+        - name: Generate check
+          # Run go generate and see if anything changed.
+          run: |
+            go generate ./...
+            if [ -n "$(git status --porcelain)" ]; then
+              echo "Changes detected after running 'go generate ./...' run generate locally and commit the changes."
+              exit 1
+            fi
+          shell: sh
