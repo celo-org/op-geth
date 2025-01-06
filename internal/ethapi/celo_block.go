@@ -108,7 +108,9 @@ func retrievePreGingerbreadBlockBaseFee(ctx context.Context, backend CeloBackend
 		return nil, nil
 	}
 
-	prevBlock, err := backend.BlockByNumber(ctx, rpc.BlockNumber(height.Uint64()-1))
+	prevHeight := height.Uint64() - 1
+
+	prevBlock, err := backend.BlockByNumber(ctx, rpc.BlockNumber(prevHeight))
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +125,7 @@ func retrievePreGingerbreadBlockBaseFee(ctx context.Context, backend CeloBackend
 
 	numTxs, numReceipts := len(prevBlock.Transactions()), len(prevReceipts)
 	if numReceipts <= numTxs {
-		return nil, fmt.Errorf("receipts of block #%d don't contain system logs", height.Int64())
+		return nil, fmt.Errorf("receipts of block #%d don't contain system logs", prevHeight)
 	}
 
 	systemReceipt := prevReceipts[numTxs]
@@ -140,7 +142,7 @@ func retrievePreGingerbreadBlockBaseFee(ctx context.Context, backend CeloBackend
 		return baseFee, nil
 	}
 
-	return nil, fmt.Errorf("gas price minimum updated event is not included in a receipt of block #%d", height.Int64())
+	return nil, fmt.Errorf("gas price minimum updated event is not included in a receipt of block #%d", prevHeight)
 }
 
 // parseGasPriceMinimumUpdated parses the data of GasPriceMinimumUpdated event
