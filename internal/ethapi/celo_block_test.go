@@ -4,14 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/big"
+	"testing"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/internal/blocktest"
 	"github.com/ethereum/go-ethereum/params"
-	"math/big"
-	"testing"
-
 	"github.com/status-im/keycard-go/hexutils"
 	"github.com/stretchr/testify/assert"
 )
