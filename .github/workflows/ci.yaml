@@ -71,7 +71,7 @@ jobs:
         - name: Generate check
           # Run go generate and see if anything changed.
           # We need to use || true because currently we do not install protoc
-          # and protoc-gen-go which are required for genrating some files,
+          # and protoc-gen-go which are required for generating some files,
           # however despite this the non protobuf related types are generated.
           run: |
             go generate ./... || true
