@@ -8,8 +8,8 @@ const (
 	CeloBaklavaChainID   = 62320
 )
 
+// GasLimits holds the gas limit changes for a given chain
 type GasLimits struct {
-	// changes holds all gas limit changes, it is assumed that the first change ocurrs at block 0.
 	changes []LimitChange
 }
 
@@ -18,6 +18,7 @@ type LimitChange struct {
 	gasLimit uint64
 }
 
+// Limit returns the gas limit at a given block number
 func (g *GasLimits) Limit(block *big.Int) uint64 {
 	// Grab the gas limit at block 0
 	curr := g.changes[0].gasLimit

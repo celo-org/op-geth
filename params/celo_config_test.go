@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TestGasLimits_Limit checks the gas limits at the beginning and end of each limit change of each chain
 func TestGasLimits_Limit(t *testing.T) {
 	subTest := func(t *testing.T, name string, chainId uint64, limits []LimitChange) {
 		t.Run(name, func(t *testing.T) {

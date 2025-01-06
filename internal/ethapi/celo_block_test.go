@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// Test_parseGasPriceMinimumUpdated checks the gas price minimum updated event parsing
 func Test_parseGasPriceMinimumUpdated(t *testing.T) {
 	tests := []struct {
 		name   string

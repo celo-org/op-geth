@@ -46,9 +46,12 @@ func PopulatePreGingerbreadHeaderFields(ctx context.Context, backend CeloBackend
 
 	fields, err := rawdb.ReadPreGingerbreadAdditionalFields(backend.ChainDb(), header.Hash())
 	if fields != nil {
-		// If the record is found, use the values from the record
-		baseFee = fields.BaseFee
-		gasLimit = fields.GasLimit
+		if fields.BaseFee != nil && fields.BaseFee.BitLen() != 0 {
+			baseFee = fields.BaseFee
+		}
+		if fields.GasLimit != nil && fields.GasLimit.BitLen() != 0 {
+			gasLimit = fields.GasLimit
+		}
 	} else {
 		if err != nil {
 			log.Debug("failed to read pre-gingerbread fields", "err", err)
@@ -63,7 +66,7 @@ func PopulatePreGingerbreadHeaderFields(ctx context.Context, backend CeloBackend
 		gasLimit = retrievePreGingerbreadGasLimit(backend, header.Number)
 
 		if baseFee != nil || gasLimit != nil {
-			err = rawdb.WritePreGingerbreadAdditionalFields(backend.ChainDb(), header.Hash(), &rawdb.PreGingerbreadAdditionalFields{
+			err = rawdb.WritePreGingerbreadAdditionalFields(backend.ChainDb(), header.Hash(), &rawdb.PreGingerbreadFields{
 				BaseFee:  baseFee,
 				GasLimit: gasLimit,
 			})

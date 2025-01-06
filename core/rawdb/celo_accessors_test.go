@@ -9,10 +9,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TestPreGingerbreadAdditionalFields tests ReadPreGingerbreadAdditionalFields function
 func TestPreGingerbreadAdditionalFields(t *testing.T) {
 	db := NewMemoryDatabase()
 
-	mockData, err := rlp.EncodeToBytes(&PreGingerbreadAdditionalFields{
+	mockData, err := rlp.EncodeToBytes(&PreGingerbreadFields{
 		BaseFee:  big.NewInt(1000),
 		GasLimit: big.NewInt(2000),
 	})
@@ -27,7 +28,7 @@ func TestPreGingerbreadAdditionalFields(t *testing.T) {
 		name         string
 		seedData     []SeedData
 		hash         common.Hash
-		expectedRes  *PreGingerbreadAdditionalFields
+		expectedRes  *PreGingerbreadFields
 		returnsError bool
 	}{
 		{
@@ -46,7 +47,7 @@ func TestPreGingerbreadAdditionalFields(t *testing.T) {
 				},
 			},
 			hash: common.HexToHash("0x2"),
-			expectedRes: &PreGingerbreadAdditionalFields{
+			expectedRes: &PreGingerbreadFields{
 				BaseFee:  big.NewInt(1000),
 				GasLimit: big.NewInt(2000),
 			},
@@ -89,5 +90,42 @@ func TestPreGingerbreadAdditionalFields(t *testing.T) {
 				assert.NoError(t, err)
 			}
 		})
+	}
+}
+
+// TestWritePreGingerbreadAdditionalFields tests WritePreGingerbreadAdditionalFields function
+func TestWritePreGingerbreadAdditionalFields(t *testing.T) {
+	db := NewMemoryDatabase()
+
+	hash := common.HexToHash("0x1")
+	data := []*PreGingerbreadFields{
+		{
+			BaseFee:  big.NewInt(0),
+			GasLimit: big.NewInt(2000),
+		},
+		{
+			BaseFee:  big.NewInt(3000),
+			GasLimit: big.NewInt(0),
+		},
+		{
+			BaseFee:  big.NewInt(5000),
+			GasLimit: big.NewInt(6000),
+		},
+	}
+
+	// Make sure that the data is not found
+	record0, err := ReadPreGingerbreadAdditionalFields(db, hash)
+	assert.NoError(t, err)
+	assert.Nil(t, record0)
+
+	for _, d := range data {
+		// Write data
+		err := WritePreGingerbreadAdditionalFields(db, hash, d)
+		assert.NoError(t, err)
+
+		// Read data
+		record, err := ReadPreGingerbreadAdditionalFields(db, hash)
+		assert.NoError(t, err)
+		assert.Equal(t, d, record)
 	}
 }
