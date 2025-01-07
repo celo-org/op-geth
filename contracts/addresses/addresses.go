@@ -33,19 +33,31 @@ var (
 	}
 )
 
-// GetAddresses returns the addresses for the given chainID.
+// GetAddresses returns the addresses for the given chainID or
+// nil if not found.
 func GetAddresses(chainID *big.Int) *CeloAddresses {
 	// ChainID can be uninitialized in some tests
 	if chainID == nil {
-		return MainnetAddresses
+		return nil
 	}
-
 	switch chainID.Uint64() {
 	case params.CeloAlfajoresChainID:
 		return AlfajoresAddresses
 	case params.CeloBaklavaChainID:
 		return BaklavaAddresses
-	default:
+	case params.CeloMainnetChainID:
 		return MainnetAddresses
+	default:
+		return nil
 	}
+}
+
+// GetAddressesOrDefault returns the addresses for the given chainID or
+// the Mainnet addresses if none are found.
+func GetAddressesOrDefault(chainID *big.Int, defaultValue *CeloAddresses) *CeloAddresses {
+	addresses := GetAddresses(chainID)
+	if addresses == nil {
+		return defaultValue
+	}
+	return addresses
 }
