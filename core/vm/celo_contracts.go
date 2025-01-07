@@ -47,7 +47,7 @@ func celoPrecompileAddress(index byte) common.Address {
 }
 
 func (ctx *celoPrecompileContext) IsCallerCeloToken() (bool, error) {
-	tokenAddress := addresses.GetAddresses(ctx.evm.ChainConfig().ChainID).CeloToken
+	tokenAddress := addresses.GetAddressesOrDefault(ctx.evm.ChainConfig().ChainID, addresses.MainnetAddresses).CeloToken
 
 	return tokenAddress == ctx.caller, nil
 }
