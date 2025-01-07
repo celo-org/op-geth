@@ -717,7 +717,7 @@ func (st *stateTransition) innerExecute() (*ExecutionResult, error) {
 			}
 			// In celo we send the base fee to the fee handler
 			if rules.IsCel2 {
-				feeHandlerAddress := addresses.GetAddresses(st.evm.ChainConfig().ChainID).FeeHandler
+				feeHandlerAddress := addresses.GetAddressesOrDefault(st.evm.ChainConfig().ChainID, addresses.MainnetAddresses).FeeHandler
 				st.state.AddBalance(feeHandlerAddress, amtU256, tracing.BalanceIncreaseRewardTransactionFee)
 			} else if st.evm.ChainConfig().Optimism != nil {
 				st.state.AddBalance(params.OptimismBaseFeeRecipient, amtU256, tracing.BalanceIncreaseRewardTransactionFee)
@@ -744,7 +744,7 @@ func (st *stateTransition) innerExecute() (*ExecutionResult, error) {
 		// No need to do effectiveTip calculation, because st.gasPrice == effectiveGasPrice, and effectiveTip = effectiveGasPrice - baseTxFee
 		tipTxFee := new(big.Int).Sub(totalTxFee, baseTxFee)
 		from := st.msg.From
-		feeHandlerAddress := addresses.GetAddresses(st.evm.ChainConfig().ChainID).FeeHandler
+		feeHandlerAddress := addresses.GetAddressesOrDefault(st.evm.ChainConfig().ChainID, addresses.MainnetAddresses).FeeHandler
 
 		log.Trace("distributeTxFees", "from", from, "refund", refund, "feeCurrency", feeCurrency,
 			"coinbaseFeeRecipient", st.evm.Context.Coinbase, "coinbaseFee", tipTxFee,
