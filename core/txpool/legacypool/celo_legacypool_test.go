@@ -136,7 +136,8 @@ func TestAboveBaseFeeFloorValidityCheck(t *testing.T) {
 	pool, key := setupCeloPoolWithConfig(chainConfig)
 	defer pool.Close()
 
-	// gas-price just at base-fee-floor should be valid
+	// gas-price just at base-fee-floor should be valid,
+	// this also adds the required min-tip of 1
 	tx := pricedCip64Transaction(chainConfig, 0, 21000, big.NewInt(101), big.NewInt(1), nil, key)
 	assert.NoError(t, pool.addRemote(tx))
 	// also test with fee currency conversion, increase nonce because of previous tx was valid
@@ -144,4 +145,67 @@ func TestAboveBaseFeeFloorValidityCheck(t *testing.T) {
 	assert.NoError(t, pool.addRemote(tx))
 	tx = pricedCip64Transaction(chainConfig, 2, 21000+feeCurrencyIntrinsicGas, big.NewInt(51), big.NewInt(1), &feeCurrencyTwo, key)
 	assert.NoError(t, pool.addRemote(tx))
+}
+
+func TestBelowMinTipValidityCheck(t *testing.T) {
+	t.Parallel()
+
+	baseFeeFloor := 100
+	chainConfig := celoConfig(uint64(baseFeeFloor))
+	pool, key := setupCeloPoolWithConfig(chainConfig)
+	defer pool.Close()
+
+	// the min-tip is set to 1 per default
+
+	// Gas-price just at base-fee-floor should be valid,
+	// the effective gas-price would also pass the min-tip restriction of 1.
+	// However the explicit gas-tip-cap at 0 should reject the transaction.
+	tx := pricedCip64Transaction(chainConfig, 0, 21000, big.NewInt(101), big.NewInt(0), nil, key)
+	if err, want := pool.addRemote(tx), txpool.ErrUnderpriced; !errors.Is(err, want) {
+		t.Errorf("want %v have %v", want, err)
+	}
+	tx = pricedCip64Transaction(chainConfig, 0, 21000+feeCurrencyIntrinsicGas, big.NewInt(202), big.NewInt(0), &feeCurrencyOne, key)
+	if err, want := pool.addRemote(tx), txpool.ErrUnderpriced; !errors.Is(err, want) {
+		t.Errorf("want %v have %v", want, err)
+	}
+
+	// This passes the check that only checks the actual gas-tip-cap value for the min-tip that was
+	// tested above.
+	// Now the effective gas-tip is still be below the tip, since we consume everything
+	// for the base fee floor and thus the tx should get rejected.
+	tx = pricedCip64Transaction(chainConfig, 0, 21000, big.NewInt(100), big.NewInt(1), nil, key)
+	if err, want := pool.addRemote(tx), txpool.ErrUnderpriced; !errors.Is(err, want) {
+		t.Errorf("want %v have %v", want, err)
+	}
+	tx = pricedCip64Transaction(chainConfig, 0, 21000+feeCurrencyIntrinsicGas, big.NewInt(200), big.NewInt(2), &feeCurrencyOne, key)
+	if err, want := pool.addRemote(tx), txpool.ErrUnderpriced; !errors.Is(err, want) {
+		t.Errorf("want %v have %v", want, err)
+	}
+}
+
+func TestExpectMinTipRoundingFeeCurrency(t *testing.T) {
+	t.Parallel()
+
+	baseFeeFloor := 100
+	chainConfig := celoConfig(uint64(baseFeeFloor))
+	pool, key := setupCeloPoolWithConfig(chainConfig)
+	defer pool.Close()
+
+	// the min-tip is set to 1 per default
+
+	// even though the gas-tip-cap as well as the effective gas tip at the base-fee-floor
+	// is 0, the transaction is still accepted.
+	// This is because at a min-tip requirement of 1, a more valuable currency than native
+	// token will get rounded down to a min-tip of 0 during conversion.
+	tx := pricedCip64Transaction(chainConfig, 0, 21000+feeCurrencyIntrinsicGas, big.NewInt(50), big.NewInt(0), &feeCurrencyTwo, key)
+	assert.NoError(t, pool.addRemote(tx))
+
+	// set the required min-tip to 10
+	pool.SetGasTip(big.NewInt(10))
+
+	// but as soon as we increase the min-tip, the check rejects a gas-tip-cap that is too low after conversion
+	tx = pricedCip64Transaction(chainConfig, 0, 21000+feeCurrencyIntrinsicGas, big.NewInt(100), big.NewInt(4), &feeCurrencyTwo, key)
+	if err, want := pool.addRemote(tx), txpool.ErrUnderpriced; !errors.Is(err, want) {
+		t.Errorf("want %v have %v", want, err)
+	}
 }
