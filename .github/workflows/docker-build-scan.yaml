@@ -27,7 +27,8 @@ jobs:
       - name: Build and push container
         uses: celo-org/reusable-workflows/.github/actions/build-container@v2.0.5
         with:
-          platforms: ${{ startsWith(github.ref, 'refs/heads/celo') && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
+          # platforms: ${{ startsWith(github.ref, 'refs/heads/celo') && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
+          platforms: linux/amd64,linux/arm64
           registry: us-west1-docker.pkg.dev/blockchaintestsglobaltestnet/dev-images/op-geth
           tags: ${{ github.sha }}
           context: .
@@ -52,7 +53,8 @@ jobs:
       - name: Build and push container
         uses: celo-org/reusable-workflows/.github/actions/build-container@v2.0.5
         with:
-          platforms: ${{ startsWith(github.ref, 'refs/heads/celo') && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
+          # platforms: ${{ startsWith(github.ref, 'refs/heads/celo') && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
+          platforms: linux/amd64,linux/arm64
           registry: us-west1-docker.pkg.dev/blockchaintestsglobaltestnet/dev-images/op-geth-bootnode
           tags: ${{ github.sha }}
           context: .
