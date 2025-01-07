@@ -4,7 +4,7 @@ ARG VERSION=""
 ARG BUILDNUM=""
 
 # Build Geth bootnode in a stock Go builder container
-FROM golang:1.22-alpine AS builder
+FROM docker.io/library/golang:1.22-alpine@sha256:58a82e883f0d11f52204d2baa58a62dc565c409105773526340f678c9dc2558f AS builder
 
 RUN apk add --no-cache gcc musl-dev linux-headers git
 
