@@ -46,7 +46,7 @@ func NewContext(caller common.Address, evm *EVM) *celoPrecompileContext {
 }
 
 func (ctx *celoPrecompileContext) IsCallerCeloToken() (bool, error) {
-	tokenAddress := addresses.GetAddresses(ctx.evm.ChainConfig().ChainID).CeloToken
+	tokenAddress := addresses.GetAddressesOrDefault(ctx.evm.ChainConfig().ChainID, addresses.MainnetAddresses).CeloToken
 
 	return tokenAddress == ctx.caller, nil
 }
