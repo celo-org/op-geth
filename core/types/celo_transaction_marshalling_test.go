@@ -49,9 +49,18 @@ func TestCeloTransactionMarshalUnmarshal(t *testing.T) {
 			NewEIP155Signer(chainId),
 		)
 
-		feeCurrencyAddress  = common.HexToAddress("0x2F25deB3848C207fc8E0c34035B3Ba7fC157602B")
-		toAddress           = common.HexToAddress("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045")
+		nonce               = uint64(10)
+		gasPrice            = big.NewInt(1e5)
+		gas                 = uint64(1e6)
+		feeCurrency         = common.HexToAddress("0x2F25deB3848C207fc8E0c34035B3Ba7fC157602B")
+		maxFeeInFeeCurrency = big.NewInt(1e6)
+		gatewayFee          = big.NewInt(1e7)
 		gatewayFeeRecipient = common.HexToAddress("0x471EcE3750Da237f93B8E339c536989b8978a438")
+		to                  = common.HexToAddress("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045")
+		value               = big.NewInt(1e8)
+		data                = []byte{0x12, 0x34, 0x56, 0x78}
+		gasTipCap           = big.NewInt(1)
+		gasFeeCap           = big.NewInt(1e9)
 		accessListAddress   = common.HexToAddress("0xdAC17F958D2ee523a2206206994597C13D831ec7")
 		storageKey          = common.HexToHash("0x2ab2bf4c5cabc3000e2502e33470a863db2755809d7561237424a0eb373154c2")
 	)
@@ -67,29 +76,29 @@ func TestCeloTransactionMarshalUnmarshal(t *testing.T) {
 			txType:   "Ethereum LegacyTx",
 			isCeloTx: false,
 			tx: MustSignNewTx(key, signer, &LegacyTx{
-				Nonce:      10,
-				Gas:        1e6,
-				GasPrice:   big.NewInt(1e7),
-				To:         &toAddress,
-				Value:      big.NewInt(1e8),
-				Data:       []byte{0x11, 0x22, 0x33, 0x44},
+				Nonce:      nonce,
+				Gas:        gas,
+				GasPrice:   gasPrice,
+				To:         &to,
+				Value:      value,
+				Data:       data,
 				CeloLegacy: false,
 			}),
 			json: `{
 				"type": "0x0",
 				"chainId": "0xa4ec",
 				"nonce": "0xa",
-				"to": "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
+				"gasPrice": "0x186a0",
 				"gas": "0xf4240",
-				"gasPrice": "0x989680",
 				"maxPriorityFeePerGas": null,
 				"maxFeePerGas": null,
+				"to": "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
 				"value": "0x5f5e100",
-				"input": "0x11223344",
-				"v": "0x149fc",
-				"r": "0x444416344542ecfd5824c0173395cca148cfa58cf7572d81196314ad4f5bf1f1",
-				"s": "0x23f6fd845489499c1170c8d0bd745f9fd3b99c2f4c979891b94e6764a03dcef0",
-				"hash": "0xf0051b6799141b669b18cf456ffb3509e089c00544878e74769819b345f00866"
+				"input": "0x12345678",
+				"v": "0x149fb",
+				"r": "0xdfa5f33872c59990dbbe5474e164492f8581d35e73cd8fc04aa6a90c68db8edd",
+				"s": "0x649e6ce1d912fec1df4db2433cad338b1426db45a8d4f17735ceb032fc889b91",
+				"hash": "0xd03cc6400e90416de0301727b1d9113426a732c880b379fad51738df8ce1db76"
 			}`,
 			requiredFields: []string{"nonce", "gas", "gasPrice", "value", "input", "v", "r", "s"},
 		},
@@ -97,36 +106,36 @@ func TestCeloTransactionMarshalUnmarshal(t *testing.T) {
 			txType:   "Celo LegacyTx",
 			isCeloTx: true,
 			tx: MustSignNewTx(key, signer, &LegacyTx{
-				Nonce:               10,
-				Gas:                 1e6,
-				GasPrice:            big.NewInt(1e7),
-				FeeCurrency:         &feeCurrencyAddress,
+				Nonce:               nonce,
+				GasPrice:            gasPrice,
+				Gas:                 gas,
+				FeeCurrency:         &feeCurrency,
 				GatewayFeeRecipient: &gatewayFeeRecipient,
-				GatewayFee:          big.NewInt(1e7),
-				To:                  &toAddress,
-				Value:               big.NewInt(1e8),
-				Data:                []byte{0x11, 0x22, 0x33, 0x44},
+				GatewayFee:          gatewayFee,
+				To:                  &to,
+				Value:               value,
+				Data:                data,
 				CeloLegacy:          true,
 			}),
 			json: `{
 				"type": "0x0",
 				"chainId": "0xa4ec",
 				"nonce": "0xa",
-				"to": "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
+				"gasPrice": "0x186a0",
 				"gas": "0xf4240",
-				"gasPrice": "0x989680",
 				"maxPriorityFeePerGas": null,
 				"maxFeePerGas": null,
-				"value": "0x5f5e100",
-				"input": "0x11223344",
-				"v": "0x149fb",
-				"r": "0x8ce12cd818c57c73354a1d18b5075bed356170f615246a5e4f7ac3a6a6c2d4c8",
-				"s": "0x64ab56cbf08dd6cf742f083084ed66167fc110192ee3365555e643f102b5cec7",
-				"hash": "0xfa30135c37ab29654ed0f75c07d6ba75cbb5d6739ab3249731ae80f80237bd5a",
 				"feeCurrency": "0x2f25deb3848c207fc8e0c34035b3ba7fc157602b",
-				"ethCompatible": false,
+				"gatewayFeeRecipient": "0x471ece3750da237f93b8e339c536989b8978a438",
 				"gatewayFee": "0x989680",
-				"gatewayFeeRecipient": "0x471ece3750da237f93b8e339c536989b8978a438"
+				"to": "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
+				"value": "0x5f5e100",
+				"input": "0x12345678",
+				"v": "0x149fb",
+				"r": "0x7114020891fdc29e8f661593aaac8e732eb81600a305f8cbb2cc16a7c8e74344",
+				"s": "0x5ac556fc86adc0ae139d15d030d708e0d01bc3070a4555b18de911b76ec39766",
+				"hash": "0x98d9e286c319b9e349eef956d81e2377ab73bb603f21b950d0a78db638f1008e",
+				"ethCompatible": false
 			}`,
 			requiredFields: []string{"nonce", "gas", "gasPrice", "value", "input", "v", "r", "s"},
 		},
@@ -135,16 +144,16 @@ func TestCeloTransactionMarshalUnmarshal(t *testing.T) {
 			isCeloTx: true,
 			tx: MustSignNewTx(key, signer, &CeloDynamicFeeTx{
 				ChainID:             chainId,
-				Nonce:               10,
-				GasTipCap:           big.NewInt(1),
-				GasFeeCap:           big.NewInt(5e9),
-				Gas:                 500000,
-				FeeCurrency:         &feeCurrencyAddress,
+				Nonce:               nonce,
+				GasTipCap:           gasTipCap,
+				GasFeeCap:           gasFeeCap,
+				Gas:                 gas,
+				FeeCurrency:         &feeCurrency,
 				GatewayFeeRecipient: &gatewayFeeRecipient,
-				GatewayFee:          big.NewInt(1e7),
-				To:                  &toAddress,
-				Value:               big.NewInt(1e8),
-				Data:                []byte{0x11, 0x22, 0x33, 0x44},
+				GatewayFee:          gatewayFee,
+				To:                  &to,
+				Value:               value,
+				Data:                data,
 				AccessList: AccessList{
 					{
 						Address: accessListAddress,
@@ -158,13 +167,16 @@ func TestCeloTransactionMarshalUnmarshal(t *testing.T) {
 				"type": "0x7c",
 				"chainId": "0xa4ec",
 				"nonce": "0xa",
-				"to": "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
-				"gas": "0x7a120",
-				"gasPrice": null,
 				"maxPriorityFeePerGas": "0x1",
-				"maxFeePerGas": "0x12a05f200",
+				"maxFeePerGas": "0x3b9aca00",
+				"gasPrice": null,
+				"gas": "0xf4240",
+				"feeCurrency": "0x2f25deb3848c207fc8e0c34035b3ba7fc157602b",
+				"gatewayFeeRecipient": "0x471ece3750da237f93b8e339c536989b8978a438",
+				"gatewayFee": "0x989680",
+				"to": "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
 				"value": "0x5f5e100",
-				"input": "0x11223344",
+				"input": "0x12345678",
 				"accessList": [
 					{
 						"address": "0xdac17f958d2ee523a2206206994597c13d831ec7",
@@ -172,14 +184,11 @@ func TestCeloTransactionMarshalUnmarshal(t *testing.T) {
 							"0x2ab2bf4c5cabc3000e2502e33470a863db2755809d7561237424a0eb373154c2"
 						]
 					}
-		      ],
-				"v": "0x0",
-				"r": "0xe5c3c7490d804f15ab18a2c864eecd824cde653593c3e2bd1898d09bf0d59a51",
-				"s": "0x2c49f096c89f45dc0e0b24b7ce6e9b2b9cf13e7ab331e2e09c496080b4a6af2e",
-				"hash": "0x9a24ac05fb511923a40babf2826ff78ca71214f6315ef53476e7d3fd2aa51d18",
-				"feeCurrency": "0x2f25deb3848c207fc8e0c34035b3ba7fc157602b",
-				"gatewayFee": "0x989680",
-				"gatewayFeeRecipient": "0x471ece3750da237f93b8e339c536989b8978a438"
+				],
+				"v": "0x1",
+				"r": "0x59156829e96e9bcac82a15e74dd9488adc24d86aee847943c6938bf4c7c5f8b2",
+				"s": "0x14f49fe32fdae94ec24d275b36ff75b97ab34b4270c4074814042d50504f4c74",
+				"hash": "0x36610786a28d7ae3b5e4d07210b3f287e0fa78aec4093bd1532ec9780ed260be"
 			}`,
 			requiredFields: []string{"chainId", "nonce", "gas", "maxPriorityFeePerGas", "maxFeePerGas", "value", "input", "v", "r", "s"},
 		},
@@ -187,15 +196,14 @@ func TestCeloTransactionMarshalUnmarshal(t *testing.T) {
 			txType:   "CeloDynamicFeeTxV2",
 			isCeloTx: true,
 			tx: MustSignNewTx(key, signer, &CeloDynamicFeeTxV2{
-				ChainID:     chainId,
-				Nonce:       10,
-				GasTipCap:   big.NewInt(1),
-				GasFeeCap:   big.NewInt(5e9),
-				Gas:         500000,
-				FeeCurrency: &feeCurrencyAddress,
-				To:          &toAddress,
-				Value:       big.NewInt(1e8),
-				Data:        []byte{0x11, 0x22, 0x33, 0x44},
+				ChainID:   chainId,
+				Nonce:     nonce,
+				GasTipCap: gasTipCap,
+				GasFeeCap: gasFeeCap,
+				Gas:       gas,
+				To:        &to,
+				Value:     value,
+				Data:      data,
 				AccessList: AccessList{
 					{
 						Address: accessListAddress,
@@ -204,18 +212,19 @@ func TestCeloTransactionMarshalUnmarshal(t *testing.T) {
 						},
 					},
 				},
+				FeeCurrency: &feeCurrency,
 			}),
 			json: `{
 				"type": "0x7b",
 				"chainId": "0xa4ec",
 				"nonce": "0xa",
-				"to": "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
-				"gas": "0x7a120",
-				"gasPrice": null,
 				"maxPriorityFeePerGas": "0x1",
-				"maxFeePerGas": "0x12a05f200",
+				"maxFeePerGas": "0x3b9aca00",
+				"gasPrice": null,
+				"gas": "0xf4240",
+				"to": "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
 				"value": "0x5f5e100",
-				"input": "0x11223344",
+				"input": "0x12345678",
 				"accessList": [
 					{
 						"address": "0xdac17f958d2ee523a2206206994597c13d831ec7",
@@ -223,12 +232,12 @@ func TestCeloTransactionMarshalUnmarshal(t *testing.T) {
 							"0x2ab2bf4c5cabc3000e2502e33470a863db2755809d7561237424a0eb373154c2"
 						]
 					}
-		       ],
-				"v": "0x0",
-				"r": "0xd0caa0257ad5e276c4164cc7cf033e95db5dc6f8c880c8b94aa132efd2378597",
-				"s": "0x63f213eb18899c862f1f9b84033f940bbc88de28f9af7a7c50b39e36896d1f51",
-				"hash": "0x8710502f18e464a4e44d6d660127c6173e1ba70ca5684e09d736d3b5e9e63e16",
-				"feeCurrency": "0x2f25deb3848c207fc8e0c34035b3ba7fc157602b"
+				],
+				"feeCurrency": "0x2f25deb3848c207fc8e0c34035b3ba7fc157602b",
+				"v": "0x1",
+				"r": "0x605b2b9125a17c346f4569382cb127695e92ebdeedbcf249ec86e98feb6da04",
+				"s": "0xd98bff12452ccf6268d63ead95bafa45d67020a9a35bce504ac68dbc1a49812",
+				"hash": "0x9d668d91172a442c72509003235c386d7a0b2bd29da4411271f8f58231d33611"
 			}`,
 			requiredFields: []string{"chainId", "nonce", "gas", "maxPriorityFeePerGas", "maxFeePerGas", "value", "input", "v", "r", "s"},
 		},
@@ -237,16 +246,14 @@ func TestCeloTransactionMarshalUnmarshal(t *testing.T) {
 			isCeloTx: true,
 			// Skip signing due to unsupported transaction type
 			tx: NewTx(&CeloDenominatedTx{
-				ChainID:             chainId,
-				Nonce:               10,
-				GasTipCap:           big.NewInt(1),
-				GasFeeCap:           big.NewInt(5e9),
-				Gas:                 500000,
-				FeeCurrency:         &feeCurrencyAddress,
-				MaxFeeInFeeCurrency: big.NewInt(1e8),
-				To:                  &toAddress,
-				Value:               big.NewInt(1e8),
-				Data:                []byte{0x11, 0x22, 0x33, 0x44},
+				ChainID:   chainId,
+				Nonce:     nonce,
+				GasTipCap: gasTipCap,
+				GasFeeCap: gasFeeCap,
+				Gas:       gas,
+				To:        &to,
+				Value:     value,
+				Data:      data,
 				AccessList: AccessList{
 					{
 						Address: accessListAddress,
@@ -255,19 +262,20 @@ func TestCeloTransactionMarshalUnmarshal(t *testing.T) {
 						},
 					},
 				},
+				FeeCurrency:         &feeCurrency,
+				MaxFeeInFeeCurrency: maxFeeInFeeCurrency,
 			}),
 			json: `{
 				"type": "0x7a",
 				"chainId": "0xa4ec",
 				"nonce": "0xa",
-				"to": "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
-				"gas": "0x7a120",
-				"gasPrice": null,
 				"maxPriorityFeePerGas": "0x1",
-				"maxFeePerGas": "0x12a05f200",
-				"maxFeeInFeeCurrency": "0x5f5e100",
+				"maxFeePerGas": "0x3b9aca00",
+				"gasPrice": null,
+				"gas": "0xf4240",
+				"to": "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
 				"value": "0x5f5e100",
-				"input": "0x11223344",
+				"input": "0x12345678",
 				"accessList": [
 					{
 						"address": "0xdac17f958d2ee523a2206206994597c13d831ec7",
@@ -275,12 +283,13 @@ func TestCeloTransactionMarshalUnmarshal(t *testing.T) {
 							"0x2ab2bf4c5cabc3000e2502e33470a863db2755809d7561237424a0eb373154c2"
 						]
 					}
-		       ],
+				],
+				"feeCurrency": "0x2f25deb3848c207fc8e0c34035b3ba7fc157602b",
+				"maxFeeInFeeCurrency": "0xf4240",
 				"v": "0x0",
 				"r": "0x0",
 				"s": "0x0",
-				"hash": "0x4812438d07f69839658264fd6bf9022ceb97e87f71ac7ebc56a463f550a8c065",
-				"feeCurrency": "0x2f25deb3848c207fc8e0c34035b3ba7fc157602b"
+				"hash": "0xefdbf85d98faa0f9e00c1060a0b27d12cca785ea5977367ec1187637c3005bf1"
 			}`,
 			requiredFields: []string{"chainId", "nonce", "gas", "maxPriorityFeePerGas", "maxFeePerGas", "value", "input", "v", "r", "s"},
 		},
