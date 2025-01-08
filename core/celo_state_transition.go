@@ -94,7 +94,7 @@ func (st *StateTransition) distributeTxFees() error {
 	tipTxFee := new(big.Int).Sub(totalTxFee, baseTxFee)
 
 	feeCurrency := st.msg.FeeCurrency
-	feeHandlerAddress := addresses.GetAddresses(st.evm.ChainConfig().ChainID).FeeHandler
+	feeHandlerAddress := addresses.GetAddressesOrDefault(st.evm.ChainConfig().ChainID, addresses.MainnetAddresses).FeeHandler
 
 	log.Trace("distributeTxFees", "from", from, "refund", refund, "feeCurrency", feeCurrency,
 		"coinbaseFeeRecipient", st.evm.Context.Coinbase, "coinbaseFee", tipTxFee,
