@@ -167,7 +167,7 @@ func TestBelowMinTipValidityCheck(t *testing.T) {
 
 	// This passes the check that only checks the actual gas-tip-cap value for the min-tip that was
 	// tested above.
-	// Now the effective gas-tip is still be below the tip, since we consume everything
+	// Now the effective gas-tip should still be below the min-tip, since we consume everything
 	// for the base fee floor and thus the tx should get rejected.
 	tx = pricedCip64Transaction(defaultChainConfig, 0, 21000, big.NewInt(100), big.NewInt(1), nil, key)
 	if err, want := pool.addRemote(tx), txpool.ErrUnderpriced; !errors.Is(err, want) {
