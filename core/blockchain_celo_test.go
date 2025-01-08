@@ -67,7 +67,7 @@ func testNativeTransferWithFeeCurrency(t *testing.T, scheme string, feeCurrencyA
 		funds   = DevBalance
 		gspec   = &Genesis{
 			Config: &config,
-			Alloc:  celoGenesisAccounts(addr1),
+			Alloc:  CeloGenesisAccounts(addr1),
 		}
 	)
 	gspec.Config.Cel2Time = uint64ptr(0)
