@@ -23,6 +23,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/exchange"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -156,8 +157,12 @@ func ValidateTransaction(tx *types.Transaction, head *types.Header, signer types
 		return fmt.Errorf("%w: gas %v, minimum needed %v", core.ErrIntrinsicGas, tx.Gas(), intrGas)
 	}
 	// Ensure the gasprice is high enough to cover the requirement of the calling pool
-	if tx.GasTipCapIntCmp(opts.MinTip) < 0 {
-		return fmt.Errorf("%w: gas tip cap %v, minimum needed %v", ErrUnderpriced, tx.GasTipCap(), opts.MinTip)
+	minTip, err := exchange.ConvertCeloToCurrency(currencyCtx.ExchangeRates, tx.FeeCurrency(), opts.MinTip)
+	if err != nil {
+		return err
+	}
+	if tx.GasTipCapIntCmp(minTip) < 0 {
+		return fmt.Errorf("%w: feeCurrency %v, gas tip cap %v, minimum needed %v", ErrUnderpriced, tx.FeeCurrency(), tx.GasTipCap(), minTip)
 	}
 	if tx.Type() == types.BlobTxType {
 		// Ensure the blob fee cap satisfies the minimum blob gas price
