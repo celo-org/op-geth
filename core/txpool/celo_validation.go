@@ -1,12 +1,21 @@
 package txpool
 
 import (
+	"errors"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/exchange"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
+)
+
+var (
+
+	// ErrGasPriceDoesNotExceedBaseFeeFloor is returned if the gas price specified is
+	// lower than the configured base-fee-floor
+	ErrGasPriceDoesNotExceedBaseFeeFloor = errors.New("gas-price is less than the base-fee-floor")
+	ErrMinimumEffectiveGasTipBelowMinTip = errors.New("effective gas tip at base-fee-floor is below threshold")
 )
 
 // AcceptSet is a set of accepted transaction types for a transaction subpool.
@@ -52,9 +61,42 @@ func CeloValidateTransaction(tx *types.Transaction, head *types.Header,
 	if err := ValidateTransaction(tx, head, signer, opts, currencyCtx); err != nil {
 		return err
 	}
+
 	if !common.IsCurrencyAllowed(currencyCtx.ExchangeRates, tx.FeeCurrency()) {
 		return exchange.ErrUnregisteredFeeCurrency
 	}
 
+	if opts.Config.Celo != nil {
+		// Make sure that the effective gas tip at the base fee floor is at least the
+		// requested min-tip.
+		// The min-tip for local transactions is set to 0, we can skip checking here.
+		if opts.MinTip != nil && opts.MinTip.Cmp(new(big.Int)) > 0 {
+			// If not, this would never be included, so we can reject early.
+			minTip, err := exchange.ConvertCeloToCurrency(currencyCtx.ExchangeRates, tx.FeeCurrency(), opts.MinTip)
+			if err != nil {
+				return err
+			}
+			baseFeeFloor, err := exchange.ConvertCeloToCurrency(currencyCtx.ExchangeRates, tx.FeeCurrency(), new(big.Int).SetUint64(opts.Config.Celo.EIP1559BaseFeeFloor))
+			if err != nil {
+				return err
+			}
+			if tx.EffectiveGasTipIntCmp(minTip, baseFeeFloor) < 0 {
+				return ErrUnderpriced
+			}
+		}
+
+		celoGasPrice, err := exchange.ConvertCurrencyToCelo(
+			currencyCtx.ExchangeRates,
+			tx.FeeCurrency(),
+			tx.GasFeeCap(),
+		)
+		if err != nil {
+			return err
+		}
+
+		if new(big.Int).SetUint64(opts.Config.Celo.EIP1559BaseFeeFloor).Cmp(celoGasPrice) == 1 {
+			return ErrGasPriceDoesNotExceedBaseFeeFloor
+		}
+	}
 	return nil
 }
