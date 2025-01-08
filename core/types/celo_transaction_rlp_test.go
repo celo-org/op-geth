@@ -26,6 +26,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestCeloTransactionRLPEncodingDecoding tests the RLP encoding and decoding of Celo transactions
@@ -57,7 +58,7 @@ func TestCeloTransactionRLPEncodingDecoding(t *testing.T) {
 		t.Helper()
 
 		data, err := rlp.EncodeToBytes(value)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		return data
 	}
@@ -264,7 +265,7 @@ func TestCeloTransactionRLPEncodingDecoding(t *testing.T) {
 		var buf bytes.Buffer
 
 		err := tx.EncodeRLP(&buf)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		assert.Equal(t, expectedByte, buf.Bytes())
 	}
@@ -273,8 +274,8 @@ func TestCeloTransactionRLPEncodingDecoding(t *testing.T) {
 		t.Helper()
 
 		data, err := tx.MarshalBinary()
+		require.NoError(t, err)
 
-		assert.NoError(t, err)
 		assert.Equal(t, expectedByte, data)
 	}
 
@@ -283,8 +284,8 @@ func TestCeloTransactionRLPEncodingDecoding(t *testing.T) {
 
 		tx := new(Transaction)
 		err := rlp.DecodeBytes(bytes, tx)
+		require.NoError(t, err)
 
-		assert.NoError(t, err)
 		assert.Equal(t, expectedTx.inner, tx.inner)
 	}
 
@@ -293,8 +294,8 @@ func TestCeloTransactionRLPEncodingDecoding(t *testing.T) {
 
 		tx := new(Transaction)
 		err := tx.UnmarshalBinary(bytes)
+		require.NoError(t, err)
 
-		assert.NoError(t, err)
 		assert.Equal(t, expectedTx.inner, tx.inner)
 	}
 

@@ -26,6 +26,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestCeloTransactionMarshalUnmarshal tests that each Celo transactions marshal and unmarshal correctly
@@ -300,10 +301,10 @@ func TestCeloTransactionMarshalUnmarshal(t *testing.T) {
 		t.Helper()
 
 		txJsonOuter, err := json.Marshal(tx)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		txJsonInner, isCeloTx, err := celoTransactionMarshal(tx)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		assert.Equal(t, isCeloTxType, isCeloTx)
 
@@ -324,7 +325,7 @@ func TestCeloTransactionMarshalUnmarshal(t *testing.T) {
 		tx := new(Transaction)
 
 		err := json.Unmarshal([]byte(jsonData), tx)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		// Reassign the signature values because *hexutil.Big decodes "0x0" as nil for the `abs` field.
 		// This causes a mismatch with `big.NewInt(0)`
@@ -347,12 +348,12 @@ func TestCeloTransactionMarshalUnmarshal(t *testing.T) {
 			// Create a copy of the JSON data and remove one of the required fields
 			var jsonMap map[string]interface{}
 			err := json.Unmarshal([]byte(jsonData), &jsonMap)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			delete(jsonMap, field)
 
 			newJsonData, err := json.Marshal(jsonMap)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			// Attempt to unmarshal the JSON data
 			tx := new(Transaction)
