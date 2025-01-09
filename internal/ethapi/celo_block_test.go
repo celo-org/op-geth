@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/status-im/keycard-go/hexutils"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // encodeGasPriceMinimumUpdatedEventBody encodes the given gas price minimum value into 32 bytes event data
@@ -32,12 +33,12 @@ func TestPopulatePreGingerbreadHeaderFields(t *testing.T) {
 	gingerBreadBeginsAt := big.NewInt(10e5)
 
 	tests := []struct {
-		name           string
-		beforeDbData   *rawdb.PreGingerbreadFields // data to be stored in the database before the test
-		afterDbData    *rawdb.PreGingerbreadFields // data to be stored in the database after the test
-		backendBaseFee *big.Int
-		header         *types.Header
-		expected       *types.Header
+		name            string
+		beforeDbBaseFee *big.Int // BaseFee to be stored in the database before the test
+		afterDbBaseFee  *big.Int // BaseFee to be stored in the database after the test
+		backendBaseFee  *big.Int
+		header          *types.Header
+		expected        *types.Header
 	}{
 		{
 			name: "should return the same header for post-gingerbread header",
@@ -53,66 +54,23 @@ func TestPopulatePreGingerbreadHeaderFields(t *testing.T) {
 			},
 		},
 		{
-			name: "should return the header with baseFee and gasLimit retrieved from the database",
-			beforeDbData: &rawdb.PreGingerbreadFields{
-				BaseFee:  big.NewInt(10e4),
-				GasLimit: big.NewInt(10e5),
-			},
-			afterDbData: &rawdb.PreGingerbreadFields{
-				BaseFee:  big.NewInt(10e4),
-				GasLimit: big.NewInt(10e5),
-			},
+			name:            "should return the header with baseFee and gasLimit retrieved from the database",
+			beforeDbBaseFee: big.NewInt(10e4),
+			afterDbBaseFee:  big.NewInt(10e4),
 			header: &types.Header{
 				Number: big.NewInt(10e3),
 			},
 			expected: &types.Header{
 				Number:   big.NewInt(10e3),
 				BaseFee:  big.NewInt(10e4),
-				GasLimit: 10e5,
+				GasLimit: 1e7,
 			},
 		},
 		{
-			name: "should return the header with only baseFee retrieved from the database",
-			beforeDbData: &rawdb.PreGingerbreadFields{
-				BaseFee: big.NewInt(10e6),
-			},
-			afterDbData: &rawdb.PreGingerbreadFields{
-				BaseFee:  big.NewInt(10e6),
-				GasLimit: big.NewInt(0),
-			},
-			header: &types.Header{
-				Number: big.NewInt(10e3),
-			},
-			expected: &types.Header{
-				Number:  big.NewInt(10e3),
-				BaseFee: big.NewInt(10e6),
-			},
-		},
-		{
-			name: "should return the header with only gasLimit retrieved from the database",
-			beforeDbData: &rawdb.PreGingerbreadFields{
-				GasLimit: big.NewInt(10e7),
-			},
-			afterDbData: &rawdb.PreGingerbreadFields{
-				BaseFee:  big.NewInt(0),
-				GasLimit: big.NewInt(10e7),
-			},
-			header: &types.Header{
-				Number: big.NewInt(10e3),
-			},
-			expected: &types.Header{
-				Number:   big.NewInt(10e3),
-				GasLimit: 10e7,
-			},
-		},
-		{
-			name:         "should return the header with baseFee and gasLimit retrieved from the backend",
-			beforeDbData: nil,
-			afterDbData: &rawdb.PreGingerbreadFields{
-				BaseFee:  big.NewInt(10e8),
-				GasLimit: big.NewInt(20e6),
-			},
-			backendBaseFee: big.NewInt(10e8),
+			name:            "should return the header with baseFee and gasLimit retrieved from the backend",
+			beforeDbBaseFee: nil,
+			afterDbBaseFee:  big.NewInt(10e8),
+			backendBaseFee:  big.NewInt(10e8),
 			header: &types.Header{
 				Number: big.NewInt(1000),
 			},
@@ -133,10 +91,11 @@ func TestPopulatePreGingerbreadHeaderFields(t *testing.T) {
 			})
 
 			// set data into database and backend
-			if test.beforeDbData != nil {
-				err := rawdb.WritePreGingerbreadAdditionalFields(backend.ChainDb(), headerHash, test.beforeDbData)
-				assert.NoError(t, err)
+			if test.beforeDbBaseFee != nil {
+				err := rawdb.WritePreGingerbreadBlockBaseFee(backend.ChainDb(), headerHash, test.beforeDbBaseFee)
+				require.NoError(t, err)
 			}
+
 			if test.backendBaseFee != nil {
 				prevHeader := &types.Header{
 					Number: new(big.Int).Sub(test.header.Number, big.NewInt(1)),
@@ -164,13 +123,12 @@ func TestPopulatePreGingerbreadHeaderFields(t *testing.T) {
 
 			// retrieve baseFee and gasLimit
 			newHeader := PopulatePreGingerbreadHeaderFields(context.Background(), backend, test.header)
-
 			assert.Equal(t, test.expected, newHeader)
 
 			// check db data after the test
-			dbData, err := rawdb.ReadPreGingerbreadAdditionalFields(backend.ChainDb(), headerHash)
-			assert.NoError(t, err)
-			assert.Equal(t, test.afterDbData, dbData)
+			dbData, err := rawdb.ReadPreGingerbreadBlockBaseFee(backend.ChainDb(), headerHash)
+			require.NoError(t, err)
+			assert.Equal(t, test.afterDbBaseFee, dbData)
 		})
 	}
 }
@@ -181,43 +139,39 @@ func Test_retrievePreGingerbreadGasLimit(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		chainId  *big.Int
+		chainId  uint64
 		height   *big.Int
 		expected *big.Int
 	}{
 		{
-			name:     "should return nil for undefined chain",
-			chainId:  nil,
-			height:   big.NewInt(10e5),
-			expected: nil,
-		},
-		{
-			name:     "should return latest gas limit value for celo mainnet",
-			chainId:  big.NewInt(params.CeloMainnetChainID),
+			name:     "should return latest gas limit value for Celo Mainnet",
+			chainId:  params.CeloMainnetChainID,
 			height:   big.NewInt(21355415),
 			expected: big.NewInt(32e6),
 		},
 		{
-			name:     "should return latest gas limit value for celo alfajores",
-			chainId:  big.NewInt(params.CeloAlfajoresChainID),
+			name:     "should return latest gas limit value for Celo Alfajores",
+			chainId:  params.CeloAlfajoresChainID,
 			height:   big.NewInt(11143973),
 			expected: big.NewInt(35e6),
 		},
 		{
-			name:     "should return latest gas limit value for celo baklava",
-			chainId:  big.NewInt(params.CeloBaklavaChainID),
+			name:     "should return latest gas limit value for Celo Baklava",
+			chainId:  params.CeloBaklavaChainID,
 			height:   big.NewInt(15158971),
 			expected: big.NewInt(20e6),
+		},
+		{
+			name:     "should return nil if chainId is unknown",
+			chainId:  12345,
+			height:   big.NewInt(10),
+			expected: nil,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			backend := newCeloBackendMock(&params.ChainConfig{
-				ChainID: test.chainId,
-			})
-
-			gasLimit := retrievePreGingerbreadGasLimit(backend, test.height)
+			gasLimit := retrievePreGingerbreadGasLimit(test.chainId, test.height)
 
 			assert.Equal(t, test.expected, gasLimit)
 		})
@@ -389,6 +343,8 @@ func Test_retrievePreGingerbreadBlockBaseFee(t *testing.T) {
 
 // Test_parseGasPriceMinimumUpdated checks the gas price minimum updated event parsing
 func Test_parseGasPriceMinimumUpdated(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name   string
 		data   []byte

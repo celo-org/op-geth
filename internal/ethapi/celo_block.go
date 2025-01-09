@@ -34,44 +34,37 @@ func PopulatePreGingerbreadBlockFields(ctx context.Context, backend CeloBackend,
 
 // PopulatePreGingerbreadHeaderFields populates the baseFee and gasLimit fields of the header for pre-gingerbread blocks
 func PopulatePreGingerbreadHeaderFields(ctx context.Context, backend CeloBackend, header *types.Header) *types.Header {
-	isGingerbread := backend.ChainConfig().IsGingerbread(header.Number)
-	if isGingerbread {
+	// If the block is post-Gingerbread, return the header as is
+	if backend.ChainConfig().IsGingerbread(header.Number) {
 		return header
 	}
 
 	var (
-		baseFee  *big.Int
 		gasLimit *big.Int
+		baseFee  *big.Int
 	)
 
-	fields, err := rawdb.ReadPreGingerbreadAdditionalFields(backend.ChainDb(), header.Hash())
-	if fields != nil {
-		if fields.BaseFee != nil && fields.BaseFee.BitLen() != 0 {
-			baseFee = fields.BaseFee
-		}
-		if fields.GasLimit != nil && fields.GasLimit.BitLen() != 0 {
-			gasLimit = fields.GasLimit
-		}
-	} else {
+	if chainId := backend.ChainConfig().ChainID; chainId != nil {
+		gasLimit = retrievePreGingerbreadGasLimit(chainId.Uint64(), header.Number)
+	}
+
+	baseFee, err := rawdb.ReadPreGingerbreadBlockBaseFee(backend.ChainDb(), header.Hash())
+	if baseFee == nil {
 		if err != nil {
-			log.Debug("failed to read pre-gingerbread fields", "err", err)
+			log.Debug("failed to load pre-Gingerbread block base fee from database", "block", header.Number.Uint64(), "err", err)
 		}
 
 		// If the record is not found, get the values and store them
 		baseFee, err = retrievePreGingerbreadBlockBaseFee(ctx, backend, header.Number)
 		if err != nil {
-			log.Debug("Not adding baseFeePerGas to RPC response, failed to retrieve gas price minimum", "block", header.Number.Uint64(), "err", err)
+			log.Debug("Not adding to RPC response, failed to retrieve pre-Gingerbread block base fee", "block", header.Number.Uint64(), "err", err)
 		}
 
-		gasLimit = retrievePreGingerbreadGasLimit(backend, header.Number)
-
-		if baseFee != nil || gasLimit != nil {
-			err = rawdb.WritePreGingerbreadAdditionalFields(backend.ChainDb(), header.Hash(), &rawdb.PreGingerbreadFields{
-				BaseFee:  baseFee,
-				GasLimit: gasLimit,
-			})
+		// Store the base fee for future use
+		if baseFee != nil {
+			err = rawdb.WritePreGingerbreadBlockBaseFee(backend.ChainDb(), header.Hash(), baseFee)
 			if err != nil {
-				log.Debug("failed to write pre-gingerbread fields", "err", err)
+				log.Debug("failed to write pre-Gingerbread block base fee", "block", header.Number.Uint64(), "err", err)
 			}
 		}
 	}
@@ -87,15 +80,10 @@ func PopulatePreGingerbreadHeaderFields(ctx context.Context, backend CeloBackend
 }
 
 // retrievePreGingerbreadGasLimit retrieves a gas limit at given height from hardcoded values
-func retrievePreGingerbreadGasLimit(backend CeloBackend, height *big.Int) *big.Int {
-	if backend.ChainConfig().ChainID == nil {
-		log.Debug("Not adding gasLimit to RPC response, unknown network")
-		return nil
-	}
-
-	limits, ok := params.PreGingerbreadNetworkGasLimits[backend.ChainConfig().ChainID.Uint64()]
+func retrievePreGingerbreadGasLimit(chainId uint64, height *big.Int) *big.Int {
+	limits, ok := params.PreGingerbreadNetworkGasLimits[chainId]
 	if !ok {
-		log.Debug("Not adding gasLimit to RPC response, unknown network", "chainID", backend.ChainConfig().ChainID)
+		log.Debug("Not adding gasLimit to RPC response, unknown network", "chainID", chainId)
 		return nil
 	}
 

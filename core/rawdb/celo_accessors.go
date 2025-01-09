@@ -5,11 +5,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/rlp"
 )
 
 var (
-	CeloPreGingerbreadFieldsPrefix = []byte("celoPgbFields-") // CeloPreGingerbreadFieldsPrefix + block hash -> PreGingerbreadAdditionalFields
+	CeloPreGingerbreadBaseFeePrefix = []byte("celoPgbBlockBaseFee-") // CeloPreGingerbreadBlockBaseFeePrefix + block hash -> BaseFee
 )
 
 type PreGingerbreadFields struct {
@@ -17,38 +16,22 @@ type PreGingerbreadFields struct {
 	GasLimit *big.Int
 }
 
-// preGingerbreadAdditionalFieldsKey calculates a database key for PreGingerbreadAdditionalFields for the given block hash
-func preGingerbreadAdditionalFieldsKey(hash common.Hash) []byte {
-	return append(CeloPreGingerbreadFieldsPrefix, hash[:]...)
+// preGingerbreadBlockBaseFeeKey calculates a database key of pre-Gingerbread block BaseFee for the given block hash
+func preGingerbreadBlockBaseFeeKey(hash common.Hash) []byte {
+	return append(CeloPreGingerbreadBaseFeePrefix, hash[:]...)
 }
 
-// ReadPreGingerbreadAdditionalFields reads PreGingerbreadAdditionalFields from the given database for the given block hash
-func ReadPreGingerbreadAdditionalFields(db ethdb.KeyValueReader, blockHash common.Hash) (*PreGingerbreadFields, error) {
-	data, _ := db.Get(preGingerbreadAdditionalFieldsKey(blockHash))
+// ReadPreGingerbreadBlockBaseFee reads BaseFee of pre-Gingerbread block from the given database for the given block hash
+func ReadPreGingerbreadBlockBaseFee(db ethdb.KeyValueReader, blockHash common.Hash) (*big.Int, error) {
+	data, _ := db.Get(preGingerbreadBlockBaseFeeKey(blockHash))
 	if len(data) == 0 {
 		return nil, nil
 	}
 
-	fields := &PreGingerbreadFields{}
-
-	err := rlp.DecodeBytes(data, fields)
-	if err != nil {
-		return nil, err
-	}
-
-	return fields, nil
+	return new(big.Int).SetBytes(data), nil
 }
 
-// WritePreGingerbreadAdditionalFields writes PreGingerbreadAdditionalFields to the given database for the given block hash
-func WritePreGingerbreadAdditionalFields(db ethdb.KeyValueWriter, blockHash common.Hash, data *PreGingerbreadFields) error {
-	rawData, err := rlp.EncodeToBytes(data)
-	if err != nil {
-		return err
-	}
-
-	if err := db.Put(preGingerbreadAdditionalFieldsKey(blockHash), rawData); err != nil {
-		return err
-	}
-
-	return nil
+// WritePreGingerbreadBlockBaseFee writes BaseFee of pre-Gingerbread block to the given database at the given block hash
+func WritePreGingerbreadBlockBaseFee(db ethdb.KeyValueWriter, blockHash common.Hash, baseFee *big.Int) error {
+	return db.Put(preGingerbreadBlockBaseFeeKey(blockHash), baseFee.Bytes())
 }
