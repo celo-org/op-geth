@@ -512,16 +512,11 @@ func (g *Genesis) toBlockWithRoot(root common.Hash) *types.Block {
 		Coinbase:   g.Coinbase,
 		Root:       root,
 	}
-	// Don't set defaults for gas limit and difficulty for migrated celo chains.
-	// I.E. when Cel2Time is set & non zero. Since migrated celo chains can
-	// have gas limit and difficulty unset in the genesis.
-	if g.Config.Cel2Time == nil || g.Config.IsCel2(0) {
-		if g.GasLimit == 0 {
-			head.GasLimit = params.GenesisGasLimit
-		}
-		if g.Difficulty == nil && g.Mixhash == (common.Hash{}) {
-			head.Difficulty = params.GenesisDifficulty
-		}
+	if g.GasLimit == 0 {
+		head.GasLimit = params.GenesisGasLimit
+	}
+	if g.Difficulty == nil && g.Mixhash == (common.Hash{}) {
+		head.Difficulty = params.GenesisDifficulty
 	} else if g.Difficulty == nil {
 		// In the case of migrated chains we ensure a zero rather than nil difficulty.
 		head.Difficulty = new(big.Int)
@@ -696,7 +691,7 @@ func DeveloperGenesisBlock(gasLimit uint64, faucet *common.Address) *Genesis {
 	}
 
 	// Add state from celoGenesisAccounts
-	for addr, data := range celoGenesisAccounts(common.HexToAddress("0x2")) {
+	for addr, data := range CeloGenesisAccounts(common.HexToAddress("0x2")) {
 		genesis.Alloc[addr] = data
 	}
 

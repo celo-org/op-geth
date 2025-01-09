@@ -57,31 +57,12 @@ func (h *Header) DecodeRLP(s *rlp.Stream) error {
 		h.Time = decodedHeader.Time
 		h.Extra = decodedHeader.Extra
 		h.Difficulty = new(big.Int)
+		h.preGingerbread = true
 	} else {
 		// After gingerbread
 		decodedHeader := AfterGingerbreadHeader{}
 		err = rlp.DecodeBytes(raw, &decodedHeader)
-
-		h.ParentHash = decodedHeader.ParentHash
-		h.UncleHash = decodedHeader.UncleHash
-		h.Coinbase = decodedHeader.Coinbase
-		h.Root = decodedHeader.Root
-		h.TxHash = decodedHeader.TxHash
-		h.ReceiptHash = decodedHeader.ReceiptHash
-		h.Bloom = decodedHeader.Bloom
-		h.Difficulty = decodedHeader.Difficulty
-		h.Number = decodedHeader.Number
-		h.GasLimit = decodedHeader.GasLimit
-		h.GasUsed = decodedHeader.GasUsed
-		h.Time = decodedHeader.Time
-		h.Extra = decodedHeader.Extra
-		h.MixDigest = decodedHeader.MixDigest
-		h.Nonce = decodedHeader.Nonce
-		h.BaseFee = decodedHeader.BaseFee
-		h.WithdrawalsHash = decodedHeader.WithdrawalsHash
-		h.BlobGasUsed = decodedHeader.BlobGasUsed
-		h.ExcessBlobGas = decodedHeader.ExcessBlobGas
-		h.ParentBeaconRoot = decodedHeader.ParentBeaconRoot
+		*h = Header(decodedHeader)
 	}
 
 	return err
@@ -107,29 +88,7 @@ func (h *Header) EncodeRLP(w io.Writer) error {
 	}
 
 	// After gingerbread
-	encodedHeader := AfterGingerbreadHeader{
-		ParentHash:       h.ParentHash,
-		UncleHash:        h.UncleHash,
-		Coinbase:         h.Coinbase,
-		Root:             h.Root,
-		TxHash:           h.TxHash,
-		ReceiptHash:      h.ReceiptHash,
-		Bloom:            h.Bloom,
-		Difficulty:       h.Difficulty,
-		Number:           h.Number,
-		GasLimit:         h.GasLimit,
-		GasUsed:          h.GasUsed,
-		Time:             h.Time,
-		Extra:            h.Extra,
-		MixDigest:        h.MixDigest,
-		Nonce:            h.Nonce,
-		BaseFee:          h.BaseFee,
-		WithdrawalsHash:  h.WithdrawalsHash,
-		BlobGasUsed:      h.BlobGasUsed,
-		ExcessBlobGas:    h.ExcessBlobGas,
-		ParentBeaconRoot: h.ParentBeaconRoot,
-	}
-
+	encodedHeader := AfterGingerbreadHeader(*h)
 	return rlp.Encode(w, &encodedHeader)
 }
 
@@ -150,14 +109,6 @@ func isPreGingerbreadHeader(buf []byte) (bool, error) {
 	return contentSize == common.AddressLength, nil
 }
 
-// Returns if the header is a gingerbread header by looking at the gas limit.
 func (h *Header) IsPreGingerbread() bool {
-	// We check for a pre gingerbread header by looking for (GasLimit == 0)
-	// here. We don't use Difficulty because we ensure that headers have a zero
-	// difficulty, even if it's not set in the rlp encoded form (we do this
-	// because the go ethereum codebase assumed non nil difficulties) and post
-	// gingerbread difficulty is hardcoded to zero. Also testing for base fee
-	// is not reliable because some older eth blocks had no base fee and they
-	// are used in some tests.
-	return h.GasLimit == 0
+	return h.preGingerbread
 }
