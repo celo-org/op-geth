@@ -332,8 +332,9 @@ func Test_retrievePreGingerbreadBlockBaseFee(t *testing.T) {
 			baseFee, err := retrievePreGingerbreadBlockBaseFee(context.Background(), backend, test.height)
 
 			assert.Equal(t, test.expected, baseFee)
+
 			if test.err == nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			} else {
 				assert.EqualError(t, err, test.err.Error())
 			}
@@ -371,7 +372,7 @@ func Test_parseGasPriceMinimumUpdated(t *testing.T) {
 			assert.Equal(t, test.result, result)
 
 			if test.err == nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			} else {
 				assert.EqualError(t, err, test.err.Error())
 			}

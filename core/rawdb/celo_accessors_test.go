@@ -19,7 +19,7 @@ func TestReadAndWritePreGingerbreadBlockBaseFee(t *testing.T) {
 	// Make sure that the data is not found
 	record0, err := ReadPreGingerbreadBlockBaseFee(db, hash)
 	require.NoError(t, err)
-	assert.Nil(t, record0)
+	require.Nil(t, record0)
 
 	// Write data
 	err = WritePreGingerbreadBlockBaseFee(db, hash, value)
