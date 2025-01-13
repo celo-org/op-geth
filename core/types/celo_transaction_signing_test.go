@@ -165,13 +165,12 @@ func createTestCelo1TxFixtures(t *testing.T) createTestCelo1TxFixturesReturns {
 
 	// common tx fields
 	var (
-		chainId   = big.NewInt(params.CeloMainnetChainID)
-		nonce     = uint64(10)
-		gasPrice  = big.NewInt(1e9)
-		gasTipCap = big.NewInt(1e7)
-		gasFeeCap = big.NewInt(1e10)
-		gas       = uint64(5e5)
-
+		chainId    = big.NewInt(params.CeloMainnetChainID)
+		nonce      = uint64(10)
+		gasPrice   = big.NewInt(1e9)
+		gasTipCap  = big.NewInt(1e7)
+		gasFeeCap  = big.NewInt(1e10)
+		gas        = uint64(5e5)
 		to         = common.HexToAddress("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045")
 		value      = big.NewInt(1e18)
 		data       = []byte{0x11, 0x22, 0x33, 0x44, 0x55}
@@ -401,6 +400,7 @@ func TestCeloSigner_Celo1TxRecovery(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			rawTxHash := signer.Hash(test.tx)
 			signedTxHash := test.tx.Hash()
+
 			recoveredSender, err := signer.Sender(test.tx)
 			if test.expectedError == nil {
 				require.NoError(t, err)
