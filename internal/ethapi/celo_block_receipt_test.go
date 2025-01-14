@@ -35,26 +35,29 @@ func TestGetBlockReceipt(t *testing.T) {
 		api     = NewBlockChainAPI(backend)
 	)
 
+	// seedData stores Block and Receipts for specific hash and height into DB
 	seedData := func(t *testing.T, blockHash common.Hash, height uint64, headerBytes []byte, bodyBytes []byte, receiptsBytes []byte) {
 		t.Helper()
 
-		blockHeader := new(types.Header)
+		// Decode Header, Body, and Receipts
+		blockHeader := &types.Header{}
 		err := rlp.DecodeBytes(headerBytes, blockHeader)
 		require.NoError(t, err)
 
-		blockBody := new(types.Body)
+		blockBody := &types.Body{}
 		err = rlp.DecodeBytes(bodyBytes, blockBody)
 		require.NoError(t, err)
 
-		receipts := types.Receipts{}
-		err = rlp.DecodeBytes(receiptsBytes, &receipts)
+		receipts := &types.Receipts{}
+		err = rlp.DecodeBytes(receiptsBytes, receipts)
 		require.NoError(t, err)
 
 		block := types.NewBlockWithHeader(blockHeader).WithBody(*blockBody)
 
+		// Store data into DB
 		rawdb.WriteHeaderNumber(backend.ChainDb(), blockHash, height)
 		rawdb.WriteBlock(backend.ChainDb(), block)
-		rawdb.WriteReceipts(backend.ChainDb(), blockHash, height, receipts)
+		rawdb.WriteReceipts(backend.ChainDb(), blockHash, height, *receipts)
 
 		t.Cleanup(func() {
 			rawdb.DeleteReceipts(backend.ChainDb(), blockHash, height)
@@ -63,6 +66,7 @@ func TestGetBlockReceipt(t *testing.T) {
 		})
 	}
 
+	// createBlockReceiptBloom creates a Bloom for block receipt
 	createBlockReceiptBloom := func(logs []*types.Log) types.Bloom {
 		receipt := &types.Receipt{
 			Type:              types.LegacyTxType,
@@ -74,6 +78,7 @@ func TestGetBlockReceipt(t *testing.T) {
 		return types.CreateBloom(types.Receipts{receipt})
 	}
 
+	// createExpectedResponse creates expected JSON-RPC response data
 	createExpectedResponse := func(blockHash common.Hash, blockNumber uint64, receiptIndex int, logs []*types.Log) map[string]interface{} {
 		return map[string]interface{}{
 			"blockHash":         blockHash,
