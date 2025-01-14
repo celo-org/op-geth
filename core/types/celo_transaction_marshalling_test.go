@@ -292,7 +292,7 @@ func TestCeloTransactionMarshalUnmarshal(t *testing.T) {
 				"s": "0x0",
 				"hash": "0xefdbf85d98faa0f9e00c1060a0b27d12cca785ea5977367ec1187637c3005bf1"
 			}`,
-			requiredFields: []string{"chainId", "nonce", "gas", "maxPriorityFeePerGas", "maxFeePerGas", "value", "input", "v", "r", "s"},
+			requiredFields: []string{"chainId", "nonce", "gas", "maxPriorityFeePerGas", "maxFeePerGas", "value", "input", "v", "r", "s", "feeCurrency", "maxFeeInFeeCurrency"},
 		},
 	}
 

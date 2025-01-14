@@ -341,7 +341,13 @@ func celoTransactionUnmarshal(dec txJSON, inner *TxData) (bool, error) {
 			}
 		}
 		// Celo specific fields
+		if dec.FeeCurrency == nil {
+			return true, errors.New("missing required field 'feeCurrency' in transaction")
+		}
 		itx.FeeCurrency = dec.FeeCurrency
+		if dec.MaxFeeInFeeCurrency == nil {
+			return true, errors.New("missing required field 'maxFeeInFeeCurrency' in transaction")
+		}
 		itx.MaxFeeInFeeCurrency = (*big.Int)(dec.MaxFeeInFeeCurrency)
 	default:
 		return false, nil
