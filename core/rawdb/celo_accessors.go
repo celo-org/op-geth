@@ -1,6 +1,7 @@
 package rawdb
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -23,7 +24,10 @@ func preGingerbreadBlockBaseFeeKey(hash common.Hash) []byte {
 
 // ReadPreGingerbreadBlockBaseFee reads BaseFee of pre-Gingerbread block from the given database for the given block hash
 func ReadPreGingerbreadBlockBaseFee(db ethdb.KeyValueReader, blockHash common.Hash) (*big.Int, error) {
-	data, _ := db.Get(preGingerbreadBlockBaseFeeKey(blockHash))
+	data, err := db.Get(preGingerbreadBlockBaseFeeKey(blockHash))
+	if err != nil {
+		return nil, fmt.Errorf("error retrieving pre gingerbread base fee for block: %s, error: %w", blockHash, err)
+	}
 	if len(data) == 0 {
 		return nil, nil
 	}

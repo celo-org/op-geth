@@ -49,11 +49,10 @@ func PopulatePreGingerbreadHeaderFields(ctx context.Context, backend CeloBackend
 	}
 
 	baseFee, err := rawdb.ReadPreGingerbreadBlockBaseFee(backend.ChainDb(), header.Hash())
+	if err != nil {
+		log.Debug("failed to load pre-Gingerbread block base fee from database", "block", header.Number.Uint64(), "err", err)
+	}
 	if baseFee == nil {
-		if err != nil {
-			log.Debug("failed to load pre-Gingerbread block base fee from database", "block", header.Number.Uint64(), "err", err)
-		}
-
 		// If the record is not found, get the values and store them
 		baseFee, err = retrievePreGingerbreadBlockBaseFee(ctx, backend, header.Number)
 		if err != nil {

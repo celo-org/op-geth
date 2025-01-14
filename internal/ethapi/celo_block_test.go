@@ -90,12 +90,13 @@ func TestPopulatePreGingerbreadHeaderFields(t *testing.T) {
 				GingerbreadBlock: gingerBreadBeginsAt,
 			})
 
-			// set data into database and backend
+			// set base fee into DB
 			if test.beforeDbBaseFee != nil {
 				err := rawdb.WritePreGingerbreadBlockBaseFee(backend.ChainDb(), headerHash, test.beforeDbBaseFee)
 				require.NoError(t, err)
 			}
 
+			// set block & receipts for base fee
 			if test.backendBaseFee != nil {
 				prevHeader := &types.Header{
 					Number: new(big.Int).Sub(test.header.Number, big.NewInt(1)),
@@ -127,7 +128,11 @@ func TestPopulatePreGingerbreadHeaderFields(t *testing.T) {
 
 			// check db data after the test
 			dbData, err := rawdb.ReadPreGingerbreadBlockBaseFee(backend.ChainDb(), headerHash)
-			require.NoError(t, err)
+			if test.afterDbBaseFee != nil {
+				require.NoError(t, err)
+			} else {
+				require.ErrorContains(t, err, "error retrieving pre gingerbread base fee for block")
+			}
 			assert.Equal(t, test.afterDbBaseFee, dbData)
 		})
 	}

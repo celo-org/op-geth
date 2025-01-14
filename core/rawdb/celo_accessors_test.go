@@ -1,6 +1,7 @@
 package rawdb
 
 import (
+	"fmt"
 	"math/big"
 	"testing"
 
@@ -16,9 +17,9 @@ func TestReadAndWritePreGingerbreadBlockBaseFee(t *testing.T) {
 	hash := common.HexToHash("0x1")
 	value := big.NewInt(1234)
 
-	// Make sure that the data is not found
+	// Make sure it returns an error for a nonexistent record
 	record0, err := ReadPreGingerbreadBlockBaseFee(db, hash)
-	require.NoError(t, err)
+	assert.ErrorContains(t, err, fmt.Sprintf("error retrieving pre gingerbread base fee for block: %s, error: not found", hash.String()))
 	require.Nil(t, record0)
 
 	// Write data
