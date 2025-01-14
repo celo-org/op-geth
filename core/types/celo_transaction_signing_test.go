@@ -132,7 +132,7 @@ type testCelo1Tx struct {
 	hash    common.Hash
 }
 
-type createTestCelo1TxFixturesReturns struct {
+type celo1TxFixtures struct {
 	signerKey     *ecdsa.PrivateKey
 	signerAddress common.Address
 
@@ -147,7 +147,7 @@ type createTestCelo1TxFixturesReturns struct {
 
 // createTestCelo1TxFixtures generates a set of test fixtures for transactions
 // whose signatures are generated using celo-blockchain codebase
-func createTestCelo1TxFixtures(t *testing.T) createTestCelo1TxFixturesReturns {
+func createTestCelo1TxFixtures(t *testing.T) celo1TxFixtures {
 	t.Helper()
 
 	hexToBigInt := func(t *testing.T, hex string) *big.Int {
@@ -188,7 +188,7 @@ func createTestCelo1TxFixtures(t *testing.T) createTestCelo1TxFixturesReturns {
 		maxFeeInFeeCurrency = big.NewInt(1e7)
 	)
 
-	return createTestCelo1TxFixturesReturns{
+	return celo1TxFixtures{
 		signerKey:     signerKey,
 		signerAddress: signerAddress,
 		legacyTx: &testCelo1Tx{
