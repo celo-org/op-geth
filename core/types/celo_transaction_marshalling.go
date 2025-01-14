@@ -37,6 +37,7 @@ func celoTransactionMarshal(tx *Transaction) ([]byte, bool, error) {
 		enc.Nonce = (*hexutil.Uint64)(&itx.Nonce)
 		enc.To = tx.To()
 		enc.Gas = (*hexutil.Uint64)(&itx.Gas)
+		enc.GasPrice = (*hexutil.Big)(itx.GasPrice)
 		enc.Value = (*hexutil.Big)(itx.Value)
 		enc.Input = (*hexutil.Bytes)(&itx.Data)
 		enc.V = (*hexutil.Big)(itx.V)
@@ -340,7 +341,13 @@ func celoTransactionUnmarshal(dec txJSON, inner *TxData) (bool, error) {
 			}
 		}
 		// Celo specific fields
+		if dec.FeeCurrency == nil {
+			return true, errors.New("missing required field 'feeCurrency' in transaction")
+		}
 		itx.FeeCurrency = dec.FeeCurrency
+		if dec.MaxFeeInFeeCurrency == nil {
+			return true, errors.New("missing required field 'maxFeeInFeeCurrency' in transaction")
+		}
 		itx.MaxFeeInFeeCurrency = (*big.Int)(dec.MaxFeeInFeeCurrency)
 	default:
 		return false, nil
