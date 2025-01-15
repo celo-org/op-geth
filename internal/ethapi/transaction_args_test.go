@@ -31,6 +31,7 @@ import (
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/bloombits"
+	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
@@ -38,6 +39,27 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
+)
+
+var (
+	cancunTime           uint64 = 600
+	defaultBackendConfig        = &params.ChainConfig{
+		ChainID:             big.NewInt(42),
+		HomesteadBlock:      big.NewInt(0),
+		DAOForkBlock:        nil,
+		DAOForkSupport:      true,
+		EIP150Block:         big.NewInt(0),
+		EIP155Block:         big.NewInt(0),
+		EIP158Block:         big.NewInt(0),
+		ByzantiumBlock:      big.NewInt(0),
+		ConstantinopleBlock: big.NewInt(0),
+		PetersburgBlock:     big.NewInt(0),
+		IstanbulBlock:       big.NewInt(0),
+		MuirGlacierBlock:    big.NewInt(0),
+		BerlinBlock:         big.NewInt(0),
+		LondonBlock:         big.NewInt(1000),
+		CancunTime:          &cancunTime,
+	}
 )
 
 // TestSetFeeDefaults tests the logic for filling in default fee values works as expected.
@@ -53,7 +75,7 @@ func TestSetFeeDefaults(t *testing.T) {
 	}
 
 	var (
-		b            = newCeloBackendMock()
+		b            = newCeloBackendMock(nil)
 		zero         = (*hexutil.Big)(big.NewInt(0))
 		fortytwo     = (*hexutil.Big)(big.NewInt(42))
 		maxFee       = (*hexutil.Big)(new(big.Int).Add(new(big.Int).Mul(b.current.BaseFee, big.NewInt(2)), fortytwo.ToInt()))
@@ -277,11 +299,18 @@ func TestSetFeeDefaults(t *testing.T) {
 
 type celoBackendMock struct {
 	*backendMock
+
+	chainDb        ethdb.Database
+	blockByNumber  map[int64]*types.Block
+	receiptsByHash map[common.Hash]types.Receipts
 }
 
-func newCeloBackendMock() *celoBackendMock {
+func newCeloBackendMock(config *params.ChainConfig) *celoBackendMock {
 	return &celoBackendMock{
-		backendMock: newBackendMock(),
+		backendMock:    newBackendMock(config),
+		chainDb:        rawdb.NewMemoryDatabase(),
+		blockByNumber:  make(map[int64]*types.Block),
+		receiptsByHash: make(map[common.Hash]types.Receipts),
 	}
 }
 
@@ -310,30 +339,36 @@ func (c *celoBackendMock) ConvertToCelo(ctx context.Context, blockNumOrHash rpc.
 	return new(big.Int).Div(value, big.NewInt(2)), nil
 }
 
+func (c *celoBackendMock) ChainDb() ethdb.Database {
+	return c.chainDb
+}
+
+func (c *celoBackendMock) BlockByNumber(_ctx context.Context, number rpc.BlockNumber) (*types.Block, error) {
+	return c.blockByNumber[number.Int64()], nil
+}
+
+func (c *celoBackendMock) GetReceipts(_ctx context.Context, hash common.Hash) (types.Receipts, error) {
+	return c.receiptsByHash[hash], nil
+}
+
+func (c *celoBackendMock) setBlock(number int64, block *types.Block) {
+	c.blockByNumber[number] = block
+}
+
+func (c *celoBackendMock) setReceipts(hash common.Hash, receipts types.Receipts) {
+	c.receiptsByHash[hash] = receipts
+}
+
 type backendMock struct {
 	current *types.Header
 	config  *params.ChainConfig
 }
 
-func newBackendMock() *backendMock {
-	var cancunTime uint64 = 600
-	config := &params.ChainConfig{
-		ChainID:             big.NewInt(42),
-		HomesteadBlock:      big.NewInt(0),
-		DAOForkBlock:        nil,
-		DAOForkSupport:      true,
-		EIP150Block:         big.NewInt(0),
-		EIP155Block:         big.NewInt(0),
-		EIP158Block:         big.NewInt(0),
-		ByzantiumBlock:      big.NewInt(0),
-		ConstantinopleBlock: big.NewInt(0),
-		PetersburgBlock:     big.NewInt(0),
-		IstanbulBlock:       big.NewInt(0),
-		MuirGlacierBlock:    big.NewInt(0),
-		BerlinBlock:         big.NewInt(0),
-		LondonBlock:         big.NewInt(1000),
-		CancunTime:          &cancunTime,
+func newBackendMock(config *params.ChainConfig) *backendMock {
+	if config == nil {
+		config = defaultBackendConfig
 	}
+
 	return &backendMock{
 		current: &types.Header{
 			Difficulty: big.NewInt(10000000000),
