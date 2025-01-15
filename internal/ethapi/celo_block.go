@@ -27,9 +27,9 @@ func init() {
 
 // PopulatePreGingerbreadBlockFields populates the baseFee and gasLimit fields of the block for pre-gingerbread blocks
 func PopulatePreGingerbreadBlockFields(ctx context.Context, backend CeloBackend, block *types.Block) *types.Block {
-	newHeader := PopulatePreGingerbreadHeaderFields(ctx, backend, block.Header())
-	block = block.WithSeal(newHeader)
-	return block
+	return block.WithSeal(
+		PopulatePreGingerbreadHeaderFields(ctx, backend, block.Header()),
+	)
 }
 
 // PopulatePreGingerbreadHeaderFields populates the baseFee and gasLimit fields of the header for pre-gingerbread blocks
@@ -42,13 +42,14 @@ func PopulatePreGingerbreadHeaderFields(ctx context.Context, backend CeloBackend
 	var (
 		gasLimit *big.Int
 		baseFee  *big.Int
+		err      error
 	)
 
 	if chainId := backend.ChainConfig().ChainID; chainId != nil {
 		gasLimit = retrievePreGingerbreadGasLimit(chainId.Uint64(), header.Number)
 	}
 
-	baseFee, err := rawdb.ReadPreGingerbreadBlockBaseFee(backend.ChainDb(), header.Hash())
+	baseFee, err = rawdb.ReadPreGingerbreadBlockBaseFee(backend.ChainDb(), header.Hash())
 	if err != nil {
 		log.Debug("failed to load pre-Gingerbread block base fee from database", "block", header.Number.Uint64(), "err", err)
 	}
@@ -96,13 +97,12 @@ func retrievePreGingerbreadBlockBaseFee(ctx context.Context, backend CeloBackend
 	}
 
 	prevHeight := height.Uint64() - 1
-
 	prevBlock, err := backend.BlockByNumber(ctx, rpc.BlockNumber(prevHeight))
 	if err != nil {
 		return nil, err
 	}
 	if prevBlock == nil {
-		return nil, fmt.Errorf("block #%d not found", height.Int64())
+		return nil, fmt.Errorf("block #%d not found", prevHeight)
 	}
 
 	prevReceipts, err := backend.GetReceipts(ctx, prevBlock.Hash())
@@ -123,13 +123,13 @@ func retrievePreGingerbreadBlockBaseFee(ctx context.Context, backend CeloBackend
 
 		baseFee, err := parseGasPriceMinimumUpdated(logRecord.Data)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to extract GasPriceMinimumUpdated event from system logs: %w", err)
 		}
 
 		return baseFee, nil
 	}
 
-	return nil, fmt.Errorf("gas price minimum updated event is not included in a receipt of block #%d", prevHeight)
+	return nil, fmt.Errorf("an event GasPriceMinimumUpdated is not included in receipts of block #%d", prevHeight)
 }
 
 // parseGasPriceMinimumUpdated parses the data of GasPriceMinimumUpdated event

@@ -17,8 +17,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// encodeGasPriceMinimumUpdatedEventBody encodes the given gas price minimum value into 32 bytes event data
-func encodeGasPriceMinimumUpdatedEventBody(gasPriceMinimum *big.Int) []byte {
+// encodeGasPriceMinimumUpdatedEvent encodes the given gas price minimum value into 32 bytes event data
+func encodeGasPriceMinimumUpdatedEvent(gasPriceMinimum *big.Int) []byte {
 	gasPriceMinimumBytes := gasPriceMinimum.Bytes()
 	gasPriceMinimumEventData := make([]byte, 32)
 	copy(gasPriceMinimumEventData[32-len(gasPriceMinimumBytes):], gasPriceMinimumBytes)
@@ -115,7 +115,7 @@ func TestPopulatePreGingerbreadHeaderFields(t *testing.T) {
 								Topics: []common.Hash{
 									gasPriceMinimumABI.Events["GasPriceMinimumUpdated"].ID,
 								},
-								Data: encodeGasPriceMinimumUpdatedEventBody(test.backendBaseFee),
+								Data: encodeGasPriceMinimumUpdatedEvent(test.backendBaseFee),
 							},
 						},
 					},
@@ -187,12 +187,12 @@ func Test_retrievePreGingerbreadGasLimit(t *testing.T) {
 func Test_retrievePreGingerbreadBlockBaseFee(t *testing.T) {
 	t.Parallel()
 
-	header := &types.Header{Number: big.NewInt(999)}
+	prevHeader := &types.Header{Number: big.NewInt(999)}
 	hasher := blocktest.NewHasher()
 
 	// encode GasPriceMinimumUpdated event body
 	baseFee := big.NewInt(1_000_000)
-	baseFeeEventData := encodeGasPriceMinimumUpdatedEventBody(baseFee)
+	baseFeeEventData := encodeGasPriceMinimumUpdatedEvent(baseFee)
 
 	tests := []struct {
 		name     string
@@ -203,18 +203,18 @@ func Test_retrievePreGingerbreadBlockBaseFee(t *testing.T) {
 		err      error
 	}{
 		{
-			name:     "should return an error if block is not found",
+			name:     "should return an error if previous block is not found",
 			blocks:   nil,
 			receipts: nil,
 			height:   big.NewInt(1000),
 			expected: nil,
-			err:      fmt.Errorf("block #1000 not found"),
+			err:      fmt.Errorf("block #999 not found"),
 		},
 		{
 			name: "should return an error if block receipt is empty",
 			blocks: map[int64]*types.Block{
 				999: types.NewBlock(
-					header,
+					prevHeader,
 					nil,
 					nil,
 					hasher,
@@ -229,7 +229,7 @@ func Test_retrievePreGingerbreadBlockBaseFee(t *testing.T) {
 			name: "should return an error if block receipt doesn't contain system logs",
 			blocks: map[int64]*types.Block{
 				999: types.NewBlock(
-					header,
+					prevHeader,
 					&types.Body{
 						Transactions: []*types.Transaction{
 							types.NewTx(&types.LegacyTx{
@@ -243,7 +243,7 @@ func Test_retrievePreGingerbreadBlockBaseFee(t *testing.T) {
 			},
 			receipts: types.Receipts{
 				{
-					TxHash: header.Hash(),
+					TxHash: prevHeader.Hash(),
 					Logs:   nil,
 				},
 			},
@@ -255,7 +255,7 @@ func Test_retrievePreGingerbreadBlockBaseFee(t *testing.T) {
 			name: "should return an error if block receipt doesn't contain GasPriceMinimumUpdated event in system logs",
 			blocks: map[int64]*types.Block{
 				999: types.NewBlock(
-					header,
+					prevHeader,
 					&types.Body{
 						Transactions: []*types.Transaction{
 							types.NewTx(&types.LegacyTx{
@@ -269,7 +269,7 @@ func Test_retrievePreGingerbreadBlockBaseFee(t *testing.T) {
 			},
 			receipts: types.Receipts{
 				{
-					TxHash: header.Hash(),
+					TxHash: prevHeader.Hash(),
 					Logs:   nil,
 				},
 				{
@@ -285,13 +285,13 @@ func Test_retrievePreGingerbreadBlockBaseFee(t *testing.T) {
 			},
 			height:   big.NewInt(1000),
 			expected: nil,
-			err:      fmt.Errorf("gas price minimum updated event is not included in a receipt of block #999"),
+			err:      fmt.Errorf("an event GasPriceMinimumUpdated is not included in receipts of block #999"),
 		},
 		{
-			name: "should return an error if block receipt doesn't contain GasPriceMinimumUpdated event in system logs",
+			name: "should return base fee succesfully",
 			blocks: map[int64]*types.Block{
 				999: types.NewBlock(
-					header,
+					prevHeader,
 					&types.Body{
 						Transactions: []*types.Transaction{
 							types.NewTx(&types.LegacyTx{
@@ -305,7 +305,7 @@ func Test_retrievePreGingerbreadBlockBaseFee(t *testing.T) {
 			},
 			receipts: types.Receipts{
 				{
-					TxHash: header.Hash(),
+					TxHash: prevHeader.Hash(),
 					Logs:   nil,
 				},
 				{
@@ -336,13 +336,13 @@ func Test_retrievePreGingerbreadBlockBaseFee(t *testing.T) {
 
 			baseFee, err := retrievePreGingerbreadBlockBaseFee(context.Background(), backend, test.height)
 
-			assert.Equal(t, test.expected, baseFee)
-
 			if test.err == nil {
 				require.NoError(t, err)
 			} else {
 				assert.EqualError(t, err, test.err.Error())
 			}
+
+			assert.Equal(t, test.expected, baseFee)
 		})
 	}
 }
@@ -374,13 +374,14 @@ func Test_parseGasPriceMinimumUpdated(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			result, err := parseGasPriceMinimumUpdated(test.data)
-			assert.Equal(t, test.result, result)
 
 			if test.err == nil {
 				require.NoError(t, err)
 			} else {
 				assert.EqualError(t, err, test.err.Error())
 			}
+
+			assert.Equal(t, test.result, result)
 		})
 	}
 }

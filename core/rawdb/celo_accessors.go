@@ -9,17 +9,12 @@ import (
 )
 
 var (
-	CeloPreGingerbreadBaseFeePrefix = []byte("celoPgbBlockBaseFee-") // CeloPreGingerbreadBlockBaseFeePrefix + block hash -> BaseFee
+	CeloPreGingerbreadBlockBaseFeePrefix = []byte("celoPgbBlockBaseFee-") // CeloPreGingerbreadBlockBaseFeePrefix + block hash -> BaseFee
 )
-
-type PreGingerbreadFields struct {
-	BaseFee  *big.Int
-	GasLimit *big.Int
-}
 
 // preGingerbreadBlockBaseFeeKey calculates a database key of pre-Gingerbread block BaseFee for the given block hash
 func preGingerbreadBlockBaseFeeKey(hash common.Hash) []byte {
-	return append(CeloPreGingerbreadBaseFeePrefix, hash[:]...)
+	return append(CeloPreGingerbreadBlockBaseFeePrefix, hash[:]...)
 }
 
 // ReadPreGingerbreadBlockBaseFee reads BaseFee of pre-Gingerbread block from the given database for the given block hash
