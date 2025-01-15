@@ -288,7 +288,7 @@ func Test_retrievePreGingerbreadBlockBaseFee(t *testing.T) {
 			err:      fmt.Errorf("an event GasPriceMinimumUpdated is not included in receipts of block #999"),
 		},
 		{
-			name: "should return base fee succesfully",
+			name: "should return base fee successfully",
 			blocks: map[int64]*types.Block{
 				999: types.NewBlock(
 					prevHeader,
