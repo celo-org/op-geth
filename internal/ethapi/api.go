@@ -884,7 +884,6 @@ func (api *BlockChainAPI) GetBlockByNumber(ctx context.Context, number rpc.Block
 				response[field] = nil
 			}
 		}
-
 		return response, err
 	}
 	return nil, err
