@@ -1,6 +1,8 @@
 package ethapi
 
 import (
+	"context"
+	"encoding/json"
 	"math/big"
 	"testing"
 
@@ -8,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/internal/blocktest"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -530,4 +533,122 @@ func checkTxFields(
 	}
 	assert.Equal(t, (*hexutil.Big)(tx.GatewayFee()), rpcTx.GatewayFee)
 	assert.Equal(t, tx.GatewayFeeRecipient(), rpcTx.GatewayFeeRecipient)
+}
+
+// Test_isCelo1Block tests isCelo1Block function to determine whether the given block time
+// corresponds to Celo1 chain based on the provided chain configuration
+func Test_isCelo1Block(t *testing.T) {
+	cel2Time := uint64(1000)
+
+	t.Run("Non-Celo", func(t *testing.T) {
+		res := isCelo1Block(&params.ChainConfig{
+			Cel2Time: nil,
+		}, 1000)
+
+		assert.False(t, res)
+	})
+
+	t.Run("Celo1", func(t *testing.T) {
+		res := isCelo1Block(&params.ChainConfig{
+			Cel2Time: &cel2Time,
+		}, 500)
+
+		assert.True(t, res)
+	})
+
+	t.Run("Celo2", func(t *testing.T) {
+		res := isCelo1Block(&params.ChainConfig{
+			Cel2Time: &cel2Time,
+		}, 1000)
+
+		assert.False(t, res)
+	})
+}
+
+// TestRPCMarshalBlock_Celo1TotalDifficulty tests the RPCMarshalBlock function, specifically for totalDifficulty field
+// It validates the result has `totalDifficulty` field only if it's Celo1 block
+func TestRPCMarshalBlock_Celo1TotalDifficulty(t *testing.T) {
+	t.Parallel()
+
+	blockTime := uint64(1000)
+	block := types.NewBlock(&types.Header{Number: big.NewInt(100), Time: blockTime}, &types.Body{Transactions: []*types.Transaction{}}, nil, blocktest.NewHasher())
+
+	getExpectedJson := func(t *testing.T, expectedTd string) string {
+		data := map[string]interface{}{
+			"difficulty":       "0x0",
+			"extraData":        "0x",
+			"gasLimit":         "0x0",
+			"gasUsed":          "0x0",
+			"hash":             "0xd8371db7c48c7538a9cdf3e9211510e423039c0af3e1aa61d0a40960214d2101",
+			"logsBloom":        "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+			"miner":            "0x0000000000000000000000000000000000000000",
+			"mixHash":          "0x0000000000000000000000000000000000000000000000000000000000000000",
+			"nonce":            "0x0000000000000000",
+			"number":           "0x64",
+			"parentHash":       "0x0000000000000000000000000000000000000000000000000000000000000000",
+			"receiptsRoot":     "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+			"sha3Uncles":       "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
+			"size":             "0x1f7",
+			"stateRoot":        "0x0000000000000000000000000000000000000000000000000000000000000000",
+			"timestamp":        "0x3e8",
+			"transactionsRoot": "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+			"uncles":           []interface{}{},
+		}
+
+		if expectedTd != "" {
+			data["totalDifficulty"] = expectedTd
+		}
+
+		marshaled, err := json.Marshal(&data)
+		require.NoError(t, err)
+
+		return string(marshaled)
+	}
+
+	marshalBlock := func(t *testing.T, config *params.ChainConfig) string {
+		t.Helper()
+
+		resp, err := RPCMarshalBlock(context.Background(), block, false, false, config, testBackend{})
+		if err != nil {
+			require.NoError(t, err)
+		}
+
+		out, err := json.Marshal(resp)
+		if err != nil {
+			require.NoError(t, err)
+		}
+
+		return string(out)
+	}
+
+	t.Run("Non-Celo", func(t *testing.T) {
+		expected := getExpectedJson(t, "")
+
+		config := *params.MainnetChainConfig
+
+		res := marshalBlock(t, &config)
+		assert.JSONEq(t, expected, res)
+	})
+
+	t.Run("Celo1", func(t *testing.T) {
+		expected := getExpectedJson(t, "0x65")
+
+		cel2Time := blockTime + 500
+		config := *params.MainnetChainConfig
+		config.Cel2Time = &cel2Time
+
+		res := marshalBlock(t, &config)
+		assert.JSONEq(t, expected, res)
+	})
+
+	t.Run("Celo2", func(t *testing.T) {
+		expected := getExpectedJson(t, "")
+
+		cel2Time := blockTime - 500
+		config := *params.MainnetChainConfig
+		config.Cel2Time = &cel2Time
+
+		res := marshalBlock(t, &config)
+		assert.JSONEq(t, expected, res)
+	})
 }
