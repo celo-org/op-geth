@@ -604,7 +604,6 @@ func TestRPCMarshalBlock_Celo1TotalDifficulty(t *testing.T) {
 	})
 
 	t.Run("Celo2", func(t *testing.T) {
-
 		cel2Time := blockTime - 500
 		config := *params.MainnetChainConfig
 		config.Cel2Time = &cel2Time
