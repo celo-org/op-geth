@@ -1,6 +1,7 @@
 name: "[cLabs] Publish Docker Image For Release"
 
 on:
+  workflow_dispatch:
   release:
     types: [published]  # Trigger the workflow only when a release is published
 
@@ -40,3 +41,20 @@ jobs:
           # TO DO: Copy the docker image from us-west1-docker.pkg.dev/blockchaintestsglobaltestnet/dev-images/op-geth:${COMMIT_HASH}
           # to https://us-west1-docker.pkg.dev/devopsre/celo-blockchain-public/op-geth:${TAG_NAME} 
 
+      - name: Login at GCP Artifact Registry
+        uses: celo-org/reusable-workflows/.github/actions/auth-gcp-artifact-registry@v2.0.5
+        with:
+          workload-id-provider: projects/1094498259535/locations/global/workloadIdentityPools/op-geth-release/providers/github-by-repos
+          service-account: op-geth-release@blockchaintestsglobaltestnet.iam.gserviceaccount.com
+          docker-gcp-registries: us-west1-docker.pkg.dev
+
+      - name: Install Crane
+        run: |
+          curl -sSL https://github.com/google/go-containerregistry/releases/latest/download/go-containerregistry_Linux_x86_64.tar.gz | tar xz -C /usr/local/bin
+  
+      - name: Verify Crane Installation
+        run: crane version
+  
+      - name: Copy Container Image with Crane
+        run: crane copy us-west1-docker.pkg.dev/blockchaintestsglobaltestnet/dev-images/op-geth:${{ steps.get-release-info.outputs.commit }} us-west1-docker.pkg.dev/devopsre/celo-blockchain-public/op-geth:${{ steps.get-release-info.outputs.commit }}
+  
