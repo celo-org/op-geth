@@ -1,0 +1,62 @@
+name: "[cLabs] Publish Docker Image For Release"
+
+on:
+  release:
+    types: [published]  # Trigger the workflow only when a release is published
+
+jobs:
+  get-release-commit:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out the repository code
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # Step 2: Retrieve release commit information
+      - name: Get Release Commit
+        id: get-release-info
+        run: |
+          # Get the tag name of the published release
+          RELEASE_TAG=${{ github.event.release.tag_name }}
+
+          # Fetch the commit associated with the tag
+          RELEASE_COMMIT=$(git rev-list -n 1 "$RELEASE_TAG")
+
+          # Output the commit
+          echo "Release Tag: $RELEASE_TAG"
+          echo "Release Commit: $RELEASE_COMMIT"
+
+          # Save outputs for later steps
+          echo "::set-output name=tag::$RELEASE_TAG"
+          echo "::set-output name=commit::$RELEASE_COMMIT"
+
+      # Step 3: Use the release commit (optional)
+      - name: Use Release Commit
+        run: |
+          echo "The release is associated with tag: ${{ steps.get-release-info.outputs.tag }}"
+          echo "The release is associated with commit: ${{ steps.get-release-info.outputs.commit }}"
+
+          # TO DO: Copy the docker image from us-west1-docker.pkg.dev/blockchaintestsglobaltestnet/dev-images/op-geth:${COMMIT_HASH}
+          # to https://us-west1-docker.pkg.dev/devopsre/celo-blockchain-public/op-geth:${TAG_NAME} 
+
+      # Step 3: Append Tag and Commit to Release Notes
+      - name: Update Release Notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Default token provided by GitHub Actions
+        run: |
+          # Get the current release notes
+          RELEASE_URL="${{ github.event.release.url }}"
+          TAG_NAME="${{ steps.get-release-info.outputs.tag }}"
+          COMMIT_HASH="${{ steps.get-release-info.outputs.commit }}"
+          CURRENT_BODY="${{ github.event.release.body }}"
+
+          # Append tag and commit to the release notes
+          UPDATED_NOTES="${CURRENT_BODY}\n\n---\n**Docker Image:** https://us-west1-docker.pkg.dev/devopsre/celo-blockchain-public/op-geth:${TAG_NAME}\n**Release Tag:** ${TAG_NAME}\n**Commit Hash:** ${COMMIT_HASH}"
+
+          # Update the release notes using GitHub API
+          curl -X PATCH \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"body\": \"$UPDATED_NOTES\"}" \
+            $RELEASE_URL
