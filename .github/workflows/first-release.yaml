@@ -56,5 +56,7 @@ jobs:
           commitish: ${{ github.ref }}
           body: |
             Celo op-geth ${{ github.event.inputs.release_tag }} is forked from [ethereum-optimism/op-geth](https://github.com/ethereum-optimism/op-geth) ${{ github.event.inputs.forked_from }}.
+
+            **Docker Image:** https://us-west1-docker.pkg.dev/devopsre/celo-blockchain-public/op-geth:${{ github.event.inputs.release_tag }}.
           draft: true
           prerelease: false
