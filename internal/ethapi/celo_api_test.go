@@ -1,6 +1,7 @@
 package ethapi
 
 import (
+	"context"
 	"math/big"
 	"testing"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/internal/blocktest"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -505,4 +507,84 @@ func checkTxFields(
 	}
 	assert.Equal(t, (*hexutil.Big)(tx.GatewayFee()), rpcTx.GatewayFee)
 	assert.Equal(t, tx.GatewayFeeRecipient(), rpcTx.GatewayFeeRecipient)
+}
+
+// Test_isCelo1Block tests isCelo1Block function to determine whether the given block time
+// corresponds to Celo1 chain based on the provided chain configuration
+func Test_isCelo1Block(t *testing.T) {
+	cel2Time := uint64(1000)
+
+	t.Run("Non-Celo", func(t *testing.T) {
+		res := isCelo1Block(&params.ChainConfig{
+			Cel2Time: nil,
+		}, 1000)
+
+		assert.False(t, res)
+	})
+
+	t.Run("Celo1", func(t *testing.T) {
+		res := isCelo1Block(&params.ChainConfig{
+			Cel2Time: &cel2Time,
+		}, 500)
+
+		assert.True(t, res)
+	})
+
+	t.Run("Celo2", func(t *testing.T) {
+		res := isCelo1Block(&params.ChainConfig{
+			Cel2Time: &cel2Time,
+		}, 1000)
+
+		assert.False(t, res)
+	})
+}
+
+// TestRPCMarshalBlock_Celo1TotalDifficulty tests the RPCMarshalBlock function, specifically for totalDifficulty field
+// It validates the result has `totalDifficulty` field only if it's Celo1 block
+func TestRPCMarshalBlock_Celo1TotalDifficulty(t *testing.T) {
+	t.Parallel()
+
+	blockTime := uint64(1000)
+	block := types.NewBlock(&types.Header{Number: big.NewInt(100), Time: blockTime}, &types.Body{Transactions: []*types.Transaction{}}, nil, blocktest.NewHasher(), types.DefaultBlockConfig)
+
+	marshalBlock := func(t *testing.T, config *params.ChainConfig) map[string]interface{} {
+		t.Helper()
+
+		resp, err := RPCMarshalBlock(context.Background(), block, false, false, config, testBackend{})
+		if err != nil {
+			require.NoError(t, err)
+		}
+
+		return resp
+	}
+
+	t.Run("Non-Celo", func(t *testing.T) {
+		config := *params.MainnetChainConfig
+
+		res := marshalBlock(t, &config)
+
+		assert.Equal(t, nil, res["totalDifficulty"])
+	})
+
+	t.Run("Celo1", func(t *testing.T) {
+		expected := (*hexutil.Big)(new(big.Int).Add(block.Number(), common.Big1))
+
+		cel2Time := blockTime + 500
+		config := *params.MainnetChainConfig
+		config.Cel2Time = &cel2Time
+
+		res := marshalBlock(t, &config)
+
+		assert.Equal(t, expected, res["totalDifficulty"])
+	})
+
+	t.Run("Celo2", func(t *testing.T) {
+		cel2Time := blockTime - 500
+		config := *params.MainnetChainConfig
+		config.Cel2Time = &cel2Time
+
+		res := marshalBlock(t, &config)
+
+		assert.Equal(t, nil, res["totalDifficulty"])
+	})
 }
