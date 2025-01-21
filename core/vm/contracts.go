@@ -285,6 +285,8 @@ func ActivePrecompiles(rules params.Rules) []common.Address {
 		return addresses
 	}
 
+	// We can't hardcode the cel2 precompiles because they depend on the underlying
+	// active optimism fork, so instead we dynamically calculate them here.
 	precompiledAddressesCel2 := make([]common.Address, 0, len(addresses)+len(PrecompiledCeloContractsCel2))
 	precompiledAddressesCel2 = append(precompiledAddressesCel2, addresses...)
 
