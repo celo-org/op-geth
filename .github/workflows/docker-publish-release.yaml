@@ -9,52 +9,22 @@ jobs:
   get-release-commit:
     runs-on: ubuntu-latest
 
-    steps:
-      # Step 1: Check out the repository code
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
-      # Step 2: Retrieve release commit information
-      - name: Get Release Commit
-        id: get-release-info
-        run: |
-          # Get the tag name of the published release
-          RELEASE_TAG=${{ github.event.release.tag_name }}
-
-          # Fetch the commit associated with the tag
-          RELEASE_COMMIT=$(git rev-list -n 1 "$RELEASE_TAG")
-
-          # Output the commit
-          echo "Release Tag: $RELEASE_TAG"
-          echo "Release Commit: $RELEASE_COMMIT"
-
-          # Save outputs for later steps
-          echo "::set-output name=tag::$RELEASE_TAG"
-          echo "::set-output name=commit::$RELEASE_COMMIT"
-
-      # Step 3: Use the release commit (optional)
-      - name: Use Release Commit
-        run: |
-          echo "The release is associated with tag: ${{ steps.get-release-info.outputs.tag }}"
-          echo "The release is associated with commit: ${{ steps.get-release-info.outputs.commit }}"
-
-          # TO DO: Copy the docker image from us-west1-docker.pkg.dev/blockchaintestsglobaltestnet/dev-images/op-geth:${COMMIT_HASH}
-          # to https://us-west1-docker.pkg.dev/devopsre/celo-blockchain-public/op-geth:${TAG_NAME} 
-
-      - name: Login at GCP Artifact Registry
-        uses: celo-org/reusable-workflows/.github/actions/auth-gcp-artifact-registry@v2.0.5
-        with:
-          workload-id-provider: projects/1094498259535/locations/global/workloadIdentityPools/op-geth-release/providers/github-by-repos
-          service-account: op-geth-release@blockchaintestsglobaltestnet.iam.gserviceaccount.com
-          docker-gcp-registries: us-west1-docker.pkg.dev
-
-      - name: Install Crane
-        run: |
-          curl -sSL https://github.com/google/go-containerregistry/releases/latest/download/go-containerregistry_Linux_x86_64.tar.gz | tar xz -C /usr/local/bin
-  
-      - name: Verify Crane Installation
-        run: crane version
-  
-      - name: Copy Container Image with Crane
-        run: crane copy us-west1-docker.pkg.dev/blockchaintestsglobaltestnet/dev-images/op-geth:${{ steps.get-release-info.outputs.commit }} us-west1-docker.pkg.dev/devopsre/celo-blockchain-public/op-geth:${{ steps.get-release-info.outputs.commit }}
-  
+  Build-Container-Release:
+    permissions:
+      contents: write
+      actions: read
+      pull-requests: write
+      security-events: write
+      attestations: write
+      id-token: write
+    concurrency:
+      group:   ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+      cancel-in-progress: true
+    uses: celo-org/reusable-workflows/.github/workflows/docker-build.yaml@v3.0.0-alpha
+    with:
+      workload-id-provider: projects/1094498259535/locations/global/workloadIdentityPools/gh-op-geth-release/providers/github-by-repos
+      service-account: op-geth-release@blockchaintestsglobaltestnet.iam.gserviceaccount.com
+      artifact-registry: us-west1-docker.pkg.dev/devopsre/celo-blockchain-public/op-geth
+      tags: ${{ github.event.release.tag_name }}
+      context: .
+      debug_enabled: false
