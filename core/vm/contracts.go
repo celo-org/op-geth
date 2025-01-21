@@ -188,7 +188,6 @@ var PrecompiledCeloContractsCel2 = map[common.Address]CeloPrecompiledContract{
 
 var (
 	PrecompiledAddressesGranite   []common.Address
-	PrecompiledAddressesCel2      []common.Address
 	PrecompiledAddressesFjord     []common.Address
 	PrecompiledAddressesPrague    []common.Address
 	PrecompiledAddressesCancun    []common.Address
@@ -284,14 +283,16 @@ func ActivePrecompiles(rules params.Rules) []common.Address {
 		return addresses
 	}
 
-	PrecompiledAddressesCel2 = PrecompiledAddressesCel2[:0]
-	PrecompiledAddressesCel2 = append(PrecompiledAddressesCel2, addresses...)
+	// We can't hardcode the cel2 precompiles because they depend on the underlying
+	// active optimism fork, so instead we dynamically calculate them here.
+	precompiledAddressesCel2 := make([]common.Address, 0, len(addresses)+len(PrecompiledCeloContractsCel2))
+	precompiledAddressesCel2 = append(precompiledAddressesCel2, addresses...)
 
 	for k := range PrecompiledCeloContractsCel2 {
-		PrecompiledAddressesCel2 = append(PrecompiledAddressesCel2, k)
+		precompiledAddressesCel2 = append(precompiledAddressesCel2, k)
 	}
 
-	return PrecompiledAddressesCel2
+	return precompiledAddressesCel2
 }
 
 // RunPrecompiledContract runs and evaluates the output of a precompiled contract.
