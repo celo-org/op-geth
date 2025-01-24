@@ -39,11 +39,12 @@ import (
 // BlockGen creates blocks for testing.
 // See GenerateChain for a detailed explanation.
 type BlockGen struct {
-	i       int
-	cm      *chainMaker
-	parent  *types.Block
-	header  *types.Header
-	statedb *state.StateDB
+	i                  int
+	cm                 *chainMaker
+	parent             *types.Block
+	header             *types.Header
+	statedb            *state.StateDB
+	feeCurrencyContext *common.FeeCurrencyContext
 
 	gasPool     *GasPool
 	txs         []*types.Transaction
@@ -52,6 +53,10 @@ type BlockGen struct {
 	withdrawals []*types.Withdrawal
 
 	engine consensus.Engine
+}
+
+func (b *BlockGen) updateFeeCurrencyContext() {
+	b.feeCurrencyContext = GetFeeCurrencyContext(b.header, b.cm.config, b.statedb)
 }
 
 // SetCoinbase sets the coinbase of the generated block.
@@ -98,7 +103,7 @@ func (b *BlockGen) Difficulty() *big.Int {
 // block.
 func (b *BlockGen) SetParentBeaconRoot(root common.Hash) {
 	b.header.ParentBeaconRoot = &root
-	blockContext := NewEVMBlockContext(b.header, b.cm, &b.header.Coinbase, b.cm.config, b.statedb)
+	blockContext := NewEVMBlockContext(b.header, b.cm, &b.header.Coinbase, b.cm.config, b.statedb, b.feeCurrencyContext)
 	ProcessBeaconBlockRoot(root, vm.NewEVM(blockContext, b.statedb, b.cm.config, vm.Config{}))
 }
 
@@ -114,11 +119,11 @@ func (b *BlockGen) addTx(bc *BlockChain, vmConfig vm.Config, tx *types.Transacti
 		b.SetCoinbase(common.Address{})
 	}
 	var (
-		blockContext = NewEVMBlockContext(b.header, bc, &b.header.Coinbase, b.cm.config, b.statedb)
+		blockContext = NewEVMBlockContext(b.header, bc, &b.header.Coinbase, b.cm.config, b.statedb, b.feeCurrencyContext)
 		evm          = vm.NewEVM(blockContext, b.statedb, b.cm.config, vmConfig)
 	)
 	b.statedb.SetTxContext(tx.Hash(), len(b.txs))
-	receipt, err := ApplyTransaction(evm, b.gasPool, b.statedb, b.header, tx, &b.header.GasUsed)
+	receipt, err := ApplyTransaction(evm, b.gasPool, b.statedb, b.header, tx, &b.header.GasUsed, b.feeCurrencyContext)
 	if err != nil {
 		panic(err)
 	}
@@ -318,7 +323,7 @@ func (b *BlockGen) collectRequests(readonly bool) (requests [][]byte) {
 			panic(fmt.Sprintf("failed to parse deposit log: %v", err))
 		}
 		// create EVM for system calls
-		blockContext := NewEVMBlockContext(b.header, b.cm, &b.header.Coinbase, b.cm.config, b.statedb)
+		blockContext := NewEVMBlockContext(b.header, b.cm, &b.header.Coinbase, b.cm.config, b.statedb, b.feeCurrencyContext)
 		evm := vm.NewEVM(blockContext, statedb, b.cm.config, vm.Config{})
 		// EIP-7002
 		ProcessWithdrawalQueue(&requests, evm)
@@ -370,6 +375,7 @@ func GenerateChain(config *params.ChainConfig, parent *types.Block, engine conse
 			h := types.EmptyWithdrawalsHash
 			b.header.WithdrawalsHash = &h
 		}
+		b.updateFeeCurrencyContext()
 
 		// Mutate the state and block according to any hard-fork specs
 		if daoBlock := config.DAOForkBlock; daoBlock != nil {
@@ -386,7 +392,7 @@ func GenerateChain(config *params.ChainConfig, parent *types.Block, engine conse
 
 		if config.IsPrague(b.header.Number, b.header.Time) {
 			// EIP-2935
-			blockContext := NewEVMBlockContext(b.header, cm, &b.header.Coinbase, b.cm.config, b.statedb)
+			blockContext := NewEVMBlockContext(b.header, cm, &b.header.Coinbase, b.cm.config, b.statedb, b.feeCurrencyContext)
 			blockContext.Random = &common.Hash{} // enable post-merge instruction set
 			evm := vm.NewEVM(blockContext, statedb, cm.config, vm.Config{})
 			ProcessParentBlockHash(b.header.ParentHash, evm)
@@ -487,6 +493,7 @@ func GenerateVerkleChain(config *params.ChainConfig, parent *types.Block, engine
 	genblock := func(i int, parent *types.Block, triedb *triedb.Database, statedb *state.StateDB) (*types.Block, types.Receipts) {
 		b := &BlockGen{i: i, cm: cm, parent: parent, statedb: statedb, engine: engine}
 		b.header = cm.makeHeader(parent, statedb, b.engine)
+		b.updateFeeCurrencyContext()
 
 		// TODO uncomment when proof generation is merged
 		// Save pre state for proof generation
@@ -495,7 +502,7 @@ func GenerateVerkleChain(config *params.ChainConfig, parent *types.Block, engine
 		// Pre-execution system calls.
 		if config.IsPrague(b.header.Number, b.header.Time) {
 			// EIP-2935
-			blockContext := NewEVMBlockContext(b.header, cm, &b.header.Coinbase, b.cm.config, b.statedb)
+			blockContext := NewEVMBlockContext(b.header, cm, &b.header.Coinbase, b.cm.config, b.statedb, b.feeCurrencyContext)
 			evm := vm.NewEVM(blockContext, statedb, cm.config, vm.Config{})
 			ProcessParentBlockHash(b.header.ParentHash, evm)
 		}
