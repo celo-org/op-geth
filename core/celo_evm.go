@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
-// XXYXX
 func setCeloFieldsInBlockContext(blockContext *vm.BlockContext, header *types.Header, config *params.ChainConfig, statedb vm.StateDB) {
 	if !config.IsCel2(header.Time) {
 		return
