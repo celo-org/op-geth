@@ -96,11 +96,11 @@ func (c *celoLegacy) txFuncs(tx *Transaction) *txFuncs {
 		return celoLegacyTxFuncs
 	case t == DynamicFeeTxType:
 		// We handle the dynamic fee tx type here because we need to handle
-		// migrated dynamic fee txs. These were enabeled in celo in the Espresso
+		// migrated dynamic fee txs. These were enabled in celo in the Espresso
 		// hardfork, which doesn't have any analogue in op-geth. Even though
 		// op-geth does enable support for dynamic fee txs in the London
 		// hardfork (which we set to the cel2 block) that fork contains a lot of
-		// changes that were not part of Espresso. So instead we ned to handle
+		// changes that were not part of Espresso. So instead we need to handle
 		// DynamicFeeTxTypes here.
 		return dynamicFeeTxFuncs
 	case t == AccessListTxType:
