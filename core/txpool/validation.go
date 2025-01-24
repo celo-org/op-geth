@@ -69,9 +69,9 @@ type ValidationOptions struct {
 }
 
 // ValidationFunction is an method type which the pools use to perform the tx-validations which do not
-// require state access. Production code typically uses ValidateTransaction, whereas testing-code
+// require state access. Production code typically uses CeloValidateTransaction, whereas testing-code
 // might choose to instead use something else, e.g. to always fail or avoid heavy cpu usage.
-type ValidationFunction func(tx *types.Transaction, head *types.Header, signer types.Signer, opts *CeloValidationOptions) error
+type ValidationFunction func(tx *types.Transaction, head *types.Header, signer types.Signer, opts *CeloValidationOptions, currencyCtx common.FeeCurrencyContext) error
 
 // ValidateTransaction is a helper method to check whether a transaction is valid
 // according to the consensus rules, but does not check state-dependent validation
@@ -80,7 +80,7 @@ type ValidationFunction func(tx *types.Transaction, head *types.Header, signer t
 // This check is public to allow different transaction pools to check the basic
 // rules without duplicating code and running the risk of missed updates.
 // ONLY TO BE CALLED FROM "CeloValidateTransaction"
-func ValidateTransaction(tx *types.Transaction, head *types.Header, signer types.Signer, opts *CeloValidationOptions) error {
+func ValidateTransaction(tx *types.Transaction, head *types.Header, signer types.Signer, opts *CeloValidationOptions, currencyCtx common.FeeCurrencyContext) error {
 	// No unauthenticated deposits allowed in the transaction pool.
 	// This is for spam protection, not consensus,
 	// as the external engine-API user authenticates deposits.
@@ -139,7 +139,16 @@ func ValidateTransaction(tx *types.Transaction, head *types.Header, signer types
 	}
 	// Ensure the transaction has more gas than the bare minimum needed to cover
 	// the transaction metadata
-	intrGas, err := core.IntrinsicGas(tx.Data(), tx.AccessList(), tx.SetCodeAuthorizations(), tx.To() == nil, true, opts.Config.IsIstanbul(head.Number), opts.Config.IsShanghai(head.Number, head.Time), tx.FeeCurrency())
+	intrGas, err := core.IntrinsicGas(
+		tx.Data(),
+		tx.AccessList(), tx.SetCodeAuthorizations(),
+		tx.To() == nil,
+		true,
+		opts.Config.IsIstanbul(head.Number),
+		opts.Config.IsShanghai(head.Number, head.Time),
+		tx.FeeCurrency(),
+		currencyCtx.IntrinsicGasCosts,
+	)
 	if err != nil {
 		return err
 	}
