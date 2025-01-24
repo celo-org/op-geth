@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/types/interoptypes"
@@ -38,7 +39,7 @@ func (s *Ethereum) SimLogs(tx *types.Transaction) ([]*types.Log, error) {
 	var vmConf vm.Config
 	signer := types.MakeSigner(chainConfig, header.Number, header.Time)
 	chainCtx := ethapi.NewChainContext(context.Background(), s.APIBackend)
-	blockCtx := core.NewEVMBlockContext(header, chainCtx, &header.Coinbase, chainConfig, state)
+	blockCtx := core.NewEVMBlockContext(header, chainCtx, &header.Coinbase, chainConfig, state, &common.FeeCurrencyContext{})
 	message, err := core.TransactionToMessage(tx, signer, header.BaseFee, blockCtx.FeeCurrencyContext.ExchangeRates)
 	if err != nil {
 		return nil, fmt.Errorf("cannot convert tx to message for log simulation: %w", err)

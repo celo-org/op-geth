@@ -9,9 +9,9 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
-func setCeloFieldsInBlockContext(blockContext *vm.BlockContext, header *types.Header, config *params.ChainConfig, statedb vm.StateDB) {
+func GetFeeCurrencyContext(header *types.Header, config *params.ChainConfig, statedb vm.StateDB) *common.FeeCurrencyContext {
 	if !config.IsCel2(header.Time) {
-		return
+		return &common.FeeCurrencyContext{}
 	}
 
 	caller := &contracts.CeloBackend{ChainConfig: config, State: statedb}
@@ -20,7 +20,7 @@ func setCeloFieldsInBlockContext(blockContext *vm.BlockContext, header *types.He
 	if err != nil {
 		log.Error("Error fetching exchange rates!", "err", err)
 	}
-	blockContext.FeeCurrencyContext = feeCurrencyContext
+	return &feeCurrencyContext
 }
 
 func GetExchangeRates(header *types.Header, config *params.ChainConfig, statedb vm.StateDB) common.ExchangeRates {
