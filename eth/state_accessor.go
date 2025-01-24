@@ -234,8 +234,9 @@ func (eth *Ethereum) stateAtTransaction(ctx context.Context, block *types.Block,
 	if err != nil {
 		return nil, vm.BlockContext{}, nil, nil, err
 	}
+	feeCurrencyContext := core.GetFeeCurrencyContext(block.Header(), eth.blockchain.Config(), statedb)
 	// Insert parent beacon block root in the state as per EIP-4788.
-	context := core.NewEVMBlockContext(block.Header(), eth.blockchain, nil, eth.blockchain.Config(), statedb)
+	context := core.NewEVMBlockContext(block.Header(), eth.blockchain, nil, eth.blockchain.Config(), statedb, feeCurrencyContext)
 	evm := vm.NewEVM(context, statedb, eth.blockchain.Config(), vm.Config{})
 	if beaconRoot := block.BeaconRoot(); beaconRoot != nil {
 		core.ProcessBeaconBlockRoot(*beaconRoot, evm)
