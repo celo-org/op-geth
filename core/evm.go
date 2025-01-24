@@ -40,7 +40,7 @@ type ChainContext interface {
 }
 
 // NewEVMBlockContext creates a new context for use in the EVM.
-func NewEVMBlockContext(header *types.Header, chain ChainContext, author *common.Address, config *params.ChainConfig, statedb vm.StateDB) vm.BlockContext {
+func NewEVMBlockContext(header *types.Header, chain ChainContext, author *common.Address, config *params.ChainConfig, statedb vm.StateDB, feeCurrencyContext *common.FeeCurrencyContext) vm.BlockContext {
 	var (
 		beneficiary common.Address
 		baseFee     *big.Int
@@ -78,7 +78,9 @@ func NewEVMBlockContext(header *types.Header, chain ChainContext, author *common
 		L1CostFunc:  types.NewL1CostFunc(config, statedb),
 	}
 
-	setCeloFieldsInBlockContext(&blockContext, header, config, statedb)
+	if config.IsCel2(header.Time) {
+		blockContext.FeeCurrencyContext = *feeCurrencyContext
+	}
 
 	return blockContext
 }
