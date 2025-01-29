@@ -347,12 +347,6 @@ func NewBlockChain(db ethdb.Database, cacheConfig *CacheConfig, genesis *Genesis
 	// Make sure the state associated with the block is available, or log out
 	// if there is no available state, waiting for state sync.
 	head := bc.CurrentBlock()
-	// Make sure Cel2 chain has migrated data from Celo1
-	if chainConfig.Cel2Time != nil && !chainConfig.IsCel2(head.Time) {
-		log.Error("Migrated data for Cel2 is missing, please ensure the migrated data from Celo1 can be properly loaded before starting the blockchain",
-			"current number", head.Number, "current hash", head.Hash())
-		return nil, fmt.Errorf("missing migrated data")
-	}
 	if !bc.HasState(head.Root) {
 		if head.Number.Uint64() == 0 {
 			// The genesis state is missing, which is only possible in the path-based

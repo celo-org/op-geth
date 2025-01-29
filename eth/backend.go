@@ -255,6 +255,13 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Make sure Cel2 full sync node has migrated data from Celo1
+	currentBlock := eth.blockchain.CurrentBlock()
+	if config.SyncMode == downloader.FullSync && chainConfig.Cel2Time != nil && !chainConfig.IsCel2(currentBlock.Number.Uint64()) {
+		log.Error("Migrated data for Cel2 is missing, please ensure the migrated data from Celo1 can be properly loaded before starting the blockchain",
+			"current number", currentBlock.Number.Uint64(), "current hash", currentBlock.Hash())
+		return nil, fmt.Errorf("missing migrated data")
+	}
 	if chainConfig := eth.blockchain.Config(); chainConfig.Optimism != nil { // config.Genesis.Config.ChainID cannot be used because it's based on CLI flags only, thus default to mainnet L1
 		config.NetworkId = chainConfig.ChainID.Uint64() // optimism defaults eth network ID to chain ID
 		eth.networkID = config.NetworkId
