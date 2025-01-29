@@ -153,8 +153,8 @@ func newTestWorkerBackend(t *testing.T, chainConfig *params.ChainConfig, engine 
 
 func (b *testWorkerBackend) BlockChain() *core.BlockChain { return b.chain }
 func (b *testWorkerBackend) TxPool() *txpool.TxPool       { return b.txPool }
-func (m *testWorkerBackend) CeloAPIBackend() APIBackend {
-	return m.apiBackend
+func (b *testWorkerBackend) CeloAPIBackend() APIBackend {
+	return b.apiBackend
 }
 
 func newTestWorker(t *testing.T, chainConfig *params.ChainConfig, engine consensus.Engine, db ethdb.Database, blocks int) (*Miner, *testWorkerBackend) {
