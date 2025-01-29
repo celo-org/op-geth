@@ -18,6 +18,7 @@
 package miner
 
 import (
+	"context"
 	"math/big"
 	"sync"
 	"testing"
@@ -35,13 +36,15 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/ethereum/go-ethereum/trie"
 	"github.com/ethereum/go-ethereum/triedb"
 )
 
 type mockBackend struct {
-	bc     *core.BlockChain
-	txPool *txpool.TxPool
+	bc         *core.BlockChain
+	txPool     *txpool.TxPool
+	apiBackend *testAPIBackend
 }
 
 func NewMockBackend(bc *core.BlockChain, txPool *txpool.TxPool) *mockBackend {
@@ -57,6 +60,10 @@ func (m *mockBackend) BlockChain() *core.BlockChain {
 
 func (m *mockBackend) TxPool() *txpool.TxPool {
 	return m.txPool
+}
+
+func (m *mockBackend) CeloAPIBackend() APIBackend {
+	return m.apiBackend
 }
 
 type testBlockChain struct {
@@ -93,6 +100,12 @@ func (bc *testBlockChain) HasState(root common.Hash) bool {
 
 func (bc *testBlockChain) SubscribeChainHeadEvent(ch chan<- core.ChainHeadEvent) event.Subscription {
 	return bc.chainHeadFeed.Subscribe(ch)
+}
+
+type testAPIBackend struct{}
+
+func (ab *testAPIBackend) GetExchangeRates(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash) (common.ExchangeRates, error) {
+	return nil, nil
 }
 
 func TestBuildPendingBlocks(t *testing.T) {

@@ -34,6 +34,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types/interoptypes"
 	"github.com/ethereum/go-ethereum/eth/tracers"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/rpc"
 )
 
 // Backend wraps all methods required for mining. Only full node is capable
@@ -41,6 +42,7 @@ import (
 type Backend interface {
 	BlockChain() *core.BlockChain
 	TxPool() *txpool.TxPool
+	CeloAPIBackend() APIBackend
 }
 
 type BackendWithHistoricalState interface {
@@ -49,6 +51,10 @@ type BackendWithHistoricalState interface {
 
 type BackendWithInterop interface {
 	CheckMessages(ctx context.Context, messages []interoptypes.Message, minSafety interoptypes.SafetyLevel) error
+}
+
+type APIBackend interface {
+	GetExchangeRates(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash) (common.ExchangeRates, error)
 }
 
 // Config is the configuration parameters of mining.

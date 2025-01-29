@@ -29,6 +29,7 @@ import (
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/exchange"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/consensus/misc/eip1559"
@@ -276,8 +277,10 @@ func (t *Transaction) GasPrice(ctx context.Context) hexutil.Big {
 	case types.DynamicFeeTxType:
 		if block != nil {
 			if baseFee, _ := block.BaseFeePerGas(ctx); baseFee != nil {
-				// price = min(gasTipCap + baseFee, gasFeeCap)
-				return (hexutil.Big)(*math.BigMin(new(big.Int).Add(tx.GasTipCap(), baseFee.ToInt()), tx.GasFeeCap()))
+				if baseFee, _ := t.getBaseFeeInCurrency(ctx, block.block.NumberU64(), baseFee.ToInt(), tx.FeeCurrency()); baseFee != nil {
+					// price = min(gasTipCap + baseFee, gasFeeCap)
+					return (hexutil.Big)(*math.BigMin(new(big.Int).Add(tx.GasTipCap(), baseFee), tx.GasFeeCap()))
+				}
 			}
 		}
 		return hexutil.Big(*tx.GasPrice())
@@ -302,7 +305,11 @@ func (t *Transaction) EffectiveGasPrice(ctx context.Context) (*hexutil.Big, erro
 	if header.BaseFee == nil {
 		return (*hexutil.Big)(tx.GasPrice()), nil
 	}
-	return (*hexutil.Big)(math.BigMin(new(big.Int).Add(tx.GasTipCap(), header.BaseFee), tx.GasFeeCap())), nil
+	baseFee, err := t.getBaseFeeInCurrency(ctx, header.Number.Uint64(), header.BaseFee, tx.FeeCurrency())
+	if err != nil {
+		return nil, err
+	}
+	return (*hexutil.Big)(math.BigMin(new(big.Int).Add(tx.GasTipCap(), baseFee), tx.GasFeeCap())), nil
 }
 
 func (t *Transaction) MaxFeePerGas(ctx context.Context) *hexutil.Big {
@@ -368,7 +375,15 @@ func (t *Transaction) EffectiveTip(ctx context.Context) (*hexutil.Big, error) {
 		return (*hexutil.Big)(tx.GasPrice()), nil
 	}
 
-	tip, err := tx.EffectiveGasTip(header.BaseFee)
+	var tip *big.Int
+	if tx.FeeCurrency() == nil {
+		tip, err = tx.EffectiveGasTip(header.BaseFee)
+	} else {
+		var rates common.ExchangeRates
+		if rates, err = t.r.backend.GetExchangeRates(ctx, rpc.BlockNumberOrHashWithNumber(rpc.BlockNumber(block.block.NumberU64()))); err != nil {
+			tip, err = tx.EffectiveGasTipInCurrency(header.BaseFee, rates)
+		}
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -639,6 +654,17 @@ func (t *Transaction) RawReceipt(ctx context.Context) (hexutil.Bytes, error) {
 		return hexutil.Bytes{}, err
 	}
 	return receipt.MarshalBinary()
+}
+
+func (t *Transaction) getBaseFeeInCurrency(ctx context.Context, number uint64, baseFee *big.Int, feeCurrency *common.Address) (*big.Int, error) {
+	if feeCurrency == nil {
+		return baseFee, nil
+	}
+	rates, err := t.r.backend.GetExchangeRates(ctx, rpc.BlockNumberOrHashWithNumber(rpc.BlockNumber(number)))
+	if err != nil {
+		return nil, err
+	}
+	return exchange.ConvertCeloToCurrency(rates, feeCurrency, baseFee)
 }
 
 type BlockType int

@@ -40,6 +40,7 @@ import (
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/holiman/uint256"
 )
 
@@ -159,6 +160,7 @@ func (miner *Miner) generateWork(params *generateParams, witness bool) *newPaylo
 
 	misc.EnsureCreate2Deployer(miner.chainConfig, work.header.Time, work.state)
 
+	shouldFetchRates := false
 	for _, tx := range params.txs {
 		from, _ := types.Sender(work.signer, tx)
 		work.state.SetTxContext(tx.Hash(), work.tcount)
@@ -170,6 +172,9 @@ func (miner *Miner) generateWork(params *generateParams, witness bool) *newPaylo
 		// subtract the gas. Don't check the error either, this has been checked already
 		// with the work.gasPool.
 		work.multiGasPool.PoolFor(nil).SubGas(tx.Gas())
+		if !shouldFetchRates && tx.FeeCurrency() != nil {
+			shouldFetchRates = true
+		}
 	}
 	if !params.noTxs {
 		// use shared interrupt if present
@@ -210,9 +215,18 @@ func (miner *Miner) generateWork(params *generateParams, witness bool) *newPaylo
 	if err != nil {
 		return &newPayloadResult{err: err}
 	}
+
+	var rates common.ExchangeRates
+	if shouldFetchRates {
+		rates, err = miner.backend.CeloAPIBackend().GetExchangeRates(context.Background(), rpc.BlockNumberOrHashWithHash(block.Header().ParentHash, false))
+		if err != nil {
+			return &newPayloadResult{err: err}
+		}
+	}
+
 	return &newPayloadResult{
 		block:    block,
-		fees:     totalFees(block, work.receipts),
+		fees:     totalFees(block, work.receipts, rates),
 		sidecars: work.sidecars,
 		stateDB:  work.state,
 		receipts: work.receipts,
@@ -753,11 +767,13 @@ func (miner *Miner) fillTransactions(interrupt *atomic.Int32, env *environment) 
 }
 
 // totalFees computes total consumed miner fees in Wei. Block transactions and receipts have to have the same order.
-func totalFees(block *types.Block, receipts []*types.Receipt) *big.Int {
+func totalFees(block *types.Block, receipts []*types.Receipt, exchangeRates common.ExchangeRates) *big.Int {
 	feesWei := new(big.Int)
 	for i, tx := range block.Transactions() {
-		minerFee, _ := tx.EffectiveGasTip(block.BaseFee())
-		feesWei.Add(feesWei, new(big.Int).Mul(new(big.Int).SetUint64(receipts[i].GasUsed), minerFee))
+		minerFee, _ := tx.EffectiveGasTipInCelo(block.BaseFee(), exchangeRates)
+		if minerFee != nil {
+			feesWei.Add(feesWei, new(big.Int).Mul(new(big.Int).SetUint64(receipts[i].GasUsed), minerFee))
+		}
 	}
 	return feesWei
 }
