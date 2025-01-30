@@ -1,0 +1,62 @@
+name: "[cLabs] Create First Draft Release For A Branch"
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'The tag for the release (e.g., v1.0.0)'
+        required: true
+      forked_from:
+        description: 'The op-geth version this release is forked from (e.g., v1.0.0)'
+        required: true
+
+jobs:
+
+  check-release:
+      runs-on: ubuntu-latest
+      outputs:
+        release_exists: ${{ steps.check_release.outputs.release_exists }}
+      steps:
+        # Query the GitHub API to check for a release
+        - name: Check if release exists
+          id: check_release
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          run: |
+            RELEASES=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+                        -H "Accept: application/vnd.github.v3+json" \
+                        "https://api.github.com/repos/${{ github.repository }}/releases")
+  
+            BRANCH="${{ github.ref }}" # Current branch
+            if echo "$RELEASES" | jq -e ".[] | select(.target_commitish == \"$BRANCH\")" > /dev/null; then
+              echo "Release exists for branch $BRANCH."
+              echo "release_exists=true" >> $GITHUB_OUTPUT
+            else
+              echo "No release found for branch $BRANCH."
+              echo "release_exists=false" >> $GITHUB_OUTPUT
+            fi
+
+  create-release:
+    runs-on: ubuntu-latest
+    needs: check-release
+    if: needs.check-release.outputs.release_exists == 'false'
+    steps:
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        with:
+          tag_name: ${{ github.event.inputs.release_tag }}
+          release_name: Celo op-geth ${{ github.event.inputs.release_tag }}
+          commitish: ${{ github.ref }}
+          body: |
+            Celo op-geth ${{ github.event.inputs.release_tag }} is forked from [ethereum-optimism/op-geth](https://github.com/ethereum-optimism/op-geth) ${{ github.event.inputs.forked_from }}.
+
+            **Docker Image:** https://us-west1-docker.pkg.dev/devopsre/celo-blockchain-public/op-geth:${{ github.event.inputs.release_tag }}.
+          draft: true
+          prerelease: false
