@@ -268,44 +268,23 @@ func (oracle *Oracle) getBlockValues(ctx context.Context, blockNum uint64, limit
 	}
 	signer := types.MakeSigner(oracle.backend.ChainConfig(), block.Number(), block.Time())
 
-	// Only fetch exchange rates if any transaction in the block specifies a FeeCurrency
-	// This ensures that existing tests remain unaffected
-	txs := block.Transactions()
-	shouldFetchRates := false
-	for _, tx := range txs {
-		if tx.FeeCurrency() != nil {
-			shouldFetchRates = true
-			break
-		}
-	}
-
-	var rates common.ExchangeRates
-	if shouldFetchRates {
-		rates, err = oracle.backend.GetExchangeRates(ctx, rpc.BlockNumberOrHashWithNumber(rpc.BlockNumber(blockNum)))
-		if err != nil {
-			select {
-			case result <- results{nil, err}:
-			case <-quit:
-			}
-			return
-		}
-	}
-
 	// Sort the transaction by effective tip in ascending sort.
+	txs := block.Transactions()
 	sortedTxs := make([]*types.Transaction, len(txs))
 	copy(sortedTxs, txs)
 	baseFee := block.BaseFee()
 	slices.SortFunc(sortedTxs, func(a, b *types.Transaction) int {
 		// It's okay to discard the error because a tx would never be
 		// accepted into a block with an invalid effective tip.
-		tip1, _ := a.EffectiveGasTipInCelo(baseFee, rates)
-		tip2, _ := b.EffectiveGasTipInCelo(baseFee, rates)
+		// NOTE: No need to consider fee currency conversion because Optimism fork never calls this function (see SuggestTipCap)
+		tip1, _ := a.EffectiveGasTip(baseFee)
+		tip2, _ := b.EffectiveGasTip(baseFee)
 		return tip1.Cmp(tip2)
 	})
 
 	var prices []*big.Int
 	for _, tx := range sortedTxs {
-		tip, _ := tx.EffectiveGasTipInCelo(baseFee, rates)
+		tip, _ := tx.EffectiveGasTip(baseFee)
 		if ignoreUnder != nil && tip.Cmp(ignoreUnder) == -1 {
 			continue
 		}

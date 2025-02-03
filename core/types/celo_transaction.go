@@ -93,6 +93,9 @@ func (tx *Transaction) EffectiveGasTipInCurrency(baseFeeInCelo *big.Int, exchang
 	if feeCurrency == nil {
 		return tx.EffectiveGasTip(baseFeeInCelo)
 	}
+	if baseFeeInCelo == nil {
+		return tx.GasTipCap(), nil
+	}
 
 	baseFee, err := exchange.ConvertCeloToCurrency(exchangeRates, feeCurrency, baseFeeInCelo)
 	if err != nil {
@@ -111,16 +114,21 @@ func (tx *Transaction) EffectiveGasTipInCelo(baseFeeInCelo *big.Int, exchangeRat
 		return tx.EffectiveGasTip(baseFeeInCelo)
 	}
 
-	baseFee, err := exchange.ConvertCeloToCurrency(exchangeRates, feeCurrency, baseFeeInCelo)
-	if err != nil {
-		return nil, err
-	}
-	gasTipInCurrency, err := tx.EffectiveGasTip(baseFee)
-	if err != nil {
-		return nil, err
+	var feeInCurrency *big.Int
+	if baseFeeInCelo == nil {
+		feeInCurrency = tx.GasTipCap()
+	} else {
+		baseFee, err := exchange.ConvertCeloToCurrency(exchangeRates, feeCurrency, baseFeeInCelo)
+		if err != nil {
+			return nil, err
+		}
+		feeInCurrency, err = tx.EffectiveGasTip(baseFee)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	return exchange.ConvertCurrencyToCelo(exchangeRates, feeCurrency, gasTipInCurrency)
+	return exchange.ConvertCurrencyToCelo(exchangeRates, feeCurrency, feeInCurrency)
 }
 
 // CompareWithRates compares the effective gas price of two transactions according to the exchange rates and

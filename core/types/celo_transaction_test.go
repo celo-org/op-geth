@@ -91,6 +91,17 @@ func TestTransactionEffectiveGasTipInCurrency(t *testing.T) {
 		assert.Equal(t, big.NewInt(6e8), gasPriceInCurrency)
 	})
 
+	t.Run("tx should return GasTipCap with conversions between Celo and USDT when the transaction is CeloDynamicFeeTxV2 with the specified fee currency but the base fee is nil", func(t *testing.T) {
+		gasPriceInCelo, gasPriceInCurrency := getGasPrices(t, NewTx(&CeloDynamicFeeTxV2{
+			FeeCurrency: &usdToken,
+			GasFeeCap:   big.NewInt(18e8), // USD
+			GasTipCap:   big.NewInt(6e8),  // USD
+		}), nil)
+
+		assert.Equal(t, big.NewInt(3e8), gasPriceInCelo)
+		assert.Equal(t, big.NewInt(6e8), gasPriceInCurrency)
+	})
+
 	// Error cases
 	t.Run("tx should return an error when the fee currency which is not listed in the exchange rates is specified", func(t *testing.T) {
 		tx := NewTx(&CeloDynamicFeeTxV2{
