@@ -274,7 +274,7 @@ func (t *Transaction) GasPrice(ctx context.Context) hexutil.Big {
 		return hexutil.Big{}
 	}
 	switch tx.Type() {
-	case types.DynamicFeeTxType:
+	case types.DynamicFeeTxType, types.CeloDenominatedTxType, types.CeloDynamicFeeTxType, types.CeloDynamicFeeTxV2Type:
 		if block != nil {
 			if baseFee, _ := block.BaseFeePerGas(ctx); baseFee != nil {
 				if baseFee, _ := t.getBaseFeeInCurrency(ctx, block.block.NumberU64(), baseFee.ToInt(), tx.FeeCurrency()); baseFee != nil {
@@ -380,7 +380,7 @@ func (t *Transaction) EffectiveTip(ctx context.Context) (*hexutil.Big, error) {
 		tip, err = tx.EffectiveGasTip(header.BaseFee)
 	} else {
 		var rates common.ExchangeRates
-		if rates, err = t.r.backend.GetExchangeRates(ctx, rpc.BlockNumberOrHashWithNumber(rpc.BlockNumber(block.block.NumberU64()))); err != nil {
+		if rates, err = t.r.backend.GetExchangeRates(ctx, rpc.BlockNumberOrHashWithNumber(rpc.BlockNumber(block.block.NumberU64()))); rates != nil {
 			tip, err = tx.EffectiveGasTipInCurrency(header.BaseFee, rates)
 		}
 	}
