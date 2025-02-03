@@ -47,10 +47,11 @@ type mockBackend struct {
 	apiBackend *testAPIBackend
 }
 
-func NewMockBackend(bc *core.BlockChain, txPool *txpool.TxPool) *mockBackend {
+func NewMockBackend(bc *core.BlockChain, txPool *txpool.TxPool, apiBackend *testAPIBackend) *mockBackend {
 	return &mockBackend{
-		bc:     bc,
-		txPool: txPool,
+		bc:         bc,
+		txPool:     txPool,
+		apiBackend: apiBackend,
 	}
 }
 
@@ -102,10 +103,12 @@ func (bc *testBlockChain) SubscribeChainHeadEvent(ch chan<- core.ChainHeadEvent)
 	return bc.chainHeadFeed.Subscribe(ch)
 }
 
-type testAPIBackend struct{}
+type testAPIBackend struct {
+	rates common.ExchangeRates
+}
 
 func (ab *testAPIBackend) GetExchangeRates(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash) (common.ExchangeRates, error) {
-	return nil, nil
+	return ab.rates, nil
 }
 
 func TestBuildPendingBlocks(t *testing.T) {
@@ -180,7 +183,7 @@ func createMiner(t *testing.T) *Miner {
 	txpool, _ := txpool.New(testTxPoolConfig.PriceLimit, blockchain, []txpool.SubPool{pool}, nil)
 
 	// Create Miner
-	backend := NewMockBackend(bc, txpool)
+	backend := NewMockBackend(bc, txpool, nil)
 	miner := New(backend, config, engine)
 	return miner
 }

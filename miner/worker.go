@@ -200,8 +200,11 @@ func (miner *Miner) generateWork(params *generateParams, witness bool) *newPaylo
 
 	body := types.Body{Transactions: work.txs, Withdrawals: params.withdrawals}
 	allLogs := make([]*types.Log, 0)
-	for _, r := range work.receipts {
+	for idx, r := range work.receipts {
 		allLogs = append(allLogs, r.Logs...)
+		if !shouldFetchRates && idx < len(work.txs) && work.txs[idx].FeeCurrency() != nil {
+			shouldFetchRates = true
+		}
 	}
 	// Read requests if Prague is enabled.
 	if miner.chainConfig.IsPrague(work.header.Number, work.header.Time) {
@@ -770,7 +773,10 @@ func (miner *Miner) fillTransactions(interrupt *atomic.Int32, env *environment) 
 func totalFees(block *types.Block, receipts []*types.Receipt, exchangeRates common.ExchangeRates) *big.Int {
 	feesWei := new(big.Int)
 	for i, tx := range block.Transactions() {
-		minerFee, _ := tx.EffectiveGasTipInCelo(block.BaseFee(), exchangeRates)
+		minerFee, err := tx.EffectiveGasTipInCelo(block.BaseFee(), exchangeRates)
+		if err != nil {
+			log.Warn("failed to get effective gas tip for miner fees", "block hash", block.Hash(), "block height", block.Number().Uint64(), "error", err)
+		}
 		if minerFee != nil {
 			feesWei.Add(feesWei, new(big.Int).Mul(new(big.Int).SetUint64(receipts[i].GasUsed), minerFee))
 		}
