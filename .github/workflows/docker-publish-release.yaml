@@ -6,9 +6,6 @@ on:
     types: [published]  # Trigger the workflow only when a release is published
 
 jobs:
-  get-release-commit:
-    runs-on: ubuntu-latest
-
   Build-Container-Release:
     permissions:
       contents: write
