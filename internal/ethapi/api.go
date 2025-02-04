@@ -32,6 +32,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/accounts/scwallet"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/exchange"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/consensus"
@@ -527,7 +528,11 @@ func (api *PersonalAccountAPI) SignTransaction(ctx context.Context, args Transac
 	}
 	// Before actually signing the transaction, ensure the transaction fee is reasonable.
 	tx := args.ToTransaction(types.LegacyTxType)
-	if err := checkTxFee(tx.GasPrice(), tx.Gas(), api.b.RPCTxFeeCap()); err != nil {
+	txFeeCap, err := ConvertTxFeeCapToCurrency(ctx, api.b, tx.FeeCurrency())
+	if err != nil {
+		return nil, err
+	}
+	if err := checkTxFee(tx.GasPrice(), tx.Gas(), txFeeCap); err != nil {
 		return nil, err
 	}
 	signed, err := api.signTransaction(ctx, &args, passwd)
@@ -2218,10 +2223,14 @@ func (api *TransactionAPI) sign(addr common.Address, tx *types.Transaction) (*ty
 }
 
 // SubmitTransaction is a helper function that submits tx to txPool and logs a message.
-func SubmitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (common.Hash, error) {
+func SubmitTransaction(ctx context.Context, b CeloBackend, tx *types.Transaction) (common.Hash, error) {
 	// If the transaction fee cap is already specified, ensure the
 	// fee of the given transaction is _reasonable_.
-	if err := checkTxFee(tx.GasPrice(), tx.Gas(), b.RPCTxFeeCap()); err != nil {
+	txFeeCap, err := ConvertTxFeeCapToCurrency(ctx, b, tx.FeeCurrency())
+	if err != nil {
+		return common.Hash{}, err
+	}
+	if err := checkTxFee(tx.GasPrice(), tx.Gas(), txFeeCap); err != nil {
 		return common.Hash{}, err
 	}
 	if !b.UnprotectedAllowed() && !tx.Protected() {
@@ -2366,7 +2375,11 @@ func (api *TransactionAPI) SignTransaction(ctx context.Context, args Transaction
 	}
 	// Before actually sign the transaction, ensure the transaction fee is reasonable.
 	tx := args.ToTransaction(types.LegacyTxType)
-	if err := checkTxFee(tx.GasPrice(), tx.Gas(), api.b.RPCTxFeeCap()); err != nil {
+	txFeeCap, err := ConvertTxFeeCapToCurrency(ctx, api.b, tx.FeeCurrency())
+	if err != nil {
+		return nil, err
+	}
+	if err := checkTxFee(tx.GasPrice(), tx.Gas(), txFeeCap); err != nil {
 		return nil, err
 	}
 	signed, err := api.sign(args.from(), tx)
@@ -2434,7 +2447,11 @@ func (api *TransactionAPI) Resend(ctx context.Context, sendArgs TransactionArgs,
 	if gasLimit != nil {
 		gas = uint64(*gasLimit)
 	}
-	if err := checkTxFee(price, gas, api.b.RPCTxFeeCap()); err != nil {
+	txFeeCap, err := ConvertTxFeeCapToCurrency(ctx, api.b, matchTx.FeeCurrency())
+	if err != nil {
+		return common.Hash{}, err
+	}
+	if err := checkTxFee(price, gas, txFeeCap); err != nil {
 		return common.Hash{}, err
 	}
 	// Iterate the pending list for replacement
@@ -2464,6 +2481,39 @@ func (api *TransactionAPI) Resend(ctx context.Context, sendArgs TransactionArgs,
 		}
 	}
 	return common.Hash{}, fmt.Errorf("transaction %#x not found", matchTx.Hash())
+}
+
+// ConvertTxFeeCapToCurrency converts FeeCap in native currency into the specified currency
+// If no fee currency is specified, it returns the native currency FeeCap as is
+func ConvertTxFeeCapToCurrency(ctx context.Context, backend CeloBackend, feeCurrency *common.Address) (float64, error) {
+	txFeeCap := backend.RPCTxFeeCap()
+	if feeCurrency == nil {
+		return txFeeCap, nil
+	}
+
+	rates, err := backend.GetExchangeRates(ctx, rpc.BlockNumberOrHashWithNumber(rpc.LatestBlockNumber))
+	if err != nil {
+		log.Warn("Failed to get exchange rates", "current", backend.CurrentBlock().Number, "err", err)
+		return 0, err
+	}
+
+	// Convert txFeeCap (float64) to big.Int with proper precision
+	// Since ConvertCeloToCurrency expects big.Int, directly converting to big.Int would lose decimal precision
+	scaledTxFeeCap := big.NewInt(int64(txFeeCap * 1e18))
+	scaledTxFeeCapInCurrency, err := exchange.ConvertCeloToCurrency(rates, feeCurrency, scaledTxFeeCap)
+	if err != nil {
+		log.Warn("Failed to convert RPCTxFeeCap to the specified currency", "current", backend.CurrentBlock().Number, "currency", feeCurrency, "err", err)
+		return 0, err
+	}
+	txFeeCapInCurrency := scaledTxFeeCapInCurrency.Div(scaledTxFeeCapInCurrency, big.NewInt(1e18))
+
+	result, accuracy := txFeeCapInCurrency.Float64()
+	if accuracy != big.Exact {
+		log.Warn("Failed to accurately convert fee currency to float64", "fee cap", txFeeCapInCurrency.String(), "accuracy", accuracy.String())
+		return 0, fmt.Errorf("failed to accurately convert fee currency to float64")
+	}
+
+	return result, nil
 }
 
 // DebugAPI is the collection of Ethereum APIs exposed over the debugging
