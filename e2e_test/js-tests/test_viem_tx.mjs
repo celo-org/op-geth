@@ -5,12 +5,11 @@ import {
 } from "viem";
 import { publicClient, walletClient } from "./viem_setup.mjs"
 
-// Returns the base fee per gas for the current block multiplied by 2 to account for any increase in the subsequent block.
-async function getGasFees(publicClient, tip, feeCurrency) {
+// Returns the base fee per gas for the current block in the given fee currency.
+async function getBaseFee(publicClient, feeCurrency) {
 	const rate = await getRate(feeCurrency);
 	const b = await publicClient.getBlock();
-	const tipInFeeCurrency = rate.toFeeCurrency(tip);
-	return [rate.toFeeCurrency(b.baseFeePerGas) + tipInFeeCurrency, tipInFeeCurrency];
+	return rate.toFeeCurrency(b.baseFeePerGas);
 }
 
 const testNonceBump = async (
@@ -99,14 +98,14 @@ describe("viem send tx", () => {
 	}).timeout(10_000);
 
 	it("send fee currency tx with explicit gas fields and check receipt", async () => {
-		const [maxFeePerGas, tip] = await getGasFees(publicClient, 2n, process.env.FEE_CURRENCY);
+		const baseFeeForFeeCurrency = await getBaseFee(publicClient, process.env.FEE_CURRENCY);
 		const request = await walletClient.prepareTransactionRequest({
 			to: "0x00000000000000000000000000000000DeaDBeef",
 			value: 2,
 			gas: 171000,
 			feeCurrency: process.env.FEE_CURRENCY,
-			maxFeePerGas: maxFeePerGas,
-			maxPriorityFeePerGas: tip,
+			maxFeePerGas: baseFeeForFeeCurrency*10n,
+			maxPriorityFeePerGas: 1n,
 		});
 		const signature = await walletClient.signTransaction(request);
 		const hash = await walletClient.sendRawTransaction({
@@ -195,15 +194,15 @@ describe("viem send tx", () => {
 	// more liable to result in a failure.
 	it("send overlapping nonce tx in different currencies", async () => {
 		// Note the threshold for a price bump to be accepted is 10%, i.e >= oldPrice * 1.1
-		const priceBump = 1.1; // minimum bump percentage to replace a transaction
+		const priceBump = 1.11; // minimum bump percentage to replace a transaction
 		const priceNearBump = 1.09; // slightly lower percentage than the price bump
 
 		const rate = await getRate(process.env.FEE_CURRENCY);
 		// Native to FEE_CURRENCY
 		const nativeCap = 30_000_000_000;
-		const bumpCurrencyCap = rate.toFeeCurrency(BigInt(Math.round(nativeCap * priceBump)));
+		const bumpCurrencyCap = rate.toFeeCurrency(BigInt(Math.ceil(nativeCap * priceBump)));
 		const failToBumpCurrencyCap = rate.toFeeCurrency(BigInt(
-			Math.round(nativeCap * priceNearBump)
+			Math.floor(nativeCap * priceNearBump)
 		));
 		const tokenCurrency = process.env.FEE_CURRENCY;
 		const nativeCurrency = null;
@@ -224,9 +223,9 @@ describe("viem send tx", () => {
 
 		// FEE_CURRENCY to Native
 		const currencyCap = 60_000_000_000;
-		const bumpNativeCap = rate.toNative(BigInt(Math.round(currencyCap * priceBump)));
+		const bumpNativeCap = rate.toNative(BigInt(Math.ceil(currencyCap * priceBump)));
 		const failToBumpNativeCap = rate.toNative(BigInt(
-			Math.round(currencyCap * priceNearBump)
+			Math.floor(currencyCap * priceNearBump)
 		));
 		await testNonceBump(
 			currencyCap,
