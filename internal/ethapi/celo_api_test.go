@@ -6,7 +6,9 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/exchange"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/internal/blocktest"
@@ -611,5 +613,47 @@ func TestRPCMarshalBlock_Celo1TotalDifficulty(t *testing.T) {
 		res := marshalBlock(t, &config)
 
 		assert.Equal(t, nil, res["totalDifficulty"])
+	})
+}
+
+// TestConvertTxFeeCapToCurrency verifies the output is accurate for each currency
+func TestConvertTxFeeCapToCurrency(t *testing.T) {
+	t.Parallel()
+
+	var (
+		txFeeCap = float64(1.5)
+		rates    = common.ExchangeRates{
+			core.DevFeeCurrencyAddr:  big.NewRat(2, 1),
+			core.DevFeeCurrencyAddr2: big.NewRat(1, 2),
+		}
+		config = allEnabledChainConfig()
+	)
+
+	backend := newCeloBackendMock(config)
+	backend.SetExchangeRates(rates)
+	backend.SetRPCTxFeeCap(txFeeCap)
+
+	t.Run("should return given fee cap when fee currency is not specified", func(t *testing.T) {
+		res, err := ConvertTxFeeCapToCurrency(context.Background(), backend, nil)
+		require.NoError(t, err)
+		assert.Equal(t, txFeeCap, res)
+	})
+
+	t.Run("should return the twice of given fee cap when a fee currency is specified", func(t *testing.T) {
+		res, err := ConvertTxFeeCapToCurrency(context.Background(), backend, &core.DevFeeCurrencyAddr)
+		require.NoError(t, err)
+		assert.Equal(t, 2*txFeeCap, res)
+	})
+
+	t.Run("should return the half of given fee cap when a fee currency is specified", func(t *testing.T) {
+		res, err := ConvertTxFeeCapToCurrency(context.Background(), backend, &core.DevFeeCurrencyAddr2)
+		require.NoError(t, err)
+		assert.Equal(t, txFeeCap/2, res)
+	})
+
+	t.Run("should return error when fee currency is not found in exchange rates", func(t *testing.T) {
+		res, err := ConvertTxFeeCapToCurrency(context.Background(), backend, &core.DevAddr)
+		require.Zero(t, res)
+		assert.ErrorIs(t, err, exchange.ErrUnregisteredFeeCurrency)
 	})
 }

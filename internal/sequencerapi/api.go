@@ -104,11 +104,7 @@ func (s *sendRawTxCond) SendRawTransactionConditional(ctx context.Context, txByt
 	// forward if seqRPC is set, otherwise submit the tx
 	if s.seqRPC != nil {
 		// Some precondition checks done by `ethapi.SubmitTransaction` that are good to also check here
-		txFeeCap, err := ethapi.ConvertTxFeeCapToCurrency(ctx, s.b, tx.FeeCurrency())
-		if err != nil {
-			return common.Hash{}, err
-		}
-		if err := ethapi.CheckTxFee(tx.GasPrice(), tx.Gas(), txFeeCap); err != nil {
+		if err := ethapi.CheckTxFee(ctx, s.b, tx.GasPrice(), tx.Gas(), tx.FeeCurrency()); err != nil {
 			return common.Hash{}, err
 		}
 		if !s.b.UnprotectedAllowed() && !tx.Protected() {
