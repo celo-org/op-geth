@@ -2662,7 +2662,6 @@ func ConvertTxFeeCapToCurrency(ctx context.Context, backend CeloBackend, feeCurr
 		return txFeeCap, nil
 	}
 
-	// NOTE:
 	rates, err := backend.GetExchangeRates(ctx, rpc.BlockNumberOrHashWithNumber(rpc.LatestBlockNumber))
 	if err != nil {
 		log.Warn("Failed to get exchange rates", "err", err)
@@ -2681,7 +2680,6 @@ func ConvertTxFeeCapToCurrency(ctx context.Context, backend CeloBackend, feeCurr
 	)
 
 	result, exact := txFeeCapInCurrencyRat.Float64()
-	fmt.Printf("result %f\n", result)
 	if !exact {
 		log.Warn("Failed to accurately convert fee currency to float64", "fee cap", txFeeCapInCurrencyRat.String())
 		return 0, fmt.Errorf("failed to accurately convert fee currency to float64")
