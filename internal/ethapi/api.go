@@ -2662,28 +2662,28 @@ func ConvertTxFeeCapToCurrency(ctx context.Context, backend CeloBackend, feeCurr
 		return txFeeCap, nil
 	}
 
+	// NOTE:
 	rates, err := backend.GetExchangeRates(ctx, rpc.BlockNumberOrHashWithNumber(rpc.LatestBlockNumber))
 	if err != nil {
 		log.Warn("Failed to get exchange rates", "err", err)
 		return 0, err
 	}
-
-	// Convert txFeeCap (float64) to big.Int with proper precision
-	// Since ConvertCeloToCurrency expects big.Int, directly converting to big.Int would lose decimal precision
-	scaledTxFeeCap := big.NewInt(int64(txFeeCap * 1e18))
-	scaledTxFeeCapInCurrency, err := exchange.ConvertCeloToCurrency(rates, feeCurrency, scaledTxFeeCap)
-	if err != nil {
-		log.Warn("Failed to convert RPCTxFeeCap to the specified currency", "currency", feeCurrency, "err", err)
-		return 0, err
+	rate, ok := rates[*feeCurrency]
+	if !ok {
+		return 0, fmt.Errorf("could not convert from native to fee currency (fee-currency=%s): %w ", feeCurrency, exchange.ErrUnregisteredFeeCurrency)
 	}
-	txFeeCapInCurrency := new(big.Float).Quo(
-		new(big.Float).SetInt(scaledTxFeeCapInCurrency),
-		new(big.Float).SetInt64(1e18),
+
+	// NOTE: Avoiding exchange.ConvertCeloToCurrency to prevent precision loss when converting float64 to big.Int
+	// Using big.Rat instead to maintain fractional precision during conversion
+	txFeeCapInCurrencyRat := new(big.Rat).Mul(
+		new(big.Rat).SetFloat64(txFeeCap),
+		rate,
 	)
 
-	result, accuracy := txFeeCapInCurrency.Float64()
-	if accuracy != big.Exact {
-		log.Warn("Failed to accurately convert fee currency to float64", "fee cap", txFeeCapInCurrency.String(), "accuracy", accuracy.String())
+	result, exact := txFeeCapInCurrencyRat.Float64()
+	fmt.Printf("result %f\n", result)
+	if !exact {
+		log.Warn("Failed to accurately convert fee currency to float64", "fee cap", txFeeCapInCurrencyRat.String())
 		return 0, fmt.Errorf("failed to accurately convert fee currency to float64")
 	}
 
