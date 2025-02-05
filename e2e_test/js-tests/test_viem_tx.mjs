@@ -102,8 +102,15 @@ describe("viem send tx", () => {
 		// Our execution nodes are configured by default with a min tip of 1 wei in
 		// celo, which when converted to fee currency could be a higher value, so
 		// we need to ensure we use the min tip in fee currency when submitting a
-		// tx with fee a fee currency.
-		const [maxFeePerGasInFeeCurrency, tipInFeeCurrency] = await getGasFees(publicClient, process.env.FEE_CURRENCY, 1n);
+		// tx with fee a fee currency. However somewhere else it is enforced that
+		// the tip must be at least 1, so if conversion of tip to fee currency
+		// results in 0 we need to set it to 1.
+		let [maxFeePerGasInFeeCurrency, tipInFeeCurrency] = await getGasFees(publicClient, process.env.FEE_CURRENCY, 1n);
+
+		if (tipInFeeCurrency == 0n) {
+			console.log("tip was 0");
+			tipInFeeCurrency = 1n;
+		}
 		
 		const request = await walletClient.prepareTransactionRequest({
 			to: "0x00000000000000000000000000000000DeaDBeef",
