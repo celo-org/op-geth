@@ -6,10 +6,11 @@ import {
 import { publicClient, walletClient } from "./viem_setup.mjs"
 
 // Returns the base fee per gas for the current block in the given fee currency.
-async function getBaseFee(publicClient, feeCurrency) {
+async function getGasFees(publicClient, feeCurrency, tip) {
 	const rate = await getRate(feeCurrency);
 	const b = await publicClient.getBlock();
-	return rate.toFeeCurrency(b.baseFeePerGas);
+	const convertedTip = rate.toFeeCurrency(tip);
+	return [ rate.toFeeCurrency(b.baseFeePerGas)+convertedTip, convertedTip];
 }
 
 const testNonceBump = async (
@@ -98,14 +99,21 @@ describe("viem send tx", () => {
 	}).timeout(10_000);
 
 	it("send fee currency tx with explicit gas fields and check receipt", async () => {
-		const baseFeeForFeeCurrency = await getBaseFee(publicClient, process.env.FEE_CURRENCY);
+		// Our execution nodes are configured by default with a min tip of 1 wei in
+		// celo, which when converted to fee currency could be a higher value, so
+		// we need to ensure we use the min tip in fee currency when submitting a
+		// tx with fee a fee currency.
+		const [maxFeePerGasInFeeCurrency, tipInFeeCurrency] = await getGasFees(publicClient, process.env.FEE_CURRENCY, 1n);
+		
 		const request = await walletClient.prepareTransactionRequest({
 			to: "0x00000000000000000000000000000000DeaDBeef",
 			value: 2,
 			gas: 171000,
 			feeCurrency: process.env.FEE_CURRENCY,
-			maxFeePerGas: baseFeeForFeeCurrency*10n,
-			maxPriorityFeePerGas: 1n,
+			// We multiply the maxFeePerGas by 10 here to account for fluctuations in
+			// the base fee, since these tests can be run against a live network.
+			maxFeePerGas: maxFeePerGasInFeeCurrency*10n,
+			maxPriorityFeePerGas: tipInFeeCurrency,
 		});
 		const signature = await walletClient.signTransaction(request);
 		const hash = await walletClient.sendRawTransaction({
