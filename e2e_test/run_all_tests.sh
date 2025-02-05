@@ -23,13 +23,15 @@ if [ -z $NETWORK ]; then
     
     ## Run tests
     echo Geth ready, start tests
+
+    # There's a problem with geth return errors on the first transaction sent.
+    # See https://github.com/ethereum/web3.py/issues/3212
+    # To work around this, send a transaction before running tests
+    cast send --json --private-key "$ACC_PRIVKEY" "$TOKEN_ADDR" 'transfer(address to, uint256 value) returns (bool)' 0x000000000000000000000000000000000000dEaD 100 > /dev/null || true
+
 fi
 
 cd "$SCRIPT_DIR" || exit 1
-# There's a problem with geth return errors on the first transaction sent.
-# See https://github.com/ethereum/web3.py/issues/3212
-# To work around this, send a transaction before running tests
-cast send --json --private-key "$ACC_PRIVKEY" "$TOKEN_ADDR" 'transfer(address to, uint256 value) returns (bool)' 0x000000000000000000000000000000000000dEaD 100 > /dev/null || true
 
 failures=0
 tests=0
