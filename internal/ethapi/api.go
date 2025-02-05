@@ -2674,14 +2674,14 @@ func ConvertTxFeeCapToCurrency(ctx context.Context, backend CeloBackend, feeCurr
 
 	// NOTE: Avoiding exchange.ConvertCeloToCurrency to prevent precision loss when converting float64 to big.Int
 	// Using big.Rat instead to maintain fractional precision during conversion
-	txFeeCapInCurrencyRat := new(big.Rat).Mul(
+	txFeeCapInCurrency := new(big.Rat).Mul(
 		new(big.Rat).SetFloat64(txFeeCap),
 		rate,
 	)
 
-	result, exact := txFeeCapInCurrencyRat.Float64()
+	result, exact := txFeeCapInCurrency.Float64()
 	if !exact {
-		log.Warn("Failed to accurately convert fee currency to float64", "fee cap", txFeeCapInCurrencyRat.String())
+		log.Warn("Failed to accurately convert fee currency to float64", "fee cap", txFeeCapInCurrency.String())
 		return 0, fmt.Errorf("failed to accurately convert fee currency to float64")
 	}
 
