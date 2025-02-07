@@ -1,0 +1,12 @@
+#tag-template: '${{ env.BRANCH_NAME }}-v$RESOLVED_VERSION'
+name-template: 'Celo op-geth v$RESOLVED_VERSION'
+filter-by-commitish: true
+version-resolver:
+  default: patch
+template: |
+  ## What’s Changed
+
+  $CHANGES
+
+  ---
+  **Docker Image:** https://us-west1-docker.pkg.dev/devopsre/celo-blockchain-public/op-geth:$RESOLVED_VERSION.
