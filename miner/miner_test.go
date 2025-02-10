@@ -18,7 +18,6 @@
 package miner
 
 import (
-	"context"
 	"math/big"
 	"sync"
 	"testing"
@@ -36,7 +35,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/ethereum/go-ethereum/trie"
 	"github.com/ethereum/go-ethereum/triedb"
 )
@@ -95,14 +93,6 @@ func (bc *testBlockChain) HasState(root common.Hash) bool {
 
 func (bc *testBlockChain) SubscribeChainHeadEvent(ch chan<- core.ChainHeadEvent) event.Subscription {
 	return bc.chainHeadFeed.Subscribe(ch)
-}
-
-type testAPIBackend struct {
-	rates common.ExchangeRates
-}
-
-func (ab *testAPIBackend) GetExchangeRates(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash) (common.ExchangeRates, error) {
-	return ab.rates, nil
 }
 
 func TestBuildPendingBlocks(t *testing.T) {
