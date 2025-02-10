@@ -109,6 +109,10 @@ func isPreGingerbreadHeader(buf []byte) (bool, error) {
 	return contentSize == common.AddressLength, nil
 }
 
+func NewPreGingerbreadHeader() *Header {
+	return &Header{preGingerbread: true}
+}
+
 func (h *Header) IsPreGingerbread() bool {
 	return h.preGingerbread
 }

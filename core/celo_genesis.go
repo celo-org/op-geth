@@ -167,3 +167,11 @@ func addFeeCurrencyToStorage(feeCurrencyAddr common.Address, oracleAddr common.A
 	storage[structStart] = common.BytesToHash(oracleAddr.Bytes())                                   // oracle
 	storage[incHash(structStart, 1)] = common.BigToHash(big.NewInt(int64(FeeCurrencyIntrinsicGas))) // intrinsicGas
 }
+
+func (g *Genesis) SetIgnoreDefaults() {
+	g.ignoreDefaults = true
+}
+
+func (g *Genesis) IgnoreDefaults() bool {
+	return g.ignoreDefaults
+}

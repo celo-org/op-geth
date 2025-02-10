@@ -82,7 +82,7 @@ type Genesis struct {
 
 	// IgnoreDefaults indicates that the genesis block should not use the
 	// default values if gasLimit, difficulty and baseFeePerGas are unset.
-	IgnoreDefaults bool `json:"-"`
+	ignoreDefaults bool
 }
 
 func ReadGenesis(db ethdb.Database) (*Genesis, error) {
@@ -593,21 +593,29 @@ func (g *Genesis) ToBlock() *types.Block {
 
 // toBlockWithRoot constructs the genesis block with the given genesis state root.
 func (g *Genesis) toBlockWithRoot(stateRoot, storageRootMessagePasser common.Hash) *types.Block {
-	head := &types.Header{
-		Number:     new(big.Int).SetUint64(g.Number),
-		Nonce:      types.EncodeNonce(g.Nonce),
-		Time:       g.Timestamp,
-		ParentHash: g.ParentHash,
-		Extra:      g.ExtraData,
-		GasLimit:   g.GasLimit,
-		GasUsed:    g.GasUsed,
-		BaseFee:    g.BaseFee,
-		Difficulty: g.Difficulty,
-		MixDigest:  g.Mixhash,
-		Coinbase:   g.Coinbase,
-		Root:       stateRoot,
-	}
-	if !g.IgnoreDefaults {
+	number := new(big.Int).SetUint64(g.Number)
+	head := &types.Header{}
+	// If we are in a context where gingerbread is set but not yet activated, then set the block to be pre-gingerbread.
+	// This affects the way it is encoded, which affects it's hash.
+	// if g.Config.GingerbreadBlock != nil && g.Config.IsGingerbread(number) {
+	// 	head = types.NewPreGingerbreadHeader()
+	// }
+
+	head.Number = number
+	head.Nonce = types.EncodeNonce(g.Nonce)
+	head.Time = g.Timestamp
+	head.ParentHash = g.ParentHash
+	head.Extra = g.ExtraData
+	head.GasLimit = g.GasLimit
+	head.GasUsed = g.GasUsed
+	head.BaseFee = g.BaseFee
+	head.Difficulty = g.Difficulty
+	head.MixDigest = g.Mixhash
+	head.Coinbase = g.Coinbase
+	head.Root = stateRoot
+
+	// If defaults are not ignored, set default values for gasLimit and difficulty.
+	if !g.IgnoreDefaults() {
 		if g.GasLimit == 0 {
 			head.GasLimit = params.GenesisGasLimit
 		}
@@ -621,7 +629,8 @@ func (g *Genesis) toBlockWithRoot(stateRoot, storageRootMessagePasser common.Has
 	if g.Config != nil && g.Config.IsLondon(common.Big0) {
 		if g.BaseFee != nil {
 			head.BaseFee = g.BaseFee
-		} else if !g.IgnoreDefaults {
+		} else {
+			// If defaults are not ignored, set default values for base fee.
 			head.BaseFee = new(big.Int).SetUint64(params.InitialBaseFee)
 		}
 	}
