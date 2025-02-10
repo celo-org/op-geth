@@ -89,7 +89,8 @@ func (oracle *Oracle) SuggestOptimismPriorityFee(ctx context.Context, h *types.H
 		}
 		sort.Sort(tips)
 		median := tips[len(tips)/2]
-		newSuggestion := new(big.Int).Add(median, new(big.Int).Div(median, big.NewInt(10)))
+		// the new suggestion is the median plus 20% (median * 1.2)
+		newSuggestion := new(big.Int).Add(median, new(big.Int).Div(median, big.NewInt(5)))
 		// use the new suggestion only if it's bigger than the minimum
 		if newSuggestion.Cmp(suggestion) > 0 {
 			suggestion = newSuggestion
