@@ -78,8 +78,6 @@ func TestTransactionEffectiveGasTipInCurrency(t *testing.T) {
 
 		assert.Equal(t, big.NewInt(3e8), gasTipInCelo)
 		assert.Equal(t, big.NewInt(6e8), gasTipInCurrency)
-
-		t.Fail()
 	})
 
 	t.Run("tx should return the GasTipCap with conversions between Celo and USDT when the transaction is CeloDynamicFeeTxV2 with the specified fee currency", func(t *testing.T) {
