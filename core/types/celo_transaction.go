@@ -88,47 +88,26 @@ func (tx *Transaction) MaxFeeInFeeCurrency() *big.Int {
 // EffectiveGasTipInCurrency returns the effective gas tip in the specified currency
 // For transactions with a specified fee currency, the function takes the base fee in Celo,
 // calculates in the specified currency, and returns the value in the currency
-func (tx *Transaction) EffectiveGasTipInCurrency(baseFeeInCelo *big.Int, exchangeRates common.ExchangeRates) (*big.Int, error) {
-	feeCurrency := tx.FeeCurrency()
-	if feeCurrency == nil {
-		return tx.EffectiveGasTip(baseFeeInCelo)
+func (tx *Transaction) EffectiveGasTipInCurrency(baseFee *big.Int, exchangeRates common.ExchangeRates) (*big.Int, error) {
+	if baseFee != nil {
+		var err error
+		baseFee, err = exchange.ConvertCeloToCurrency(exchangeRates, tx.FeeCurrency(), baseFee)
+		if err != nil {
+			return nil, err
+		}
 	}
-	if baseFeeInCelo == nil {
-		return tx.GasTipCap(), nil
-	}
-
-	baseFee, err := exchange.ConvertCeloToCurrency(exchangeRates, feeCurrency, baseFeeInCelo)
-	if err != nil {
-		return nil, err
-	}
-
 	return tx.EffectiveGasTip(baseFee)
 }
 
 // EffectiveGasTipInCelo returns the effective gas tip in Celo
 // For transactions with a specified fee currency, the function takes the base fee in Celo,
 // calculates in the specified currency, and returns the value in Celo
-func (tx *Transaction) EffectiveGasTipInCelo(baseFeeInCelo *big.Int, exchangeRates common.ExchangeRates) (*big.Int, error) {
-	feeCurrency := tx.FeeCurrency()
-	if feeCurrency == nil {
-		return tx.EffectiveGasTip(baseFeeInCelo)
+func (tx *Transaction) EffectiveGasTipInCelo(baseFee *big.Int, exchangeRates common.ExchangeRates) (*big.Int, error) {
+	gasTipInCurrency, err := tx.EffectiveGasTipInCurrency(baseFee, exchangeRates)
+	if err != nil {
+		return nil, err
 	}
-
-	var feeInCurrency *big.Int
-	if baseFeeInCelo == nil {
-		feeInCurrency = tx.GasTipCap()
-	} else {
-		baseFee, err := exchange.ConvertCeloToCurrency(exchangeRates, feeCurrency, baseFeeInCelo)
-		if err != nil {
-			return nil, err
-		}
-		feeInCurrency, err = tx.EffectiveGasTip(baseFee)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return exchange.ConvertCurrencyToCelo(exchangeRates, feeCurrency, feeInCurrency)
+	return exchange.ConvertCurrencyToCelo(exchangeRates, tx.FeeCurrency(), gasTipInCurrency)
 }
 
 // CompareWithRates compares the effective gas price of two transactions according to the exchange rates and
