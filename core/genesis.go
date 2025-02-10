@@ -595,11 +595,13 @@ func (g *Genesis) ToBlock() *types.Block {
 func (g *Genesis) toBlockWithRoot(stateRoot, storageRootMessagePasser common.Hash) *types.Block {
 	number := new(big.Int).SetUint64(g.Number)
 	head := &types.Header{}
-	// If we are in a context where gingerbread is set but not yet activated, then set the block to be pre-gingerbread.
-	// This affects the way it is encoded, which affects it's hash.
-	// if g.Config.GingerbreadBlock != nil && g.Config.IsGingerbread(number) {
-	// 	head = types.NewPreGingerbreadHeader()
-	// }
+	// If we are in a context where gingerbread is set but not yet activated,
+	// and we are we are ignoring defaults, then set the block to be
+	// pre-gingerbread. This affects the way it is encoded, which affects it's
+	// hash.
+	if g.IgnoreDefaults() && g.Config.GingerbreadBlock != nil && g.Config.IsGingerbread(number) {
+		head = types.NewPreGingerbreadHeader()
+	}
 
 	head.Number = number
 	head.Nonce = types.EncodeNonce(g.Nonce)
