@@ -79,6 +79,10 @@ type Genesis struct {
 	// Chains with history pruning, or extraordinarily large genesis allocation (e.g. after a regenesis event)
 	// may utilize this to get started, and then state-sync the latest state, while still verifying the header chain.
 	StateHash *common.Hash `json:"stateHash,omitempty"`
+
+	// IgnoreDefaults indicates that the genesis block should not use the
+	// default values if gasLimit, difficulty and baseFeePerGas are unset.
+	IgnoreDefaults bool `json:"-"`
 }
 
 func ReadGenesis(db ethdb.Database) (*Genesis, error) {
@@ -603,19 +607,21 @@ func (g *Genesis) toBlockWithRoot(stateRoot, storageRootMessagePasser common.Has
 		Coinbase:   g.Coinbase,
 		Root:       stateRoot,
 	}
-	if g.GasLimit == 0 {
-		head.GasLimit = params.GenesisGasLimit
-	}
-	if g.Difficulty == nil && g.Mixhash == (common.Hash{}) {
-		head.Difficulty = params.GenesisDifficulty
-	} else if g.Difficulty == nil {
-		// In the case of migrated chains we ensure a zero rather than nil difficulty.
-		head.Difficulty = new(big.Int)
+	if !g.IgnoreDefaults {
+		if g.GasLimit == 0 {
+			head.GasLimit = params.GenesisGasLimit
+		}
+		if g.Difficulty == nil && g.Mixhash == (common.Hash{}) {
+			head.Difficulty = params.GenesisDifficulty
+		} else if g.Difficulty == nil {
+			// In the case of migrated chains we ensure a zero rather than nil difficulty.
+			head.Difficulty = new(big.Int)
+		}
 	}
 	if g.Config != nil && g.Config.IsLondon(common.Big0) {
 		if g.BaseFee != nil {
 			head.BaseFee = g.BaseFee
-		} else {
+		} else if !g.IgnoreDefaults {
 			head.BaseFee = new(big.Int).SetUint64(params.InitialBaseFee)
 		}
 	}
