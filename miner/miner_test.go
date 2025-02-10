@@ -42,16 +42,14 @@ import (
 )
 
 type mockBackend struct {
-	bc         *core.BlockChain
-	txPool     *txpool.TxPool
-	apiBackend *testAPIBackend
+	bc     *core.BlockChain
+	txPool *txpool.TxPool
 }
 
-func NewMockBackend(bc *core.BlockChain, txPool *txpool.TxPool, apiBackend *testAPIBackend) *mockBackend {
+func NewMockBackend(bc *core.BlockChain, txPool *txpool.TxPool) *mockBackend {
 	return &mockBackend{
-		bc:         bc,
-		txPool:     txPool,
-		apiBackend: apiBackend,
+		bc:     bc,
+		txPool: txPool,
 	}
 }
 
@@ -61,10 +59,6 @@ func (m *mockBackend) BlockChain() *core.BlockChain {
 
 func (m *mockBackend) TxPool() *txpool.TxPool {
 	return m.txPool
-}
-
-func (m *mockBackend) CeloAPIBackend() APIBackend {
-	return m.apiBackend
 }
 
 type testBlockChain struct {
@@ -183,7 +177,7 @@ func createMiner(t *testing.T) *Miner {
 	txpool, _ := txpool.New(testTxPoolConfig.PriceLimit, blockchain, []txpool.SubPool{pool}, nil)
 
 	// Create Miner
-	backend := NewMockBackend(bc, txpool, nil)
+	backend := NewMockBackend(bc, txpool)
 	miner := New(backend, config, engine)
 	return miner
 }

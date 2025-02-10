@@ -42,7 +42,6 @@ import (
 type Backend interface {
 	BlockChain() *core.BlockChain
 	TxPool() *txpool.TxPool
-	CeloAPIBackend() APIBackend
 }
 
 type BackendWithHistoricalState interface {

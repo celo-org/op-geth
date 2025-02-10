@@ -17,7 +17,6 @@
 package miner
 
 import (
-	"context"
 	"math/big"
 	"testing"
 	"time"
@@ -36,7 +35,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/event"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/ethereum/go-ethereum/triedb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -95,11 +93,7 @@ func createCeloMiner(t *testing.T) *Miner {
 	txpool, _ := txpool.New(testTxPoolConfig.PriceLimit, blockchain, []txpool.SubPool{pool}, nil)
 
 	// Create Miner
-	backend := NewMockBackend(bc, txpool, &testAPIBackend{
-		rates: common.ExchangeRates{
-			core.DevFeeCurrencyAddr: big.NewRat(2, 1),
-		},
-	})
+	backend := NewMockBackend(bc, txpool)
 
 	return New(backend, minerConfig, engine)
 }
@@ -109,6 +103,9 @@ func createCeloMiner(t *testing.T) *Miner {
 func TestMinerFeeCalculationWithCurrencyConversion(t *testing.T) {
 	miner := createCeloMiner(t)
 	timestamp := uint64(time.Now().Unix())
+	rates := common.ExchangeRates{
+		core.DevFeeCurrencyAddr: big.NewRat(2, 1),
+	}
 
 	signer := types.LatestSigner(miner.chainConfig)
 	tx1 := types.MustSignNewTx(key, signer, &types.CeloDynamicFeeTxV2{
@@ -147,9 +144,6 @@ func TestMinerFeeCalculationWithCurrencyConversion(t *testing.T) {
 	require.False(t, tx2.Rejected(), "tx2 should not be rejected")
 
 	// Calculate expected values
-	rates, err := miner.backend.CeloAPIBackend().GetExchangeRates(context.Background(), rpc.BlockNumberOrHashWithNumber(rpc.BlockNumber(r.block.NumberU64())))
-	require.NoError(t, err)
-
 	baseFee := r.block.BaseFee()
 	baseFeeInCurrency, err := exchange.ConvertCeloToCurrency(rates, &core.DevFeeCurrencyAddr, baseFee)
 	require.NoError(t, err)
