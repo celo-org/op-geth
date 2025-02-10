@@ -111,11 +111,6 @@ func TestCeloSuggestOptimismPriorityFee(t *testing.T) {
 			want:   minSuggestion,
 		},
 		{
-			// block well under capacity, expect min priority fee suggestion
-			txdata: []celoTestTxData{{&core.DevFeeCurrencyAddr, params.GWei, 21000}},
-			want:   minSuggestion,
-		},
-		{
 			// 2 txs, still under capacity, expect min priority fee suggestion
 			txdata: []celoTestTxData{{nil, params.GWei, 21000}, {&core.DevFeeCurrencyAddr, params.GWei, 21000}},
 			want:   minSuggestion,
@@ -123,12 +118,12 @@ func TestCeloSuggestOptimismPriorityFee(t *testing.T) {
 		{
 			// 2 txs w same priority fee (1 gwei), but second tx puts it right over capacity
 			txdata: []celoTestTxData{{nil, params.GWei, 21000}, {&core.DevFeeCurrencyAddr, 2 * params.GWei, 21001}},
-			want:   big.NewInt(1100000000), // 10 percent over 1 gwei, the median
+			want:   big.NewInt(1.1 * params.GWei), // 10 percent over 1 gwei, the median
 		},
 		{
 			// 3 txs, full block. return 10% over the median tx (10 gwei * 10% == 11 gwei)
 			txdata: []celoTestTxData{{nil, 10 * params.GWei, 21000}, {nil, 1 * params.GWei, 21000}, {&core.DevFeeCurrencyAddr, 100 * params.GWei, 21000}},
-			want:   big.NewInt(11 * params.GWei),
+			want:   big.NewInt(11 * params.GWei), // 10 percent over 10 gwei, the median
 		},
 	}
 

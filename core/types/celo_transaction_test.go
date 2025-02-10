@@ -35,71 +35,74 @@ func TestTransactionEffectiveGasTipInCurrency(t *testing.T) {
 		usdToken: big.NewRat(2, 1), // 1 Celo ≒ 2 USD
 	}
 
-	getGasPrices := func(t *testing.T, tx *Transaction, baseFee *big.Int) (*big.Int, *big.Int) {
+	getGasTips := func(t *testing.T, tx *Transaction, baseFee *big.Int) (*big.Int, *big.Int) {
 		t.Helper()
 
-		gasPriceInCelo, err := tx.EffectiveGasTipInCelo(baseFee, exchangeRates)
+		gasTipInCelo, err := tx.EffectiveGasTipInCelo(baseFee, exchangeRates)
 		require.NoError(t, err)
 
-		gasPriceInCurrency, err := tx.EffectiveGasTipInCurrency(baseFee, exchangeRates)
+		gasTipInCurrency, err := tx.EffectiveGasTipInCurrency(baseFee, exchangeRates)
 		require.NoError(t, err)
 
-		return gasPriceInCelo, gasPriceInCurrency
+		return gasTipInCelo, gasTipInCurrency
 	}
 
 	// Normal Tx
 	t.Run("tx should return the difference between GasFeeCap and BaseFee when tx type is not CeloDynamicFeeTxV2", func(t *testing.T) {
-		gasPriceInCelo, gasPriceInCurrency := getGasPrices(t, NewTx(&DynamicFeeTx{
+		gasTipInCelo, gasTipInCurrency := getGasTips(t, NewTx(&DynamicFeeTx{
 			GasFeeCap: big.NewInt(9e8),
 			GasTipCap: big.NewInt(5e8),
 		}), big.NewInt(5e8))
 
-		assert.Equal(t, big.NewInt(4e8), gasPriceInCelo)
-		assert.Equal(t, big.NewInt(4e8), gasPriceInCurrency)
+		assert.Equal(t, big.NewInt(4e8), gasTipInCelo)
+		assert.Equal(t, big.NewInt(4e8), gasTipInCurrency)
 	})
 
 	t.Run("tx should return the GasTipCap when tx type is not CeloDynamicFeeTxV2", func(t *testing.T) {
-		gasPriceInCelo, gasPriceInCurrency := getGasPrices(t, NewTx(&DynamicFeeTx{
+		gasTipInCelo, gasTipInCurrency := getGasTips(t, NewTx(&DynamicFeeTx{
 			GasFeeCap: big.NewInt(9e8),
 			GasTipCap: big.NewInt(3e8),
 		}), big.NewInt(5e8))
 
-		assert.Equal(t, big.NewInt(3e8), gasPriceInCelo)
-		assert.Equal(t, big.NewInt(3e8), gasPriceInCurrency)
+		assert.Equal(t, big.NewInt(3e8), gasTipInCelo)
+		assert.Equal(t, big.NewInt(3e8), gasTipInCurrency)
 	})
 
 	// CeloDynamicFeeTxV2
 	t.Run("tx should return the difference between GasFeeCap and BaseFee with conversions between Celo and USDT when the transaction is CeloDynamicFeeTxV2 with the specified fee currency", func(t *testing.T) {
-		gasPriceInCelo, gasPriceInCurrency := getGasPrices(t, NewTx(&CeloDynamicFeeTxV2{
+		gasTipInCelo, gasTipInCurrency := getGasTips(t, NewTx(&CeloDynamicFeeTxV2{
 			FeeCurrency: &usdToken,
 			GasFeeCap:   big.NewInt(18e8), // USD
 			GasTipCap:   big.NewInt(8e8),  // USD
-		}), big.NewInt(5e8)) // Celo
+		}), big.NewInt(6e8)) // Celo
 
-		assert.Equal(t, big.NewInt(4e8), gasPriceInCelo)
-		assert.Equal(t, big.NewInt(8e8), gasPriceInCurrency)
+		assert.Equal(t, big.NewInt(3e8), gasTipInCelo)
+		assert.Equal(t, big.NewInt(6e8), gasTipInCurrency)
+
+		t.Fail()
 	})
 
 	t.Run("tx should return the GasTipCap with conversions between Celo and USDT when the transaction is CeloDynamicFeeTxV2 with the specified fee currency", func(t *testing.T) {
-		gasPriceInCelo, gasPriceInCurrency := getGasPrices(t, NewTx(&CeloDynamicFeeTxV2{
+		gasTipInCelo, gasTipInCurrency := getGasTips(t, NewTx(&CeloDynamicFeeTxV2{
 			FeeCurrency: &usdToken,
 			GasFeeCap:   big.NewInt(18e8), // USD
-			GasTipCap:   big.NewInt(6e8),  // USD
+			GasTipCap:   big.NewInt(4e8),  // USD
 		}), big.NewInt(5e8)) // Celo
 
-		assert.Equal(t, big.NewInt(3e8), gasPriceInCelo)
-		assert.Equal(t, big.NewInt(6e8), gasPriceInCurrency)
+		assert.Equal(t, big.NewInt(2e8), gasTipInCelo)
+		assert.Equal(t, big.NewInt(4e8), gasTipInCurrency)
+
 	})
 
 	t.Run("tx should return GasTipCap with conversions between Celo and USDT when the transaction is CeloDynamicFeeTxV2 with the specified fee currency but the base fee is nil", func(t *testing.T) {
-		gasPriceInCelo, gasPriceInCurrency := getGasPrices(t, NewTx(&CeloDynamicFeeTxV2{
+		gasTipInCelo, gasTipInCurrency := getGasTips(t, NewTx(&CeloDynamicFeeTxV2{
 			FeeCurrency: &usdToken,
 			GasFeeCap:   big.NewInt(18e8), // USD
 			GasTipCap:   big.NewInt(6e8),  // USD
 		}), nil)
 
-		assert.Equal(t, big.NewInt(3e8), gasPriceInCelo)
-		assert.Equal(t, big.NewInt(6e8), gasPriceInCurrency)
+		assert.Equal(t, big.NewInt(3e8), gasTipInCelo)
+		assert.Equal(t, big.NewInt(6e8), gasTipInCurrency)
 	})
 
 	// Error cases
