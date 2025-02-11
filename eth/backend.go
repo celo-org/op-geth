@@ -94,8 +94,7 @@ type Ethereum struct {
 	bloomIndexer      *core.ChainIndexer             // Bloom indexer operating during block imports
 	closeBloomHandler chan struct{}
 
-	APIBackend     *EthAPIBackend
-	celoApiBackend *celoapi.CeloAPIBackend
+	APIBackend *EthAPIBackend
 
 	miner    *miner.Miner
 	gasPrice *big.Int
@@ -312,8 +311,7 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	if eth.APIBackend.allowUnprotectedTxs {
 		log.Info("Unprotected transactions allowed")
 	}
-	eth.celoApiBackend = celoapi.NewCeloAPIBackend(eth.APIBackend)
-	eth.APIBackend.gpo = gasprice.NewOracle(eth.celoApiBackend, config.GPO, config.Miner.GasPrice)
+	eth.APIBackend.gpo = gasprice.NewOracle(celoapi.NewCeloAPIBackend(eth.APIBackend), config.GPO, config.Miner.GasPrice)
 
 	if config.RollupSequencerHTTP != "" {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -432,7 +430,6 @@ func (s *Ethereum) Synced() bool                       { return s.handler.synced
 func (s *Ethereum) SetSynced()                         { s.handler.enableSyncedFeatures() }
 func (s *Ethereum) ArchiveMode() bool                  { return s.config.NoPruning }
 func (s *Ethereum) BloomIndexer() *core.ChainIndexer   { return s.bloomIndexer }
-func (s *Ethereum) CeloAPIBackend() miner.APIBackend   { return s.celoApiBackend }
 
 // Protocols returns all the currently configured
 // network protocols to start.
