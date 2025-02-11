@@ -599,7 +599,7 @@ func (g *Genesis) toBlockWithRoot(stateRoot, storageRootMessagePasser common.Has
 	// and we are we are ignoring defaults, then set the block to be
 	// pre-gingerbread. This affects the way it is encoded, which affects it's
 	// hash.
-	if g.IgnoreDefaults() && g.Config.GingerbreadBlock != nil && g.Config.IsGingerbread(number) {
+	if g.IgnoreDefaults() && g.Config.GingerbreadBlock != nil && !g.Config.IsGingerbread(number) {
 		head = types.NewPreGingerbreadHeader()
 	}
 
