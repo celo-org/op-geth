@@ -616,23 +616,19 @@ func (g *Genesis) toBlockWithRoot(stateRoot, storageRootMessagePasser common.Has
 	head.Coinbase = g.Coinbase
 	head.Root = stateRoot
 
-	// If defaults are not ignored, set default values for gasLimit and difficulty.
-	if !g.IgnoreDefaults() {
-		if g.GasLimit == 0 {
-			head.GasLimit = params.GenesisGasLimit
-		}
-		if g.Difficulty == nil && g.Mixhash == (common.Hash{}) {
-			head.Difficulty = params.GenesisDifficulty
-		} else if g.Difficulty == nil {
-			// In the case of migrated chains we ensure a zero rather than nil difficulty.
-			head.Difficulty = new(big.Int)
-		}
+	if g.GasLimit == 0 {
+		head.GasLimit = params.GenesisGasLimit
+	}
+	if g.Difficulty == nil && g.Mixhash == (common.Hash{}) {
+		head.Difficulty = params.GenesisDifficulty
+	} else if g.Difficulty == nil {
+		// In the case of migrated chains we ensure a zero rather than nil difficulty.
+		head.Difficulty = new(big.Int)
 	}
 	if g.Config != nil && g.Config.IsLondon(common.Big0) {
 		if g.BaseFee != nil {
 			head.BaseFee = g.BaseFee
 		} else {
-			// If defaults are not ignored, set default values for base fee.
 			head.BaseFee = new(big.Int).SetUint64(params.InitialBaseFee)
 		}
 	}

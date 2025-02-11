@@ -260,7 +260,7 @@ type BlockType interface {
 //
 // The body elements and the receipts are used to recompute and overwrite the
 // relevant portions of the header.
-func NewBlock(header *Header, body *Body, receipts []*Receipt, hasher TrieHasher, bType BlockType, ignoreDefaults ...bool) *Block {
+func NewBlock(header *Header, body *Body, receipts []*Receipt, hasher TrieHasher, bType BlockType) *Block {
 	if body == nil {
 		body = &Body{}
 	}
@@ -287,9 +287,7 @@ func NewBlock(header *Header, body *Body, receipts []*Receipt, hasher TrieHasher
 	}
 
 	if len(uncles) == 0 {
-		if len(ignoreDefaults) == 0 {
-			b.header.UncleHash = EmptyUncleHash
-		}
+		b.header.UncleHash = EmptyUncleHash
 	} else {
 		b.header.UncleHash = CalcUncleHash(uncles)
 		b.uncles = make([]*Header, len(uncles))
