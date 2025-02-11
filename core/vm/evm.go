@@ -41,13 +41,27 @@ type (
 	GetHashFunc func(uint64) common.Hash
 )
 
-func (evm *EVM) precompile(addr common.Address) (PrecompiledContract, bool) {
+func (evm *EVM) precompile(addr common.Address) (CeloPrecompiledContract, bool) {
 	p, ok := evm.precompiles[addr]
 	if evm.Config.PrecompileOverrides != nil {
 		override := evm.Config.PrecompileOverrides(evm.chainRules, p, addr)
-		return override, override != nil
+		p = override
+		ok = override != nil
 	}
-	return p, ok
+
+	var cp CeloPrecompiledContract
+	if ok {
+		cp = &wrap{p}
+	} else {
+		var celoPrecompiles map[common.Address]CeloPrecompiledContract
+		switch {
+		case evm.chainRules.IsCel2:
+			celoPrecompiles = PrecompiledCeloContractsCel2
+		}
+		cp, ok = celoPrecompiles[addr]
+	}
+
+	return cp, ok
 }
 
 // BlockContext provides the EVM with auxiliary information. Once provided
@@ -308,7 +322,7 @@ func (evm *EVM) Call(caller common.Address, addr common.Address, input []byte, g
 		if evm.chainRules.IsAmsterdam {
 			stateDB = evm.StateDB
 		}
-		ret, gas, err = RunPrecompiledContract(stateDB, p, addr, input, gas, evm.Config.Tracer)
+		ret, gas, err = RunPrecompiledContract(stateDB, p, addr, input, gas, evm.Config.Tracer, NewContext(caller, evm))
 	} else {
 		// Initialise a new contract and set the code that is to be used by the EVM.
 		code := evm.resolveCode(addr)
@@ -376,7 +390,7 @@ func (evm *EVM) CallCode(caller common.Address, addr common.Address, input []byt
 		if evm.chainRules.IsAmsterdam {
 			stateDB = evm.StateDB
 		}
-		ret, gas, err = RunPrecompiledContract(stateDB, p, addr, input, gas, evm.Config.Tracer)
+		ret, gas, err = RunPrecompiledContract(stateDB, p, addr, input, gas, evm.Config.Tracer, NewContext(caller, evm))
 	} else {
 		// Initialise a new contract and set the code that is to be used by the EVM.
 		// The contract is a scoped environment for this execution context only.
@@ -424,7 +438,7 @@ func (evm *EVM) DelegateCall(originCaller common.Address, caller common.Address,
 		if evm.chainRules.IsAmsterdam {
 			stateDB = evm.StateDB
 		}
-		ret, gas, err = RunPrecompiledContract(stateDB, p, addr, input, gas, evm.Config.Tracer)
+		ret, gas, err = RunPrecompiledContract(stateDB, p, addr, input, gas, evm.Config.Tracer, NewContext(caller, evm))
 	} else {
 		// Initialise a new contract and make initialise the delegate values
 		//
@@ -481,7 +495,7 @@ func (evm *EVM) StaticCall(caller common.Address, addr common.Address, input []b
 		if evm.chainRules.IsAmsterdam {
 			stateDB = evm.StateDB
 		}
-		ret, gas, err = RunPrecompiledContract(stateDB, p, addr, input, gas, evm.Config.Tracer)
+		ret, gas, err = RunPrecompiledContract(stateDB, p, addr, input, gas, evm.Config.Tracer, NewContext(caller, evm))
 	} else {
 		// Initialise a new contract and set the code that is to be used by the EVM.
 		// The contract is a scoped environment for this execution context only.

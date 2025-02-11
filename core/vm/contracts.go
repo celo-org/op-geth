@@ -251,6 +251,15 @@ var PrecompiledContractsJovian = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{0x01, 0x00}): &p256VerifyFjord{},
 }
 
+// PrecompiledCeloContractsCel2 contains a set of pre-compiled contracts used
+// in the Cel2 release which require the extra celoPrecompileContext.
+// The Cel2 hardfork is handled differently because it can be combined with
+// multiple Ethereum/Optimism hardforks and therefore does not fit into the
+// linear history of normal hardforks.
+var PrecompiledCeloContractsCel2 = map[common.Address]CeloPrecompiledContract{
+	transferPrecompileAddress: &transfer{},
+}
+
 var (
 	PrecompiledAddressesJovian    []common.Address
 	PrecompiledAddressesIsthmus   []common.Address
@@ -336,8 +345,9 @@ func ActivePrecompiledContracts(rules params.Rules) PrecompiledContracts {
 	return maps.Clone(activePrecompiledContracts(rules))
 }
 
-// ActivePrecompiles returns the precompile addresses enabled with the current configuration.
-func ActivePrecompiles(rules params.Rules) []common.Address {
+// OptimismPrecompiles returns the original Optimism precompiles enabled with
+// the current configuration.
+func OptimismPrecompiles(rules params.Rules) []common.Address {
 	switch {
 	case rules.IsOptimismJovian:
 		return PrecompiledAddressesJovian
@@ -364,12 +374,32 @@ func ActivePrecompiles(rules params.Rules) []common.Address {
 	}
 }
 
+// ActivePrecompiles returns the precompiles enabled with the current configuration.
+func ActivePrecompiles(rules params.Rules) []common.Address {
+	addresses := OptimismPrecompiles(rules)
+
+	if !rules.IsCel2 {
+		return addresses
+	}
+
+	// We can't hardcode the cel2 precompiles because they depend on the underlying
+	// active optimism fork, so instead we dynamically calculate them here.
+	precompiledAddressesCel2 := make([]common.Address, 0, len(addresses)+len(PrecompiledCeloContractsCel2))
+	precompiledAddressesCel2 = append(precompiledAddressesCel2, addresses...)
+
+	for k := range PrecompiledCeloContractsCel2 {
+		precompiledAddressesCel2 = append(precompiledAddressesCel2, k)
+	}
+
+	return precompiledAddressesCel2
+}
+
 // RunPrecompiledContract runs and evaluates the output of a precompiled contract.
 // It returns
 // - the returned bytes,
 // - the _remaining_ gas,
 // - any error that occurred
-func RunPrecompiledContract(stateDB StateDB, p PrecompiledContract, address common.Address, input []byte, suppliedGas uint64, logger *tracing.Hooks) (ret []byte, remainingGas uint64, err error) {
+func RunPrecompiledContract(stateDB StateDB, p CeloPrecompiledContract, address common.Address, input []byte, suppliedGas uint64, logger *tracing.Hooks, ctx *celoPrecompileContext) (ret []byte, remainingGas uint64, err error) {
 	gasCost := p.RequiredGas(input)
 	if suppliedGas < gasCost {
 		return nil, 0, ErrOutOfGas
@@ -384,7 +414,7 @@ func RunPrecompiledContract(stateDB StateDB, p PrecompiledContract, address comm
 	if stateDB != nil {
 		stateDB.Exist(address)
 	}
-	output, err := p.Run(input)
+	output, err := p.Run(input, ctx)
 	return output, suppliedGas, err
 }
 
