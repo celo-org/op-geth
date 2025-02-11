@@ -255,6 +255,15 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Make sure Cel2 full sync node has migrated data from Celo1
+	currentBlock := eth.blockchain.CurrentBlock()
+	if config.SyncMode == downloader.FullSync && chainConfig.Cel2Time != nil && !chainConfig.IsCel2(currentBlock.Time) {
+		log.Error(fmt.Sprintf(
+			"Chaindata is missing blocks, Cel2 fork is at %d, but the head block timestamp is %d. Pre Cel2 blocks must be migrated from"+
+				" Celo L1 chaindata, Celo L2 cannot generate pre Cel2 blocks. See migration instructions here - https://docs.celo.org/cel2/l2-operator-guide",
+			*chainConfig.Cel2Time, currentBlock.Time))
+		return nil, fmt.Errorf("missing migrated data")
+	}
 	if chainConfig := eth.blockchain.Config(); chainConfig.Optimism != nil { // config.Genesis.Config.ChainID cannot be used because it's based on CLI flags only, thus default to mainnet L1
 		config.NetworkId = chainConfig.ChainID.Uint64() // optimism defaults eth network ID to chain ID
 		eth.networkID = config.NetworkId
