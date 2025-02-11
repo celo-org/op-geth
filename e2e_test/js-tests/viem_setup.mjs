@@ -14,7 +14,17 @@ const devChain = defineChain({
 	...celoAlfajores,
 	id: 1337,
 	name: "local dev chain",
-	network: "dev",
+	rpcUrls: {
+		default: {
+			http: [process.env.ETH_RPC_URL],
+		},
+	},
+});
+
+const celoBaklava = defineChain({
+	...celoAlfajores,
+	id: 62320,
+	name: "baklava",
 	rpcUrls: {
 		default: {
 			http: [process.env.ETH_RPC_URL],
@@ -26,6 +36,8 @@ const chain = (() => {
 	switch (process.env.NETWORK) {
 		case 'alfajores':
 			return celoAlfajores
+		case 'baklava':
+			return celoBaklava
 		default:
 			return devChain
 	};
