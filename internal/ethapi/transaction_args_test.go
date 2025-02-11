@@ -303,6 +303,8 @@ type celoBackendMock struct {
 	chainDb        ethdb.Database
 	blockByNumber  map[int64]*types.Block
 	receiptsByHash map[common.Hash]types.Receipts
+	rates          common.ExchangeRates
+	rpcTxFeeCap    float64
 }
 
 func newCeloBackendMock(config *params.ChainConfig) *celoBackendMock {
@@ -314,15 +316,21 @@ func newCeloBackendMock(config *params.ChainConfig) *celoBackendMock {
 	}
 }
 
+func (c *celoBackendMock) SetExchangeRates(rates common.ExchangeRates) {
+	c.rates = rates
+}
+
+func (c *celoBackendMock) SetRPCTxFeeCap(txFeeCap float64) {
+	c.rpcTxFeeCap = txFeeCap
+}
+
 func (c *celoBackendMock) GetFeeBalance(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash, account common.Address, feeCurrency *common.Address) (*big.Int, error) {
 	// Celo specific backend features are currently not tested
 	return nil, errCeloNotImplemented
 }
 
 func (c *celoBackendMock) GetExchangeRates(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash) (common.ExchangeRates, error) {
-	var er common.ExchangeRates
-	// This Celo specific backend features are currently not tested
-	return er, errCeloNotImplemented
+	return c.rates, nil
 }
 
 func (c *celoBackendMock) ConvertToCurrency(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash, value *big.Int, fromFeeCurrency *common.Address) (*big.Int, error) {
@@ -358,6 +366,8 @@ func (c *celoBackendMock) setBlock(number int64, block *types.Block) {
 func (c *celoBackendMock) setReceipts(hash common.Hash, receipts types.Receipts) {
 	c.receiptsByHash[hash] = receipts
 }
+
+func (c *celoBackendMock) RPCTxFeeCap() float64 { return c.rpcTxFeeCap }
 
 type backendMock struct {
 	current *types.Header
