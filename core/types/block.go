@@ -254,6 +254,7 @@ type extblock struct {
 type BlockType interface {
 	HasOptimismWithdrawalsRoot(blkTime uint64) bool
 	IsIsthmus(blkTime uint64) bool
+	IsGingerbread(blockNumber *big.Int) bool
 	IsMigratedChain() bool
 }
 
@@ -288,7 +289,9 @@ func NewBlock(header *Header, body *Body, receipts []*Receipt, hasher TrieHasher
 		b.header.Bloom = CreateBloom(receipts)
 	}
 
-	if len(uncles) == 0 && !bType.IsMigratedChain() {
+	// We prevent setting the EmptyUncleHash only when we are on a migrated
+	// chain and the block is pre-gingerbread.
+	if len(uncles) == 0 && !(bType.IsMigratedChain() && !bType.IsGingerbread(header.Number)) {
 		b.header.UncleHash = EmptyUncleHash
 	} else {
 		b.header.UncleHash = CalcUncleHash(uncles)

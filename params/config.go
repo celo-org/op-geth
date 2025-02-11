@@ -731,6 +731,7 @@ func (c *ChainConfig) IsGingerbread(num *big.Int) bool {
 }
 
 // Returns whether this is config for a chain that has been migrated to cel2.
+// (I.E. cel2 is configured but non zero)
 func (c *ChainConfig) IsMigratedChain() bool {
 	return c.Cel2Time != nil && *c.Cel2Time > 0
 }

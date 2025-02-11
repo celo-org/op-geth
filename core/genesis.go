@@ -618,8 +618,8 @@ func (g *Genesis) toBlockWithRoot(stateRoot, storageRootMessagePasser common.Has
 	head.Coinbase = g.Coinbase
 	head.Root = stateRoot
 
-	// When initialising the genesis we don't want to override unset gasLimit or
-	// difficulty fields since these fields were not present at the celo chain genesis.
+	// Avoid setting default values for gasLimit and difficulty on migrated
+	// chains.
 	if !g.Config.IsMigratedChain() {
 		if g.GasLimit == 0 {
 			head.GasLimit = params.GenesisGasLimit
@@ -636,7 +636,6 @@ func (g *Genesis) toBlockWithRoot(stateRoot, storageRootMessagePasser common.Has
 		if g.BaseFee != nil {
 			head.BaseFee = g.BaseFee
 		} else {
-			// If defaults are not ignored, set default values for base fee.
 			head.BaseFee = new(big.Int).SetUint64(params.InitialBaseFee)
 		}
 	}

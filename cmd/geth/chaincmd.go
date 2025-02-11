@@ -230,8 +230,7 @@ func initGenesis(ctx *cli.Context) error {
 	triedb := utils.MakeTrieDatabase(ctx, chaindb, ctx.Bool(utils.CachePreimagesFlag.Name), false, genesis.IsVerkle())
 	defer triedb.Close()
 
-	// Set ignore defaults here so that our genesis is not inited with default
-	// values for gasLimit, difficulty or uncleHash which celo did not historically set.
+	// Set initing genesis here, to signal that we are in an initGenesis flow.
 	genesis.SetInitingGenesis()
 	_, hash, _, err := core.SetupGenesisBlockWithOverride(chaindb, triedb, genesis, &overrides)
 	if err != nil {
