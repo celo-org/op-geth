@@ -168,7 +168,7 @@ func addFeeCurrencyToStorage(feeCurrencyAddr common.Address, oracleAddr common.A
 	storage[incHash(structStart, 1)] = common.BigToHash(big.NewInt(int64(FeeCurrencyIntrinsicGas))) // intrinsicGas
 }
 
-// SetInitingGenesis sets marks this genesis as one that is being used in the initGenesis operation.
+// SetInitingGenesis marks this genesis as one that is being used in the initGenesis operation.
 func (g *Genesis) SetInitingGenesis() {
 	g.initingGenesis = true
 }
