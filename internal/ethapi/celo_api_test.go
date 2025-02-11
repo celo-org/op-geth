@@ -2,11 +2,14 @@ package ethapi
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/exchange"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/internal/blocktest"
@@ -586,5 +589,52 @@ func TestRPCMarshalBlock_Celo1TotalDifficulty(t *testing.T) {
 		res := marshalBlock(t, &config)
 
 		assert.Equal(t, nil, res["totalDifficulty"])
+	})
+}
+
+// TestCheckTxFee ensures CheckTxFee validates whether the product of GasPrice and Gas
+// does not exceed a predefined cap. Additionally, if FeeCurrency
+// is provided, it ensures that GasPrice is correctly converted to
+// the native currency before validation
+func TestCheckTxFee(t *testing.T) {
+	t.Parallel()
+
+	var (
+		txFeeCap = float64(1.5)
+		rates    = common.ExchangeRates{
+			core.DevFeeCurrencyAddr: big.NewRat(2, 1),
+		}
+		config = allEnabledChainConfig()
+	)
+
+	backend := newCeloBackendMock(config)
+	backend.SetExchangeRates(rates)
+	backend.SetRPCTxFeeCap(txFeeCap)
+
+	t.Run("should allow transaction if fee does not exceed 1.5 Ether", func(t *testing.T) {
+		err := CheckTxFee(context.Background(), backend, big.NewInt(params.Ether), 1, nil) // 1 Ether
+		assert.NoError(t, err)
+	})
+
+	t.Run("should reject transaction if fee exceeds 1.5 Ether", func(t *testing.T) {
+		err := CheckTxFee(context.Background(), backend, big.NewInt(params.Ether), 2, nil) // 2 Ether
+		expected := fmt.Sprintf("tx fee (%.2f ether) exceeds the configured cap (%.2f ether)", 2.0, 1.5)
+		assert.ErrorContains(t, err, expected)
+	})
+
+	t.Run("should allow transaction if fee currency is given and converted fee does not exceed 1.5 Ether", func(t *testing.T) {
+		err := CheckTxFee(context.Background(), backend, big.NewInt(params.Ether), 2, &core.DevFeeCurrencyAddr) // 1 Ether
+		assert.NoError(t, err)
+	})
+
+	t.Run("should reject transaction if fee currency is given and converted fee exceeds 1.5 Ether", func(t *testing.T) {
+		err := CheckTxFee(context.Background(), backend, big.NewInt(params.Ether), 4, &core.DevFeeCurrencyAddr) // 2 Ether
+		expected := fmt.Sprintf("tx fee (%.2f ether) exceeds the configured cap (%.2f ether)", 2.0, 1.5)
+		assert.ErrorContains(t, err, expected)
+	})
+
+	t.Run("should reject transaction if fee currency is not registered", func(t *testing.T) {
+		err := CheckTxFee(context.Background(), backend, big.NewInt(params.Ether), 4, &core.DevFeeCurrencyAddr2)
+		assert.ErrorIs(t, err, exchange.ErrUnregisteredFeeCurrency)
 	})
 }
