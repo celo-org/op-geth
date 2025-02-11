@@ -23,12 +23,12 @@ var (
 )
 
 type sendRawTxCond struct {
-	b           ethapi.Backend
+	b           ethapi.CeloBackend
 	seqRPC      *rpc.Client
 	costLimiter *rate.Limiter
 }
 
-func GetSendRawTxConditionalAPI(b ethapi.Backend, seqRPC *rpc.Client, costRateLimit rate.Limit) rpc.API {
+func GetSendRawTxConditionalAPI(b ethapi.CeloBackend, seqRPC *rpc.Client, costRateLimit rate.Limit) rpc.API {
 	// Applying a manual bump to the burst to allow conditional txs to queue. Metrics will
 	// will inform of adjustments that may need to be made here.
 	costLimiter := rate.NewLimiter(costRateLimit, 3*params.TransactionConditionalMaxCost)
@@ -104,7 +104,7 @@ func (s *sendRawTxCond) SendRawTransactionConditional(ctx context.Context, txByt
 	// forward if seqRPC is set, otherwise submit the tx
 	if s.seqRPC != nil {
 		// Some precondition checks done by `ethapi.SubmitTransaction` that are good to also check here
-		if err := ethapi.CheckTxFee(tx.GasPrice(), tx.Gas(), s.b.RPCTxFeeCap()); err != nil {
+		if err := ethapi.CheckTxFee(ctx, s.b, tx.GasPrice(), tx.Gas(), tx.FeeCurrency()); err != nil {
 			return common.Hash{}, err
 		}
 		if !s.b.UnprotectedAllowed() && !tx.Protected() {
@@ -113,7 +113,7 @@ func (s *sendRawTxCond) SendRawTransactionConditional(ctx context.Context, txByt
 		}
 
 		var hash common.Hash
-		err := s.seqRPC.CallContext(ctx, &hash, "eth_sendRawTransactionConditional", txBytes, cond)
+		err = s.seqRPC.CallContext(ctx, &hash, "eth_sendRawTransactionConditional", txBytes, cond)
 		return hash, err
 	} else {
 		// Set out-of-consensus internal tx fields
