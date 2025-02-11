@@ -2653,13 +2653,11 @@ func CheckTxFee(ctx context.Context, backend CeloBackend, gasPrice *big.Int, gas
 
 	rates, err := backend.GetExchangeRates(ctx, rpc.BlockNumberOrHashWithNumber(rpc.LatestBlockNumber))
 	if err != nil {
-		log.Warn("Failed to get exchange rates for latest block", "err", err)
 		return err
 	}
 
 	gasPriceInCelo, err := exchange.ConvertCurrencyToCelo(rates, feeCurrency, gasPrice)
 	if err != nil {
-		log.Warn("Failed to convert gas price", "err", err, "currency", feeCurrency)
 		return err
 	}
 
