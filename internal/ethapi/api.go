@@ -32,6 +32,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/accounts/scwallet"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/exchange"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/consensus"
@@ -527,7 +528,7 @@ func (api *PersonalAccountAPI) SignTransaction(ctx context.Context, args Transac
 	}
 	// Before actually signing the transaction, ensure the transaction fee is reasonable.
 	tx := args.ToTransaction(types.LegacyTxType)
-	if err := checkTxFee(tx.GasPrice(), tx.Gas(), api.b.RPCTxFeeCap()); err != nil {
+	if err := CheckTxFee(ctx, api.b, tx.GasPrice(), tx.Gas(), tx.FeeCurrency()); err != nil {
 		return nil, err
 	}
 	signed, err := api.signTransaction(ctx, &args, passwd)
@@ -2218,10 +2219,10 @@ func (api *TransactionAPI) sign(addr common.Address, tx *types.Transaction) (*ty
 }
 
 // SubmitTransaction is a helper function that submits tx to txPool and logs a message.
-func SubmitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (common.Hash, error) {
+func SubmitTransaction(ctx context.Context, b CeloBackend, tx *types.Transaction) (common.Hash, error) {
 	// If the transaction fee cap is already specified, ensure the
 	// fee of the given transaction is _reasonable_.
-	if err := checkTxFee(tx.GasPrice(), tx.Gas(), b.RPCTxFeeCap()); err != nil {
+	if err := CheckTxFee(ctx, b, tx.GasPrice(), tx.Gas(), tx.FeeCurrency()); err != nil {
 		return common.Hash{}, err
 	}
 	if !b.UnprotectedAllowed() && !tx.Protected() {
@@ -2366,7 +2367,7 @@ func (api *TransactionAPI) SignTransaction(ctx context.Context, args Transaction
 	}
 	// Before actually sign the transaction, ensure the transaction fee is reasonable.
 	tx := args.ToTransaction(types.LegacyTxType)
-	if err := checkTxFee(tx.GasPrice(), tx.Gas(), api.b.RPCTxFeeCap()); err != nil {
+	if err := CheckTxFee(ctx, api.b, tx.GasPrice(), tx.Gas(), tx.FeeCurrency()); err != nil {
 		return nil, err
 	}
 	signed, err := api.sign(args.from(), tx)
@@ -2434,7 +2435,7 @@ func (api *TransactionAPI) Resend(ctx context.Context, sendArgs TransactionArgs,
 	if gasLimit != nil {
 		gas = uint64(*gasLimit)
 	}
-	if err := checkTxFee(price, gas, api.b.RPCTxFeeCap()); err != nil {
+	if err := CheckTxFee(ctx, api.b, price, gas, matchTx.FeeCurrency()); err != nil {
 		return common.Hash{}, err
 	}
 	// Iterate the pending list for replacement
@@ -2644,6 +2645,21 @@ func checkTxFee(gasPrice *big.Int, gas uint64, cap float64) error {
 }
 
 // CheckTxFee exports a helper function used to check whether the fee is reasonable
-func CheckTxFee(gasPrice *big.Int, gas uint64, cap float64) error {
-	return checkTxFee(gasPrice, gas, cap)
+func CheckTxFee(ctx context.Context, backend CeloBackend, gasPrice *big.Int, gas uint64, feeCurrency *common.Address) error {
+	// This early return prevents unnecessary API calls and ensures tests that don't involve fee currency conversion pass
+	if feeCurrency == nil {
+		return checkTxFee(gasPrice, gas, backend.RPCTxFeeCap())
+	}
+
+	rates, err := backend.GetExchangeRates(ctx, rpc.BlockNumberOrHashWithNumber(rpc.LatestBlockNumber))
+	if err != nil {
+		return err
+	}
+
+	gasPriceInCelo, err := exchange.ConvertCurrencyToCelo(rates, feeCurrency, gasPrice)
+	if err != nil {
+		return err
+	}
+
+	return checkTxFee(gasPriceInCelo, gas, backend.RPCTxFeeCap())
 }
