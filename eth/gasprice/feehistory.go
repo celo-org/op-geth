@@ -138,15 +138,13 @@ func (oracle *Oracle) processBlock(bf *blockFees, percentiles []float64) {
 			if rates == nil {
 				rates, err = oracle.backend.GetExchangeRates(context.Background(), rpc.BlockNumberOrHashWithNumber(rpc.BlockNumber(bf.block.NumberU64())))
 				if err != nil {
-					log.Error("Error occurred while getting exchange rates", "err", err)
 					bf.err = fmt.Errorf("failed to get exchange rates: %w", err)
 					return
 				}
 			}
 			reward, err = tx.EffectiveGasTipInCelo(bf.block.BaseFee(), rates)
 			if err != nil {
-				log.Error("Error occurred while calculating effective gas tip", "currency", tx.FeeCurrency(), "err", err)
-				bf.err = err
+				bf.err = fmt.Errorf("failed to calculate effective gas tip: %w", err)
 				return
 			}
 		}
