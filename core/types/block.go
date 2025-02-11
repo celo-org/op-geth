@@ -254,6 +254,7 @@ type extblock struct {
 type BlockType interface {
 	HasOptimismWithdrawalsRoot(blkTime uint64) bool
 	IsIsthmus(blkTime uint64) bool
+	IsMigratedChain() bool
 }
 
 // NewBlock creates a new block. The input data is copied, changes to header and to the
@@ -287,7 +288,7 @@ func NewBlock(header *Header, body *Body, receipts []*Receipt, hasher TrieHasher
 		b.header.Bloom = CreateBloom(receipts)
 	}
 
-	if len(uncles) == 0 {
+	if len(uncles) == 0 && !bType.IsMigratedChain() {
 		b.header.UncleHash = EmptyUncleHash
 	} else {
 		b.header.UncleHash = CalcUncleHash(uncles)
