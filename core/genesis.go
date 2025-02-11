@@ -592,12 +592,12 @@ func (g *Genesis) ToBlock() *types.Block {
 func (g *Genesis) toBlockWithRoot(stateRoot, storageRootMessagePasser common.Hash) *types.Block {
 	number := new(big.Int).SetUint64(g.Number)
 	head := &types.Header{}
-	// If we are in an initGenesis flow and this is a pre-gingerbread block, then
-	// set the block to be pre-gingerbread. This affects the way it is encoded,
-	// which affects its hash. Ideally we could do without the InitingGenesis
-	// condition, but TestFeeHistory, makes use of chains with pre-gingerbread
-	// genesis blocks without actually accounting for the different structure of
-	// the pre-gingerbread block.
+	// If we are in a context where ginerbread is configured but not active for
+	// the genesis block we set the block to be pre-gingerbread. This affects
+	// the way it is encoded, which affects its hash. Ideally we could do
+	// without the testing.Testing condition, but TestFeeHistory, makes use of
+	// chains with pre-gingerbread genesis blocks without actually accounting
+	// for the different structure of the pre-gingerbread block.
 	if !testing.Testing() && g.Config.GingerbreadBlock != nil && !g.Config.IsGingerbread(number) {
 		head = types.NewPreGingerbreadHeader()
 	}
