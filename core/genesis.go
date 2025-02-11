@@ -597,7 +597,7 @@ func (g *Genesis) toBlockWithRoot(stateRoot, storageRootMessagePasser common.Has
 	head := &types.Header{}
 	// If we are in an initGenesis flow and this is a pre-gingerbread block, then
 	// set the block to be pre-gingerbread. This affects the way it is encoded,
-	// which affects it's hash. Ideally we could do without the InitingGenesis
+	// which affects its hash. Ideally we could do without the InitingGenesis
 	// condition, but TestFeeHistory, makes use of chains with pre-gingerbread
 	// genesis blocks without actually accounting for the different structure of
 	// the pre-gingerbread block.
