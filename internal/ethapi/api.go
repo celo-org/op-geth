@@ -2646,44 +2646,22 @@ func checkTxFee(gasPrice *big.Int, gas uint64, cap float64) error {
 
 // CheckTxFee exports a helper function used to check whether the fee is reasonable
 func CheckTxFee(ctx context.Context, backend CeloBackend, gasPrice *big.Int, gas uint64, feeCurrency *common.Address) error {
-	feeCap, err := ConvertTxFeeCapToCurrency(ctx, backend, feeCurrency)
-	if err != nil {
-		return err
-	}
-
-	return checkTxFee(gasPrice, gas, feeCap)
-}
-
-// ConvertTxFeeCapToCurrency converts FeeCap in native currency into the specified currency
-// If no fee currency is specified, it returns the native currency FeeCap as is
-func ConvertTxFeeCapToCurrency(ctx context.Context, backend CeloBackend, feeCurrency *common.Address) (float64, error) {
-	txFeeCap := backend.RPCTxFeeCap()
+	// This early return prevents unnecessary API calls and ensures tests that don't involve fee currency conversion pass
 	if feeCurrency == nil {
-		return txFeeCap, nil
+		return checkTxFee(gasPrice, gas, backend.RPCTxFeeCap())
 	}
 
 	rates, err := backend.GetExchangeRates(ctx, rpc.BlockNumberOrHashWithNumber(rpc.LatestBlockNumber))
 	if err != nil {
-		log.Warn("Failed to get exchange rates", "err", err)
-		return 0, err
-	}
-	rate, ok := rates[*feeCurrency]
-	if !ok {
-		return 0, fmt.Errorf("could not convert from native to fee currency (fee-currency=%s): %w ", feeCurrency, exchange.ErrUnregisteredFeeCurrency)
+		log.Warn("Failed to get exchange rates for latest block", "err", err)
+		return err
 	}
 
-	// NOTE: Avoiding exchange.ConvertCeloToCurrency to prevent precision loss when converting float64 to big.Int
-	// Using big.Rat instead to maintain fractional precision during conversion
-	txFeeCapInCurrency := new(big.Rat).Mul(
-		new(big.Rat).SetFloat64(txFeeCap),
-		rate,
-	)
-
-	result, exact := txFeeCapInCurrency.Float64()
-	if !exact {
-		log.Warn("Failed to accurately convert fee currency to float64", "fee cap", txFeeCapInCurrency.String())
-		return 0, fmt.Errorf("failed to accurately convert fee currency to float64")
+	gasPriceInCelo, err := exchange.ConvertCurrencyToCelo(rates, feeCurrency, gasPrice)
+	if err != nil {
+		log.Warn("Failed to convert gas price", "err", err, "currency", feeCurrency)
+		return err
 	}
 
-	return result, nil
+	return checkTxFee(gasPriceInCelo, gas, backend.RPCTxFeeCap())
 }
