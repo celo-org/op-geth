@@ -83,9 +83,27 @@ func (oracle *Oracle) SuggestOptimismPriorityFee(ctx context.Context, h *types.H
 			log.Error("block was at capacity but doesn't have transactions")
 			return suggestion
 		}
+		var rates common.ExchangeRates
 		tips := bigIntArray(make([]*big.Int, len(txs)))
 		for i := range txs {
-			tips[i] = txs[i].EffectiveGasTipValue(baseFee)
+			if txs[i].FeeCurrency() == nil {
+				tips[i], _ = txs[i].EffectiveGasTip(baseFee)
+				continue
+			}
+
+			if rates == nil {
+				rates, err = oracle.backend.GetExchangeRates(ctx, rpc.BlockNumberOrHashWithNumber(rpc.BlockNumber(h.Number.Int64())))
+				if err != nil {
+					log.Error("failed to get exchange rates", "err", err)
+					return suggestion
+				}
+			}
+
+			tips[i], err = txs[i].EffectiveGasTipInCelo(baseFee, rates)
+			if err != nil {
+				log.Error("failed to convert effecive gas tip", "currency", txs[i].FeeCurrency(), "err", err)
+				return suggestion
+			}
 		}
 		sort.Sort(tips)
 		median := tips[len(tips)/2]
