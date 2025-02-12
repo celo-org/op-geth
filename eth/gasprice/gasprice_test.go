@@ -232,6 +232,10 @@ func (b *testBackend) GetBlockByNumber(number uint64) *types.Block {
 	return b.chain.GetBlockByNumber(number)
 }
 
+func (b *testBackend) GetExchangeRates(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (common.ExchangeRates, error) {
+	return nil, nil
+}
+
 func TestSuggestTipCap(t *testing.T) {
 	config := Config{
 		Blocks:     3,
