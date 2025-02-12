@@ -730,6 +730,12 @@ func (c *ChainConfig) IsGingerbread(num *big.Int) bool {
 	return isBlockForked(c.GingerbreadBlock, num)
 }
 
+// Returns whether this is config for a chain that has been migrated to cel2.
+// (I.E. cel2 is configured but non zero)
+func (c *ChainConfig) IsMigratedChain() bool {
+	return c.Cel2Time != nil && *c.Cel2Time > 0
+}
+
 // IsOptimism returns whether the node is an optimism node or not.
 func (c *ChainConfig) IsOptimism() bool {
 	return c.Optimism != nil
