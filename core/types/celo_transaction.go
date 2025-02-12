@@ -85,10 +85,10 @@ func (tx *Transaction) MaxFeeInFeeCurrency() *big.Int {
 	return maxFeeInFeeCurrency
 }
 
-// EffectiveGasTipInCurrency returns the effective gas tip in the specified currency
+// EffectiveGasTipInCelo returns the effective gas tip in Celo
 // For transactions with a specified fee currency, the function takes the base fee in Celo,
-// calculates in the specified currency, and returns the value in the currency
-func (tx *Transaction) EffectiveGasTipInCurrency(baseFee *big.Int, exchangeRates common.ExchangeRates) (*big.Int, error) {
+// calculates in the specified currency, and returns the value in Celo
+func (tx *Transaction) EffectiveGasTipInCelo(baseFee *big.Int, exchangeRates common.ExchangeRates) (*big.Int, error) {
 	if baseFee != nil {
 		var err error
 		baseFee, err = exchange.ConvertCeloToCurrency(exchangeRates, tx.FeeCurrency(), baseFee)
@@ -96,18 +96,13 @@ func (tx *Transaction) EffectiveGasTipInCurrency(baseFee *big.Int, exchangeRates
 			return nil, err
 		}
 	}
-	return tx.EffectiveGasTip(baseFee)
-}
 
-// EffectiveGasTipInCelo returns the effective gas tip in Celo
-// For transactions with a specified fee currency, the function takes the base fee in Celo,
-// calculates in the specified currency, and returns the value in Celo
-func (tx *Transaction) EffectiveGasTipInCelo(baseFee *big.Int, exchangeRates common.ExchangeRates) (*big.Int, error) {
-	gasTipInCurrency, err := tx.EffectiveGasTipInCurrency(baseFee, exchangeRates)
+	gasTip, err := tx.EffectiveGasTip(baseFee)
 	if err != nil {
 		return nil, err
 	}
-	return exchange.ConvertCurrencyToCelo(exchangeRates, tx.FeeCurrency(), gasTipInCurrency)
+
+	return exchange.ConvertCurrencyToCelo(exchangeRates, tx.FeeCurrency(), gasTip)
 }
 
 // CompareWithRates compares the effective gas price of two transactions according to the exchange rates and

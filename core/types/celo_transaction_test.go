@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestTransactionEffectiveGasTipInCurrency(t *testing.T) {
+func TestTransactionEffectiveGasTipInCelo(t *testing.T) {
 	t.Parallel()
 
 	usdToken := common.HexToAddress("0x765de816845861e75a25fca122bb6898b8b1282a")
@@ -35,71 +35,63 @@ func TestTransactionEffectiveGasTipInCurrency(t *testing.T) {
 		usdToken: big.NewRat(2, 1), // 1 Celo ≒ 2 USD
 	}
 
-	getGasTips := func(t *testing.T, tx *Transaction, baseFee *big.Int) (*big.Int, *big.Int) {
+	getGasTip := func(t *testing.T, tx *Transaction, baseFee *big.Int) *big.Int {
 		t.Helper()
 
 		gasTipInCelo, err := tx.EffectiveGasTipInCelo(baseFee, exchangeRates)
 		require.NoError(t, err)
 
-		gasTipInCurrency, err := tx.EffectiveGasTipInCurrency(baseFee, exchangeRates)
-		require.NoError(t, err)
-
-		return gasTipInCelo, gasTipInCurrency
+		return gasTipInCelo
 	}
 
 	// Normal Tx
 	t.Run("tx should return the difference between GasFeeCap and BaseFee when tx type is not CeloDynamicFeeTxV2", func(t *testing.T) {
-		gasTipInCelo, gasTipInCurrency := getGasTips(t, NewTx(&DynamicFeeTx{
+		gasTip := getGasTip(t, NewTx(&DynamicFeeTx{
 			GasFeeCap: big.NewInt(9e8),
 			GasTipCap: big.NewInt(5e8),
 		}), big.NewInt(5e8))
 
-		assert.Equal(t, big.NewInt(4e8), gasTipInCelo)
-		assert.Equal(t, big.NewInt(4e8), gasTipInCurrency)
+		assert.Equal(t, big.NewInt(4e8), gasTip)
 	})
 
 	t.Run("tx should return the GasTipCap when tx type is not CeloDynamicFeeTxV2", func(t *testing.T) {
-		gasTipInCelo, gasTipInCurrency := getGasTips(t, NewTx(&DynamicFeeTx{
+		gasTip := getGasTip(t, NewTx(&DynamicFeeTx{
 			GasFeeCap: big.NewInt(9e8),
 			GasTipCap: big.NewInt(3e8),
 		}), big.NewInt(5e8))
 
-		assert.Equal(t, big.NewInt(3e8), gasTipInCelo)
-		assert.Equal(t, big.NewInt(3e8), gasTipInCurrency)
+		assert.Equal(t, big.NewInt(3e8), gasTip)
 	})
 
 	// CeloDynamicFeeTxV2
 	t.Run("tx should return the difference between GasFeeCap and BaseFee with conversions between Celo and USDT when the transaction is CeloDynamicFeeTxV2 with the specified fee currency", func(t *testing.T) {
-		gasTipInCelo, gasTipInCurrency := getGasTips(t, NewTx(&CeloDynamicFeeTxV2{
+		gasTip := getGasTip(t, NewTx(&CeloDynamicFeeTxV2{
 			FeeCurrency: &usdToken,
 			GasFeeCap:   big.NewInt(18e8), // USD
 			GasTipCap:   big.NewInt(8e8),  // USD
 		}), big.NewInt(6e8)) // Celo
 
-		assert.Equal(t, big.NewInt(3e8), gasTipInCelo)
-		assert.Equal(t, big.NewInt(6e8), gasTipInCurrency)
+		assert.Equal(t, big.NewInt(3e8), gasTip)
 	})
 
 	t.Run("tx should return the GasTipCap with conversions between Celo and USDT when the transaction is CeloDynamicFeeTxV2 with the specified fee currency", func(t *testing.T) {
-		gasTipInCelo, gasTipInCurrency := getGasTips(t, NewTx(&CeloDynamicFeeTxV2{
+		gasTip := getGasTip(t, NewTx(&CeloDynamicFeeTxV2{
 			FeeCurrency: &usdToken,
 			GasFeeCap:   big.NewInt(18e8), // USD
 			GasTipCap:   big.NewInt(4e8),  // USD
 		}), big.NewInt(5e8)) // Celo
 
-		assert.Equal(t, big.NewInt(2e8), gasTipInCelo)
-		assert.Equal(t, big.NewInt(4e8), gasTipInCurrency)
+		assert.Equal(t, big.NewInt(2e8), gasTip)
 	})
 
 	t.Run("tx should return GasTipCap with conversions between Celo and USDT when the transaction is CeloDynamicFeeTxV2 with the specified fee currency but the base fee is nil", func(t *testing.T) {
-		gasTipInCelo, gasTipInCurrency := getGasTips(t, NewTx(&CeloDynamicFeeTxV2{
+		gasTip := getGasTip(t, NewTx(&CeloDynamicFeeTxV2{
 			FeeCurrency: &usdToken,
 			GasFeeCap:   big.NewInt(18e8), // USD
 			GasTipCap:   big.NewInt(6e8),  // USD
 		}), nil)
 
-		assert.Equal(t, big.NewInt(3e8), gasTipInCelo)
-		assert.Equal(t, big.NewInt(6e8), gasTipInCurrency)
+		assert.Equal(t, big.NewInt(3e8), gasTip)
 	})
 
 	// Error cases
@@ -111,10 +103,6 @@ func TestTransactionEffectiveGasTipInCurrency(t *testing.T) {
 		})
 
 		res, err := tx.EffectiveGasTipInCelo(big.NewInt(5e8), exchangeRates)
-		assert.ErrorIs(t, err, exchange.ErrUnregisteredFeeCurrency)
-		require.Nil(t, res)
-
-		res, err = tx.EffectiveGasTipInCurrency(big.NewInt(5e8), exchangeRates)
 		assert.ErrorIs(t, err, exchange.ErrUnregisteredFeeCurrency)
 		require.Nil(t, res)
 	})
