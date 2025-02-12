@@ -127,9 +127,28 @@ func (oracle *Oracle) processBlock(bf *blockFees, percentiles []float64) {
 		return
 	}
 
+	var rates common.ExchangeRates
+	var err error
 	sorter := make([]txGasAndReward, len(bf.block.Transactions()))
 	for i, tx := range bf.block.Transactions() {
-		reward, _ := tx.EffectiveGasTip(bf.block.BaseFee())
+		var reward *big.Int
+		if tx.FeeCurrency() == nil {
+			reward, _ = tx.EffectiveGasTip(bf.block.BaseFee())
+		} else {
+			if rates == nil {
+				rates, err = oracle.backend.GetExchangeRates(context.Background(), rpc.BlockNumberOrHashWithNumber(rpc.BlockNumber(bf.block.NumberU64())))
+				if err != nil {
+					bf.err = fmt.Errorf("failed to get exchange rates: %w", err)
+					return
+				}
+			}
+			reward, err = tx.EffectiveGasTipInCelo(bf.block.BaseFee(), rates)
+			if err != nil {
+				bf.err = fmt.Errorf("failed to calculate effective gas tip: %w", err)
+				return
+			}
+		}
+
 		sorter[i] = txGasAndReward{gasUsed: bf.receipts[i].GasUsed, reward: reward}
 	}
 	slices.SortStableFunc(sorter, func(a, b txGasAndReward) int {
