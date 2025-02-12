@@ -61,6 +61,7 @@ type OracleBackend interface {
 	Pending() (*types.Block, types.Receipts, *state.StateDB)
 	ChainConfig() *params.ChainConfig
 	SubscribeChainHeadEvent(ch chan<- core.ChainHeadEvent) event.Subscription
+	GetExchangeRates(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (common.ExchangeRates, error)
 }
 
 // Oracle recommends gas prices based on the content of recent
@@ -275,6 +276,7 @@ func (oracle *Oracle) getBlockValues(ctx context.Context, blockNum uint64, limit
 	slices.SortFunc(sortedTxs, func(a, b *types.Transaction) int {
 		// It's okay to discard the error because a tx would never be
 		// accepted into a block with an invalid effective tip.
+		// NOTE: No need to consider fee currency conversion because Optimism fork never calls this function (see SuggestTipCap)
 		tip1, _ := a.EffectiveGasTip(baseFee)
 		tip2, _ := b.EffectiveGasTip(baseFee)
 		return tip1.Cmp(tip2)

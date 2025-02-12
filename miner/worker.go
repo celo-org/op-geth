@@ -210,9 +210,10 @@ func (miner *Miner) generateWork(params *generateParams, witness bool) *newPaylo
 	if err != nil {
 		return &newPayloadResult{err: err}
 	}
+
 	return &newPayloadResult{
 		block:    block,
-		fees:     totalFees(block, work.receipts),
+		fees:     totalFees(block, work.receipts, work.feeCurrencyContext.ExchangeRates),
 		sidecars: work.sidecars,
 		stateDB:  work.state,
 		receipts: work.receipts,
@@ -753,11 +754,16 @@ func (miner *Miner) fillTransactions(interrupt *atomic.Int32, env *environment) 
 }
 
 // totalFees computes total consumed miner fees in Wei. Block transactions and receipts have to have the same order.
-func totalFees(block *types.Block, receipts []*types.Receipt) *big.Int {
+func totalFees(block *types.Block, receipts []*types.Receipt, exchangeRates common.ExchangeRates) *big.Int {
 	feesWei := new(big.Int)
 	for i, tx := range block.Transactions() {
-		minerFee, _ := tx.EffectiveGasTip(block.BaseFee())
-		feesWei.Add(feesWei, new(big.Int).Mul(new(big.Int).SetUint64(receipts[i].GasUsed), minerFee))
+		minerFee, err := tx.EffectiveGasTipInCelo(block.BaseFee(), exchangeRates)
+		if err != nil {
+			log.Warn("failed to get effective gas tip for miner fees", "block hash", block.Hash(), "block height", block.Number().Uint64(), "error", err)
+		}
+		if minerFee != nil {
+			feesWei.Add(feesWei, new(big.Int).Mul(new(big.Int).SetUint64(receipts[i].GasUsed), minerFee))
+		}
 	}
 	return feesWei
 }
