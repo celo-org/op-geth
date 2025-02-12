@@ -289,15 +289,17 @@ func NewBlock(header *Header, body *Body, receipts []*Receipt, hasher TrieHasher
 		b.header.Bloom = CreateBloom(receipts)
 	}
 
-	// We prevent setting the EmptyUncleHash only when we are on a migrated
-	// chain and the block is pre-gingerbread.
-	if len(uncles) == 0 && !(bType.IsMigratedChain() && !bType.IsGingerbread(header.Number)) {
-		b.header.UncleHash = EmptyUncleHash
-	} else {
-		b.header.UncleHash = CalcUncleHash(uncles)
-		b.uncles = make([]*Header, len(uncles))
-		for i := range uncles {
-			b.uncles[i] = CopyHeader(uncles[i])
+	// We prevent setting the unclehash when we are on a migrated chain and the
+	// block is pre-gingerbread.
+	if !(bType.IsMigratedChain() && !bType.IsGingerbread(header.Number)) {
+		if len(uncles) == 0 {
+			b.header.UncleHash = EmptyUncleHash
+		} else {
+			b.header.UncleHash = CalcUncleHash(uncles)
+			b.uncles = make([]*Header, len(uncles))
+			for i := range uncles {
+				b.uncles[i] = CopyHeader(uncles[i])
+			}
 		}
 	}
 
