@@ -70,6 +70,10 @@ func (b *opTestBackend) SubscribeChainHeadEvent(ch chan<- core.ChainHeadEvent) e
 	return nil
 }
 
+func (b *opTestBackend) GetExchangeRates(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (common.ExchangeRates, error) {
+	return nil, nil
+}
+
 var _ OracleBackend = (*opTestBackend)(nil)
 
 func newOpTestBackend(t *testing.T, txs []testTxData) *opTestBackend {
