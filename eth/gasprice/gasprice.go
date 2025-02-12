@@ -62,6 +62,7 @@ type OracleBackend interface {
 	Pending() (*types.Block, types.Receipts, *state.StateDB)
 	ChainConfig() *params.ChainConfig
 	SubscribeChainHeadEvent(ch chan<- core.ChainHeadEvent) event.Subscription
+	GetExchangeRates(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (common.ExchangeRates, error)
 }
 
 // Oracle recommends gas prices based on the content of recent
@@ -285,6 +286,7 @@ func (oracle *Oracle) getBlockValues(ctx context.Context, blockNum uint64, limit
 		baseFee256.SetFromBig(baseFee)
 	}
 	slices.SortFunc(sortedTxs, func(a, b *types.Transaction) int {
+		// NOTE: No need to consider fee currency conversion because Optimism fork never calls this function (see SuggestTipCap)
 		return a.EffectiveGasTipCmp(b, baseFee256)
 	})
 
