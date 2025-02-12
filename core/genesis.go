@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
-	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -80,6 +79,10 @@ type Genesis struct {
 	// Chains with history pruning, or extraordinarily large genesis allocation (e.g. after a regenesis event)
 	// may utilize this to get started, and then state-sync the latest state, while still verifying the header chain.
 	StateHash *common.Hash `json:"stateHash,omitempty"`
+
+	// initingGenesis is used to indicate whether this genesis config is being
+	// used in the initGenesis operation.
+	initingGenesis bool
 }
 
 func ReadGenesis(db ethdb.Database) (*Genesis, error) {
@@ -595,10 +598,10 @@ func (g *Genesis) toBlockWithRoot(stateRoot, storageRootMessagePasser common.Has
 	// If we are in a context where ginerbread is configured but not active for
 	// the genesis block we set the block to be pre-gingerbread. This affects
 	// the way it is encoded, which affects its hash. Ideally we could do
-	// without the testing.Testing condition, but TestFeeHistory, makes use of
+	// without the InitGenesis condition, but TestFeeHistory, makes use of
 	// chains with pre-gingerbread genesis blocks without actually accounting
 	// for the different structure of the pre-gingerbread block.
-	if !testing.Testing() && g.Config.GingerbreadBlock != nil && !g.Config.IsGingerbread(number) {
+	if g.InitingGenesis() && g.Config.GingerbreadBlock != nil && !g.Config.IsGingerbread(number) {
 		head = types.NewPreGingerbreadHeader()
 	}
 
