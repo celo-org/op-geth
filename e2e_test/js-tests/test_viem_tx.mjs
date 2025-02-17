@@ -9,7 +9,14 @@ import { publicClient, walletClient } from "./viem_setup.mjs"
 async function getGasFees(publicClient, tip, feeCurrency) {
 	const rate = await getRate(feeCurrency);
 	const b = await publicClient.getBlock();
-	const tipInFeeCurrency = rate.toFeeCurrency(tip);
+	let tipInFeeCurrency = rate.toFeeCurrency(tip);
+	if (tipInFeeCurrency === 0n) {
+		// The tip must be at least native 1 wei for the tx to be included. No
+		// matter what the exchange rate for a fee currency is, if the fee currency
+		// tip is zero, we can't reach 1 wei if the fee currency tip is zero. So
+		// increase the tip to at least one.
+		tipInFeeCurrency = 1n;
+	}
 	return [rate.toFeeCurrency(b.baseFeePerGas) + tipInFeeCurrency, tipInFeeCurrency];
 }
 
