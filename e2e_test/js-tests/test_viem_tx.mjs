@@ -28,7 +28,7 @@ const testNonceBump = async (
 	const firstTxHash = await walletClient.sendTransaction({
 		to: "0x00000000000000000000000000000000DeaDBeef",
 		value: 2,
-		gas: 171000,
+		gas: await getIntrinsicGasForCustomCurrency(21000, firstCurrency),
 		maxFeePerGas: firstCap,
 		maxPriorityFeePerGas: firstCap,
 		nonce: syncBarrierRequest.nonce + 1,
@@ -39,7 +39,7 @@ const testNonceBump = async (
 		secondTxHash = await walletClient.sendTransaction({
 			to: "0x00000000000000000000000000000000DeaDBeef",
 			value: 3,
-			gas: 171000,
+			gas: await getIntrinsicGasForCustomCurrency(21000, secondCurrency),
 			maxFeePerGas: secondCap,
 			maxPriorityFeePerGas: secondCap,
 			nonce: syncBarrierRequest.nonce + 1,
@@ -103,7 +103,7 @@ describe("viem send tx", () => {
 		const request = await walletClient.prepareTransactionRequest({
 			to: "0x00000000000000000000000000000000DeaDBeef",
 			value: 2,
-			gas: 171000,
+			gas: await getIntrinsicGasForCustomCurrency(21000, process.env.FEE_CURRENCY),
 			feeCurrency: process.env.FEE_CURRENCY,
 			maxFeePerGas: maxFeePerGas,
 			maxPriorityFeePerGas: tip,
@@ -120,7 +120,7 @@ describe("viem send tx", () => {
 		const request = await walletClient.prepareTransactionRequest({
 			to: "0x00000000000000000000000000000000DeaDBeef",
 			value: 2,
-			gas: 171000,
+			gas: await getIntrinsicGasForCustomCurrency(21000, process.env.FEE_CURRENCY),
 			feeCurrency: process.env.FEE_CURRENCY,
 		});
 
@@ -248,7 +248,7 @@ describe("viem send tx", () => {
 		const request = await walletClient.prepareTransactionRequest({
 			to: "0x00000000000000000000000000000000DeaDBeef",
 			value: 2,
-			gas: 171000,
+			gas: getExtraCustomFeeCurrencyIntrinsicGas(21000, process.env.FEE_CURRENCY),
 			feeCurrency: "0x000000000000000000000000000000000badc310",
 			maxFeePerGas: 1000000000n,
 			maxPriorityFeePerGas: 1n,
@@ -296,8 +296,7 @@ describe("viem send tx", () => {
 		const request = await walletClient.prepareTransactionRequest({
 			to: "0x00000000000000000000000000000000DeaDBeef",
 			value: 2,
-			gas: 171000,
-			feeCurrency: process.env.FEE_CURRENCY,
+			gas: await getIntrinsicGasForCustomCurrency(21000, fc),
 			feeCurrency: fc,
 			maxFeePerGas: maxFeePerGas,
 			maxPriorityFeePerGas: 2n,
@@ -325,4 +324,21 @@ async function getRate(feeCurrencyAddress) {
 		toFeeCurrency: (v) => (v * numerator) / denominator,
 		toNative: (v) => (v * denominator) / numerator,
 	};
+}
+
+async function getIntrinsicGasForCustomCurrency(baseIntrinsicGas, feeCurrency) {
+	if (!feeCurrency) return baseIntrinsicGas 
+	const extraFee = await getExtraCustomFeeCurrencyIntrinsicGas(feeCurrency)
+	return BigInt(baseIntrinsicGas) + extraFee;
+}
+
+async function getExtraCustomFeeCurrencyIntrinsicGas(feeCurrency) {
+	const abi = parseAbi(['function getCurrencyConfig(address token) public view returns (address oracle, uint256 intrinsicGas)']);
+	const [_, intrinsicGas] = await publicClient.readContract({
+		address: process.env.FEE_CURRENCY_DIRECTORY_ADDR,
+		abi: abi,
+		functionName: 'getCurrencyConfig',
+		args: [feeCurrency],
+	});
+	return intrinsicGas;
 }
