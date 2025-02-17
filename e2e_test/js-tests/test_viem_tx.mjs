@@ -248,7 +248,7 @@ describe("viem send tx", () => {
 		const request = await walletClient.prepareTransactionRequest({
 			to: "0x00000000000000000000000000000000DeaDBeef",
 			value: 2,
-			gas: await getExtraCustomFeeCurrencyIntrinsicGas(21000, process.env.FEE_CURRENCY),
+			gas: await getIntrinsicGasForFeeCurrency(21000, process.env.FEE_CURRENCY),
 			feeCurrency: "0x000000000000000000000000000000000badc310",
 			maxFeePerGas: 1000000000n,
 			maxPriorityFeePerGas: 1n,
