@@ -47,12 +47,12 @@ var FullNodeGPO = gasprice.Config{
 	MinSuggestedPriorityFee: gasprice.DefaultMinSuggestedPriorityFee,
 }
 
-// Defaults contains default settings for use on the Ethereum main net.
+// Defaults contains default settings for use on the Celo networks.
 var Defaults = Config{
 	SyncMode:           SnapSync,
-	NetworkId:          0, // enable auto configuration of networkID == chainID
-	TxLookupLimit:      2350000,
-	TransactionHistory: 2350000,
+	NetworkId:          0,            // enable auto configuration of networkID == chainID
+	TxLookupLimit:      2350000 * 12, // Increase by factor 12 to adapt to Celo 1s block time
+	TransactionHistory: 2350000 * 12, // Increase by factor 12 to adapt to Celo 1s block time
 	StateHistory:       params.FullImmutabilityThreshold,
 	DatabaseCache:      512,
 	TrieCleanCache:     154,
