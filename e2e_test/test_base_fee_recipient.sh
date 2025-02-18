@@ -1,10 +1,10 @@
 #!/bin/bash
 #shellcheck disable=SC2086
 set -eo pipefail
-set -x
 
 source shared.sh
 
+set -x
 # Send token and check balance
 tx_json=$(cast send --json --private-key $ACC_PRIVKEY $TOKEN_ADDR 'transfer(address to, uint256 value) returns (bool)' 0x000000000000000000000000000000000000dEaD 100)
 block_number=$(echo $tx_json | jq -r '.blockNumber' | cast to-dec)
