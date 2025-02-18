@@ -47,7 +47,7 @@ var FullNodeGPO = gasprice.Config{
 	MinSuggestedPriorityFee: gasprice.DefaultMinSuggestedPriorityFee,
 }
 
-// Defaults contains default settings for use on the Ethereum main net.
+// Defaults contains default settings for use on the Celo networks.
 var Defaults = Config{
 	SyncMode:           SnapSync,
 	NetworkId:          0,            // enable auto configuration of networkID == chainID
