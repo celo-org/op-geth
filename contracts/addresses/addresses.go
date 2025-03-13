@@ -17,7 +17,7 @@ var (
 	MainnetAddresses = &CeloAddresses{
 		CeloToken:            common.HexToAddress("0x471ece3750da237f93b8e339c536989b8978a438"),
 		FeeHandler:           common.HexToAddress("0xcd437749e43a154c07f3553504c68fbfd56b8778"),
-		FeeCurrencyDirectory: common.HexToAddress("0x9212Fb72ae65367A7c887eC4Ad9bE310BAC611BF"), // TODO
+		FeeCurrencyDirectory: common.HexToAddress("0x15F344b9E6c3Cb6F0376A36A64928b13F62C6276"),
 	}
 
 	AlfajoresAddresses = &CeloAddresses{
