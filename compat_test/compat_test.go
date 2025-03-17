@@ -396,7 +396,7 @@ func (r *blockResults) verifyBlocks(chainID uint64) error {
 	if err != nil {
 		return err
 	}
-	err = filterOpBlock(r.opRawBlockByNumber)
+	err = filterOpBlock(r.opRawBlockByNumber, r.blockNumber >= gingerbreadBlocks[chainID])
 	if err != nil {
 		return err
 	}
@@ -410,7 +410,7 @@ func (r *blockResults) verifyBlocks(chainID uint64) error {
 	if err != nil {
 		return err
 	}
-	err = filterOpBlock(r.opRawBlockByHash)
+	err = filterOpBlock(r.opRawBlockByHash, r.blockNumber >= gingerbreadBlocks[chainID])
 	if err != nil {
 		return err
 	}
@@ -447,7 +447,7 @@ func (r *blockResults) verifyBlocks(chainID uint64) error {
 	return nil
 }
 
-func filterOpBlock(block map[string]interface{}) error {
+func filterOpBlock(block map[string]interface{}, isGingerbread bool) error {
 	// We remove the following fields:
 	// size: being the size of the rlp encoded block it differs between the two systems since the block structure is different
 	// chainId (on transactions): celo didn't return chainId on legacy transactions, it did for other types but its a bit more involved to filter that per tx type.
@@ -461,7 +461,7 @@ func filterOpBlock(block map[string]interface{}) error {
 		for _, tx := range transactions {
 			txMap, ok := tx.(map[string]interface{})
 			if ok {
-				filterOpTx(txMap)
+				filterOpTx(txMap, isGingerbread)
 			}
 		}
 	}
@@ -487,7 +487,8 @@ func filterCeloBlock(blockNumber uint64, block map[string]interface{}, gingerbre
 	delete(block, "size")
 	delete(block, "randomness")
 	delete(block, "epochSnarkData")
-	if blockNumber < gingerbreadBlock {
+	isGingerbread := blockNumber >= gingerbreadBlock
+	if !isGingerbread {
 		// We hardcoded the gas limit in celo for pre-gingerbread blocks, we don't have that in op-geth so we remove it
 		// from the celo block.
 		delete(block, "gasLimit")
@@ -502,7 +503,7 @@ func filterCeloBlock(blockNumber uint64, block map[string]interface{}, gingerbre
 	if ok {
 		for _, tx := range transactions {
 			txMap := tx.(map[string]interface{})
-			filterCeloTx(txMap)
+			filterCeloTx(txMap, isGingerbread)
 		}
 	}
 
@@ -541,7 +542,7 @@ func filterCeloBlock(blockNumber uint64, block map[string]interface{}, gingerbre
 	return nil
 }
 
-func (r *blockResults) verifyTransactions() error {
+func (r *blockResults) verifyTransactions(chainID uint64) error {
 	makeTransactionsComparable(r.celoTxs)
 	makeTransactionsComparable(r.opTxs)
 
@@ -556,12 +557,13 @@ func (r *blockResults) verifyTransactions() error {
 	if err != nil {
 		return err
 	}
+	isGingerbread := r.blockNumber >= gingerbreadBlocks[chainID]
 	// filter raw celo and op txs
 	for i := range r.celoRawTxs {
-		filterCeloTx(r.celoRawTxs[i])
+		filterCeloTx(r.celoRawTxs[i], isGingerbread)
 	}
 	for i := range r.opRawTxs {
-		filterOpTx(r.opRawTxs[i])
+		filterOpTx(r.opRawTxs[i], isGingerbread)
 	}
 	err = EqualObjects(r.celoRawTxs, r.opRawTxs)
 	if err != nil {
@@ -656,7 +658,7 @@ func (r *blockResults) Verify(chainID uint64) error {
 	if err != nil {
 		return err
 	}
-	err = r.verifyTransactions()
+	err = r.verifyTransactions(chainID)
 	if err != nil {
 		return err
 	}
@@ -999,16 +1001,21 @@ func filterOpReceipt(receipt map[string]interface{}) {
 	}
 }
 
-func filterOpTx(tx map[string]interface{}) {
+func filterOpTx(tx map[string]interface{}, isGingerbreadTx bool) {
 	// Some txs on celo contain chainID all of them do on op, so we just remove it from both sides.
 	delete(tx, "chainId")
 	// Celo never returned yParity
 	delete(tx, "yParity")
 	// Since we unequivocally delete gatewayFee on the celo side we need to delete it here as well.
 	delete(tx, "gatewayFee")
+
+	if tx["type"].(string) != "0x0" && !isGingerbreadTx {
+		// We don't return gasPrice for non-legacy transactions pre hardfork (except for an archive nodes), so we remove it from the celo and the op response.
+		delete(tx, "gasPrice")
+	}
 }
 
-func filterCeloTx(tx map[string]interface{}) {
+func filterCeloTx(tx map[string]interface{}, isGingerbreadTx bool) {
 	// Some txs on celo contain chainID all of them do on op, so we just remove it from both sides.
 	delete(tx, "chainId")
 	// On the op side we now don't return ethCompatible when it's true, so we
@@ -1016,6 +1023,9 @@ func filterCeloTx(tx map[string]interface{}) {
 	txType := tx["type"].(string)
 	if txType == "0x0" && tx["ethCompatible"].(bool) {
 		delete(tx, "ethCompatible")
+	}
+	if txType != "0x0" && !isGingerbreadTx {
+		delete(tx, "gasPrice")
 	}
 	//It seems gateway fee is always added to all rpc transaction responses on celo because tx.GatewayFee returns 0 if
 	//it's not set,even ethcompatible ones, this is confusing so we have removed this in the op code, so we need to make
