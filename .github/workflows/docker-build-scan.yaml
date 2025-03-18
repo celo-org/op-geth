@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   build-scan-container-geth:
-    runs-on: ['self-hosted', 'org', 'ubuntu-22-04']
+    runs-on: ['self-hosted', 'org', '8-cpu']
     permissions:
       contents: read
       security-events: write
