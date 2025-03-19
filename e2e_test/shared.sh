@@ -9,6 +9,14 @@ case $NETWORK in
     # for contract in GoldToken FeeHandler FeeCurrencyDirectory
     #      cast call 0x000000000000000000000000000000000000ce10 "getAddressForStringOrDie(string calldata identifier) returns (address)" $contract
     #  end
+    mainnet)
+      export ETH_RPC_URL=https://forno.celo.org
+      export TOKEN_ADDR=0x471EcE3750Da237f93B8E339c536989b8978a438
+      export FEE_HANDLER=0xcD437749E43A154C07F3553504c68fBfD56B8778
+      export FEE_CURRENCY=0xD8763CBa276a3738E6DE85b4b3bF5FDed6D6cA73
+      export FEE_CURRENCY_DIRECTORY_ADDR=0x15F344b9E6c3Cb6F0376A36A64928b13F62C6276
+      echo "Using mainnet network"
+        ;;
     alfajores)
       export ETH_RPC_URL=https://alfajores-forno.celo-testnet.org
       export TOKEN_ADDR=0xF194afDf50B03e69Bd7D057c1Aa9e10c9954E4C9
