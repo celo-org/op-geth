@@ -6,7 +6,7 @@ import {
 	http,
 	defineChain,
 } from "viem";
-import { celoAlfajores } from "viem/chains";
+import { celo, celoAlfajores } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 
 // Setup up chain
@@ -32,12 +32,23 @@ const celoBaklava = defineChain({
 	},
 });
 
+const celoMainnet = defineChain({
+	...celo,
+	rpcUrls: {
+		default: {
+			http: [process.env.ETH_RPC_URL],
+		},
+	},
+});
+
 const chain = (() => {
 	switch (process.env.NETWORK) {
 		case 'alfajores':
 			return celoAlfajores
 		case 'baklava':
 			return celoBaklava
+		case 'mainnet':
+			return celoMainnet
 		default:
 			return devChain
 	};
