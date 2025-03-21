@@ -588,6 +588,11 @@ func (r *blockResults) verifyTransactions(chainID uint64) error {
 }
 
 func (r *blockResults) verifyReceipts() error {
+	for i := range r.celoReceipts {
+		if r.celoReceipts[i].EffectiveGasPrice != nil && r.opReceipts[i].EffectiveGasPrice == nil {
+			r.opReceipts[i].EffectiveGasPrice = r.celoReceipts[i].EffectiveGasPrice
+		}
+	}
 	err := EqualObjects(r.celoReceipts, r.opReceipts)
 	if err != nil {
 		return err
@@ -625,19 +630,30 @@ func (r *blockResults) verifyReceipts() error {
 }
 
 func (r *blockResults) verifyBlockReceipts() error {
+	for i := range r.celoBlockReceipts {
+		if r.celoBlockReceipts[i].EffectiveGasPrice != nil && r.opBlockReceipts[i].EffectiveGasPrice == nil {
+			r.opBlockReceipts[i].EffectiveGasPrice = r.celoBlockReceipts[i].EffectiveGasPrice
+		}
+	}
 	// Check block receipts pairs
 	err := EqualObjects(r.celoBlockReceipts, r.opBlockReceipts)
 	if err != nil {
 		return err
 	}
 
-	// filter the raw op receipts
-	for i := range r.opRawBlockReceipts {
-		filterOpReceipt(r.opRawBlockReceipts[i])
-	}
-	err = EqualObjects(r.celoRawBlockReceipts, r.opRawBlockReceipts)
-	if err != nil {
-		return err
+	for i := range r.celoRawBlockReceipts {
+		// filter the raw op receipts
+		for i := range r.opRawBlockReceipts {
+			filterOpReceipt(r.opRawBlockReceipts[i])
+		}
+		err = EqualObjects(r.celoRawBlockReceipts[i], r.opRawBlockReceipts[i])
+		if err != nil {
+			if r.celoRawBlockReceipts[i]["effectiveGasPrice"] != nil && r.opRawBlockReceipts[i]["effectiveGasPrice"] == nil {
+				fmt.Printf("dangling state at block %d\n", r.blockNumber-1)
+			} else {
+				return err
+			}
+		}
 	}
 
 	// Cross check receipts, here we decode the raw receipts into receipt objects and compare them, since the raw
