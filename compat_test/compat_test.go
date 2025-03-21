@@ -1009,8 +1009,15 @@ func filterOpTx(tx map[string]interface{}, isGingerbreadTx bool) {
 	// Since we unequivocally delete gatewayFee on the celo side we need to delete it here as well.
 	delete(tx, "gatewayFee")
 
-	if tx["type"].(string) != "0x0" && !isGingerbreadTx {
-		// We don't return gasPrice for non-legacy transactions pre hardfork (except for an archive nodes), so we remove it from the celo and the op response.
+	txType := tx["type"].(string)
+	if txType != "0x0" && !isGingerbreadTx {
+		// We don't return gasPrice for non-legacy transactions pre hardfork (except for an archive nodes),
+		// so we remove it from the celo and the op response to avoid errors from "zombie state"
+		delete(tx, "gasPrice")
+	}
+	if isGingerbreadTx && (txType == "0x7c" || txType == "0x7b") && tx["feeCurrency"] != nil {
+		// For fee currency transactions will also need state to calculate the gasPrice so we remove it
+		// from the celo and the op response to avoid errors from "zombie state"
 		delete(tx, "gasPrice")
 	}
 }
@@ -1025,6 +1032,13 @@ func filterCeloTx(tx map[string]interface{}, isGingerbreadTx bool) {
 		delete(tx, "ethCompatible")
 	}
 	if txType != "0x0" && !isGingerbreadTx {
+		// We don't return gasPrice for non-legacy transactions pre hardfork (except for an archive nodes),
+		// so we remove it from the celo and the op response to avoid errors from "zombie state"
+		delete(tx, "gasPrice")
+	}
+	if isGingerbreadTx && (txType == "0x7c" || txType == "0x7b") && tx["feeCurrency"] != nil {
+		// For fee currency transactions will also need state to calculate the gasPrice so we remove it
+		// from the celo and the op response to avoid errors from "zombie state"
 		delete(tx, "gasPrice")
 	}
 	//It seems gateway fee is always added to all rpc transaction responses on celo because tx.GatewayFee returns 0 if
