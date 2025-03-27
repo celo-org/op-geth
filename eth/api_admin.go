@@ -24,6 +24,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -144,4 +145,12 @@ func (api *AdminAPI) ImportChain(file string) (bool, error) {
 
 func (api *AdminAPI) SetFeeCurrencyBlocklistStatus(enabled bool) {
 	api.eth.Miner().SetFeeCurrencyBlocklistStatus(enabled)
+}
+
+func (api *AdminAPI) UnblockTransaction(hash common.Hash) {
+	api.eth.Miner().UnblockTransaction(hash)
+}
+
+func (api *AdminAPI) UnblockFeeCurrency(address common.Address) {
+	api.eth.Miner().UnblockFeeCurrency(address)
 }
