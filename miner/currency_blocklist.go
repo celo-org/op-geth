@@ -2,6 +2,7 @@ package miner
 
 import (
 	"sync"
+	"sync/atomic"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -18,20 +19,40 @@ type AddressBlocklist struct {
 	// will get evicted when evict() is called
 	headerEvictionTimeoutSeconds uint64
 	oldestHeader                 *types.Header
+
+	enactFilterEnabled *atomic.Int32
 }
 
 func NewAddressBlocklist() *AddressBlocklist {
-	return &AddressBlocklist{
+
+	bl := &AddressBlocklist{
 		mux:                          &sync.RWMutex{},
 		currencies:                   map[common.Address]*types.Header{},
 		headerEvictionTimeoutSeconds: EvictionTimeoutSeconds,
 		oldestHeader:                 nil,
+		enactFilterEnabled:           &atomic.Int32{},
+	}
+	bl.enactFilterEnabled.Store(1)
+	return bl
+}
+
+// This only activates / deactivates wether the
+// allowlist is filtered by the blocklist or not.
+func (b *AddressBlocklist) SetEnableFilterStatus(enabled bool) {
+	if enabled {
+		b.enactFilterEnabled.Store(1)
+	} else {
+		b.enactFilterEnabled.Store(0)
 	}
 }
 
 func (b *AddressBlocklist) FilterAllowlist(allowlist common.AddressSet, latest *types.Header) common.AddressSet {
 	b.mux.RLock()
 	defer b.mux.RUnlock()
+
+	if b.enactFilterEnabled.Load() == 0 {
+		return allowlist
+	}
 
 	filtered := common.AddressSet{}
 	for a := range allowlist {
