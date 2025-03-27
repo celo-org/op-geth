@@ -142,7 +142,6 @@ func (api *AdminAPI) ImportChain(file string) (bool, error) {
 	return true, nil
 }
 
-// ImportChain imports a blockchain from a local file.
-func (api *AdminAPI) SetfeeCurrencyBlocklistStatus(enabled bool) {
+func (api *AdminAPI) SetFeeCurrencyBlocklistStatus(enabled bool) {
 	api.eth.Miner().SetFeeCurrencyBlocklistStatus(enabled)
 }
