@@ -24,7 +24,6 @@ type AddressBlocklist struct {
 }
 
 func NewAddressBlocklist() *AddressBlocklist {
-
 	bl := &AddressBlocklist{
 		mux:                          &sync.RWMutex{},
 		currencies:                   map[common.Address]*types.Header{},
@@ -34,6 +33,10 @@ func NewAddressBlocklist() *AddressBlocklist {
 	}
 	bl.enactFilterEnabled.Store(1)
 	return bl
+}
+
+func (b *AddressBlocklist) GetEnableFilterStatus() bool {
+	return b.enactFilterEnabled.Load() == 1
 }
 
 // This only activates / deactivates wether the

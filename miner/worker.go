@@ -87,6 +87,7 @@ type environment struct {
 	// Celo specific
 	multiGasPool         *core.MultiGasPool // available per-fee-currency gas used to pack transactions
 	feeCurrencyAllowlist common.AddressSet
+	blockingAllowed      bool
 	feeCurrencyContext   *common.FeeCurrencyContext
 }
 
@@ -345,6 +346,7 @@ func (miner *Miner) prepareWork(genParams *generateParams, witness bool) (*envir
 		common.CurrencyAllowlist(env.feeCurrencyContext.ExchangeRates),
 		header,
 	)
+	env.blockingAllowed = miner.feeCurrencyBlocklist.GetEnableFilterStatus()
 
 	if header.ParentBeaconRoot != nil {
 		core.ProcessBeaconBlockRoot(*header.ParentBeaconRoot, env.evm)
@@ -838,8 +840,10 @@ func (miner *Miner) blockFeeCurrency(env *environment, feeCurrency common.Addres
 	// the fee-currency is still in the allowlist of this environment,
 	// so set the fee-currency block gas limit to 0 to prevent other
 	// transactions.
-	pool := env.multiGasPool.PoolFor(&feeCurrency)
-	pool.SetGas(0)
+	if env.blockingAllowed {
+		pool := env.multiGasPool.PoolFor(&feeCurrency)
+		pool.SetGas(0)
+	}
 	// also add the fee-currency to a worker-wide blocklist,
 	// so that they are not allowlisted in the following blocks
 	// (only locally in the txpool, not consensus-critical)
