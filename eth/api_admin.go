@@ -147,10 +147,10 @@ func (api *AdminAPI) SetFeeCurrencyBlocklistStatus(enabled bool) {
 	api.eth.Miner().SetFeeCurrencyBlocklistStatus(enabled)
 }
 
-func (api *AdminAPI) UnblockTransaction(hash common.Hash) {
-	api.eth.Miner().UnblockTransaction(hash)
+func (api *AdminAPI) UnblockTransaction(hash common.Hash) bool {
+	return api.eth.Miner().UnblockTransaction(hash)
 }
 
-func (api *AdminAPI) UnblockFeeCurrency(address common.Address) {
-	api.eth.Miner().UnblockFeeCurrency(address)
+func (api *AdminAPI) UnblockFeeCurrency(address common.Address) bool {
+	return api.eth.Miner().UnblockFeeCurrency(address)
 }

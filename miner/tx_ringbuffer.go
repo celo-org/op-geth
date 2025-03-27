@@ -57,9 +57,13 @@ func (b *TxRingBuffer) Has(tx common.Hash) bool {
 	return exists
 }
 
-func (b *TxRingBuffer) Remove(tx common.Hash) {
+func (b *TxRingBuffer) Remove(tx common.Hash) bool {
 	b.mux.Lock()
 	defer b.mux.Unlock()
 
+	if _, exists := b.m[tx]; !exists {
+		return false
+	}
 	delete(b.m, tx)
+	return true
 }
