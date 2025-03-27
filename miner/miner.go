@@ -234,14 +234,10 @@ func (miner *Miner) getPending() *newPayloadResult {
 }
 
 func (miner *Miner) SetFeeCurrencyBlocklistStatus(enabled bool) {
-	if miner.feeCurrencyBlocklist != nil {
-		miner.feeCurrencyBlocklist.SetEnableFilterStatus(enabled)
-	}
+	miner.feeCurrencyBlocklist.SetEnableFilterStatus(enabled)
 }
 func (miner *Miner) UnblockFeeCurrency(address common.Address) {
-	if miner.feeCurrencyBlocklist != nil {
-		_ = miner.feeCurrencyBlocklist.Remove(address)
-	}
+	_ = miner.feeCurrencyBlocklist.Remove(address)
 }
 
 func (miner *Miner) UnblockTransaction(hash common.Hash) {
