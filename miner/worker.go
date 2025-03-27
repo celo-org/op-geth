@@ -420,13 +420,14 @@ func (miner *Miner) commitTransaction(env *environment, tx *types.Transaction) e
 	receipt, err := miner.applyTransaction(env, tx)
 	if err != nil {
 		if errors.Is(err, contracts.ErrFeeCurrencyEVMCall) {
+
 			log.Warn(
 				"fee-currency EVM execution error, temporarily blocking fee-currency in local txpools",
 				"tx-hash", tx.Hash(),
 				"fee-currency", tx.FeeCurrency(),
 				"error", err.Error(),
 			)
-			miner.blockFeeCurrency(env, *tx.FeeCurrency(), err)
+			miner.registerFeeCurrencyTxFailure(env, tx, err)
 		}
 		return err
 	}
@@ -598,6 +599,12 @@ func (miner *Miner) commitTransactions(env *environment, plainTxs, blobTxs *tran
 				continue
 			}
 		}
+		if miner.blockedTxRingbuffer.Has(ltx.Hash) {
+			log.Trace("Skipping tx execution, tx in blockedTxRingbuffer", "hash", ltx.Hash)
+			txs.Pop()
+			continue
+		}
+
 		// If we don't have enough space for the next transaction, skip the account.
 		if env.gasPool.Gas() < ltx.Gas {
 			log.Trace("Not enough gas left for transaction", "hash", ltx.Hash, "left", env.gasPool.Gas(), "needed", ltx.Gas)
@@ -836,16 +843,19 @@ func (miner *Miner) validateParams(genParams *generateParams) (time.Duration, er
 	return time.Duration(blockTime) * time.Second, nil
 }
 
-func (miner *Miner) blockFeeCurrency(env *environment, feeCurrency common.Address, err error) {
+func (miner *Miner) registerFeeCurrencyTxFailure(env *environment, tx *types.Transaction, err error) {
 	// the fee-currency is still in the allowlist of this environment,
 	// so set the fee-currency block gas limit to 0 to prevent other
 	// transactions.
 	if env.blockingAllowed {
-		pool := env.multiGasPool.PoolFor(&feeCurrency)
+		pool := env.multiGasPool.PoolFor(tx.FeeCurrency())
 		pool.SetGas(0)
 	}
 	// also add the fee-currency to a worker-wide blocklist,
 	// so that they are not allowlisted in the following blocks
 	// (only locally in the txpool, not consensus-critical)
-	miner.feeCurrencyBlocklist.Add(feeCurrency, *env.header)
+	miner.feeCurrencyBlocklist.Add(*tx.FeeCurrency(), *env.header)
+
+	// Add tx to block tx ringbuffer
+	miner.blockedTxRingbuffer.Add(tx.Hash())
 }

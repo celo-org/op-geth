@@ -103,6 +103,7 @@ type Miner struct {
 	lifeCtxCancel context.CancelFunc
 	lifeCtx       context.Context
 
+	blockedTxRingbuffer  *TxRingBuffer
 	feeCurrencyBlocklist *AddressBlocklist
 }
 
@@ -121,6 +122,7 @@ func New(eth Backend, config Config, engine consensus.Engine) *Miner {
 		lifeCtxCancel: cancel,
 		lifeCtx:       ctx,
 
+		blockedTxRingbuffer:  NewTxRingBuffer(100000),
 		feeCurrencyBlocklist: NewAddressBlocklist(),
 	}
 }
