@@ -1774,3 +1774,7 @@ func (p *BlobPool) Clear() {
 	)
 	p.evict = newPriceHeap(basefee, blobfee, p.index)
 }
+
+func (pool *BlobPool) RemoveCeloTx(hash common.Hash) error {
+	return nil
+}

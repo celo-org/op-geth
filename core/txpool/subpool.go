@@ -180,4 +180,6 @@ type SubPool interface {
 
 	// Clear removes all tracked transactions from the pool
 	Clear()
+
+	RemoveCeloTx(hash common.Hash) error
 }

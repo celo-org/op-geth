@@ -1846,6 +1846,20 @@ func (pool *LegacyPool) demoteUnexecutables() {
 	}
 }
 
+func (pool *LegacyPool) RemoveCeloTx(hash common.Hash) error {
+	pool.mu.Lock()
+	defer pool.mu.Unlock()
+
+	tx := pool.all.Get(hash)
+	if tx == nil {
+		return nil
+	}
+
+	// Remove the transaction from the global pools
+	pool.removeTx(hash, true, true)
+	return nil
+}
+
 // addressByHeartbeat is an account address tagged with its last activity timestamp.
 type addressByHeartbeat struct {
 	address   common.Address

@@ -539,3 +539,9 @@ func (p *TxPool) Clear() {
 		subpool.Clear()
 	}
 }
+
+func (p *TxPool) RemoveCeloFailingTx(hash common.Hash) {
+	for _, subpool := range p.subpools {
+		subpool.RemoveCeloTx(hash)
+	}
+}

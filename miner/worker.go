@@ -425,6 +425,7 @@ func (miner *Miner) commitTransaction(env *environment, tx *types.Transaction) e
 				"error", err.Error(),
 			)
 			miner.blockFeeCurrency(env, *tx.FeeCurrency(), err)
+			miner.txpool.RemoveCeloFailingTx(tx.Hash())
 		}
 		return err
 	}
