@@ -58,8 +58,8 @@ func (b *TxRingBuffer) Has(tx common.Hash) bool {
 }
 
 func (b *TxRingBuffer) Remove(tx common.Hash) {
-	b.mux.RLock()
-	defer b.mux.RUnlock()
+	b.mux.Lock()
+	defer b.mux.Unlock()
 
 	delete(b.m, tx)
 }
