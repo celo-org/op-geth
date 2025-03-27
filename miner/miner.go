@@ -238,6 +238,11 @@ func (miner *Miner) SetFeeCurrencyBlocklistStatus(enabled bool) {
 		miner.feeCurrencyBlocklist.SetEnableFilterStatus(enabled)
 	}
 }
+func (miner *Miner) UnblockFeeCurrency(address common.Address) {
+	if miner.feeCurrencyBlocklist != nil {
+		_ = miner.feeCurrencyBlocklist.Remove(address)
+	}
+}
 
 func (miner *Miner) Close() {
 	miner.lifeCtxCancel()
