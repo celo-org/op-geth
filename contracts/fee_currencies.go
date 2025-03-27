@@ -44,7 +44,6 @@ func TryDebitFees(tx *types.Transaction, from common.Address, backend *CeloBacke
 // Debits transaction fees from the transaction sender and stores them in the temporary address
 func DebitFees(evm *vm.EVM, feeCurrency *common.Address, address common.Address, amount *big.Int) (uint64, error) {
 	// Hide this function from traces
-	log.Info("DebitFees called with", "feeCurrency", *feeCurrency, "address", address, "amount", amount)
 	if evm.Config.Tracer != nil && !evm.Config.Tracer.TraceDebitCredit {
 		origTracer := evm.Config.Tracer
 		defer func() {
@@ -58,6 +57,7 @@ func DebitFees(evm *vm.EVM, feeCurrency *common.Address, address common.Address,
 	}
 
 	maxIntrinsicGasCost, ok := common.MaxAllowedIntrinsicGasCost(evm.Context.FeeCurrencyContext.IntrinsicGasCosts, feeCurrency)
+	log.Info("DebitFees called with", "feeCurrency", *feeCurrency, "address", address, "amount", amount, "maxIntrinsicGasCost", maxIntrinsicGasCost, "maxIntrinsicGasCostOk", ok)
 	if !ok {
 		return 0, fmt.Errorf("%w: %x", exchange.ErrUnregisteredFeeCurrency, feeCurrency)
 	}
