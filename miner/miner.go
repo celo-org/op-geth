@@ -231,6 +231,12 @@ func (miner *Miner) getPending() *newPayloadResult {
 	return ret
 }
 
+func (miner *Miner) SetFeeCurrencyBlocklistStatus(enabled bool) {
+	if miner.feeCurrencyBlocklist != nil {
+		miner.feeCurrencyBlocklist.SetEnableFilterStatus(enabled)
+	}
+}
+
 func (miner *Miner) Close() {
 	miner.lifeCtxCancel()
 }
