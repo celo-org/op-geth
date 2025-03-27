@@ -57,7 +57,8 @@ func DebitFees(evm *vm.EVM, feeCurrency *common.Address, address common.Address,
 	}
 
 	maxIntrinsicGasCost, ok := common.MaxAllowedIntrinsicGasCost(evm.Context.FeeCurrencyContext.IntrinsicGasCosts, feeCurrency)
-	log.Info("DebitFees called with", "feeCurrency", *feeCurrency, "address", address, "amount", amount, "maxIntrinsicGasCost", maxIntrinsicGasCost, "maxIntrinsicGasCostOk", ok)
+	exchangeRate := evm.Context.FeeCurrencyContext.ExchangeRates[*feeCurrency]
+	log.Info("DebitFees called with", "feeCurrency", *feeCurrency, "address", address, "amount", amount, "maxIntrinsicGasCost", maxIntrinsicGasCost, "maxIntrinsicGasCostOk", ok, "exchangeRate", exchangeRate)
 	if !ok {
 		return 0, fmt.Errorf("%w: %x", exchange.ErrUnregisteredFeeCurrency, feeCurrency)
 	}
@@ -101,10 +102,11 @@ func CreditFees(
 	refund, feeTip, baseFee, l1DataFee *big.Int,
 	gasUsedDebit uint64,
 ) error {
+	exchangeRate := evm.Context.FeeCurrencyContext.ExchangeRates[*feeCurrency]
 
 	log.Info("CreditFees called with", "feeCurrency", *feeCurrency, "txSender", txSender,
 		"tipReceiver", tipReceiver, "baseFeeReceiver", baseFeeReceiver, "l1DataFeeReceiver", l1DataFeeReceiver,
-		"refund", refund, "feeTip", feeTip, "baseFee", baseFee, "l1DataFee", l1DataFee, "gasUsedDebit", gasUsedDebit)
+		"refund", refund, "feeTip", feeTip, "baseFee", baseFee, "l1DataFee", l1DataFee, "gasUsedDebit", gasUsedDebit, "exchangeRate", exchangeRate)
 	// Hide this function from traces
 	if evm.Config.Tracer != nil && !evm.Config.Tracer.TraceDebitCredit {
 		origTracer := evm.Config.Tracer
@@ -135,7 +137,7 @@ func CreditFees(
 
 	log.Info("CallWithABI called with", "feeCurrency", *feeCurrency, "maxAllowedGasForCredit", maxAllowedGasForCredit,
 		"txSender", txSender, "tipReceiver", tipReceiver, "baseFeeReceiver", baseFeeReceiver, "refund", refund,
-		"feeTip", feeTip, "baseFee", baseFee, "gatewayFee", common.Big0, "l1DataFee", l1DataFee)
+		"feeTip", feeTip, "baseFee", baseFee, "gatewayFee", common.Big0, "l1DataFee", l1DataFee, "exchangeRate", exchangeRate)
 
 	leftoverGas, err := evm.CallWithABI(
 		feeCurrencyABI, "creditGasFees", *feeCurrency, maxAllowedGasForCredit,
