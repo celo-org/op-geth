@@ -244,6 +244,10 @@ func (miner *Miner) UnblockFeeCurrency(address common.Address) {
 	}
 }
 
+func (miner *Miner) UnblockTransaction(hash common.Hash) {
+	miner.blockedTxRingbuffer.Remove(hash)
+}
+
 func (miner *Miner) Close() {
 	miner.lifeCtxCancel()
 }
