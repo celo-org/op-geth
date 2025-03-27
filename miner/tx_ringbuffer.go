@@ -30,6 +30,10 @@ func (b *TxRingBuffer) Add(tx common.Hash) {
 	b.mux.Lock()
 	defer b.mux.Unlock()
 
+	if _, exists := b.m[tx]; exists == true {
+		return
+	}
+
 	// Clean up old transaction hash from map
 	oldHash := b.ring[b.index]
 	delete(b.m, oldHash)
