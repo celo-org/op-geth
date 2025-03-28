@@ -344,10 +344,14 @@ func (miner *Miner) prepareWork(genParams *generateParams, witness bool) (*envir
 		)
 		feeCurrenciesInBlocklistCounter.Dec(int64(len(evicted)))
 	}
-	env.feeCurrencyAllowlist = miner.feeCurrencyBlocklist.FilterAllowlist(
-		common.CurrencyAllowlist(env.feeCurrencyContext.ExchangeRates),
-		header,
-	)
+	env.feeCurrencyAllowlist = common.CurrencyAllowlist(env.feeCurrencyContext.ExchangeRates)
+	if !env.noTxs {
+		// only apply the blocklist when we are proposing, and not when we are deriving from l1
+		env.feeCurrencyAllowlist = miner.feeCurrencyBlocklist.FilterAllowlist(
+			env.feeCurrencyAllowlist,
+			header,
+		)
+	}
 
 	if header.ParentBeaconRoot != nil {
 		core.ProcessBeaconBlockRoot(*header.ParentBeaconRoot, env.evm)
