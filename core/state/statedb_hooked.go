@@ -269,3 +269,15 @@ func (s *hookedStateDB) Finalise(deleteEmptyObjects bool) {
 		}
 	}
 }
+
+func (s *hookedStateDB) Hooks() *tracing.Hooks {
+	return s.hooks
+}
+
+func (s *hookedStateDB) SetHooks(hooks *tracing.Hooks) {
+	if hooks != nil {
+		s.hooks = hooks
+	} else {
+		s.hooks = new(tracing.Hooks)
+	}
+}

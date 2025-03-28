@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/exchange"
 	"github.com/ethereum/go-ethereum/contracts/addresses"
 	"github.com/ethereum/go-ethereum/contracts/celo/abigen"
+	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/log"
@@ -20,6 +21,11 @@ import (
 var feeCurrencyABI *abi.ABI
 
 var ErrFeeCurrencyEVMCall = errors.New("fee-currency contract error during internal EVM call")
+
+type HookedStateDB interface {
+	Hooks() *tracing.Hooks
+	SetHooks(hooks *tracing.Hooks)
+}
 
 func init() {
 	var err error
@@ -46,10 +52,21 @@ func DebitFees(evm *vm.EVM, feeCurrency *common.Address, address common.Address,
 	// Hide this function from traces
 	if evm.Config.Tracer != nil && !evm.Config.Tracer.TraceDebitCredit {
 		origTracer := evm.Config.Tracer
+		evm.Config.Tracer = nil
+
+		var origHooks *tracing.Hooks
+		hookedStateDB, isHookedStateDB := evm.StateDB.(HookedStateDB)
+		if isHookedStateDB {
+			origHooks = hookedStateDB.Hooks()
+			hookedStateDB.SetHooks(nil)
+		}
+
 		defer func() {
 			evm.Config.Tracer = origTracer
+			if isHookedStateDB {
+				hookedStateDB.SetHooks(origHooks)
+			}
 		}()
-		evm.Config.Tracer = nil
 	}
 
 	if amount.Cmp(big.NewInt(0)) == 0 {
@@ -103,10 +120,21 @@ func CreditFees(
 	// Hide this function from traces
 	if evm.Config.Tracer != nil && !evm.Config.Tracer.TraceDebitCredit {
 		origTracer := evm.Config.Tracer
+		evm.Config.Tracer = nil
+
+		var origHooks *tracing.Hooks
+		hookedStateDB, isHookedStateDB := evm.StateDB.(HookedStateDB)
+		if isHookedStateDB {
+			origHooks = hookedStateDB.Hooks()
+			hookedStateDB.SetHooks(nil)
+		}
+
 		defer func() {
 			evm.Config.Tracer = origTracer
+			if isHookedStateDB {
+				hookedStateDB.SetHooks(origHooks)
+			}
 		}()
-		evm.Config.Tracer = nil
 	}
 
 	// Our old `creditGasFees` function does not accept an l1DataFee and
