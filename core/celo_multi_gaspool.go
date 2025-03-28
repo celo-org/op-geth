@@ -61,12 +61,12 @@ func NewMultiGasPool(
 
 // PoolFor returns a configured pool for the given fee currency or the default
 // one otherwise
-func (mgp MultiGasPool) PoolFor(feeCurrency *FeeCurrency) *GasPool {
+func (mgp MultiGasPool) PoolFor(feeCurrency *FeeCurrency) (*GasPool, bool) {
 	if feeCurrency == nil || mgp.pools[*feeCurrency] == nil {
-		return mgp.defaultPool
+		return mgp.defaultPool, false
 	}
 
-	return mgp.pools[*feeCurrency]
+	return mgp.pools[*feeCurrency], true
 }
 
 func (mgp MultiGasPool) Copy() *MultiGasPool {

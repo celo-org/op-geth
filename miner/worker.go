@@ -172,7 +172,8 @@ func (miner *Miner) generateWork(params *generateParams, witness bool) *newPaylo
 		// the non-fee currency pool in the multipool is not used, but for consistency
 		// subtract the gas. Don't check the error either, this has been checked already
 		// with the work.gasPool.
-		work.multiGasPool.PoolFor(nil).SubGas(tx.Gas())
+		pool, _ := work.multiGasPool.PoolFor(nil)
+		pool.SubGas(tx.Gas())
 	}
 	if !params.noTxs {
 		// use shared interrupt if present
@@ -629,7 +630,8 @@ func (miner *Miner) commitTransactions(env *environment, plainTxs, blobTxs *tran
 				continue
 			}
 		}
-		if left := env.multiGasPool.PoolFor(ltx.FeeCurrency).Gas(); left < ltx.Gas {
+		pool, _ := env.multiGasPool.PoolFor(ltx.FeeCurrency)
+		if left := pool.Gas(); left < ltx.Gas {
 			log.Trace(
 				"Not enough specific fee-currency gas left for transaction",
 				"currency", ltx.FeeCurrency, "hash", ltx.Hash,
@@ -686,12 +688,13 @@ func (miner *Miner) commitTransactions(env *environment, plainTxs, blobTxs *tran
 			txs.Pop()
 
 		case errors.Is(err, nil):
-			err := env.multiGasPool.PoolFor(tx.FeeCurrency()).SubGas(gasUsed)
+			pool, _ := env.multiGasPool.PoolFor(tx.FeeCurrency())
+			err := pool.SubGas(gasUsed)
 			if err != nil {
 				// Should never happen as we check it above
 				log.Warn(
 					"Unexpectedly reached limit for fee currency, but tx will not be skipped",
-					"hash", tx.Hash(), "gas", env.multiGasPool.PoolFor(tx.FeeCurrency()).Gas(),
+					"hash", tx.Hash(), "gas", pool.Gas(),
 					"tx gas used", gasUsed,
 				)
 				// If we reach this codepath, we want to still include the transaction,
@@ -844,8 +847,13 @@ func (miner *Miner) blockFeeCurrency(env *environment, feeCurrency common.Addres
 	// the fee-currency is still in the allowlist of this environment,
 	// so set the fee-currency block gas limit to 0 to prevent other
 	// transactions.
-	pool := env.multiGasPool.PoolFor(&feeCurrency)
-	pool.SetGas(0)
+	pool, hasSeparateMultiPool := env.multiGasPool.PoolFor(&feeCurrency)
+	// if for whatever reason we didn't set a separate multipool
+	// for this fee-currency, we don't want to completely
+	// block all other gas usage
+	if hasSeparateMultiPool {
+		pool.SetGas(0)
+	}
 	// also add the fee-currency to a worker-wide blocklist,
 	// so that they are not allowlisted in the following blocks
 	// (only locally in the txpool, not consensus-critical)
