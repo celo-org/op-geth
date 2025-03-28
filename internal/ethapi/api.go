@@ -1722,6 +1722,11 @@ func marshalReceipt(receipt *types.Receipt, blockHash common.Hash, blockNumber u
 	if receipt.ContractAddress != (common.Address{}) {
 		fields["contractAddress"] = receipt.ContractAddress
 	}
+
+	if tx.Type() == types.CeloDynamicFeeTxV2Type {
+		fields["baseFee"] = (*hexutil.Big)(receipt.BaseFee)
+	}
+
 	return fields
 }
 

@@ -121,6 +121,9 @@ type receiptMarshaling struct {
 	L1BlobBaseFeeScalar   *hexutil.Uint64
 	DepositNonce          *hexutil.Uint64
 	DepositReceiptVersion *hexutil.Uint64
+
+	// Celo
+	BaseFee *hexutil.Big
 }
 
 // receiptRLP is the consensus encoding of a receipt.
