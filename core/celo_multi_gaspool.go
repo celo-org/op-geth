@@ -23,18 +23,31 @@ func NewMultiGasPool(
 	allowlist common.AddressSet,
 	defaultLimit float64,
 	limitsMapping FeeCurrencyLimitMapping,
+	isDeriving bool,
 ) *MultiGasPool {
-	pools := make(map[FeeCurrency]*GasPool, len(allowlist))
+	numPools := 0
+	if !isDeriving {
+		numPools = len(allowlist)
+	}
+	pools := make(map[FeeCurrency]*GasPool, numPools)
 
-	for currency := range allowlist {
-		fraction, ok := limitsMapping[currency]
-		if !ok {
-			fraction = defaultLimit
+	// we want to deactivate the separate pools for
+	// fee-currencies when we are deriving from l1.
+	// The parameters are locally configurable,
+	// and we don't want them to differ
+	// from the "consensus", i.e. the ones
+	// that the sequencer used for building.
+	if !isDeriving {
+		for currency := range allowlist {
+			fraction, ok := limitsMapping[currency]
+			if !ok {
+				fraction = defaultLimit
+			}
+
+			pools[currency] = new(GasPool).AddGas(
+				uint64(float64(blockGasLimit) * fraction),
+			)
 		}
-
-		pools[currency] = new(GasPool).AddGas(
-			uint64(float64(blockGasLimit) * fraction),
-		)
 	}
 
 	// A special case for CELO which doesn't have a limit
