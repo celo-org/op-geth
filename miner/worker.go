@@ -158,6 +158,7 @@ func (miner *Miner) generateWork(params *generateParams, witness bool) *newPaylo
 			work.feeCurrencyAllowlist,
 			miner.config.FeeCurrencyDefault,
 			miner.config.FeeCurrencyLimits,
+			work.noTxs,
 		)
 	}
 
@@ -552,6 +553,7 @@ func (miner *Miner) commitTransactions(env *environment, plainTxs, blobTxs *tran
 			env.feeCurrencyAllowlist,
 			miner.config.FeeCurrencyDefault,
 			miner.config.FeeCurrencyLimits,
+			env.noTxs,
 		)
 	}
 	for {

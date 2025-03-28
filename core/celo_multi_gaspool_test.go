@@ -102,6 +102,7 @@ func TestMultiCurrencyGasPool(t *testing.T) {
 				c.allowlist,
 				c.defaultLimit,
 				c.limits,
+				false,
 			)
 
 			pool := mgp.PoolFor(c.feeCurrency)
