@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMultiCurrencyGasPool(t *testing.T) {
@@ -105,16 +106,20 @@ func TestMultiCurrencyGasPool(t *testing.T) {
 				false,
 			)
 
-			pool := mgp.PoolFor(c.feeCurrency)
+			pool, _ := mgp.PoolFor(c.feeCurrency)
 			pool.SubGas(uint64(subGasAmount))
 
 			if c.defaultPoolExpected {
-				result := mgp.PoolFor(nil).Gas()
+				pool, exists := mgp.PoolFor(nil)
+				assert.False(t, exists)
+				result := pool.Gas()
 				if result != c.expectedValue {
 					t.Error("Default pool expected", c.expectedValue, "got", result)
 				}
 			} else {
-				result := mgp.PoolFor(c.feeCurrency).Gas()
+				pool, exists := mgp.PoolFor(c.feeCurrency)
+				assert.True(t, exists)
+				result := pool.Gas()
 
 				if result != c.expectedValue {
 					t.Error(
