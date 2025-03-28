@@ -236,6 +236,7 @@ func (miner *Miner) getPending() *newPayloadResult {
 func (miner *Miner) SetFeeCurrencyBlocklistStatus(enabled bool) {
 	miner.feeCurrencyBlocklist.SetEnableFilterStatus(enabled)
 }
+
 func (miner *Miner) UnblockFeeCurrency(address common.Address) bool {
 	return miner.feeCurrencyBlocklist.Remove(address)
 }
