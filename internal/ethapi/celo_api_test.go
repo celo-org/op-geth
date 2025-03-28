@@ -672,6 +672,9 @@ func Test_marshalReceipt(t *testing.T) {
 	cel2Time := uint64(1000)
 	config.Cel2Time = &cel2Time
 
+	cel1Config := *config
+	cel1Config.Optimism = nil
+
 	var (
 		blockHash                    = common.BytesToHash([]byte{0x1})
 		blockNumber           uint64 = 500
@@ -692,6 +695,7 @@ func Test_marshalReceipt(t *testing.T) {
 		blobGasPrice                 = big.NewInt(300000)
 		from                         = common.HexToAddress("0x0000000000000000000000000000000000000bbb")
 		sourceHash                   = common.BytesToHash([]byte{0xaa})
+		baseFee                      = big.NewInt(100000)
 		depositNonce          uint64 = 100
 		depositReceiptVersion uint64 = 1
 		feeCurrency                  = core.DevFeeCurrencyAddr
@@ -730,6 +734,7 @@ func Test_marshalReceipt(t *testing.T) {
 		BlobGasPrice:          blobGasPrice,
 		DepositNonce:          &depositNonce,
 		DepositReceiptVersion: &depositReceiptVersion,
+		BaseFee:               baseFee,
 	}
 	receipt.Bloom = types.CreateBloom(types.Receipts{&receipt})
 
@@ -744,16 +749,12 @@ func Test_marshalReceipt(t *testing.T) {
 		}), signer, key)
 		require.NoError(t, err)
 
-		// Disable Optimism Config
-		config := *config
-		config.Optimism = nil
-
 		receipt := receipt
 		receipt.TxHash = tx.Hash()
 
-		result := marshalReceipt(&receipt, blockHash, blockNumber, signer, tx, int(txIndex), &config)
+		result := marshalReceipt(&receipt, blockHash, blockNumber, cel2Time-1, signer, tx, int(txIndex), &cel1Config)
 
-		checkReceiptFields(t, result, &receipt, tx, signer, blockHash, blockNumber, txIndex, false)
+		checkReceiptFields(t, result, &receipt, tx, signer, blockHash, blockNumber, cel2Time-1, txIndex, &cel1Config)
 	})
 
 	t.Run("DynamicFeeTx receipt", func(t *testing.T) {
@@ -771,9 +772,9 @@ func Test_marshalReceipt(t *testing.T) {
 		receipt := receipt
 		receipt.TxHash = tx.Hash()
 
-		result := marshalReceipt(&receipt, blockHash, blockNumber, signer, tx, int(txIndex), config)
+		result := marshalReceipt(&receipt, blockHash, blockNumber, cel2Time, signer, tx, int(txIndex), config)
 
-		checkReceiptFields(t, result, &receipt, tx, signer, blockHash, blockNumber, txIndex, true)
+		checkReceiptFields(t, result, &receipt, tx, signer, blockHash, blockNumber, cel2Time, txIndex, config)
 	})
 
 	t.Run("DepositTx receipt", func(t *testing.T) {
@@ -791,9 +792,9 @@ func Test_marshalReceipt(t *testing.T) {
 		receipt := receipt
 		receipt.TxHash = tx.Hash()
 
-		result := marshalReceipt(&receipt, blockHash, blockNumber, signer, tx, int(txIndex), config)
+		result := marshalReceipt(&receipt, blockHash, blockNumber, cel2Time, signer, tx, int(txIndex), config)
 
-		checkReceiptFields(t, result, &receipt, tx, signer, blockHash, blockNumber, txIndex, true)
+		checkReceiptFields(t, result, &receipt, tx, signer, blockHash, blockNumber, cel2Time, txIndex, config)
 	})
 
 	t.Run("CeloDynamicFeeTxV1 receipt", func(t *testing.T) {
@@ -815,12 +816,12 @@ func Test_marshalReceipt(t *testing.T) {
 		receipt := receipt
 		receipt.TxHash = tx.Hash()
 
-		result := marshalReceipt(&receipt, blockHash, blockNumber, signer, tx, int(txIndex), config)
+		result := marshalReceipt(&receipt, blockHash, blockNumber, cel2Time, signer, tx, int(txIndex), config)
 
-		checkReceiptFields(t, result, &receipt, tx, signer, blockHash, blockNumber, txIndex, true)
+		checkReceiptFields(t, result, &receipt, tx, signer, blockHash, blockNumber, cel2Time, txIndex, config)
 	})
 
-	t.Run("CeloDynamicFeeTxV2 receipt", func(t *testing.T) {
+	t.Run("CeloDynamicFeeTxV2 receipt (Post Cel2)", func(t *testing.T) {
 		tx, err := types.SignTx(types.NewTx(&types.CeloDynamicFeeTxV2{
 			ChainID:     big.NewInt(params.CeloAlfajoresChainID),
 			Nonce:       nonce,
@@ -837,9 +838,31 @@ func Test_marshalReceipt(t *testing.T) {
 		receipt := receipt
 		receipt.TxHash = tx.Hash()
 
-		result := marshalReceipt(&receipt, blockHash, blockNumber, signer, tx, int(txIndex), config)
+		result := marshalReceipt(&receipt, blockHash, blockNumber, cel2Time, signer, tx, int(txIndex), config)
 
-		checkReceiptFields(t, result, &receipt, tx, signer, blockHash, blockNumber, txIndex, true)
+		checkReceiptFields(t, result, &receipt, tx, signer, blockHash, blockNumber, cel2Time, txIndex, config)
+	})
+
+	t.Run("CeloDynamicFeeTxV2 receipt (Pre Cel2)", func(t *testing.T) {
+		tx, err := types.SignTx(types.NewTx(&types.CeloDynamicFeeTxV2{
+			ChainID:     big.NewInt(params.CeloAlfajoresChainID),
+			Nonce:       nonce,
+			GasTipCap:   gasTipCap,
+			GasFeeCap:   gasFeeCap,
+			Gas:         gas,
+			FeeCurrency: &feeCurrency,
+			To:          &to,
+			Value:       value,
+			Data:        []byte{},
+		}), signer, key)
+		require.NoError(t, err)
+
+		receipt := receipt
+		receipt.TxHash = tx.Hash()
+
+		result := marshalReceipt(&receipt, blockHash, blockNumber, cel2Time-1, signer, tx, int(txIndex), &cel1Config)
+
+		checkReceiptFields(t, result, &receipt, tx, signer, blockHash, blockNumber, cel2Time-1, txIndex, &cel1Config)
 	})
 }
 
@@ -854,8 +877,9 @@ func checkReceiptFields(
 	signer types.Signer,
 	blockhash common.Hash,
 	blockNumber uint64,
+	blockTime uint64,
 	txIndex uint,
-	isCel2 bool,
+	config *params.ChainConfig,
 ) {
 	t.Helper()
 
@@ -882,7 +906,7 @@ func checkReceiptFields(
 		assert.Nil(t, rpcReceipt["contractAddress"])
 	}
 
-	if isCel2 && !tx.IsDepositTx() {
+	if config.IsCel2(blockTime) && !tx.IsDepositTx() {
 		assert.Equal(t, (*hexutil.Big)(receipt.L1GasPrice), rpcReceipt["l1GasPrice"])
 		assert.Equal(t, (*hexutil.Big)(receipt.L1GasUsed), rpcReceipt["l1GasUsed"])
 		assert.Equal(t, (*hexutil.Big)(receipt.L1Fee), rpcReceipt["l1Fee"])
@@ -900,7 +924,7 @@ func checkReceiptFields(
 		assert.Nil(t, rpcReceipt["l1BlobBaseFeeScalar"])
 	}
 
-	if isCel2 && tx.IsDepositTx() {
+	if config.IsCel2(blockTime) && tx.IsDepositTx() {
 		assert.Equal(t, hexutil.Uint64(*receipt.DepositNonce), rpcReceipt["depositNonce"])
 		assert.Equal(t, hexutil.Uint64(*receipt.DepositReceiptVersion), rpcReceipt["depositReceiptVersion"])
 	} else {
@@ -908,7 +932,7 @@ func checkReceiptFields(
 		assert.Nil(t, rpcReceipt["depositReceiptVersion"])
 	}
 
-	if isCel2 && tx.Type() == types.CeloDynamicFeeTxV2Type {
+	if config.IsCel2(blockTime) && tx.Type() == types.CeloDynamicFeeTxV2Type {
 		assert.Equal(t, (*hexutil.Big)(receipt.BaseFee), rpcReceipt["baseFee"])
 	} else {
 		assert.Nil(t, rpcReceipt["baseFee"])
