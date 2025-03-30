@@ -107,9 +107,10 @@ func TestHashConsistency(t *testing.T) {
 	t.Cleanup(outerCancel)
 
 	resultCh := make(chan *blockAndReceipts, 100)
+	jobStatusUpdateReqCh := make(chan *jobStatusUpdateReq, 10)
 
 	fetchingEg, jobCtx := errgroup.WithContext(outerCtx)
-	fetchingEg.SetLimit(5)
+	fetchingEg.SetLimit(10)
 	fetchingEg.Go(func() error {
 		rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 
@@ -138,12 +139,15 @@ func TestHashConsistency(t *testing.T) {
 					return err
 				}
 
-				t.Logf("Fetched data at height %d", res.height)
-
 				select {
 				case <-jobCtx.Done():
 					return jobCtx.Err()
 				case resultCh <- res:
+				}
+
+				select {
+				case jobStatusUpdateReqCh <- &jobStatusUpdateReq{jobTypeId: JobTypeFetchBlock, lastHeight: res.height}:
+				default:
 				}
 
 				return nil
@@ -154,7 +158,7 @@ func TestHashConsistency(t *testing.T) {
 	})
 
 	testingEg, jobCtx := errgroup.WithContext(outerCtx)
-	testingEg.SetLimit(10)
+	testingEg.SetLimit(20)
 	testingEg.Go(func() error {
 		for result := range resultCh {
 			if isContextCanceled(jobCtx) {
@@ -168,13 +172,47 @@ func TestHashConsistency(t *testing.T) {
 					return fmt.Errorf("failed to verify data at height %d: %w", result.header.Number.Uint64(), err)
 				}
 
-				t.Logf("Verified data at height %d", result.header.Number.Uint64())
+				select {
+				case jobStatusUpdateReqCh <- &jobStatusUpdateReq{jobTypeId: JobTypeVerifyBlock, lastHeight: result.height}:
+				default:
+				}
 
 				return nil
 			})
 		}
 
 		return nil
+	})
+
+	loggingEg, jobCtx := errgroup.WithContext(outerCtx)
+	loggingEg.Go(func() error {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+
+		var (
+			lastFetchHeight  uint64
+			lastVerifyHeight uint64
+		)
+
+		for {
+			select {
+			case <-jobCtx.Done():
+				return nil
+			case req, ok := <-jobStatusUpdateReqCh:
+				if !ok {
+					return nil
+				}
+
+				switch req.jobTypeId {
+				case JobTypeFetchBlock:
+					lastFetchHeight = req.lastHeight
+				case JobTypeVerifyBlock:
+					lastVerifyHeight = req.lastHeight
+				}
+			case <-ticker.C:
+				t.Logf("Progress: Fetching Blocks: %.2f%%, Verifying Blocks: %.2f%%", calcPercentage(startBlock, endBlock, lastFetchHeight), calcPercentage(startBlock, endBlock, lastVerifyHeight))
+			}
+		}
 	})
 
 	// Wait for all fetching jobs to complete and then close the result channel
@@ -189,6 +227,22 @@ func TestHashConsistency(t *testing.T) {
 		t.Logf("failed to complete testing block elements job: %v", err)
 		t.Fail()
 	}
+
+	close(jobStatusUpdateReqCh)
+}
+
+func calcPercentage(start, end, current uint64) float64 {
+	return float64((current-start)*100) / float64(end-start)
+}
+
+const (
+	JobTypeFetchBlock uint8 = iota
+	JobTypeVerifyBlock
+)
+
+type jobStatusUpdateReq struct {
+	jobTypeId  uint8
+	lastHeight uint64
 }
 
 type blockAndReceipts struct {
