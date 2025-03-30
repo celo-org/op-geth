@@ -180,7 +180,6 @@ func TestHashConsistency(t *testing.T) {
 	// Wait for all fetching jobs to complete and then close the result channel
 	if err := fetchingEg.Wait(); err != nil {
 		t.Logf("failed to complete fetching block elements job: %v", err)
-		outerCancel()
 		t.Fail()
 	}
 	close(resultCh)
@@ -188,7 +187,6 @@ func TestHashConsistency(t *testing.T) {
 	// Wait for all testing jobs to complete
 	if err := testingEg.Wait(); err != nil {
 		t.Logf("failed to complete testing block elements job: %v", err)
-		outerCancel()
 		t.Fail()
 	}
 }
