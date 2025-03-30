@@ -95,7 +95,7 @@ func TestHashConsistency(t *testing.T) {
 
 	endBlock := latestBlock.NumberU64()
 
-	t.Logf("Starting Hash Compatibility Test")
+	t.Logf("Starting RPC Hash Consistency Test")
 	t.Logf("\tChainID: %s", chainId.String())
 	t.Logf("\tStart Block: %d", startBlock)
 	t.Logf("\tEnd Block: %d", endBlock)
@@ -184,8 +184,7 @@ func TestHashConsistency(t *testing.T) {
 		return nil
 	})
 
-	loggingEg, jobCtx := errgroup.WithContext(outerCtx)
-	loggingEg.Go(func() error {
+	go func() {
 		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
 
@@ -196,13 +195,9 @@ func TestHashConsistency(t *testing.T) {
 
 		for {
 			select {
-			case <-jobCtx.Done():
-				return nil
-			case req, ok := <-jobStatusUpdateReqCh:
-				if !ok {
-					return nil
-				}
-
+			case <-outerCtx.Done():
+				return
+			case req := <-jobStatusUpdateReqCh:
 				switch req.jobTypeId {
 				case JobTypeFetchBlock:
 					lastFetchHeight = req.lastHeight
@@ -210,10 +205,10 @@ func TestHashConsistency(t *testing.T) {
 					lastVerifyHeight = req.lastHeight
 				}
 			case <-ticker.C:
-				t.Logf("Progress: Fetching Blocks: %.2f%%, Verifying Blocks: %.2f%%", calcPercentage(startBlock, endBlock, lastFetchHeight), calcPercentage(startBlock, endBlock, lastVerifyHeight))
+				t.Logf("Progress: Fetched Blocks: %.2f%%, Verified Blocks: %.2f%%", calcPercentage(startBlock, endBlock, lastFetchHeight), calcPercentage(startBlock, endBlock, lastVerifyHeight))
 			}
 		}
-	})
+	}()
 
 	// Wait for all fetching jobs to complete and then close the result channel
 	if err := fetchingEg.Wait(); err != nil {
@@ -228,6 +223,7 @@ func TestHashConsistency(t *testing.T) {
 		t.Fail()
 	}
 
+	outerCancel()
 	close(jobStatusUpdateReqCh)
 }
 
