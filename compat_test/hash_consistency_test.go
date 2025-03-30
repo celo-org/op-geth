@@ -7,17 +7,18 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"math/big"
+	"math/rand"
+	"net/http"
+	"testing"
+	"time"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/trie"
 	"golang.org/x/sync/errgroup"
-	"math/big"
-	"math/rand"
-	"net/http"
-	"testing"
-	"time"
 
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/rpc"
@@ -29,7 +30,7 @@ var (
 )
 
 func TestHashConsistency(t *testing.T) {
-	// TestHashCompatTest validates that the hashes obtained from RPC endpoint are consistent with the values calculated locally
+	// TestHashConsistency validates that the hashes obtained from RPC endpoint are consistent with the values calculated locally
 	// It retrieves and compares the following hashes:
 	// 1. TxHash
 	// 2. TxRoot
