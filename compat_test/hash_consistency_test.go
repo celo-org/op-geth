@@ -9,23 +9,25 @@ import (
 	"fmt"
 	"math/big"
 	"math/rand"
-	"net/http"
 	"testing"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/trie"
-	"golang.org/x/sync/errgroup"
-
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/ethereum/go-ethereum/trie"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/sync/errgroup"
 )
 
 var (
+	cel2Times = map[uint64]uint64{
+		params.CeloMainnetChainID:   1742957258,
+		params.CeloAlfajoresChainID: 1727339320,
+		params.CeloBaklavaChainID:   1740081460,
+	}
 	sha3Uncles = common.HexToHash("0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347")
 )
 
@@ -59,18 +61,6 @@ func TestHashConsistency(t *testing.T) {
 		t.Fatalf("failed to get chain id: %v", err)
 	}
 
-	// Fetch chain config
-	chainConfig, err := fetchChainConfig(t, int(chainId.Int64()))
-	if err != nil {
-		t.Fatalf("failed to fetch chain config: %v", err)
-	}
-	if chainConfig.Cel2Time == nil {
-		t.Fatalf("Cel2Time is not set in chain config")
-	}
-	if chainConfig.ChainID.Cmp(chainId) != 0 {
-		t.Fatalf("fetched chain ID (%s) and the chain ID in ChainConfig (%s) do not match", chainId.String(), chainConfig.ChainID.String())
-	}
-
 	// Fetch start and latest blocks
 	ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -80,8 +70,12 @@ func TestHashConsistency(t *testing.T) {
 	} else if startBlockObj == nil {
 		t.Fatal("first block is nil")
 	}
-	if startBlockObj.Time() < *chainConfig.Cel2Time {
-		t.Fatalf("start block time (%d) is less than Cel2Time (%d)", startBlockObj.Time(), *chainConfig.Cel2Time)
+	cel2Times, ok := cel2Times[chainId.Uint64()]
+	if !ok {
+		t.Fatalf("celo2 time not found for chain %d", chainId.Uint64())
+	}
+	if startBlockObj.Time() < cel2Times {
+		t.Fatalf("start block time (%d) is less than Cel2Time (%d)", startBlockObj.Time(), cel2Times)
 	}
 
 	ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
@@ -246,6 +240,7 @@ type blockAndReceipts struct {
 	rpcBlockHash       common.Hash
 	rpcTxRoot          common.Hash
 	rpcReceiptRoot     common.Hash
+	rpcLogsBoom        types.Bloom
 	rpcSha3Uncles      common.Hash
 	rpcWithdrawalsRoot common.Hash
 	rpcTxs             []interface{}
@@ -278,6 +273,11 @@ func fetchBlockAndReceipts(ctx context.Context, cel2Client *rpc.Client, cel2EthC
 	rpcReceiptRoot, ok := blockObj["receiptsRoot"].(string)
 	if !ok {
 		return nil, fmt.Errorf("failed to cast receiptsRoot from block at height %d", height)
+	}
+
+	rpcLogsBoom, ok := blockObj["logsBloom"].(string)
+	if !ok {
+		return nil, fmt.Errorf("failed to cast logsBloom from block at height %d", height)
 	}
 
 	rpcSha3Uncles, ok := blockObj["sha3Uncles"].(string)
@@ -314,6 +314,7 @@ func fetchBlockAndReceipts(ctx context.Context, cel2Client *rpc.Client, cel2EthC
 		rpcBlockHash:       rpcBlockHash,
 		rpcTxRoot:          common.HexToHash(rpcTxRoot),
 		rpcReceiptRoot:     common.HexToHash(rpcReceiptRoot),
+		rpcLogsBoom:        types.BytesToBloom(common.FromHex(rpcLogsBoom)),
 		rpcSha3Uncles:      common.HexToHash(rpcSha3Uncles),
 		rpcWithdrawalsRoot: common.HexToHash(rpcWithdrawalsRoot),
 		rpcTxs:             txsObj,
@@ -336,7 +337,7 @@ func (b *blockAndReceipts) Verify(t *testing.T) error {
 		failed = true
 	}
 
-	// Transactions Hash Test
+	// Transaction Hashes Test
 	txs := make(types.Transactions, 0, len(b.rpcTxs))
 	for idx, rawTxObj := range b.rpcTxs {
 		txObj, ok := rawTxObj.(map[string]interface{})
@@ -363,7 +364,7 @@ func (b *blockAndReceipts) Verify(t *testing.T) error {
 		}
 	}
 
-	// Tx Root Test
+	// Transaction Root Test
 	calculatedTxRoot := types.DeriveSha(txs, trie.NewStackTrie(nil))
 	if calculatedTxRoot != b.rpcTxRoot {
 		t.Logf("Tx Root Mismatch, block height=%d => calculated=%s, rpc=%s", b.height, calculatedTxRoot, b.rpcTxRoot)
@@ -377,6 +378,22 @@ func (b *blockAndReceipts) Verify(t *testing.T) error {
 		failed = true
 	}
 
+	// Transaction Logs Bloom Test
+	for idx, receipt := range b.receipts {
+		calculatedLogsBloom := types.CreateBloom(types.Receipts{receipt})
+		if calculatedLogsBloom != receipt.Bloom {
+			t.Logf("Transaction Logs Bloom Mismatch, block height=%d, block hash=%s, receipt index=%d => calculated=%s, rpc=%s", b.height, b.rpcBlockHash, idx, calculatedLogsBloom, receipt.Bloom)
+			failed = true
+		}
+	}
+
+	// Block Logs Bloom Test
+	calculatedLogsBloom := types.CreateBloom(b.receipts)
+	if calculatedLogsBloom != b.rpcLogsBoom {
+		t.Logf("Block Logs Bloom Mismatch, block height=%d => calculated=%s, rpc=%s", b.height, calculatedLogsBloom, b.rpcLogsBoom)
+		failed = true
+	}
+
 	// Withdrawal Root Test
 	calculatedWithdrawalsRoot := types.DeriveSha(b.withdrawals, trie.NewStackTrie(nil))
 	if calculatedWithdrawalsRoot != b.rpcWithdrawalsRoot {
@@ -384,6 +401,7 @@ func (b *blockAndReceipts) Verify(t *testing.T) error {
 		failed = true
 	}
 
+	// Sha3 Uncles Test
 	if b.rpcSha3Uncles != sha3Uncles {
 		t.Logf("Sha3 Uncles Mismatch, block height=%d => calculated=%s, rpc=%s", b.height, sha3Uncles, b.rpcSha3Uncles)
 		failed = true
@@ -420,44 +438,4 @@ func getTxTypeName(txType uint8) string {
 	default:
 		return "Unknown"
 	}
-}
-
-// fetchChainConfig fetches the chain config for the given chain ID from server
-func fetchChainConfig(t *testing.T, chainId int) (cfg *params.ChainConfig, err error) {
-	t.Helper()
-
-	var url string
-	switch chainId {
-	case params.CeloMainnetChainID:
-		url = "https://storage.googleapis.com/cel2-rollup-files/celo/genesis.json"
-	case params.CeloAlfajoresChainID:
-		url = "https://storage.googleapis.com/cel2-rollup-files/alfajores/genesis.json"
-	case params.CeloBaklavaChainID:
-		url = "https://storage.googleapis.com/cel2-rollup-files/baklava/genesis.json"
-	default:
-		return nil, fmt.Errorf("unsupported chain id: %d", chainId)
-	}
-
-	genesis := new(core.Genesis)
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, fmt.Errorf("failed to download genesis file: %v", err)
-	}
-	defer func() {
-		err = resp.Body.Close()
-		if err != nil {
-			t.Logf("[WARN] failed to close response body: %v", err)
-		}
-	}()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code when fetching genesis file: %d", resp.StatusCode)
-	}
-
-	decoder := json.NewDecoder(resp.Body)
-	if err := decoder.Decode(genesis); err != nil {
-		return nil, fmt.Errorf("failed to decode genesis file: %v", err)
-	}
-
-	return genesis.Config, nil
 }
