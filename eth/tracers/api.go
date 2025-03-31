@@ -86,7 +86,7 @@ type Backend interface {
 	Engine() consensus.Engine
 	ChainDb() ethdb.Database
 	StateAtBlock(ctx context.Context, block *types.Block, reexec uint64, base *state.StateDB, readOnly bool, preferDisk bool) (*state.StateDB, StateReleaseFunc, error)
-	StateAtTransaction(ctx context.Context, block *types.Block, txIndex int, reexec uint64) (*types.Transaction, vm.BlockContext, *state.StateDB, StateReleaseFunc, error)
+	StateAtTransaction(ctx context.Context, block *types.Block, txIndex int, reexec uint64) (*types.Transaction, vm.BlockContext, *state.StateDB, StateReleaseFunc, *common.FeeCurrencyContext, error)
 	HistoricalRPCService() *rpc.Client
 }
 
@@ -923,13 +923,14 @@ func (api *API) TraceTransaction(ctx context.Context, hash common.Hash, config *
 	if err != nil {
 		return nil, err
 	}
-	tx, vmctx, statedb, release, err := api.backend.StateAtTransaction(ctx, block, int(index), reexec)
+
+	tx, vmctx, statedb, release, feeCurrContext, err := api.backend.StateAtTransaction(ctx, block, int(index), reexec)
 	if err != nil {
 		return nil, err
 	}
 	defer release()
-	exchangeRates := core.GetExchangeRates(block.Header(), api.backend.ChainConfig(), statedb)
-	msg, err := core.TransactionToMessage(tx, types.MakeSigner(api.backend.ChainConfig(), block.Number(), block.Time()), block.BaseFee(), exchangeRates)
+
+	msg, err := core.TransactionToMessage(tx, types.MakeSigner(api.backend.ChainConfig(), block.Number(), block.Time()), block.BaseFee(), feeCurrContext.ExchangeRates)
 	if err != nil {
 		return nil, err
 	}
@@ -953,10 +954,11 @@ func (api *API) TraceTransaction(ctx context.Context, hash common.Hash, config *
 func (api *API) TraceCall(ctx context.Context, args ethapi.TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash, config *TraceCallConfig) (interface{}, error) {
 	// Try to retrieve the specified block
 	var (
-		err     error
-		block   *types.Block
-		statedb *state.StateDB
-		release StateReleaseFunc
+		err                error
+		block              *types.Block
+		statedb            *state.StateDB
+		release            StateReleaseFunc
+		feeCurrencyContext *common.FeeCurrencyContext
 	)
 	if hash, ok := blockNrOrHash.Hash(); ok {
 		block, err = api.blockByHash(ctx, hash)
@@ -996,16 +998,16 @@ func (api *API) TraceCall(ctx context.Context, args ethapi.TransactionArgs, bloc
 	}
 
 	if config != nil && config.TxIndex != nil {
-		_, _, statedb, release, err = api.backend.StateAtTransaction(ctx, block, int(*config.TxIndex), reexec)
+		_, _, statedb, release, feeCurrencyContext, err = api.backend.StateAtTransaction(ctx, block, int(*config.TxIndex), reexec)
 	} else {
 		statedb, release, err = api.backend.StateAtBlock(ctx, block, reexec, nil, true, false)
+		feeCurrencyContext = core.GetFeeCurrencyContext(block.Header(), api.backend.ChainConfig(), statedb)
 	}
 	if err != nil {
 		return nil, err
 	}
 	defer release()
 
-	feeCurrencyContext := core.GetFeeCurrencyContext(block.Header(), api.backend.ChainConfig(), statedb)
 	vmctx := core.NewEVMBlockContext(block.Header(), api.chainContext(ctx), nil, api.backend.ChainConfig(), statedb, feeCurrencyContext)
 	// Apply the customization rules if required.
 	if config != nil {
