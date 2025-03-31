@@ -59,7 +59,7 @@ func (st *stateTransition) canPayFee(checkAmountForGas *big.Int) error {
 }
 
 func (st *stateTransition) subFees(effectiveFee *big.Int) (err error) {
-	log.Trace("Debiting fee", "from", st.msg.From, "amount", effectiveFee, "feeCurrency", st.msg.FeeCurrency)
+	log.Info("Debiting fee", "from", st.msg.From, "amount", effectiveFee, "feeCurrency", st.msg.FeeCurrency)
 
 	// native currency
 	if st.msg.FeeCurrency == nil {
@@ -96,9 +96,9 @@ func (st *stateTransition) distributeTxFees() error {
 	feeCurrency := st.msg.FeeCurrency
 	feeHandlerAddress := addresses.GetAddressesOrDefault(st.evm.ChainConfig().ChainID, addresses.MainnetAddresses).FeeHandler
 
-	log.Trace("distributeTxFees", "from", from, "refund", refund, "feeCurrency", feeCurrency,
-		"coinbaseFeeRecipient", st.evm.Context.Coinbase, "coinbaseFee", tipTxFee,
-		"feeHandler", feeHandlerAddress, "communityFundFee", baseTxFee)
+	log.Info("distributeTxFees", "from", from, "refund", refund, "feeCurrency", feeCurrency,
+		"coinbaseFeeRecipient", st.evm.Context.Coinbase, "tipTxFee", tipTxFee,
+		"feeHandler", feeHandlerAddress, "baseTxFee", baseTxFee, "gasUsed", gasUsed, "gasPrice", st.msg.GasPrice)
 
 	rules := st.evm.ChainConfig().Rules(st.evm.Context.BlockNumber, st.evm.Context.Random != nil, st.evm.Context.Time)
 	var l1Cost *big.Int
@@ -181,6 +181,8 @@ func (st *stateTransition) calculateBaseFee() *big.Int {
 		// Existence of the fee currency has been checked in `preCheck`
 		baseFee, _ = exchange.ConvertCeloToCurrency(st.evm.Context.FeeCurrencyContext.ExchangeRates, st.msg.FeeCurrency, baseFee)
 	}
+
+	log.Info("Calculated base fee", "baseFee", baseFee, "feeCurrency", st.msg.FeeCurrency, "baseFeeInCelo", st.evm.Context.BaseFee, "exchangeRates", st.evm.Context.FeeCurrencyContext.ExchangeRates)
 
 	return baseFee
 }
