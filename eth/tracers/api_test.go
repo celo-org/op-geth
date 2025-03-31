@@ -245,17 +245,17 @@ func (b *testBackend) StateAtTransaction(ctx context.Context, block *types.Block
 	if err != nil {
 		return nil, vm.BlockContext{}, nil, nil, nil, errStateNotFound
 	}
+	feeCurrencyContext := core.GetFeeCurrencyContext(block.Header(), b.chainConfig, statedb)
 	if txIndex == 0 && len(block.Transactions()) == 0 {
-		return nil, vm.BlockContext{}, statedb, release, &common.FeeCurrencyContext{}, nil
+		return nil, vm.BlockContext{}, statedb, release, feeCurrencyContext, nil
 	}
 	// Recompute transactions up to the target index.
 	signer := types.MakeSigner(b.chainConfig, block.Number(), block.Time())
-	feeCurrencyContext := core.GetFeeCurrencyContext(block.Header(), b.chainConfig, statedb)
 	context := core.NewEVMBlockContext(block.Header(), b.chain, nil, b.chainConfig, statedb, feeCurrencyContext)
 	evm := vm.NewEVM(context, statedb, b.chainConfig, vm.Config{})
 	for idx, tx := range block.Transactions() {
 		if idx == txIndex {
-			return tx, context, statedb, release, &common.FeeCurrencyContext{}, nil
+			return tx, context, statedb, release, feeCurrencyContext, nil
 		}
 		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee(), context.FeeCurrencyContext.ExchangeRates)
 		if _, err := core.ApplyMessage(evm, msg, new(core.GasPool).AddGas(tx.Gas())); err != nil {
