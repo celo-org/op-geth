@@ -59,7 +59,7 @@ func (st *stateTransition) canPayFee(checkAmountForGas *big.Int) error {
 }
 
 func (st *stateTransition) subFees(effectiveFee *big.Int) (err error) {
-	log.Info("Debiting fee", "from", st.msg.From, "amount", effectiveFee, "feeCurrency", st.msg.FeeCurrency)
+	log.Trace("Debiting fee", "from", st.msg.From, "amount", effectiveFee, "feeCurrency", st.msg.FeeCurrency)
 
 	// native currency
 	if st.msg.FeeCurrency == nil {
@@ -96,7 +96,7 @@ func (st *stateTransition) distributeTxFees() error {
 	feeCurrency := st.msg.FeeCurrency
 	feeHandlerAddress := addresses.GetAddressesOrDefault(st.evm.ChainConfig().ChainID, addresses.MainnetAddresses).FeeHandler
 
-	log.Info("distributeTxFees", "from", from, "refund", refund, "feeCurrency", feeCurrency,
+	log.Trace("distributeTxFees", "from", from, "refund", refund, "feeCurrency", feeCurrency,
 		"coinbaseFeeRecipient", st.evm.Context.Coinbase, "tipTxFee", tipTxFee,
 		"feeHandler", feeHandlerAddress, "baseTxFee", baseTxFee, "gasUsed", gasUsed, "gasPrice", st.msg.GasPrice)
 
@@ -182,7 +182,7 @@ func (st *stateTransition) calculateBaseFee() *big.Int {
 		baseFee, _ = exchange.ConvertCeloToCurrency(st.evm.Context.FeeCurrencyContext.ExchangeRates, st.msg.FeeCurrency, baseFee)
 	}
 
-	log.Info("Calculated base fee", "baseFee", baseFee, "feeCurrency", st.msg.FeeCurrency, "baseFeeInCelo", st.evm.Context.BaseFee, "exchangeRates", st.evm.Context.FeeCurrencyContext.ExchangeRates)
+	log.Trace("Calculated base fee", "baseFee", baseFee, "feeCurrency", st.msg.FeeCurrency, "baseFeeInCelo", st.evm.Context.BaseFee, "exchangeRates", st.evm.Context.FeeCurrencyContext.ExchangeRates)
 
 	return baseFee
 }
