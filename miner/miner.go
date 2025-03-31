@@ -238,11 +238,19 @@ func (miner *Miner) SetFeeCurrencyBlocklistStatus(enabled bool) {
 }
 
 func (miner *Miner) UnblockFeeCurrency(address common.Address) bool {
-	return miner.feeCurrencyBlocklist.Remove(address)
+	removed := miner.feeCurrencyBlocklist.Remove(address)
+	if removed {
+		feeCurrenciesInBlocklistCounter.Dec(1)
+	}
+	return removed
 }
 
 func (miner *Miner) UnblockTransaction(hash common.Hash) bool {
-	return miner.blockedTxRingbuffer.Remove(hash)
+	removed := miner.blockedTxRingbuffer.Remove(hash)
+	if removed {
+		transactionsInBlocklistCounter.Dec(1)
+	}
+	return removed
 }
 
 func (miner *Miner) Close() {

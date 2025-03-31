@@ -61,6 +61,9 @@ var (
 	txConditionalMinedTimer      = metrics.NewRegisteredTimer("miner/transactionConditional/elapsedtime", nil)
 
 	txInteropRejectedCounter = metrics.NewRegisteredCounter("miner/transactionInterop/rejected", nil)
+
+	feeCurrenciesInBlocklistCounter = metrics.NewRegisteredCounter("miner/blocklist/feeCurrency/blocked", nil)
+	transactionsInBlocklistCounter  = metrics.NewRegisteredCounter("miner/blocklist/transactions/blocked", nil)
 )
 
 // environment is the worker's current environment and holds all
@@ -341,6 +344,7 @@ func (miner *Miner) prepareWork(genParams *generateParams, witness bool) (*envir
 			"evicted-fee-currencies", evicted,
 			"eviction-timeout-seconds", EvictionTimeoutSeconds,
 		)
+		feeCurrenciesInBlocklistCounter.Dec(int64(len(evicted)))
 	}
 	env.feeCurrencyAllowlist = miner.feeCurrencyBlocklist.FilterAllowlist(
 		common.CurrencyAllowlist(env.feeCurrencyContext.ExchangeRates),
@@ -854,8 +858,12 @@ func (miner *Miner) registerFeeCurrencyTxFailure(env *environment, tx *types.Tra
 	// also add the fee-currency to a worker-wide blocklist,
 	// so that they are not allowlisted in the following blocks
 	// (only locally in the txpool, not consensus-critical)
-	miner.feeCurrencyBlocklist.Add(*tx.FeeCurrency(), *env.header)
+	if miner.feeCurrencyBlocklist.Add(*tx.FeeCurrency(), *env.header) {
+		feeCurrenciesInBlocklistCounter.Inc(1)
+	}
 
 	// Add tx to block tx ringbuffer
-	miner.blockedTxRingbuffer.Add(tx.Hash())
+	if miner.blockedTxRingbuffer.Add(tx.Hash()) {
+		transactionsInBlocklistCounter.Inc(1)
+	}
 }

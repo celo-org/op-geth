@@ -26,12 +26,12 @@ func NewTxRingBuffer(size int) *TxRingBuffer {
 
 // Add adds a new transaction hash to the ring buffer, if the buffer is
 // at capacity, the oldest transaction hash is overwritten.
-func (b *TxRingBuffer) Add(tx common.Hash) {
+func (b *TxRingBuffer) Add(tx common.Hash) bool {
 	b.mux.Lock()
 	defer b.mux.Unlock()
 
-	if _, exists := b.m[tx]; exists == true {
-		return
+	if _, exists := b.m[tx]; exists {
+		return false
 	}
 
 	// Clean up old transaction hash from map
@@ -47,6 +47,7 @@ func (b *TxRingBuffer) Add(tx common.Hash) {
 	if b.index == len(b.ring) {
 		b.index = 0
 	}
+	return true
 }
 
 func (b *TxRingBuffer) Has(tx common.Hash) bool {
