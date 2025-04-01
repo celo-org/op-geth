@@ -236,34 +236,34 @@ func (b *testBackend) StateAtBlock(ctx context.Context, block *types.Block, reex
 	return statedb, release, nil
 }
 
-func (b *testBackend) StateAtTransaction(ctx context.Context, block *types.Block, txIndex int, reexec uint64) (*types.Transaction, vm.BlockContext, *state.StateDB, StateReleaseFunc, error) {
+func (b *testBackend) StateAtTransaction(ctx context.Context, block *types.Block, txIndex int, reexec uint64) (*types.Transaction, vm.BlockContext, *state.StateDB, StateReleaseFunc, *common.FeeCurrencyContext, error) {
 	parent := b.chain.GetBlock(block.ParentHash(), block.NumberU64()-1)
 	if parent == nil {
-		return nil, vm.BlockContext{}, nil, nil, errBlockNotFound
+		return nil, vm.BlockContext{}, nil, nil, nil, errBlockNotFound
 	}
 	statedb, release, err := b.StateAtBlock(ctx, parent, reexec, nil, true, false)
 	if err != nil {
-		return nil, vm.BlockContext{}, nil, nil, errStateNotFound
+		return nil, vm.BlockContext{}, nil, nil, nil, errStateNotFound
 	}
+	feeCurrencyContext := core.GetFeeCurrencyContext(block.Header(), b.chainConfig, statedb)
 	if txIndex == 0 && len(block.Transactions()) == 0 {
-		return nil, vm.BlockContext{}, statedb, release, nil
+		return nil, vm.BlockContext{}, statedb, release, feeCurrencyContext, nil
 	}
 	// Recompute transactions up to the target index.
 	signer := types.MakeSigner(b.chainConfig, block.Number(), block.Time())
-	feeCurrencyContext := core.GetFeeCurrencyContext(block.Header(), b.chainConfig, statedb)
 	context := core.NewEVMBlockContext(block.Header(), b.chain, nil, b.chainConfig, statedb, feeCurrencyContext)
 	evm := vm.NewEVM(context, statedb, b.chainConfig, vm.Config{})
 	for idx, tx := range block.Transactions() {
 		if idx == txIndex {
-			return tx, context, statedb, release, nil
+			return tx, context, statedb, release, feeCurrencyContext, nil
 		}
 		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee(), context.FeeCurrencyContext.ExchangeRates)
 		if _, err := core.ApplyMessage(evm, msg, new(core.GasPool).AddGas(tx.Gas())); err != nil {
-			return nil, vm.BlockContext{}, nil, nil, fmt.Errorf("transaction %#x failed: %v", tx.Hash(), err)
+			return nil, vm.BlockContext{}, nil, nil, nil, fmt.Errorf("transaction %#x failed: %v", tx.Hash(), err)
 		}
 		statedb.Finalise(evm.ChainConfig().IsEIP158(block.Number()))
 	}
-	return nil, vm.BlockContext{}, nil, nil, fmt.Errorf("transaction index %d out of range for block %#x", txIndex, block.Hash())
+	return nil, vm.BlockContext{}, nil, nil, nil, fmt.Errorf("transaction index %d out of range for block %#x", txIndex, block.Hash())
 }
 
 func (b *testBackend) HistoricalRPCService() *rpc.Client {
