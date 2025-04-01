@@ -40,7 +40,7 @@ func (r Receipt) MarshalJSON() ([]byte, error) {
 		FeeScalar             *big.Float      `json:"l1FeeScalar,omitempty"`
 		L1BaseFeeScalar       *hexutil.Uint64 `json:"l1BaseFeeScalar,omitempty"`
 		L1BlobBaseFeeScalar   *hexutil.Uint64 `json:"l1BlobBaseFeeScalar,omitempty"`
-		BaseFee               *big.Int        `json:"baseFee,omitempty"`
+		BaseFee               *hexutil.Big    `json:"baseFee,omitempty"`
 	}
 	var enc Receipt
 	enc.Type = hexutil.Uint64(r.Type)
@@ -67,7 +67,7 @@ func (r Receipt) MarshalJSON() ([]byte, error) {
 	enc.FeeScalar = r.FeeScalar
 	enc.L1BaseFeeScalar = (*hexutil.Uint64)(r.L1BaseFeeScalar)
 	enc.L1BlobBaseFeeScalar = (*hexutil.Uint64)(r.L1BlobBaseFeeScalar)
-	enc.BaseFee = r.BaseFee
+	enc.BaseFee = (*hexutil.Big)(r.BaseFee)
 	return json.Marshal(&enc)
 }
 
@@ -98,7 +98,7 @@ func (r *Receipt) UnmarshalJSON(input []byte) error {
 		FeeScalar             *big.Float      `json:"l1FeeScalar,omitempty"`
 		L1BaseFeeScalar       *hexutil.Uint64 `json:"l1BaseFeeScalar,omitempty"`
 		L1BlobBaseFeeScalar   *hexutil.Uint64 `json:"l1BlobBaseFeeScalar,omitempty"`
-		BaseFee               *big.Int        `json:"baseFee,omitempty"`
+		BaseFee               *hexutil.Big    `json:"baseFee,omitempty"`
 	}
 	var dec Receipt
 	if err := json.Unmarshal(input, &dec); err != nil {
@@ -182,7 +182,7 @@ func (r *Receipt) UnmarshalJSON(input []byte) error {
 		r.L1BlobBaseFeeScalar = (*uint64)(dec.L1BlobBaseFeeScalar)
 	}
 	if dec.BaseFee != nil {
-		r.BaseFee = dec.BaseFee
+		r.BaseFee = (*big.Int)(dec.BaseFee)
 	}
 	return nil
 }
