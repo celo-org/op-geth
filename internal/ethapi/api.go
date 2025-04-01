@@ -951,31 +951,20 @@ func DoEstimateGas(ctx context.Context, b CeloBackend, args TransactionArgs, blo
 	}
 
 	// Celo specific: get exchange rates if fee currency is specified
-	feeCurrencyContext := common.FeeCurrencyContext{
-		ExchangeRates: emptyExchangeRates,
-	}
+	exchangeRates := emptyExchangeRates
 	if args.FeeCurrency != nil {
 		// It is debatable whether we should use the block itself or the parent block here.
 		// Usually, user would probably like the recent rates after the block, so we use the block itself.
-		feeCurrencyContext, err = b.GetFeeCurrencyContext(ctx, blockNrOrHash)
+		exchangeRates, err = b.GetExchangeRates(ctx, blockNrOrHash)
 		if err != nil {
 			return 0, fmt.Errorf("get exchange rates for block: %v err: %w", header.Hash(), err)
 		}
 	}
 
-	call := args.ToMessage(header.BaseFee, true, true, feeCurrencyContext.ExchangeRates)
-
-	// Celo specific: get balance of fee currency if fee currency is specified
-	feeCurrencyBalance := new(big.Int)
-	if args.FeeCurrency != nil {
-		feeCurrencyBalance, err = b.GetFeeBalance(ctx, blockNrOrHash, call.From, args.FeeCurrency)
-		if err != nil {
-			return 0, err
-		}
-	}
+	call := args.ToMessage(header.BaseFee, true, true, exchangeRates)
 
 	// Run the gas estimation and wrap any revertals into a custom return
-	estimate, revert, err := gasestimator.Estimate(ctx, call, opts, gasCap, feeCurrencyContext, feeCurrencyBalance)
+	estimate, revert, err := gasestimator.Estimate(ctx, call, opts, gasCap)
 	if err != nil {
 		if len(revert) > 0 {
 			return 0, newRevertError(revert)

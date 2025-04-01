@@ -41,7 +41,6 @@ type CeloBackend interface {
 	Backend
 
 	GetFeeBalance(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash, account common.Address, feeCurrency *common.Address) (*big.Int, error)
-	GetFeeCurrencyContext(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (common.FeeCurrencyContext, error)
 	GetExchangeRates(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) (common.ExchangeRates, error)
 	ConvertToCurrency(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash, value *big.Int, feeCurrency *common.Address) (*big.Int, error)
 	ConvertToCelo(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash, value *big.Int, feeCurrency *common.Address) (*big.Int, error)

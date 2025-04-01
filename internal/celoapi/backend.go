@@ -48,18 +48,6 @@ func (b *CeloAPIBackend) GetFeeBalance(ctx context.Context, blockNumOrHash rpc.B
 	return contracts.GetFeeBalance(cb, account, feeCurrency), nil
 }
 
-func (b *CeloAPIBackend) GetFeeCurrencyContext(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash) (common.FeeCurrencyContext, error) {
-	contractBackend, err := b.getContractCaller(ctx, blockNumOrHash)
-	if err != nil {
-		return common.FeeCurrencyContext{}, err
-	}
-	feeCurrencyContext, err := contracts.GetFeeCurrencyContext(contractBackend)
-	if err != nil {
-		return common.FeeCurrencyContext{}, err
-	}
-	return feeCurrencyContext, nil
-}
-
 func (b *CeloAPIBackend) GetExchangeRates(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash) (common.ExchangeRates, error) {
 	contractBackend, err := b.getContractCaller(ctx, blockNumOrHash)
 	if err != nil {
