@@ -613,6 +613,11 @@ func (c *celoTestBackend) GetFeeBalance(ctx context.Context, blockNumOrHash rpc.
 	return nil, errCeloNotImplemented
 }
 
+func (c *celoTestBackend) GetFeeCurrencyContext(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash) (common.FeeCurrencyContext, error) {
+	var fcc common.FeeCurrencyContext
+	return fcc, nil
+}
+
 func (c *celoTestBackend) GetExchangeRates(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash) (common.ExchangeRates, error) {
 	var er common.ExchangeRates
 	return er, nil

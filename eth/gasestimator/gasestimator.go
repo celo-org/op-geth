@@ -52,7 +52,7 @@ type Options struct {
 // Estimate returns the lowest possible gas limit that allows the transaction to
 // run successfully with the provided context options. It returns an error if the
 // transaction would always revert, or if there are unexpected failures.
-func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uint64, exchangeRates common.ExchangeRates, feeCurrencyBalance *big.Int) (uint64, []byte, error) {
+func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uint64, feeCurrencyContext common.FeeCurrencyContext, feeCurrencyBalance *big.Int) (uint64, []byte, error) {
 	// Binary search the gas limit, as it may need to be higher than the amount used
 	var (
 		lo uint64 // lowest-known gas limit where tx execution fails
@@ -81,7 +81,7 @@ func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uin
 				// CIP-66, prices are given in native token.
 				// We need to check the allowance in the converted feeCurrency
 				var err error
-				feeCap, err = exchange.ConvertCeloToCurrency(exchangeRates, call.FeeCurrency, feeCap)
+				feeCap, err = exchange.ConvertCeloToCurrency(feeCurrencyContext.ExchangeRates, call.FeeCurrency, feeCap)
 				if err != nil {
 					return 0, nil, err
 				}
@@ -140,9 +140,15 @@ func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uin
 	// unused access list items). Ever so slightly wasteful, but safer overall.
 	if len(call.Data) == 0 {
 		if call.To != nil && opts.State.GetCodeSize(*call.To) == 0 {
-			failed, _, err := execute(ctx, call, opts, params.TxGas)
+			gasLimit := params.TxGas
+			if call.FeeCurrency != nil {
+				intrinsicGas, _ := common.CurrencyIntrinsicGasCost(feeCurrencyContext.IntrinsicGasCosts, call.FeeCurrency)
+				// if the feeCurrency is not supported, the returned intrinsicGas is 0, which will end up failing before the balance check
+				gasLimit += intrinsicGas
+			}
+			failed, _, err := execute(ctx, call, opts, gasLimit)
 			if !failed && err == nil {
-				return params.TxGas, nil, nil
+				return gasLimit, nil, nil
 			}
 		}
 	}
