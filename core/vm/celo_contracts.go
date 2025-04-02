@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	TransferPrecompileAddress = common.HexToAddress("0x00000000000000000000000000000000000000fd")
+	transferPrecompileAddress = common.HexToAddress("0x00000000000000000000000000000000000000fd")
 )
 
 type CeloPrecompiledContract interface {
