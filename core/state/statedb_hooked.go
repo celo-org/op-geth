@@ -269,18 +269,3 @@ func (s *hookedStateDB) Finalise(deleteEmptyObjects bool) {
 		}
 	}
 }
-
-func (s *hookedStateDB) Hooks() *tracing.Hooks {
-	return s.hooks
-}
-
-// SetHooks provides a way to dynamically modify the Hooks,
-// since Hooks must be disabled during calls to `CreditFees` and `DebitFees`
-// Ref: contracts/fee_currencies.go
-func (s *hookedStateDB) SetHooks(hooks *tracing.Hooks) {
-	if hooks != nil {
-		s.hooks = hooks
-	} else {
-		s.hooks = new(tracing.Hooks)
-	}
-}
