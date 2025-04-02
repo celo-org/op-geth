@@ -57,10 +57,12 @@ func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uin
 	// Celo specific: get balance of fee currency if fee currency is specified
 	feeCurrencyBalance := new(big.Int)
 	if call.FeeCurrency != nil {
-		feeCurrencyBalance = getFeeBalance(ctx, call, opts)
+		feeCurrencyBalance = getFeeBalance(call, opts)
 	}
 
 	feeCurrencyContext := core.GetFeeCurrencyContext(opts.Header, opts.Config, opts.State)
+	// currency intrinsic gas for celo = 0
+	extraIntrinsicGas, _ := common.CurrencyIntrinsicGasCost(feeCurrencyContext.IntrinsicGasCosts, call.FeeCurrency)
 
 	// Binary search the gas limit, as it may need to be higher than the amount used
 	var (
@@ -69,7 +71,7 @@ func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uin
 	)
 	// Determine the highest gas limit can be used during the estimation.
 	hi = opts.Header.GasLimit
-	if call.GasLimit >= params.TxGas {
+	if call.GasLimit >= (params.TxGas + extraIntrinsicGas) {
 		hi = call.GasLimit
 	}
 	// Normalize the max fee per gas the call is willing to spend.
@@ -151,9 +153,8 @@ func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uin
 		if call.To != nil && opts.State.GetCodeSize(*call.To) == 0 {
 			gasLimit := params.TxGas
 			if call.FeeCurrency != nil {
-				intrinsicGas, _ := common.CurrencyIntrinsicGasCost(feeCurrencyContext.IntrinsicGasCosts, call.FeeCurrency)
-				// if the feeCurrency is not supported, the returned intrinsicGas is 0, which will end up failing before the balance check
-				gasLimit += intrinsicGas
+				// if the feeCurrency is not supported, the returned extraIntrinsicGas is 0, which will end up failing before the balance check
+				gasLimit += extraIntrinsicGas
 			}
 			failed, _, err := execute(ctx, call, opts, gasLimit, feeCurrencyContext)
 			if !failed && err == nil {
@@ -295,7 +296,7 @@ func run(ctx context.Context, call *core.Message, opts *Options, feeCurrencyCont
 	return result, nil
 }
 
-func getFeeBalance(ctx context.Context, call *core.Message, opts *Options) *big.Int {
+func getFeeBalance(call *core.Message, opts *Options) *big.Int {
 	cb := &contracts.CeloBackend{
 		ChainConfig: opts.Config,
 		State:       opts.State,
