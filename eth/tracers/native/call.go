@@ -246,6 +246,10 @@ func (t *callTracer) OnLog(log *types.Log) {
 	if t.interrupt.Load() {
 		return
 	}
+	// Skip if callstack is empty
+	if len(t.callstack) == 0 {
+		return
+	}
 	l := callLog{
 		Address:  log.Address,
 		Topics:   log.Topics,
