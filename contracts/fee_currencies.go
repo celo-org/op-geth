@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/exchange"
 	"github.com/ethereum/go-ethereum/contracts/addresses"
 	"github.com/ethereum/go-ethereum/contracts/celo/abigen"
+	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/log"
@@ -20,6 +21,11 @@ import (
 var feeCurrencyABI *abi.ABI
 
 var ErrFeeCurrencyEVMCall = errors.New("fee-currency contract error during internal EVM call")
+
+type hookedStateDB interface {
+	Hooks() *tracing.Hooks
+	SetHooks(hooks *tracing.Hooks)
+}
 
 func init() {
 	var err error
@@ -41,15 +47,33 @@ func TryDebitFees(tx *types.Transaction, from common.Address, backend *CeloBacke
 	return err
 }
 
+// disableTracer is a helper function to disable EVM tracer and associated stateDB hooks temporarily.
+// It returns a function that restores the original configuration.
+func disableTracer(evm *vm.EVM) func() {
+	originalTracer := evm.Config.Tracer
+	evm.Config.Tracer = nil
+
+	var originalHooks *tracing.Hooks
+	hookedStateDB, isHookedStateDB := evm.StateDB.(hookedStateDB)
+	if isHookedStateDB {
+		originalHooks = hookedStateDB.Hooks()
+		hookedStateDB.SetHooks(nil)
+	}
+
+	return func() {
+		evm.Config.Tracer = originalTracer
+		if isHookedStateDB {
+			hookedStateDB.SetHooks(originalHooks)
+		}
+	}
+}
+
 // Debits transaction fees from the transaction sender and stores them in the temporary address
 func DebitFees(evm *vm.EVM, feeCurrency *common.Address, address common.Address, amount *big.Int) (uint64, error) {
 	// Hide this function from traces
 	if evm.Config.Tracer != nil && !evm.Config.Tracer.TraceDebitCredit {
-		origTracer := evm.Config.Tracer
-		defer func() {
-			evm.Config.Tracer = origTracer
-		}()
-		evm.Config.Tracer = nil
+		reenable := disableTracer(evm)
+		defer reenable()
 	}
 
 	if amount.Cmp(big.NewInt(0)) == 0 {
@@ -102,11 +126,8 @@ func CreditFees(
 ) error {
 	// Hide this function from traces
 	if evm.Config.Tracer != nil && !evm.Config.Tracer.TraceDebitCredit {
-		origTracer := evm.Config.Tracer
-		defer func() {
-			evm.Config.Tracer = origTracer
-		}()
-		evm.Config.Tracer = nil
+		reenable := disableTracer(evm)
+		defer reenable()
 	}
 
 	// Our old `creditGasFees` function does not accept an l1DataFee and
