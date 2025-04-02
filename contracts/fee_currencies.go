@@ -22,7 +22,7 @@ var feeCurrencyABI *abi.ABI
 
 var ErrFeeCurrencyEVMCall = errors.New("fee-currency contract error during internal EVM call")
 
-type HookedStateDB interface {
+type hookedStateDB interface {
 	Hooks() *tracing.Hooks
 	SetHooks(hooks *tracing.Hooks)
 }
@@ -55,7 +55,7 @@ func DebitFees(evm *vm.EVM, feeCurrency *common.Address, address common.Address,
 		evm.Config.Tracer = nil
 
 		var origHooks *tracing.Hooks
-		hookedStateDB, isHookedStateDB := evm.StateDB.(HookedStateDB)
+		hookedStateDB, isHookedStateDB := evm.StateDB.(hookedStateDB)
 		if isHookedStateDB {
 			origHooks = hookedStateDB.Hooks()
 			hookedStateDB.SetHooks(nil)
@@ -123,7 +123,7 @@ func CreditFees(
 		evm.Config.Tracer = nil
 
 		var origHooks *tracing.Hooks
-		hookedStateDB, isHookedStateDB := evm.StateDB.(HookedStateDB)
+		hookedStateDB, isHookedStateDB := evm.StateDB.(hookedStateDB)
 		if isHookedStateDB {
 			origHooks = hookedStateDB.Hooks()
 			hookedStateDB.SetHooks(nil)
