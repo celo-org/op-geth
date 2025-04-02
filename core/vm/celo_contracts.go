@@ -11,6 +11,10 @@ import (
 	"github.com/holiman/uint256"
 )
 
+var (
+	transferPrecompileAddress = common.HexToAddress("0x00000000000000000000000000000000000000fd")
+)
+
 type CeloPrecompiledContract interface {
 	RequiredGas(input []byte) uint64                              // RequiredGas calculates the contract gas use
 	Run(input []byte, ctx *celoPrecompileContext) ([]byte, error) // Run runs the precompiled contract
@@ -39,11 +43,6 @@ func NewContext(caller common.Address, evm *EVM) *celoPrecompileContext {
 		caller:       caller,
 		evm:          evm,
 	}
-}
-
-func celoPrecompileAddress(index byte) common.Address {
-	celoPrecompiledContractsAddressOffset := byte(0xff)
-	return common.BytesToAddress(append([]byte{0}, (celoPrecompiledContractsAddressOffset - index)))
 }
 
 func (ctx *celoPrecompileContext) IsCallerCeloToken() (bool, error) {
