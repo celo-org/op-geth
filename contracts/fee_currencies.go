@@ -47,26 +47,33 @@ func TryDebitFees(tx *types.Transaction, from common.Address, backend *CeloBacke
 	return err
 }
 
+// disableTracer is a helper function to disable EVM tracer and associated stateDB hooks temporarily.
+// It returns a function that restores the original configuration.
+func disableTracer(evm *vm.EVM) func() {
+	originalTracer := evm.Config.Tracer
+	evm.Config.Tracer = nil
+
+	var originalHooks *tracing.Hooks
+	hookedStateDB, isHookedStateDB := evm.StateDB.(hookedStateDB)
+	if isHookedStateDB {
+		originalHooks = hookedStateDB.Hooks()
+		hookedStateDB.SetHooks(nil)
+	}
+
+	return func() {
+		evm.Config.Tracer = originalTracer
+		if isHookedStateDB {
+			hookedStateDB.SetHooks(originalHooks)
+		}
+	}
+}
+
 // Debits transaction fees from the transaction sender and stores them in the temporary address
 func DebitFees(evm *vm.EVM, feeCurrency *common.Address, address common.Address, amount *big.Int) (uint64, error) {
 	// Hide this function from traces
 	if evm.Config.Tracer != nil && !evm.Config.Tracer.TraceDebitCredit {
-		origTracer := evm.Config.Tracer
-		evm.Config.Tracer = nil
-
-		var origHooks *tracing.Hooks
-		hookedStateDB, isHookedStateDB := evm.StateDB.(hookedStateDB)
-		if isHookedStateDB {
-			origHooks = hookedStateDB.Hooks()
-			hookedStateDB.SetHooks(nil)
-		}
-
-		defer func() {
-			evm.Config.Tracer = origTracer
-			if isHookedStateDB {
-				hookedStateDB.SetHooks(origHooks)
-			}
-		}()
+		reenable := disableTracer(evm)
+		defer reenable()
 	}
 
 	if amount.Cmp(big.NewInt(0)) == 0 {
@@ -119,22 +126,8 @@ func CreditFees(
 ) error {
 	// Hide this function from traces
 	if evm.Config.Tracer != nil && !evm.Config.Tracer.TraceDebitCredit {
-		origTracer := evm.Config.Tracer
-		evm.Config.Tracer = nil
-
-		var origHooks *tracing.Hooks
-		hookedStateDB, isHookedStateDB := evm.StateDB.(hookedStateDB)
-		if isHookedStateDB {
-			origHooks = hookedStateDB.Hooks()
-			hookedStateDB.SetHooks(nil)
-		}
-
-		defer func() {
-			evm.Config.Tracer = origTracer
-			if isHookedStateDB {
-				hookedStateDB.SetHooks(origHooks)
-			}
-		}()
+		reenable := disableTracer(evm)
+		defer reenable()
 	}
 
 	// Our old `creditGasFees` function does not accept an l1DataFee and
