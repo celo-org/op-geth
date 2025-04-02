@@ -22,6 +22,11 @@ jobs:
       workload-id-provider: projects/1094498259535/locations/global/workloadIdentityPools/gh-op-geth-release/providers/github-by-repos
       service-account: op-geth-release@blockchaintestsglobaltestnet.iam.gserviceaccount.com
       artifact-registry: us-west1-docker.pkg.dev/devopsre/celo-blockchain-public/op-geth
-      tags: ${{ (contains(github.event.release.tag_name, 'rc') || contains(github.event.release.tag_name, 'beta')) && github.event.release.tag_name || format('{0},stable,latest', github.event.release.tag_name) }}
+      tags: ${{(
+        contains(github.event.release.tag_name, 'rc') || 
+        contains(github.event.release.tag_name, 'beta') || 
+        contains(github.event.release.tag_name, 'alpha') 
+        && github.event.release.tag_name || format('{0},stable,latest', github.event.release.tag_name)
+        ) }}
       context: .
-      debug_enabled: false
+      trivy-enabled: false
