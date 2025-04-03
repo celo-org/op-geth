@@ -60,7 +60,7 @@ func NewMultiGasPool(
 }
 
 // PoolFor returns a configured pool for the given fee currency or the default
-// one otherwise
+// one otherwise, the returned boolean is true when a custom fee currency gas pool is returned.
 func (mgp MultiGasPool) PoolFor(feeCurrency *FeeCurrency) (*GasPool, bool) {
 	if feeCurrency == nil || mgp.pools[*feeCurrency] == nil {
 		return mgp.defaultPool, false
