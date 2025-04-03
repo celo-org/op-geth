@@ -424,7 +424,7 @@ func (miner *Miner) commitTransaction(env *environment, tx *types.Transaction) e
 				"fee-currency", tx.FeeCurrency(),
 				"error", err.Error(),
 			)
-			miner.blockFeeCurrency(env, *tx.FeeCurrency(), err)
+			miner.registerFeeCurrencyTxFailure(env, tx, err)
 		}
 		return err
 	}
@@ -834,14 +834,16 @@ func (miner *Miner) validateParams(genParams *generateParams) (time.Duration, er
 	return time.Duration(blockTime) * time.Second, nil
 }
 
-func (miner *Miner) blockFeeCurrency(env *environment, feeCurrency common.Address, err error) {
+func (miner *Miner) registerFeeCurrencyTxFailure(env *environment, tx *types.Transaction, err error) {
 	// the fee-currency is still in the allowlist of this environment,
 	// so set the fee-currency block gas limit to 0 to prevent other
 	// transactions.
-	pool := env.multiGasPool.PoolFor(&feeCurrency)
-	pool.SetGas(0)
+	if miner.feeCurrencyBlocklist.BlockingEnabled(*tx.FeeCurrency()) {
+		pool := env.multiGasPool.PoolFor(tx.FeeCurrency())
+		pool.SetGas(0)
+	}
 	// also add the fee-currency to a worker-wide blocklist,
 	// so that they are not allowlisted in the following blocks
 	// (only locally in the txpool, not consensus-critical)
-	miner.feeCurrencyBlocklist.Add(feeCurrency, *env.header)
+	miner.feeCurrencyBlocklist.Add(*tx.FeeCurrency(), *env.header)
 }

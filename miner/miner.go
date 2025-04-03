@@ -231,6 +231,39 @@ func (miner *Miner) getPending() *newPayloadResult {
 	return ret
 }
 
+// BlocklistFeeCurrencies returns the fee currencies in the blocklist mapped to
+// their expiry Unix timestamp. Note that the parameter 'includeDisabled'
+// determines if the map should contain fee currencies for which blocking has
+// been manually disabled.
+func (miner *Miner) BlocklistFeeCurrencies(includeDisabled bool) map[common.Address]uint64 {
+	return miner.feeCurrencyBlocklist.Blocklist(includeDisabled)
+}
+
+// DisableBlocklistFeeCurrencies disables blocking on the given currencies, for currencies that
+// are already disabled this is a no-op.
+func (miner *Miner) DisableBlocklistFeeCurrencies(currencies []common.Address) {
+	miner.feeCurrencyBlocklist.DisableBlocking(currencies)
+}
+
+// DisabledBlocklistFeeCurrencies returns the currencies for which blocking is currently
+// manually disabled.
+func (miner *Miner) DisabledBlocklistFeeCurrencies() []common.Address {
+	return miner.feeCurrencyBlocklist.DisabledCurencies()
+}
+
+// EnableBlocklistFeeCurrencies enables blocking on the given currencies, for currencies that
+// are already enabled this is a no-op.
+func (miner *Miner) EnableBlocklistFeeCurrencies(currencies []common.Address) {
+	miner.feeCurrencyBlocklist.EnableBlocking(currencies)
+}
+
+// UnblockFeeCurrency removes a fee currency from the fee currency blocklist,
+// if the currency was present true is returned.
+func (miner *Miner) UnblockFeeCurrency(address common.Address) bool {
+	removed := miner.feeCurrencyBlocklist.Remove(address)
+	return removed
+}
+
 func (miner *Miner) Close() {
 	miner.lifeCtxCancel()
 }
