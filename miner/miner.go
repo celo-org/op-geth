@@ -261,6 +261,9 @@ func (miner *Miner) EnableBlocklistFeeCurrencies(currencies []common.Address) {
 // if the currency was present true is returned.
 func (miner *Miner) UnblockFeeCurrency(address common.Address) bool {
 	removed := miner.feeCurrencyBlocklist.Remove(address)
+	if removed {
+		feeCurrenciesInBlocklistCounter.Dec(1)
+	}
 	return removed
 }
 

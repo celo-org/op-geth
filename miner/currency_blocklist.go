@@ -129,14 +129,16 @@ func (b *AddressBlocklist) Remove(currency common.Address) bool {
 	return ok
 }
 
-func (b *AddressBlocklist) Add(currency common.Address, head types.Header) {
+func (b *AddressBlocklist) Add(currency common.Address, head types.Header) bool {
 	b.mux.Lock()
 	defer b.mux.Unlock()
 
+	_, existed := b.currencies[currency]
 	if b.oldestHeader == nil || b.oldestHeader.Time > head.Time {
 		b.oldestHeader = &head
 	}
 	b.currencies[currency] = &head
+	return !existed
 }
 
 func (b *AddressBlocklist) Evict(latest *types.Header) []common.Address {
