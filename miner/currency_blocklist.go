@@ -29,7 +29,7 @@ func NewAddressBlocklist() *AddressBlocklist {
 	}
 }
 
-func (b *AddressBlocklist) FilterAllowlist(allowlist common.AddressSet, latest *types.Header) common.AddressSet {
+func (b *AddressBlocklist) FilterAllowlist(allowlist common.AddressSet, latest *types.Header) (common.AddressSet, bool) {
 	b.mux.RLock()
 	defer b.mux.RUnlock()
 
@@ -39,7 +39,7 @@ func (b *AddressBlocklist) FilterAllowlist(allowlist common.AddressSet, latest *
 			filtered[a] = struct{}{}
 		}
 	}
-	return filtered
+	return filtered, true
 }
 
 func (b *AddressBlocklist) IsBlocked(currency common.Address, latest *types.Header) bool {

@@ -36,11 +36,14 @@ func TestBlocklistEviction(t *testing.T) {
 	// latest header is after eviction time
 	assert.False(t, bl.IsBlocked(feeCurrency1, HeaderAfter(header, int64(EvictionTimeoutSeconds)+1)))
 
-	// check filter allowlist removes the currency from the allowlist
-	assert.Equal(t, len(bl.FilterAllowlist(
-		common.NewAddressSet(feeCurrency1),
-		HeaderAfter(header, int64(EvictionTimeoutSeconds)-1)),
-	), 0)
+	{
+		filteredAllowlist, filterEnabled := bl.FilterAllowlist(
+			common.NewAddressSet(feeCurrency1),
+			HeaderAfter(header, int64(EvictionTimeoutSeconds)-1))
+		// check filter allowlist removes the currency from the allowlist
+		assert.Equal(t, len(filteredAllowlist), 0)
+		assert.True(t, filterEnabled)
+	}
 
 	// permanently delete the currency from the blocklist
 	bl.Evict(HeaderAfter(header, int64(EvictionTimeoutSeconds)+1))
@@ -48,11 +51,15 @@ func TestBlocklistEviction(t *testing.T) {
 	// now the currency is removed from the cache, so the currency is not blocked even in earlier headers
 	assert.False(t, bl.IsBlocked(feeCurrency1, HeaderAfter(header, int64(EvictionTimeoutSeconds)-1)))
 
-	// check filter allowlist doesn't change the allowlist
-	assert.Equal(t, len(bl.FilterAllowlist(
-		common.NewAddressSet(feeCurrency1),
-		HeaderAfter(header, int64(EvictionTimeoutSeconds)-1)),
-	), 1)
+	{
+		// check filter allowlist doesn't change the allowlist
+		filteredAllowlist, filterEnabled := bl.FilterAllowlist(
+			common.NewAddressSet(feeCurrency1),
+			HeaderAfter(header, int64(EvictionTimeoutSeconds)-1))
+
+		assert.Equal(t, len(filteredAllowlist), 1)
+		assert.True(t, filterEnabled)
+	}
 }
 
 func TestBlocklistAddAfterEviction(t *testing.T) {
