@@ -10,10 +10,14 @@ set -xeo pipefail
 # 	$3: highGasOnCredit (bool)
 # 		if true, this will make the DebugFeeCurrenc.CreditFees() call use
 # 		a high amount of gas
+#   $4: intrinsicGas (num):
+# 		intrinsic gas set for the fee currency. If it's not set, it will
+# 		default to 60000.
 # returns:
 # 	deployed fee-currency address
 function deploy_fee_currency() {
 	(
+		DEFAULT_INTRINSIC_GAS=60000
 		local fee_currency=$(
 			forge create --root "$SCRIPT_DIR/debug-fee-currency" --contracts "$SCRIPT_DIR/debug-fee-currency" --private-key $ACC_PRIVKEY DebugFeeCurrency.sol:DebugFeeCurrency --constructor-args '100000000000000000000000000' $1 $2 $3 --json | jq .deployedTo -r
 		)
@@ -22,7 +26,7 @@ function deploy_fee_currency() {
 		fi
 		# this always resets the token address for the predeployed oracle3
 		cast send --private-key $ACC_PRIVKEY $ORACLE3 'setExchangeRate(address, uint256, uint256)' $fee_currency 2ether 1ether > /dev/null
-		cast send --private-key $ACC_PRIVKEY $FEE_CURRENCY_DIRECTORY_ADDR 'setCurrencyConfig(address, address, uint256)' $fee_currency $ORACLE3 60000 > /dev/null
+		cast send --private-key $ACC_PRIVKEY $FEE_CURRENCY_DIRECTORY_ADDR 'setCurrencyConfig(address, address, uint256)' $fee_currency $ORACLE3 ${4:-$DEFAULT_INTRINSIC_GAS} > /dev/null
 		echo "$fee_currency"
 	)
 }
