@@ -16,7 +16,7 @@ const devChain = defineChain({
 	name: "local dev chain",
 	rpcUrls: {
 		default: {
-			http: [process.env.ETH_RPC_URL],
+			webSocket: [process.env.ETH_RPC_URL],
 		},
 	},
 });
@@ -27,7 +27,7 @@ const celoBaklava = defineChain({
 	name: "baklava",
 	rpcUrls: {
 		default: {
-			http: [process.env.ETH_RPC_URL],
+			webSocket: [process.env.ETH_RPC_URL],
 		},
 	},
 });
@@ -36,7 +36,7 @@ const celoMainnet = defineChain({
 	...celo,
 	rpcUrls: {
 		default: {
-			http: [process.env.ETH_RPC_URL],
+			webSocket: [process.env.ETH_RPC_URL],
 		},
 	},
 });
