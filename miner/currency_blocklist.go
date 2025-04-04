@@ -93,9 +93,8 @@ func (b *AddressBlocklist) BlockingEnabled(currency common.Address) bool {
 }
 
 // FilterAllowlist returns allowlist with any blocked and not disabled
-// currencies removed. It accepts the latest header so that it may update the
-// blocklist by evicting any blocked fee currencies that have exceeded their
-// timeout before it proceeds to filter the allowlist.
+// currencies removed. It accepts the latest header so that it may provide a
+// view of the blocklist consistent with that header.
 func (b *AddressBlocklist) FilterAllowlist(allowlist common.AddressSet, latest *types.Header) common.AddressSet {
 	b.mux.RLock()
 	defer b.mux.RUnlock()
