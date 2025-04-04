@@ -10,7 +10,7 @@ set -xeo pipefail
 # 	$3: highGasOnCredit (bool)
 # 		if true, this will make the DebugFeeCurrenc.CreditFees() call use
 # 		a high amount of gas
-#   $4: intrinsicGas (num):
+# 	$4: intrinsicGas (num):
 # 		intrinsic gas set for the fee currency. If it's not set, it will
 # 		default to 60000.
 # returns:
@@ -82,9 +82,9 @@ function assert_cip_64_tx() {
 }
 
 # args:
-#   $1: value (num):
+# 	$1: value (num):
 #     value to send in the transaction
-#   $2: feeCurrencyAddress (string):
+# 	$2: feeCurrencyAddress (string):
 #     which fee-currency address to use for the default CIP-64 transaction
 function estimate_tx() {
 	$SCRIPT_DIR/js-tests/estimate_tx.mjs "$(cast chain-id)" $1 $2
