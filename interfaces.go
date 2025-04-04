@@ -176,6 +176,9 @@ type CallMsg struct {
 
 	// For SetCodeTxType
 	AuthorizationList []types.SetCodeAuthorization
+
+	// For CeloDynamicFeeTxType
+	FeeCurrency *common.Address
 }
 
 // A ContractCaller provides contract calls, essentially transactions that are executed by
