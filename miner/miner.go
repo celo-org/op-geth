@@ -248,7 +248,7 @@ func (miner *Miner) DisableBlocklistFeeCurrencies(currencies []common.Address) {
 // DisabledBlocklistFeeCurrencies returns the currencies for which blocking is currently
 // manually disabled.
 func (miner *Miner) DisabledBlocklistFeeCurrencies() []common.Address {
-	return miner.feeCurrencyBlocklist.DisabledCurencies()
+	return miner.feeCurrencyBlocklist.DisabledCurrencies()
 }
 
 // EnableBlocklistFeeCurrencies enables blocking on the given currencies, for currencies that
