@@ -795,6 +795,9 @@ func toCallArg(msg ethereum.CallMsg) interface{} {
 	if msg.AuthorizationList != nil {
 		arg["authorizationList"] = msg.AuthorizationList
 	}
+	if msg.FeeCurrency != nil {
+		arg["feeCurrency"] = msg.FeeCurrency
+	}
 	return arg
 }
 
