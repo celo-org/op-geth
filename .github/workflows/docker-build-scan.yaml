@@ -1,6 +1,10 @@
 name: Docker Build Push
 on:
   push:
+    branches:
+      - '**'
+    tags:
+      - '!**'
   workflow_dispatch:
 
 concurrency:

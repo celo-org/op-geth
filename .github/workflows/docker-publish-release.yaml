@@ -6,7 +6,22 @@ on:
     types: [published]  # Trigger the workflow only when a release is published
 
 jobs:
+  Set-Tags:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set tags
+        id: set_tags
+        run: |
+          if [[ "${{ github.event.release.tag_name }}" == *"rc"* || "${{ github.event.release.tag_name }}" == *"beta"* || "${{ github.event.release.tag_name }}" == *"alpha"* ]]; then
+            echo "::set-output name=tags::${{ github.event.release.tag_name }}"
+          else
+            echo "::set-output name=tags::${{ github.event.release.tag_name }},stable,latest"
+          fi
+    outputs:
+      tags: ${{ steps.set_tags.outputs.tags }}
+
   Build-Container-Release:
+    needs: Set-Tags
     permissions:
       contents: write
       actions: read
@@ -22,11 +37,7 @@ jobs:
       workload-id-provider: projects/1094498259535/locations/global/workloadIdentityPools/gh-op-geth-release/providers/github-by-repos
       service-account: op-geth-release@blockchaintestsglobaltestnet.iam.gserviceaccount.com
       artifact-registry: us-west1-docker.pkg.dev/devopsre/celo-blockchain-public/op-geth
-      tags: ${{(
-        contains(github.event.release.tag_name, 'rc') || 
-        contains(github.event.release.tag_name, 'beta') || 
-        contains(github.event.release.tag_name, 'alpha') 
-        && github.event.release.tag_name || format('{0},stable,latest', github.event.release.tag_name)
-        ) }}
+      platforms: linux/amd64,linux/arm64
+      tags: ${{ needs.set-tags.outputs.tags }}
       context: .
       trivy-enabled: false
