@@ -280,30 +280,6 @@ func TestNewRPCTransactionDynamicFee(t *testing.T) {
 			rpcTx := newRPCTransaction(signed, blockhash, blockNumber, blockTime, transactionIndex, baseFee, config, nil)
 			checkTxFields(t, signed, rpcTx, s, blockhash, blockNumber, transactionIndex, overrides)
 		})
-
-		// TODO unskip this when cip 66 txs are enabled currently they are not supporeted in the celo signer.
-		t.Run("CeloDenominatedTx", func(t *testing.T) {
-			t.Skip("CeloDenominatedTx is currently not supported in the celo signer")
-			tx := types.NewTx(&types.CeloDenominatedTx{
-				ChainID:             config.ChainID,
-				Nonce:               nonce,
-				Gas:                 gasLimit,
-				GasFeeCap:           feeCap,
-				GasTipCap:           tipCap,
-				FeeCurrency:         &feeCurrency,
-				MaxFeeInFeeCurrency: big.NewInt(100000),
-
-				To:    &to,
-				Value: value,
-				Data:  []byte{},
-			})
-
-			signed, err := types.SignTx(tx, s, key)
-			require.NoError(t, err)
-
-			rpcTx := newRPCTransaction(signed, blockhash, blockNumber, blockTime, transactionIndex, baseFee, config, nil)
-			checkTxFields(t, signed, rpcTx, s, blockhash, blockNumber, transactionIndex, overrides)
-		})
 	})
 
 	t.Run("PostGingerbreadPreCel2MinedDynamicTxsWithNonNativeFeeCurrency", func(t *testing.T) {
@@ -475,7 +451,7 @@ func checkTxFields(
 		assert.Equal(t, (*hexutil.Big)(tx.GasPrice()), rpcTx.GasPrice)
 	}
 	switch tx.Type() {
-	case types.DynamicFeeTxType, types.CeloDynamicFeeTxType, types.CeloDynamicFeeTxV2Type, types.CeloDenominatedTxType:
+	case types.DynamicFeeTxType, types.CeloDynamicFeeTxType, types.CeloDynamicFeeTxV2Type:
 		assert.Equal(t, (*hexutil.Big)(tx.GasFeeCap()), rpcTx.GasFeeCap)
 		assert.Equal(t, (*hexutil.Big)(tx.GasTipCap()), rpcTx.GasTipCap)
 	default:
@@ -490,7 +466,7 @@ func checkTxFields(
 	assert.Equal(t, (*hexutil.Big)(tx.Value()), rpcTx.Value)
 	assert.Equal(t, hexutil.Uint64(tx.Type()), rpcTx.Type)
 	switch tx.Type() {
-	case types.AccessListTxType, types.DynamicFeeTxType, types.CeloDynamicFeeTxType, types.CeloDynamicFeeTxV2Type, types.CeloDenominatedTxType, types.BlobTxType:
+	case types.AccessListTxType, types.DynamicFeeTxType, types.CeloDynamicFeeTxType, types.CeloDynamicFeeTxV2Type, types.BlobTxType:
 		assert.Equal(t, tx.AccessList(), *rpcTx.Accesses)
 	default:
 		assert.Nil(t, rpcTx.Accesses)
@@ -505,7 +481,7 @@ func checkTxFields(
 	assert.Equal(t, (*hexutil.Big)(s), rpcTx.S)
 
 	switch tx.Type() {
-	case types.AccessListTxType, types.DynamicFeeTxType, types.CeloDynamicFeeTxType, types.CeloDynamicFeeTxV2Type, types.CeloDenominatedTxType, types.BlobTxType:
+	case types.AccessListTxType, types.DynamicFeeTxType, types.CeloDynamicFeeTxType, types.CeloDynamicFeeTxV2Type, types.BlobTxType:
 		yparity := (hexutil.Uint64)(v.Sign())
 		assert.Equal(t, &yparity, rpcTx.YParity)
 	default:
@@ -528,7 +504,6 @@ func checkTxFields(
 
 	// celo fields
 	assert.Equal(t, tx.FeeCurrency(), rpcTx.FeeCurrency)
-	assert.Equal(t, (*hexutil.Big)(tx.MaxFeeInFeeCurrency()), rpcTx.MaxFeeInFeeCurrency)
 	if tx.Type() == types.LegacyTxType && tx.IsCeloLegacy() {
 		assert.Equal(t, false, *rpcTx.EthCompatible)
 	} else {

@@ -111,10 +111,6 @@ func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uin
 			}
 		}
 
-		// cap the available by the maxFeeInFeeCurrency
-		if call.MaxFeeInFeeCurrency != nil && available.Cmp(call.MaxFeeInFeeCurrency) > 0 {
-			available = call.MaxFeeInFeeCurrency
-		}
 		if opts.Config.IsCancun(opts.Header.Number, opts.Header.Time) && len(call.BlobHashes) > 0 {
 			blobGasPerBlob := new(big.Int).SetInt64(params.BlobTxBlobGasPerBlob)
 			blobBalanceUsage := new(big.Int).SetInt64(int64(len(call.BlobHashes)))
@@ -135,7 +131,7 @@ func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uin
 			}
 			log.Debug("Gas estimation capped by limited funds", "original", hi, "celo balance", celoBalance,
 				"feeCurrency balance", feeCurrencyBalance, "sent", transfer, "maxFeePerGas", feeCap, "fundable", allowance,
-				"feeCurrency", call.FeeCurrency, "maxFeeInFeeCurrency", call.MaxFeeInFeeCurrency,
+				"feeCurrency", call.FeeCurrency,
 			)
 			hi = allowance.Uint64()
 		}

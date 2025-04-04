@@ -271,21 +271,6 @@ func TestSetFeeDefaults(t *testing.T) {
 			&TransactionArgs{MaxFeePerGas: doubleMaxFee, MaxPriorityFeePerGas: eightyfour, FeeCurrency: &feeCurrency},
 			nil,
 		},
-		// CIP-66
-		{
-			"CIP-66 transaction, maxPriorityFeePerGas gets set in non-converted value",
-			"cancun",
-			&TransactionArgs{MaxFeePerGas: maxFee, MaxFeeInFeeCurrency: fortytwo, FeeCurrency: &feeCurrency},
-			&TransactionArgs{MaxFeePerGas: maxFee, MaxPriorityFeePerGas: fortytwo, MaxFeeInFeeCurrency: fortytwo, FeeCurrency: &feeCurrency},
-			nil,
-		},
-		{
-			"set maxFeeInFeeCurrency without feeCurrency",
-			"cancun",
-			&TransactionArgs{MaxFeePerGas: maxFee, MaxPriorityFeePerGas: fortytwo, MaxFeeInFeeCurrency: fortytwo},
-			nil,
-			errors.New("feeCurrency must be set when maxFeeInFeeCurrency is given"),
-		},
 	}
 
 	ctx := context.Background()

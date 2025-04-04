@@ -79,11 +79,8 @@ type TransactionArgs struct {
 	// This configures whether blobs are allowed to be passed.
 	blobSidecarAllowed bool
 
-	// Celo specific
-	// CIP-64, CIP-66
+	// Celo specific, see CIP-64
 	FeeCurrency *common.Address `json:"feeCurrency,omitempty"`
-	// CIP-66
-	MaxFeeInFeeCurrency *hexutil.Big `json:"maxFeeInFeeCurrency,omitempty"`
 }
 
 // from retrieves the transaction sender address.
@@ -169,8 +166,7 @@ func (args *TransactionArgs) setDefaults(ctx context.Context, b CeloBackend, ski
 				BlobFeeCap:           args.BlobFeeCap,
 				BlobHashes:           args.BlobHashes,
 
-				FeeCurrency:         args.FeeCurrency,
-				MaxFeeInFeeCurrency: args.MaxFeeInFeeCurrency,
+				FeeCurrency: args.FeeCurrency,
 			}
 			latestBlockNr := rpc.BlockNumberOrHashWithNumber(rpc.LatestBlockNumber)
 			estimated, err := DoEstimateGas(ctx, b, callArgs, latestBlockNr, nil, nil, b.RPCGasCap())
@@ -212,9 +208,6 @@ func (args *TransactionArgs) setFeeDefaults(ctx context.Context, b CeloBackend, 
 	// for more information.
 	eip1559ParamsSet := args.MaxFeePerGas != nil && args.MaxPriorityFeePerGas != nil
 
-	if args.MaxFeeInFeeCurrency != nil && args.FeeCurrency == nil {
-		return errors.New("feeCurrency must be set when maxFeeInFeeCurrency is given")
-	}
 	// Sanity check the EIP-1559 fee parameters if present.
 	if args.GasPrice == nil && eip1559ParamsSet {
 		if args.MaxFeePerGas.ToInt().Sign() == 0 {
@@ -466,9 +459,6 @@ func (args *TransactionArgs) ToMessage(baseFee *big.Int, skipNonceCheck, skipEoA
 		gasPrice  *big.Int
 		gasFeeCap *big.Int
 		gasTipCap *big.Int
-
-		// Celo specific
-		maxFeeInFeeCurrency *big.Int
 	)
 	if baseFee == nil {
 		gasPrice = args.GasPrice.ToInt()
@@ -505,9 +495,6 @@ func (args *TransactionArgs) ToMessage(baseFee *big.Int, skipNonceCheck, skipEoA
 	if args.AccessList != nil {
 		accessList = *args.AccessList
 	}
-	if args.MaxFeeInFeeCurrency != nil {
-		maxFeeInFeeCurrency = args.MaxFeeInFeeCurrency.ToInt()
-	}
 	return &core.Message{
 		From:                  args.from(),
 		To:                    args.To,
@@ -525,9 +512,6 @@ func (args *TransactionArgs) ToMessage(baseFee *big.Int, skipNonceCheck, skipEoA
 		SkipNonceChecks:       skipNonceCheck,
 		SkipFromEOACheck:      skipEoACheck,
 		FeeCurrency:           args.FeeCurrency,
-
-		// Celo specific:,
-		MaxFeeInFeeCurrency: maxFeeInFeeCurrency,
 	}
 }
 
@@ -618,20 +602,6 @@ func (args *TransactionArgs) ToTransaction(defaultType int) *types.Transaction {
 					AccessList:  al,
 					FeeCurrency: args.FeeCurrency,
 				}
-			} else {
-				data = &types.CeloDenominatedTx{
-					To:                  args.To,
-					ChainID:             (*big.Int)(args.ChainID),
-					Nonce:               uint64(*args.Nonce),
-					Gas:                 uint64(*args.Gas),
-					GasFeeCap:           (*big.Int)(args.MaxFeePerGas),
-					GasTipCap:           (*big.Int)(args.MaxPriorityFeePerGas),
-					Value:               (*big.Int)(args.Value),
-					Data:                args.data(),
-					AccessList:          al,
-					FeeCurrency:         args.FeeCurrency,
-					MaxFeeInFeeCurrency: (*big.Int)(args.MaxFeeInFeeCurrency),
-				}
 			}
 		} else {
 			data = &types.DynamicFeeTx{
@@ -681,5 +651,5 @@ func (args *TransactionArgs) IsEIP4844() bool {
 // fields are denominated in a given fee currency or in the native token.
 // This effectively is only true for CIP-64 transactions.
 func (args *TransactionArgs) IsFeeCurrencyDenominated() bool {
-	return args.FeeCurrency != nil && args.MaxFeeInFeeCurrency == nil
+	return args.FeeCurrency != nil
 }
