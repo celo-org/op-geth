@@ -35,7 +35,7 @@ func NewAddressBlocklist() *AddressBlocklist {
 	return bl
 }
 
-// BlocklistFeeCurrencies returns the current blocklist, a set of fee currency
+// Blocklist returns the current blocklist, a set of fee currency
 // addresses mapped to their expiry Unix timestamp. Note that the parameter
 // 'includeDisabled' determines if the map should contain fee currencies for
 // which blocking has been manually disabled.
