@@ -63,7 +63,7 @@ const transportForNetwork = (() => {
 		case 'alfajores':
 		case 'baklava':
 		case 'mainnet':
-			return http()
+			return webSocket()
 		default:
 			return http()
 	};
