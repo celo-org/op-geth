@@ -71,7 +71,7 @@ func (b *AddressBlocklist) DisableBlocking(currencies []common.Address) {
 
 // DisabledCurrencies returns the currencies for which blocking is currently
 // manually disabled.
-func (b *AddressBlocklist) DisabledCurencies() []common.Address {
+func (b *AddressBlocklist) DisabledCurrencies() []common.Address {
 	b.mux.RLock()
 	defer b.mux.RUnlock()
 	result := make([]common.Address, 0, len(b.disabledCurrencies))
