@@ -49,9 +49,9 @@ func (b *AddressBlocklist) Blocklist(includeDisabled bool) map[common.Address]ui
 	return result
 }
 
-// EnableBlocking enables blocking on the given currencies, for currencies that
-// are already enabled this is a no-op.
-func (b *AddressBlocklist) EnableBlocking(currencies []common.Address) {
+// DisableBlocking disables blocking on the given currencies, for currencies that
+// are already disabled this is a no-op.
+func (b *AddressBlocklist) DisableBlocking(currencies []common.Address) {
 	b.mux.Lock()
 	defer b.mux.Unlock()
 	for _, currency := range currencies {
@@ -59,9 +59,9 @@ func (b *AddressBlocklist) EnableBlocking(currencies []common.Address) {
 	}
 }
 
-// DisableBlocking disables blocking on the given currencies, for currencies that
-// are already disabled this is a no-op.
-func (b *AddressBlocklist) DisableBlocking(currencies []common.Address) {
+// EnableBlocking enables blocking on the given currencies, for currencies that
+// are already enabled this is a no-op.
+func (b *AddressBlocklist) EnableBlocking(currencies []common.Address) {
 	b.mux.Lock()
 	defer b.mux.Unlock()
 	for _, currency := range currencies {
