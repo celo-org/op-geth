@@ -25,6 +25,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/exchange"
+	"github.com/ethereum/go-ethereum/contracts"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -52,7 +53,17 @@ type Options struct {
 // Estimate returns the lowest possible gas limit that allows the transaction to
 // run successfully with the provided context options. It returns an error if the
 // transaction would always revert, or if there are unexpected failures.
-func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uint64, exchangeRates common.ExchangeRates, feeCurrencyBalance *big.Int) (uint64, []byte, error) {
+func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uint64) (uint64, []byte, error) {
+	// Celo specific: get balance of fee currency if fee currency is specified
+	feeCurrencyBalance := new(big.Int)
+	if call.FeeCurrency != nil {
+		feeCurrencyBalance = getFeeBalance(call, opts)
+	}
+
+	feeCurrencyContext := core.GetFeeCurrencyContext(opts.Header, opts.Config, opts.State)
+	// currency intrinsic gas for celo = 0
+	extraIntrinsicGas, _ := common.CurrencyIntrinsicGasCost(feeCurrencyContext.IntrinsicGasCosts, call.FeeCurrency)
+
 	// Binary search the gas limit, as it may need to be higher than the amount used
 	var (
 		lo uint64 // lowest-known gas limit where tx execution fails
@@ -60,7 +71,7 @@ func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uin
 	)
 	// Determine the highest gas limit can be used during the estimation.
 	hi = opts.Header.GasLimit
-	if call.GasLimit >= params.TxGas {
+	if call.GasLimit >= (params.TxGas + extraIntrinsicGas) {
 		hi = call.GasLimit
 	}
 	// Normalize the max fee per gas the call is willing to spend.
@@ -81,7 +92,7 @@ func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uin
 				// CIP-66, prices are given in native token.
 				// We need to check the allowance in the converted feeCurrency
 				var err error
-				feeCap, err = exchange.ConvertCeloToCurrency(exchangeRates, call.FeeCurrency, feeCap)
+				feeCap, err = exchange.ConvertCeloToCurrency(feeCurrencyContext.ExchangeRates, call.FeeCurrency, feeCap)
 				if err != nil {
 					return 0, nil, err
 				}
@@ -140,15 +151,20 @@ func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uin
 	// unused access list items). Ever so slightly wasteful, but safer overall.
 	if len(call.Data) == 0 {
 		if call.To != nil && opts.State.GetCodeSize(*call.To) == 0 {
-			failed, _, err := execute(ctx, call, opts, params.TxGas)
+			gasLimit := params.TxGas
+			if call.FeeCurrency != nil {
+				// if the feeCurrency is not supported, the returned extraIntrinsicGas is 0, which will end up failing before the balance check
+				gasLimit += extraIntrinsicGas
+			}
+			failed, _, err := execute(ctx, call, opts, gasLimit, feeCurrencyContext)
 			if !failed && err == nil {
-				return params.TxGas, nil, nil
+				return gasLimit, nil, nil
 			}
 		}
 	}
 	// We first execute the transaction at the highest allowable gas limit, since if this fails we
 	// can return error immediately.
-	failed, result, err := execute(ctx, call, opts, hi)
+	failed, result, err := execute(ctx, call, opts, hi, feeCurrencyContext)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -170,7 +186,7 @@ func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uin
 	// check that gas amount and use as a limit for the binary search.
 	optimisticGasLimit := (result.UsedGas + result.RefundedGas + params.CallStipend) * 64 / 63
 	if optimisticGasLimit < hi {
-		failed, _, err = execute(ctx, call, opts, optimisticGasLimit)
+		failed, _, err = execute(ctx, call, opts, optimisticGasLimit, feeCurrencyContext)
 		if err != nil {
 			// This should not happen under normal conditions since if we make it this far the
 			// transaction had run without error at least once before.
@@ -201,7 +217,7 @@ func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uin
 			// range here is skewed to favor the low side.
 			mid = lo * 2
 		}
-		failed, _, err = execute(ctx, call, opts, mid)
+		failed, _, err = execute(ctx, call, opts, mid, feeCurrencyContext)
 		if err != nil {
 			// This should not happen under normal conditions since if we make it this far the
 			// transaction had run without error at least once before.
@@ -221,14 +237,14 @@ func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uin
 // returns true if the transaction fails for a reason that might be related to
 // not enough gas. A non-nil error means execution failed due to reasons unrelated
 // to the gas limit.
-func execute(ctx context.Context, call *core.Message, opts *Options, gasLimit uint64) (bool, *core.ExecutionResult, error) {
+func execute(ctx context.Context, call *core.Message, opts *Options, gasLimit uint64, feeCurrencyContext *common.FeeCurrencyContext) (bool, *core.ExecutionResult, error) {
 	// Configure the call for this specific execution (and revert the change after)
 	defer func(gas uint64) { call.GasLimit = gas }(call.GasLimit)
 	call.GasLimit = gasLimit
 
 	// Execute the call and separate execution faults caused by a lack of gas or
 	// other non-fixable conditions
-	result, err := run(ctx, call, opts)
+	result, err := run(ctx, call, opts, feeCurrencyContext)
 	if err != nil {
 		if errors.Is(err, core.ErrIntrinsicGas) {
 			return true, nil, nil // Special case, raise gas limit
@@ -240,12 +256,11 @@ func execute(ctx context.Context, call *core.Message, opts *Options, gasLimit ui
 
 // run assembles the EVM as defined by the consensus rules and runs the requested
 // call invocation.
-func run(ctx context.Context, call *core.Message, opts *Options) (*core.ExecutionResult, error) {
+func run(ctx context.Context, call *core.Message, opts *Options, feeCurrencyContext *common.FeeCurrencyContext) (*core.ExecutionResult, error) {
 	// Assemble the call and the call context
 	var (
-		feeCurrencyContext = core.GetFeeCurrencyContext(opts.Header, opts.Config, opts.State)
-		evmContext         = core.NewEVMBlockContext(opts.Header, opts.Chain, nil, opts.Config, opts.State, feeCurrencyContext)
-		dirtyState         = opts.State.Copy()
+		evmContext = core.NewEVMBlockContext(opts.Header, opts.Chain, nil, opts.Config, opts.State, feeCurrencyContext)
+		dirtyState = opts.State.Copy()
 	)
 	if opts.BlockOverrides != nil {
 		opts.BlockOverrides.Apply(&evmContext)
@@ -279,4 +294,12 @@ func run(ctx context.Context, call *core.Message, opts *Options) (*core.Executio
 		return result, fmt.Errorf("failed with %d gas: %w", call.GasLimit, err)
 	}
 	return result, nil
+}
+
+func getFeeBalance(call *core.Message, opts *Options) *big.Int {
+	cb := &contracts.CeloBackend{
+		ChainConfig: opts.Config,
+		State:       opts.State,
+	}
+	return contracts.GetFeeBalance(cb, call.From, call.FeeCurrency)
 }
