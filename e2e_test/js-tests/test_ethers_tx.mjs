@@ -2,7 +2,12 @@ import { assert } from "chai";
 import "mocha";
 import { ethers } from "ethers";
 
-const provider = new ethers.JsonRpcProvider(process.env.ETH_RPC_URL);
+let provider
+if (process.env.ETH_RPC_URL.startsWith("ws")) {
+	provider = new ethers.WebSocketProvider(process.env.ETH_RPC_URL);
+} else {
+	provider = new ethers.JsonRpcProvider(process.env.ETH_RPC_URL);
+}
 const signer = new ethers.Wallet(process.env.ACC_PRIVKEY, provider);
 
 describe("ethers.js send tx", () => {
@@ -49,4 +54,11 @@ describe("ethers.js compatibility tests with state", () => {
 		]);
 		assert.isTrue(fullBlock.hasOwnProperty("baseFeePerGas"));
 	});
+});
+
+// Close the WebSocket connection after all tests
+after(async () => {
+	if (provider instanceof ethers.WebSocketProvider) {
+			await provider.destroy(); // Close the WebSocket connection
+	}
 });
