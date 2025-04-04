@@ -103,7 +103,7 @@ func (b *AddressBlocklist) FilterAllowlist(allowlist common.AddressSet, latest *
 	filtered := common.AddressSet{}
 	for a := range allowlist {
 		_, disabled := b.disabledCurrencies[a]
-		if !b.isBlocked(a, latest) && !disabled {
+		if !b.isBlocked(a, latest) || disabled {
 			filtered[a] = struct{}{}
 		}
 	}
