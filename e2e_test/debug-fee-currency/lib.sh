@@ -83,9 +83,9 @@ function assert_cip_64_tx() {
 
 # args:
 # 	$1: value (num):
-#     value to send in the transaction
+# 		value to send in the transaction
 # 	$2: feeCurrencyAddress (string):
-#     which fee-currency address to use for the default CIP-64 transaction
+# 		which fee-currency address to use for the default CIP-64 transaction
 function estimate_tx() {
 	$SCRIPT_DIR/js-tests/estimate_tx.mjs "$(cast chain-id)" $1 $2
 }
