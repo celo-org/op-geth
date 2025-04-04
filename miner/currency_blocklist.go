@@ -44,6 +44,9 @@ func (b *AddressBlocklist) Blocklist(includeDisabled bool) map[common.Address]ui
 	defer b.mux.RUnlock()
 	result := make(map[common.Address]uint64, len(b.currencies))
 	for currency, addedHeader := range b.currencies {
+		if _, disabled := b.disabledCurrencies[currency]; disabled && !includeDisabled {
+			continue
+		}
 		result[currency] = addedHeader.Time + b.headerEvictionTimeoutSeconds
 	}
 	return result
