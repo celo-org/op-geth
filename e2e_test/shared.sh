@@ -10,7 +10,7 @@ case $NETWORK in
     #      cast call 0x000000000000000000000000000000000000ce10 "getAddressForStringOrDie(string calldata identifier) returns (address)" $contract
     #  end
     mainnet)
-      export ETH_RPC_URL=https://forno.celo.org
+      export ETH_RPC_URL=wss://forno.celo.org/ws
       export TOKEN_ADDR=0x471EcE3750Da237f93B8E339c536989b8978a438
       export FEE_HANDLER=0xcD437749E43A154C07F3553504c68fBfD56B8778
       export FEE_CURRENCY=0xD8763CBa276a3738E6DE85b4b3bF5FDed6D6cA73
@@ -18,7 +18,7 @@ case $NETWORK in
       echo "Using mainnet network"
         ;;
     alfajores)
-      export ETH_RPC_URL=https://alfajores-forno.celo-testnet.org
+      export ETH_RPC_URL=wss://alfajores-forno.celo-testnet.org/ws
       export TOKEN_ADDR=0xF194afDf50B03e69Bd7D057c1Aa9e10c9954E4C9
       export FEE_HANDLER=0xEAaFf71AB67B5d0eF34ba62Ea06Ac3d3E2dAAA38
       export FEE_CURRENCY=0x4822e58de6f5e485eF90df51C41CE01721331dC0
@@ -26,7 +26,7 @@ case $NETWORK in
       echo "Using Alfajores network"
         ;;
     baklava)
-      export ETH_RPC_URL=https://baklava-forno.celo-testnet.org
+      export ETH_RPC_URL=wss://baklava-forno.celo-testnet.org/ws
       export TOKEN_ADDR=0xdDc9bE57f553fe75752D61606B94CBD7e0264eF8
       export FEE_HANDLER=0xeed0A69c51079114C280f7b936C79e24bD94013e
       export FEE_CURRENCY=0x62492A644A588FD904270BeD06ad52B9abfEA1aE
