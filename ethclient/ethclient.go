@@ -717,6 +717,9 @@ func toCallArg(msg ethereum.CallMsg) interface{} {
 	if msg.BlobHashes != nil {
 		arg["blobVersionedHashes"] = msg.BlobHashes
 	}
+	if msg.FeeCurrency != nil {
+		arg["feeCurrency"] = msg.FeeCurrency
+	}
 	return arg
 }
 
