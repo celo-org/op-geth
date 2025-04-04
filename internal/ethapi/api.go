@@ -963,17 +963,8 @@ func DoEstimateGas(ctx context.Context, b CeloBackend, args TransactionArgs, blo
 
 	call := args.ToMessage(header.BaseFee, true, true, exchangeRates)
 
-	// Celo specific: get balance of fee currency if fee currency is specified
-	feeCurrencyBalance := new(big.Int)
-	if args.FeeCurrency != nil {
-		feeCurrencyBalance, err = b.GetFeeBalance(ctx, blockNrOrHash, call.From, args.FeeCurrency)
-		if err != nil {
-			return 0, err
-		}
-	}
-
 	// Run the gas estimation and wrap any revertals into a custom return
-	estimate, revert, err := gasestimator.Estimate(ctx, call, opts, gasCap, exchangeRates, feeCurrencyBalance)
+	estimate, revert, err := gasestimator.Estimate(ctx, call, opts, gasCap)
 	if err != nil {
 		if len(revert) > 0 {
 			return 0, newRevertError(revert)
