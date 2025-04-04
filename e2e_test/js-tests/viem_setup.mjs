@@ -4,6 +4,7 @@ import {
 	createPublicClient,
 	createWalletClient,
 	http,
+	webSocket,
 	defineChain,
 } from "viem";
 import { celo, celoAlfajores } from "viem/chains";
@@ -17,6 +18,7 @@ const devChain = defineChain({
 	rpcUrls: {
 		default: {
 			http: [process.env.ETH_RPC_URL],
+			webSocket: [process.env.ETH_RPC_URL],
 		},
 	},
 });
@@ -28,6 +30,7 @@ const celoBaklava = defineChain({
 	rpcUrls: {
 		default: {
 			http: [process.env.ETH_RPC_URL],
+			webSocket: [process.env.ETH_RPC_URL],
 		},
 	},
 });
@@ -37,6 +40,7 @@ const celoMainnet = defineChain({
 	rpcUrls: {
 		default: {
 			http: [process.env.ETH_RPC_URL],
+			webSocket: [process.env.ETH_RPC_URL],
 		},
 	},
 });
@@ -54,14 +58,25 @@ const chain = (() => {
 	};
 })();
 
+const transportForNetwork = (() => {
+	switch (process.env.NETWORK) {
+		case 'alfajores':
+		case 'baklava':
+		case 'mainnet':
+			return webSocket(process.env.ETH_RPC_URL);
+		default:
+			return http(process.env.ETH_RPC_URL);
+	};
+})
+
 // Set up clients/wallet
 export const publicClient = createPublicClient({
 	chain: chain,
-	transport: http(),
+	transport: transportForNetwork(),
 });
 export const account = privateKeyToAccount(process.env.ACC_PRIVKEY);
 export const walletClient = createWalletClient({
 	account,
 	chain: chain,
-	transport: http(),
+	transport: transportForNetwork(),
 });
