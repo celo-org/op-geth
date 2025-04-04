@@ -10,10 +10,14 @@ set -xeo pipefail
 # 	$3: highGasOnCredit (bool)
 # 		if true, this will make the DebugFeeCurrenc.CreditFees() call use
 # 		a high amount of gas
+# 	$4: intrinsicGas (num):
+# 		intrinsic gas set for the fee currency. If it's not set, it will
+# 		default to 60000.
 # returns:
 # 	deployed fee-currency address
 function deploy_fee_currency() {
 	(
+		DEFAULT_INTRINSIC_GAS=60000
 		local fee_currency=$(
 			forge create --broadcast --json --root "$SCRIPT_DIR/debug-fee-currency" --contracts "$SCRIPT_DIR/debug-fee-currency" --private-key $ACC_PRIVKEY DebugFeeCurrency.sol:DebugFeeCurrency --constructor-args '100000000000000000000000000' $1 $2 $3 | jq .deployedTo -r
 		)
