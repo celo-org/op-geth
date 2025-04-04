@@ -63,9 +63,9 @@ const transportForNetwork = (() => {
 		case 'alfajores':
 		case 'baklava':
 		case 'mainnet':
-			return webSocket()
+			return webSocket(process.env.ETH_RPC_URL);
 		default:
-			return http()
+			return http(process.env.ETH_RPC_URL);
 	};
 })
 
