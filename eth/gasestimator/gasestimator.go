@@ -24,7 +24,6 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/exchange"
 	"github.com/ethereum/go-ethereum/contracts"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/state"
@@ -88,14 +87,6 @@ func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uin
 		celoBalance := opts.State.GetBalance(call.From).ToBig()
 		available := celoBalance
 		if call.FeeCurrency != nil {
-			if !call.IsFeeCurrencyDenominated() {
-				// We need to check the allowance in the converted feeCurrency
-				var err error
-				feeCap, err = exchange.ConvertCeloToCurrency(feeCurrencyContext.ExchangeRates, call.FeeCurrency, feeCap)
-				if err != nil {
-					return 0, nil, err
-				}
-			}
 			available = feeCurrencyBalance
 		}
 		if call.Value != nil {

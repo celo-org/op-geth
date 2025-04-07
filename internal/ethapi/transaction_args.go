@@ -589,19 +589,17 @@ func (args *TransactionArgs) ToTransaction(defaultType int) *types.Transaction {
 			al = *args.AccessList
 		}
 		if args.FeeCurrency != nil {
-			if args.IsFeeCurrencyDenominated() {
-				data = &types.CeloDynamicFeeTxV2{
-					To:          args.To,
-					ChainID:     (*big.Int)(args.ChainID),
-					Nonce:       uint64(*args.Nonce),
-					Gas:         uint64(*args.Gas),
-					GasFeeCap:   (*big.Int)(args.MaxFeePerGas),
-					GasTipCap:   (*big.Int)(args.MaxPriorityFeePerGas),
-					Value:       (*big.Int)(args.Value),
-					Data:        args.data(),
-					AccessList:  al,
-					FeeCurrency: args.FeeCurrency,
-				}
+			data = &types.CeloDynamicFeeTxV2{
+				To:          args.To,
+				ChainID:     (*big.Int)(args.ChainID),
+				Nonce:       uint64(*args.Nonce),
+				Gas:         uint64(*args.Gas),
+				GasFeeCap:   (*big.Int)(args.MaxFeePerGas),
+				GasTipCap:   (*big.Int)(args.MaxPriorityFeePerGas),
+				Value:       (*big.Int)(args.Value),
+				Data:        args.data(),
+				AccessList:  al,
+				FeeCurrency: args.FeeCurrency,
 			}
 		} else {
 			data = &types.DynamicFeeTx{

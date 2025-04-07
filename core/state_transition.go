@@ -242,13 +242,6 @@ func TransactionToMessage(tx *types.Transaction, s types.Signer, baseFee *big.In
 	return msg, err
 }
 
-// IsFeeCurrencyDenominated returns whether the gas-price related
-// fields are denominated in a given fee currency or in the native token.
-// This effectively is only true for CIP-64 transactions.
-func (msg *Message) IsFeeCurrencyDenominated() bool {
-	return msg.FeeCurrency != nil
-}
-
 // ApplyMessage computes the new state by applying the given message
 // against the old state within the environment.
 //
