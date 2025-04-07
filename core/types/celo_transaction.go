@@ -41,8 +41,6 @@ func (tx *Transaction) FeeCurrency() *common.Address {
 		feeCurrency = t.FeeCurrency
 	case *CeloDynamicFeeTxV2:
 		feeCurrency = t.FeeCurrency
-	case *CeloDenominatedTx:
-		feeCurrency = t.FeeCurrency
 	case *LegacyTx:
 		feeCurrency = t.FeeCurrency
 	}
@@ -75,17 +73,6 @@ func (tx *Transaction) GatewayFeeRecipient() *common.Address {
 	return gatewayFeeRecipient
 }
 
-// MaxFeeInFeeCurrency returns the maximum fee in the fee currency of the transaction if there is one.
-func (tx *Transaction) MaxFeeInFeeCurrency() *big.Int {
-	var maxFeeInFeeCurrency *big.Int
-	switch t := tx.inner.(type) {
-	case *CeloDenominatedTx:
-		maxFeeInFeeCurrency = t.MaxFeeInFeeCurrency
-	}
-	return maxFeeInFeeCurrency
-}
-
-// EffectiveGasTipInCelo returns the effective gas tip in Celo
 // For transactions with a specified fee currency, the function takes the base fee in Celo,
 // calculates in the specified currency, and returns the value in Celo
 func (tx *Transaction) EffectiveGasTipInCelo(baseFee *big.Int, exchangeRates common.ExchangeRates) (*big.Int, error) {

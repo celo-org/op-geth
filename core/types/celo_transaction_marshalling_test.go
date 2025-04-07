@@ -54,7 +54,6 @@ func TestCeloTransactionMarshalUnmarshal(t *testing.T) {
 		gasPrice            = big.NewInt(1e5)
 		gas                 = uint64(1e6)
 		feeCurrency         = common.HexToAddress("0x2F25deB3848C207fc8E0c34035B3Ba7fC157602B")
-		maxFeeInFeeCurrency = big.NewInt(1e6)
 		gatewayFee          = big.NewInt(1e7)
 		gatewayFeeRecipient = common.HexToAddress("0x471EcE3750Da237f93B8E339c536989b8978a438")
 		to                  = common.HexToAddress("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045")
@@ -241,58 +240,6 @@ func TestCeloTransactionMarshalUnmarshal(t *testing.T) {
 				"hash": "0x9d668d91172a442c72509003235c386d7a0b2bd29da4411271f8f58231d33611"
 			}`,
 			requiredFields: []string{"chainId", "nonce", "gas", "maxPriorityFeePerGas", "maxFeePerGas", "value", "input", "v", "r", "s"},
-		},
-		{
-			txType:   "CeloDenominatedTx",
-			isCeloTx: true,
-			// Skip signing due to unsupported transaction type
-			tx: NewTx(&CeloDenominatedTx{
-				ChainID:   chainId,
-				Nonce:     nonce,
-				GasTipCap: gasTipCap,
-				GasFeeCap: gasFeeCap,
-				Gas:       gas,
-				To:        &to,
-				Value:     value,
-				Data:      data,
-				AccessList: AccessList{
-					{
-						Address: accessListAddress,
-						StorageKeys: []common.Hash{
-							storageKey,
-						},
-					},
-				},
-				FeeCurrency:         &feeCurrency,
-				MaxFeeInFeeCurrency: maxFeeInFeeCurrency,
-			}),
-			json: `{
-				"type": "0x7a",
-				"chainId": "0xa4ec",
-				"nonce": "0xa",
-				"maxPriorityFeePerGas": "0x1",
-				"maxFeePerGas": "0x3b9aca00",
-				"gasPrice": null,
-				"gas": "0xf4240",
-				"to": "0xd8da6bf26964af9d7eed9e03e53415d37aa96045",
-				"value": "0x5f5e100",
-				"input": "0x12345678",
-				"accessList": [
-					{
-						"address": "0xdac17f958d2ee523a2206206994597c13d831ec7",
-						"storageKeys": [
-							"0x2ab2bf4c5cabc3000e2502e33470a863db2755809d7561237424a0eb373154c2"
-						]
-					}
-				],
-				"feeCurrency": "0x2f25deb3848c207fc8e0c34035b3ba7fc157602b",
-				"maxFeeInFeeCurrency": "0xf4240",
-				"v": "0x0",
-				"r": "0x0",
-				"s": "0x0",
-				"hash": "0xefdbf85d98faa0f9e00c1060a0b27d12cca785ea5977367ec1187637c3005bf1"
-			}`,
-			requiredFields: []string{"chainId", "nonce", "gas", "maxPriorityFeePerGas", "maxFeePerGas", "value", "input", "v", "r", "s", "feeCurrency", "maxFeeInFeeCurrency"},
 		},
 	}
 
