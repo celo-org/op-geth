@@ -89,7 +89,6 @@ func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uin
 		available := celoBalance
 		if call.FeeCurrency != nil {
 			if !call.IsFeeCurrencyDenominated() {
-				// CIP-66, prices are given in native token.
 				// We need to check the allowance in the converted feeCurrency
 				var err error
 				feeCap, err = exchange.ConvertCeloToCurrency(feeCurrencyContext.ExchangeRates, call.FeeCurrency, feeCap)
