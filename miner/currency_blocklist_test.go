@@ -71,7 +71,7 @@ func TestBlocklistAddAfterEviction(t *testing.T) {
 func TestBlocklistRemove(t *testing.T) {
 	bl := NewAddressBlocklist()
 
-	// Check that removing a fee currency  from an empty blocklist doesn't panic.
+	// Check that removing a fee currency from an empty blocklist doesn't panic.
 	bl.Remove(feeCurrency1)
 
 	// Check that removal of existing fee currency works.
