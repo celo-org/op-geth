@@ -142,7 +142,6 @@ type celo1TxFixtures struct {
 	celoLegacyTx       *testCelo1Tx
 	celoDynamicFeeTx   *testCelo1Tx
 	celoDynamicFeeTxV2 *testCelo1Tx
-	celoDenominatedTx  *testCelo1Tx
 }
 
 // createTestCelo1TxFixtures generates a set of test fixtures for transactions
@@ -185,7 +184,6 @@ func createTestCelo1TxFixtures(t *testing.T) celo1TxFixtures {
 		feeCurrency         = common.HexToAddress("0x2F25deB3848C207fc8E0c34035B3Ba7fC157602B")
 		gatewayFeeRecipient = common.HexToAddress("0xde0B295669a9FD93d5F28D9Ec85E40f4cb697BAe")
 		gatewayFee          = big.NewInt(1e8)
-		maxFeeInFeeCurrency = big.NewInt(1e7)
 	)
 
 	return celo1TxFixtures{
@@ -301,26 +299,6 @@ func createTestCelo1TxFixtures(t *testing.T) celo1TxFixtures {
 			rawHash: common.HexToHash("0xbbf484aa35ab3783badf4278ec24d1e217984c45457ae9683ba46a73f761b7e9"),
 			hash:    common.HexToHash("0xc41349a437ad7937105b51831ee245a5742ff32266a893d0f4f23ca451faca6d"),
 		},
-		celoDenominatedTx: &testCelo1Tx{
-			data: &CeloDenominatedTx{
-				ChainID:             chainId,
-				Nonce:               nonce,
-				GasTipCap:           gasTipCap,
-				GasFeeCap:           gasFeeCap,
-				Gas:                 gas,
-				To:                  &to,
-				Value:               value,
-				Data:                data,
-				AccessList:          accessList,
-				FeeCurrency:         &feeCurrency,
-				MaxFeeInFeeCurrency: maxFeeInFeeCurrency,
-				V:                   hexToBigInt(t, "0x01"),
-				R:                   hexToBigInt(t, "0xa09bb8f8beda7b8f19a3ade683b82ec1042e5a2064edd35b90958502c5a14f9c"),
-				S:                   hexToBigInt(t, "0x1c117034271ee234ebcdffea2d3e637941ecaf59984469bc04ddf32dfaf1a58a"),
-			},
-			rawHash: common.HexToHash("0x0e2ff97dcc2c3c1ab8d8dbf99158615e218e8c7dcb3ccaa7a3825112255a5af6"),
-			hash:    common.HexToHash("0x3f98ed4aa43cb2d91bcb0cf0a1b94d9d342b37ee76ee7d8c540acda2d454651e"),
-		},
 	}
 }
 
@@ -386,13 +364,6 @@ func TestCeloSigner_Celo1TxRecovery(t *testing.T) {
 			expectedError:        nil,
 			expectedRawTxHash:    fixtures.celoDynamicFeeTxV2.rawHash,
 			expectedSignedTxHash: fixtures.celoDynamicFeeTxV2.hash,
-		},
-		{
-			name:                 "CeloDenominatedTx",
-			tx:                   NewTx(fixtures.celoDenominatedTx.data),
-			expectedError:        ErrTxTypeNotSupported,
-			expectedRawTxHash:    common.Hash{},
-			expectedSignedTxHash: fixtures.celoDenominatedTx.hash,
 		},
 	}
 
@@ -483,14 +454,6 @@ func TestCeloSigner_SignAndRecovery(t *testing.T) {
 		},
 		{
 			name:                         "CeloDynamicFeeTxV2",
-			txData:                       fixtures.celoDynamicFeeTxV2.data,
-			expectedRawTxHash:            fixtures.celoDynamicFeeTxV2.rawHash,
-			expectedSignedTxHash:         fixtures.celoDynamicFeeTxV2.hash,
-			expectedSenderError:          nil,
-			expectedSignatureValuesError: nil,
-		},
-		{
-			name:                         "CeloDenominatedTx",
 			txData:                       fixtures.celoDynamicFeeTxV2.data,
 			expectedRawTxHash:            fixtures.celoDynamicFeeTxV2.rawHash,
 			expectedSignedTxHash:         fixtures.celoDynamicFeeTxV2.hash,

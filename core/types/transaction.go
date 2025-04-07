@@ -392,7 +392,6 @@ func (tx *Transaction) Cost() (*big.Int, *big.Int) {
 		nativeCost := total.Add(total, tx.Value())
 		return new(big.Int), nativeCost
 	} else {
-		// Will need to be updated for CIP-66
 		nativeCost := tx.Value()
 		return total, nativeCost
 	}

@@ -154,12 +154,6 @@ func TestReceiptEffectiveGasPriceDerivation(t *testing.T) {
 		testDynamicWithFeeCurrency(t, tx, nil)
 		testDynamicWithFeeCurrency(t, tx, receiptBaseFee)
 	})
-	t.Run("CeloDenominatedTx", func(t *testing.T) {
-		tx := NewTx(&CeloDenominatedTx{GasFeeCap: gasFeeCap, GasTipCap: gasTipCap})
-		testDynamic(t, tx, nil)
-		tx = NewTx(&CeloDenominatedTx{GasFeeCap: gasFeeCap, GasTipCap: gasTipCap, FeeCurrency: &common.Address{}})
-		testDynamicWithFeeCurrency(t, tx, nil)
-	})
 }
 
 func testNonDynamic(t *testing.T, tx *Transaction, receiptBaseFee *big.Int) {
@@ -235,8 +229,6 @@ func testDynamicWithFeeCurrency(t *testing.T, tx *Transaction, receiptBaseFee *b
 	require.NoError(t, err)
 	if receiptBaseFee != nil {
 		require.Equal(t, tx.inner.effectiveGasPrice(new(big.Int), receiptBaseFee), receipts[0].EffectiveGasPrice)
-	} else if tx.Type() == CeloDenominatedTxType {
-		require.Equal(t, tx.inner.effectiveGasPrice(new(big.Int), baseFee), receipts[0].EffectiveGasPrice)
 	} else {
 		require.Equal(t, nilBigInt, receipts[0].EffectiveGasPrice)
 	}

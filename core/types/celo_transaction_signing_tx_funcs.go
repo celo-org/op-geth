@@ -106,29 +106,17 @@ var (
 					tx.AccessList(),
 				})
 		},
-		signatureValues: dynamicAndDenominatedTxSigValues,
-		sender:          dynamicAndDenominatedTxSender,
+		signatureValues: dynamicTxSigValues,
+		sender:          dynamicTxSender,
 	}
 
 	// Custom signing functionality for CeloDynamicFeeTxV2 txs.
 	celoDynamicFeeTxV2Funcs = &txFuncs{
 		hash: func(tx *Transaction, chainID *big.Int) common.Hash {
-			return prefixedRlpHash(tx.Type(), baseDynomicatedTxSigningFields(tx, chainID))
+			return prefixedRlpHash(tx.Type(), baseCeloDynamicTxSigningFields(tx, chainID))
 		},
-		signatureValues: dynamicAndDenominatedTxSigValues,
-		sender:          dynamicAndDenominatedTxSender,
-	}
-
-	// Custom signing functionality for CeloDenominatedTx txs.
-	//
-	// TODO remove this nolint directive when we do enable support for cip66 transactions.
-	//nolint:unused
-	celoDenominatedTxFuncs = &txFuncs{
-		hash: func(tx *Transaction, chainID *big.Int) common.Hash {
-			return prefixedRlpHash(tx.Type(), append(baseDynomicatedTxSigningFields(tx, chainID), tx.MaxFeeInFeeCurrency()))
-		},
-		signatureValues: dynamicAndDenominatedTxSigValues,
-		sender:          dynamicAndDenominatedTxSender,
+		signatureValues: dynamicTxSigValues,
+		sender:          dynamicTxSender,
 	}
 )
 
@@ -144,9 +132,8 @@ type txFuncs struct {
 	sender          func(tx *Transaction, hashFunc func(tx *Transaction, chainID *big.Int) common.Hash, signerChainID *big.Int) (common.Address, error)
 }
 
-// Returns the signature values for CeloDynamicFeeTxV2 and CeloDenominatedTx
-// transactions.
-func dynamicAndDenominatedTxSigValues(tx *Transaction, sig []byte, signerChainID *big.Int) (r *big.Int, s *big.Int, v *big.Int, err error) {
+// Returns the signature values for CeloDynamicFeeTxV2 transactions.
+func dynamicTxSigValues(tx *Transaction, sig []byte, signerChainID *big.Int) (r *big.Int, s *big.Int, v *big.Int, err error) {
 	// Check that chain ID of tx matches the signer. We also accept ID zero here,
 	// because it indicates that the chain ID was not specified in the tx.
 	chainID := tx.inner.chainID()
@@ -158,9 +145,8 @@ func dynamicAndDenominatedTxSigValues(tx *Transaction, sig []byte, signerChainID
 	return r, s, v, nil
 }
 
-// Returns the sender for CeloDynamicFeeTxV2 and CeloDenominatedTx
-// transactions.
-func dynamicAndDenominatedTxSender(tx *Transaction, hashFunc func(tx *Transaction, chainID *big.Int) common.Hash, signerChainID *big.Int) (common.Address, error) {
+// Returns the sender for CeloDynamicFeeTxV2 transactions.
+func dynamicTxSender(tx *Transaction, hashFunc func(tx *Transaction, chainID *big.Int) common.Hash, signerChainID *big.Int) (common.Address, error) {
 	if tx.ChainId().Cmp(signerChainID) != 0 {
 		return common.Address{}, ErrInvalidChainId
 	}
@@ -187,9 +173,8 @@ func baseCeloLegacyTxSigningFields(tx *Transaction) []interface{} {
 	}
 }
 
-// Extracts the common signing fields for CeloDynamicFeeTxV2 and
-// CeloDenominatedTx transactions.
-func baseDynomicatedTxSigningFields(tx *Transaction, chainID *big.Int) []interface{} {
+// Common signing fields for CeloDynamicFeeTxV2 transactions.
+func baseCeloDynamicTxSigningFields(tx *Transaction, chainID *big.Int) []interface{} {
 	return []interface{}{
 		chainID,
 		tx.Nonce(),
