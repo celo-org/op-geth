@@ -70,6 +70,11 @@ func TestBlocklistAddAfterEviction(t *testing.T) {
 
 func TestBlocklistRemove(t *testing.T) {
 	bl := NewAddressBlocklist()
+
+	// Check that removing a fee currency from an empty blocklist doesn't panic.
+	bl.Remove(feeCurrency1)
+
+	// Check that removal of existing fee currency works.
 	bl.Add(feeCurrency1, header)
 	bl.Add(feeCurrency2, header)
 	bl.Remove(feeCurrency1)
@@ -90,4 +95,65 @@ func TestBlocklistAddAfterRemove(t *testing.T) {
 	// make sure the feeCurrency2 behaves as expected
 	assert.True(t, bl.IsBlocked(feeCurrency2, HeaderAfter(*header2, int64(EvictionTimeoutSeconds)-1)))
 	assert.False(t, bl.IsBlocked(feeCurrency2, HeaderAfter(*header2, int64(EvictionTimeoutSeconds)+1)))
+}
+
+func TestDisableEnableBlocking(t *testing.T) {
+	bl := NewAddressBlocklist()
+	bl.Add(feeCurrency1, header)
+	bl.Add(feeCurrency2, header)
+
+	assert.True(t, bl.BlockingEnabled(feeCurrency1))
+	assert.True(t, bl.BlockingEnabled(feeCurrency2))
+
+	allowlist := common.NewAddressSet(feeCurrency1, feeCurrency2)
+
+	assert.Equal(t, common.NewAddressSet(), bl.FilterAllowlist(allowlist, &header))
+
+	bl.DisableBlocking([]common.Address{feeCurrency1})
+	assert.False(t, bl.BlockingEnabled(feeCurrency1))
+	assert.Equal(t, common.NewAddressSet(feeCurrency1), bl.FilterAllowlist(allowlist, &header))
+
+	bl.DisableBlocking([]common.Address{feeCurrency2})
+	assert.False(t, bl.BlockingEnabled(feeCurrency2))
+	assert.Equal(t, allowlist, bl.FilterAllowlist(allowlist, &header))
+
+	bl.EnableBlocking([]common.Address{feeCurrency2, feeCurrency1})
+	assert.True(t, bl.BlockingEnabled(feeCurrency2))
+	assert.True(t, bl.BlockingEnabled(feeCurrency1))
+	assert.Equal(t, common.NewAddressSet(), bl.FilterAllowlist(allowlist, &header))
+}
+
+func TestBlocklistRetrieval(t *testing.T) {
+	bl := NewAddressBlocklist()
+	bl.Add(feeCurrency1, header)
+	bl.Add(feeCurrency2, header)
+
+	expiryTime := header.Time + EvictionTimeoutSeconds
+
+	allCurrencies := map[common.Address]uint64{
+		feeCurrency1: expiryTime,
+		feeCurrency2: expiryTime,
+	}
+	assert.Equal(t, allCurrencies, bl.Blocklist(true))
+	assert.Equal(t, allCurrencies, bl.Blocklist(false))
+
+	bl.DisableBlocking([]common.Address{feeCurrency1})
+	assert.Equal(t, allCurrencies, bl.Blocklist(true))
+	oneCurrency := map[common.Address]uint64{
+		feeCurrency2: expiryTime,
+	}
+	assert.Equal(t, oneCurrency, bl.Blocklist(false))
+}
+
+func TestDisabledCurrenciesRetrieval(t *testing.T) {
+	bl := NewAddressBlocklist()
+	disabledCurrencies := []common.Address{feeCurrency1, feeCurrency2}
+
+	assert.Empty(t, bl.DisabledCurrencies())
+
+	bl.DisableBlocking(disabledCurrencies)
+	assert.ElementsMatch(t, disabledCurrencies, bl.DisabledCurrencies())
+
+	bl.EnableBlocking([]common.Address{feeCurrency1})
+	assert.ElementsMatch(t, []common.Address{feeCurrency2}, bl.DisabledCurrencies())
 }

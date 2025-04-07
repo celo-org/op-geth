@@ -18,24 +18,91 @@ type AddressBlocklist struct {
 	// will get evicted when evict() is called
 	headerEvictionTimeoutSeconds uint64
 	oldestHeader                 *types.Header
+
+	// disabledCurrencies is the set of currencies for which the blocklist
+	// functionality has been manually disabled.
+	disabledCurrencies map[common.Address]struct{}
 }
 
 func NewAddressBlocklist() *AddressBlocklist {
-	return &AddressBlocklist{
+	bl := &AddressBlocklist{
 		mux:                          &sync.RWMutex{},
 		currencies:                   map[common.Address]*types.Header{},
 		headerEvictionTimeoutSeconds: EvictionTimeoutSeconds,
 		oldestHeader:                 nil,
+		disabledCurrencies:           make(map[common.Address]struct{}),
+	}
+	return bl
+}
+
+// Blocklist returns the current blocklist, a set of fee currency
+// addresses mapped to their expiry Unix timestamp. Note that the parameter
+// 'includeDisabled' determines if the map should contain fee currencies for
+// which blocking has been manually disabled.
+func (b *AddressBlocklist) Blocklist(includeDisabled bool) map[common.Address]uint64 {
+	b.mux.RLock()
+	defer b.mux.RUnlock()
+	result := make(map[common.Address]uint64, len(b.currencies))
+	for currency, addedHeader := range b.currencies {
+		if _, disabled := b.disabledCurrencies[currency]; disabled && !includeDisabled {
+			continue
+		}
+		result[currency] = addedHeader.Time + b.headerEvictionTimeoutSeconds
+	}
+	return result
+}
+
+// DisableBlocking disables blocking on the given currencies, for currencies that
+// are already disabled this is a no-op.
+func (b *AddressBlocklist) DisableBlocking(currencies []common.Address) {
+	b.mux.Lock()
+	defer b.mux.Unlock()
+	for _, currency := range currencies {
+		b.disabledCurrencies[currency] = struct{}{}
 	}
 }
 
+// EnableBlocking enables blocking on the given currencies, for currencies that
+// are already enabled this is a no-op.
+func (b *AddressBlocklist) EnableBlocking(currencies []common.Address) {
+	b.mux.Lock()
+	defer b.mux.Unlock()
+	for _, currency := range currencies {
+		delete(b.disabledCurrencies, currency)
+	}
+}
+
+// DisabledCurrencies returns the currencies for which blocking is currently
+// manually disabled.
+func (b *AddressBlocklist) DisabledCurrencies() []common.Address {
+	b.mux.RLock()
+	defer b.mux.RUnlock()
+	result := make([]common.Address, 0, len(b.disabledCurrencies))
+	for currency := range b.disabledCurrencies {
+		result = append(result, currency)
+	}
+	return result
+}
+
+// BlockingEnabled returns whether blocking is enabled for the given currency.
+func (b *AddressBlocklist) BlockingEnabled(currency common.Address) bool {
+	b.mux.RLock()
+	defer b.mux.RUnlock()
+	_, disabled := b.disabledCurrencies[currency]
+	return !disabled
+}
+
+// FilterAllowlist returns allowlist with any blocked and not disabled
+// currencies removed. It accepts the latest header so that it may provide a
+// view of the blocklist consistent with that header.
 func (b *AddressBlocklist) FilterAllowlist(allowlist common.AddressSet, latest *types.Header) common.AddressSet {
 	b.mux.RLock()
 	defer b.mux.RUnlock()
 
 	filtered := common.AddressSet{}
 	for a := range allowlist {
-		if !b.isBlocked(a, latest) {
+		_, disabled := b.disabledCurrencies[a]
+		if !b.isBlocked(a, latest) || disabled {
 			filtered[a] = struct{}{}
 		}
 	}
@@ -64,14 +131,16 @@ func (b *AddressBlocklist) Remove(currency common.Address) bool {
 	return ok
 }
 
-func (b *AddressBlocklist) Add(currency common.Address, head types.Header) {
+func (b *AddressBlocklist) Add(currency common.Address, head types.Header) bool {
 	b.mux.Lock()
 	defer b.mux.Unlock()
 
+	_, existed := b.currencies[currency]
 	if b.oldestHeader == nil || b.oldestHeader.Time > head.Time {
 		b.oldestHeader = &head
 	}
 	b.currencies[currency] = &head
+	return !existed
 }
 
 func (b *AddressBlocklist) Evict(latest *types.Header) []common.Address {
