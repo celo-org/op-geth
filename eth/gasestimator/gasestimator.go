@@ -24,7 +24,6 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/exchange"
 	"github.com/ethereum/go-ethereum/contracts"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/state"
@@ -88,15 +87,6 @@ func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uin
 		celoBalance := opts.State.GetBalance(call.From).ToBig()
 		available := celoBalance
 		if call.FeeCurrency != nil {
-			if !call.IsFeeCurrencyDenominated() {
-				// CIP-66, prices are given in native token.
-				// We need to check the allowance in the converted feeCurrency
-				var err error
-				feeCap, err = exchange.ConvertCeloToCurrency(feeCurrencyContext.ExchangeRates, call.FeeCurrency, feeCap)
-				if err != nil {
-					return 0, nil, err
-				}
-			}
 			available = feeCurrencyBalance
 		}
 		if call.Value != nil {
@@ -111,10 +101,6 @@ func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uin
 			}
 		}
 
-		// cap the available by the maxFeeInFeeCurrency
-		if call.MaxFeeInFeeCurrency != nil && available.Cmp(call.MaxFeeInFeeCurrency) > 0 {
-			available = call.MaxFeeInFeeCurrency
-		}
 		if opts.Config.IsCancun(opts.Header.Number, opts.Header.Time) && len(call.BlobHashes) > 0 {
 			blobGasPerBlob := new(big.Int).SetInt64(params.BlobTxBlobGasPerBlob)
 			blobBalanceUsage := new(big.Int).SetInt64(int64(len(call.BlobHashes)))
@@ -135,7 +121,7 @@ func Estimate(ctx context.Context, call *core.Message, opts *Options, gasCap uin
 			}
 			log.Debug("Gas estimation capped by limited funds", "original", hi, "celo balance", celoBalance,
 				"feeCurrency balance", feeCurrencyBalance, "sent", transfer, "maxFeePerGas", feeCap, "fundable", allowance,
-				"feeCurrency", call.FeeCurrency, "maxFeeInFeeCurrency", call.MaxFeeInFeeCurrency,
+				"feeCurrency", call.FeeCurrency,
 			)
 			hi = allowance.Uint64()
 		}
