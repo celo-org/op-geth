@@ -433,8 +433,6 @@ func getTxTypeName(txType uint8) string {
 		return "CeloDynamicFee"
 	case types.CeloDynamicFeeTxV2Type:
 		return "CeloDynamicFeeV2"
-	case types.CeloDenominatedTxType:
-		return "CeloDenominated"
 	default:
 		return "Unknown"
 	}
