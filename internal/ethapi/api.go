@@ -1153,8 +1153,7 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 		R:        (*hexutil.Big)(r),
 		S:        (*hexutil.Big)(s),
 		// Celo
-		FeeCurrency:         tx.FeeCurrency(),
-		MaxFeeInFeeCurrency: (*hexutil.Big)(tx.MaxFeeInFeeCurrency()),
+		FeeCurrency: tx.FeeCurrency(),
 		// Unfortunately we need to set the gateway fee since this
 		// (0x3f33789ee7c52eacfe8b1a2afab8455aaf65f860dfa36f1afa466eb69bfa312e)
 		// tx on alfajores actually set it.
@@ -1209,7 +1208,7 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 		result.ChainID = (*hexutil.Big)(tx.ChainId())
 		result.YParity = &yparity
 
-	case types.DynamicFeeTxType, types.CeloDynamicFeeTxType, types.CeloDynamicFeeTxV2Type, types.CeloDenominatedTxType:
+	case types.DynamicFeeTxType, types.CeloDynamicFeeTxType, types.CeloDynamicFeeTxV2Type:
 		al := tx.AccessList()
 		yparity := hexutil.Uint64(v.Sign())
 		result.Accesses = &al
@@ -1219,7 +1218,7 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 		result.GasTipCap = (*hexutil.Big)(tx.GasTipCap())
 
 		// Note that celo denominated txs always have the gas price denominated in celo (the native currency)
-		isNativeFeeCurrency := tx.FeeCurrency() == nil || tx.Type() == types.CeloDenominatedTxType
+		isNativeFeeCurrency := tx.FeeCurrency() == nil
 		isGingerbread := config.IsGingerbread(new(big.Int).SetUint64(blockNumber))
 		isCel2 := config.IsCel2(blockTime)
 
