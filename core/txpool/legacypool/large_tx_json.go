@@ -1,5 +1,6 @@
 package legacypool
 
+// nolint:unused
 var largeTxJSON = `{
 		"accessList": [],
 		"blockHash": null,
