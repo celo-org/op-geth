@@ -195,8 +195,7 @@ type Message struct {
 	// FeeCurrency specifies the currency for gas fees.
 	// `nil` corresponds to CELO (native currency).
 	// All other values should correspond to ERC20 contract addresses.
-	FeeCurrency         *common.Address
-	MaxFeeInFeeCurrency *big.Int // MaxFeeInFeeCurrency is the maximum fee that can be charged in the fee currency.
+	FeeCurrency *common.Address
 }
 
 // TransactionToMessage converts a transaction into a Message.
@@ -222,8 +221,7 @@ func TransactionToMessage(tx *types.Transaction, s types.Signer, baseFee *big.In
 		Mint:           tx.Mint(),
 		RollupCostData: tx.RollupCostData(),
 
-		FeeCurrency:         tx.FeeCurrency(),
-		MaxFeeInFeeCurrency: nil, // Will only be set once CIP-66 is implemented
+		FeeCurrency: tx.FeeCurrency(),
 	}
 	// If baseFee provided, set gasPrice to effectiveGasPrice.
 	if baseFee != nil {
@@ -242,13 +240,6 @@ func TransactionToMessage(tx *types.Transaction, s types.Signer, baseFee *big.In
 	var err error
 	msg.From, err = types.Sender(s, tx)
 	return msg, err
-}
-
-// IsFeeCurrencyDenominated returns whether the gas-price related
-// fields are denominated in a given fee currency or in the native token.
-// This effectively is only true for CIP-64 transactions.
-func (msg *Message) IsFeeCurrencyDenominated() bool {
-	return msg.FeeCurrency != nil && msg.MaxFeeInFeeCurrency == nil
 }
 
 // ApplyMessage computes the new state by applying the given message

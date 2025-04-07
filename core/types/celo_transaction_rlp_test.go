@@ -39,7 +39,6 @@ func TestCeloTransactionRLPEncodingDecoding(t *testing.T) {
 		gasPrice            = big.NewInt(1e5)
 		gas                 = uint64(1e6)
 		feeCurrency         = common.HexToAddress("0x2F25deB3848C207fc8E0c34035B3Ba7fC157602B")
-		maxFeeInFeeCurrency = big.NewInt(1e6)
 		gatewayFee          = big.NewInt(1e7)
 		gatewayFeeRecipient = common.HexToAddress("0x471EcE3750Da237f93B8E339c536989b8978a438")
 		to                  = common.HexToAddress("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045")
@@ -198,59 +197,6 @@ func TestCeloTransactionRLPEncodingDecoding(t *testing.T) {
 						},
 					},
 					feeCurrency,
-					v,
-					r,
-					s,
-				})...,
-			),
-		},
-
-		{
-			txType: "CeloDenominatedTx",
-			tx: NewTx(&CeloDenominatedTx{
-				ChainID:   chainId,
-				Nonce:     nonce,
-				GasTipCap: gasTipCap,
-				GasFeeCap: gasFeeCap,
-				Gas:       gas,
-				To:        &to,
-				Value:     value,
-				Data:      data,
-				AccessList: AccessList{
-					{
-						Address: accessListAddress,
-						StorageKeys: []common.Hash{
-							storageKey,
-						},
-					},
-				},
-				FeeCurrency:         &feeCurrency,
-				MaxFeeInFeeCurrency: maxFeeInFeeCurrency,
-				V:                   new(big.Int).SetBytes(v),
-				R:                   new(big.Int).SetBytes(r),
-				S:                   new(big.Int).SetBytes(s),
-			}),
-			bytes: append(
-				[]byte{CeloDenominatedTxType},
-				mustEncodeToBytes(t, []interface{}{
-					chainId,
-					nonce,
-					gasTipCap,
-					gasFeeCap,
-					gas,
-					to,
-					value,
-					data,
-					[]interface{}{
-						[]interface{}{
-							accessListAddress,
-							[]interface{}{
-								storageKey,
-							},
-						},
-					},
-					feeCurrency,
-					maxFeeInFeeCurrency,
 					v,
 					r,
 					s,
