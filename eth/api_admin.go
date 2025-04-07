@@ -24,6 +24,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -140,4 +141,36 @@ func (api *AdminAPI) ImportChain(file string) (bool, error) {
 		blocks = blocks[:0]
 	}
 	return true, nil
+}
+
+// GetBlocklistFeeCurrencies returns the fee currencies in the blocklist mapped
+// to their expiry Unix timestamp. Note that the parameter 'includeDisabled'
+// determines if the map should contain fee currencies for which blocking has
+// been manually disabled.
+func (api *AdminAPI) GetBlocklistFeeCurrencies(includeDisabled bool) map[common.Address]uint64 {
+	return api.eth.Miner().BlocklistFeeCurrencies(includeDisabled)
+}
+
+// DisableBlocklistFeeCurrencies disables blocking on the given currencies, for currencies that
+// are already disabled this is a no-op.
+func (api *AdminAPI) DisableBlocklistFeeCurrencies(currencies []common.Address) {
+	api.eth.Miner().DisableBlocklistFeeCurrencies(currencies)
+}
+
+// EnableBlocklistFeeCurrencies enables blocking on the given currencies, for currencies that
+// are already enabled this is a no-op.
+func (api *AdminAPI) EnableBlocklistFeeCurrencies(currencies []common.Address) {
+	api.eth.Miner().EnableBlocklistFeeCurrencies(currencies)
+}
+
+// GetDisabledBlocklistFeeCurrencies returns the currencies for which blocking is currently
+// manually disabled.
+func (api *AdminAPI) GetDisabledBlocklistFeeCurrencies() []common.Address {
+	return api.eth.Miner().DisabledBlocklistFeeCurrencies()
+}
+
+// UnblockFeeCurrency removes a fee currency from the fee currency blocklist,
+// if the currency was present true is returned.
+func (api *AdminAPI) UnblockFeeCurrency(address common.Address) bool {
+	return api.eth.Miner().UnblockFeeCurrency(address)
 }
