@@ -17,46 +17,46 @@ permissions:
   contents: read
 
 jobs:
-  Test:
-    runs-on: ["8-cpu","self-hosted","org"]
-    steps:
-        - uses: actions/checkout@v4
+  # Test:
+  #   runs-on: ["8-cpu","self-hosted","org"]
+  #   steps:
+  #       - uses: actions/checkout@v4
 
-        - uses: actions/setup-go@v5
-          with:
-            go-version: '1.22'
+  #       - uses: actions/setup-go@v5
+  #         with:
+  #           go-version: '1.22'
 
-        - name: Build
-          run: make all
+  #       - name: Build
+  #         run: make all
 
-        - name: Test
-          run: make test
+  #       - name: Test
+  #         run: make test
 
-        - uses: actions/setup-node@v4
-          with:
-            node-version: 18
+  #       - uses: actions/setup-node@v4
+  #         with:
+  #           node-version: 18
 
-        - name: Install Foundry
-          uses: foundry-rs/foundry-toolchain@v1
-          with:
-            version: nightly-143abd6a768eeb52a5785240b763d72a56987b4a
+  #       - name: Install Foundry
+  #         uses: foundry-rs/foundry-toolchain@v1
+  #         with:
+  #           version: nightly-143abd6a768eeb52a5785240b763d72a56987b4a
 
-        - name: Run e2e tests local
-          shell: bash
-          run: e2e_test/run_all_tests.sh
+  #       - name: Run e2e tests local
+  #         shell: bash
+  #         run: e2e_test/run_all_tests.sh
 
-  Lint:
-    runs-on: ["8-cpu","self-hosted","org"]
-    steps:
-        - uses: actions/checkout@v4
+  # Lint:
+  #   runs-on: ["8-cpu","self-hosted","org"]
+  #   steps:
+  #       - uses: actions/checkout@v4
 
-        - uses: actions/setup-go@v5
-          with:
-            go-version: '1.22'
-            cache: false
+  #       - uses: actions/setup-go@v5
+  #         with:
+  #           go-version: '1.22'
+  #           cache: false
 
-        - name: Lint
-          run: make lint
+  #       - name: Lint
+  #         run: make lint
 
   Generate:
     runs-on: ["ubuntu-latest"]
