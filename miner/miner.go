@@ -223,6 +223,7 @@ func (miner *Miner) getPending() *newPayloadResult {
 		withdrawals: withdrawal,
 		beaconRoot:  nil,
 		noTxs:       false,
+		isPending:   true,
 	}, false) // we will never make a witness for a pending block
 	if ret.err != nil {
 		return nil
