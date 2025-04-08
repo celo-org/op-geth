@@ -427,8 +427,8 @@ func (miner *Miner) commitTransaction(env *environment, tx *types.Transaction) e
 	receipt, err := miner.applyTransaction(env, tx)
 	if err != nil {
 		if errors.Is(err, contracts.ErrFeeCurrencyEVMCall) {
-			log.Warn(
-				"fee-currency EVM execution error, temporarily blocking fee-currency in local txpools",
+			log.Error(
+				"fee-currency EVM execution error",
 				"tx-hash", tx.Hash(),
 				"fee-currency", tx.FeeCurrency(),
 				"error", err.Error(),
