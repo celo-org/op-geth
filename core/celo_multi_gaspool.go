@@ -25,11 +25,9 @@ func NewMultiGasPool(
 	limitsMapping FeeCurrencyLimitMapping,
 	isDeriving bool,
 ) *MultiGasPool {
-	numPools := 0
-	if !isDeriving {
-		numPools = len(allowlist)
+	multiGasPool := &MultiGasPool{
+		defaultPool: new(GasPool).AddGas(blockGasLimit),
 	}
-	pools := make(map[FeeCurrency]*GasPool, numPools)
 
 	// we want to deactivate the separate pools for
 	// fee-currencies when we are deriving from l1.
@@ -37,26 +35,22 @@ func NewMultiGasPool(
 	// and we don't want them to differ
 	// from the "consensus", i.e. the ones
 	// that the sequencer used for building.
-	if !isDeriving {
-		for currency := range allowlist {
-			fraction, ok := limitsMapping[currency]
-			if !ok {
-				fraction = defaultLimit
-			}
+	if isDeriving {
+		return multiGasPool
+	}
+	multiGasPool.pools = make(map[FeeCurrency]*GasPool, len(allowlist))
 
-			pools[currency] = new(GasPool).AddGas(
-				uint64(float64(blockGasLimit) * fraction),
-			)
+	for currency := range allowlist {
+		fraction, ok := limitsMapping[currency]
+		if !ok {
+			fraction = defaultLimit
 		}
+		multiGasPool.pools[currency] = new(GasPool).AddGas(
+			uint64(float64(blockGasLimit) * fraction),
+		)
 	}
 
-	// A special case for CELO which doesn't have a limit
-	celoPool := new(GasPool).AddGas(blockGasLimit)
-
-	return &MultiGasPool{
-		pools:       pools,
-		defaultPool: celoPool,
-	}
+	return multiGasPool
 }
 
 // PoolFor returns a configured pool for the given fee currency or the default
