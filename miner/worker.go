@@ -856,24 +856,9 @@ func (miner *Miner) validateParams(genParams *generateParams) (time.Duration, er
 	return time.Duration(blockTime) * time.Second, nil
 }
 
-func (miner *Miner) registerFeeCurrencyTxFailure(env *environment, tx *types.Transaction, err error) {
-	// the fee-currency is still in the allowlist of this environment,
-	// so set the fee-currency block gas limit to 0 to prevent other
-	// transactions.
+func (miner *Miner) registerFeeCurrencyTxFailure(env *environment, tx *types.Transaction, _ error) {
 	if !env.blocklistsDisabled {
-		if miner.feeCurrencyBlocklist.BlockingEnabled(*tx.FeeCurrency()) {
-			pool, hasSeparateMultiPool := env.multiGasPool.PoolFor(tx.FeeCurrency())
-			// if for whatever reason we didn't set a separate multipool
-			// for this fee-currency, we don't want to completely
-			// block all other gas usage
-			if hasSeparateMultiPool {
-				pool.SetGas(0)
-			} else {
-				log.Warn("blocked fee-currency does not have separate multi-gas-pool" +
-					", using default gas-pool for further block building")
-			}
-		}
-		// also add the fee-currency to a worker-wide blocklist,
+		// add the fee-currency to a worker-wide blocklist,
 		// so that they are not allowlisted in the following blocks
 		// (only locally in the txpool, not consensus-critical)
 		if miner.feeCurrencyBlocklist.Add(*tx.FeeCurrency(), *env.header) {
@@ -882,6 +867,22 @@ func (miner *Miner) registerFeeCurrencyTxFailure(env *environment, tx *types.Tra
 				"fee-currency", tx.FeeCurrency(),
 			)
 			feeCurrenciesInBlocklistCounter.Inc(1)
+		}
+
+		if miner.feeCurrencyBlocklist.BlockingEnabled(*tx.FeeCurrency()) {
+			// the fee-currency is still in the allowlist of this environment,
+			// so set the fee-currency block gas limit to 0 to prevent other
+			// transactions.
+			pool, hasSeparateMultiPool := env.multiGasPool.PoolFor(tx.FeeCurrency())
+			// if for whatever reason we didn't set a separate multipool
+			// for this fee-currency, we don't want to completely
+			// block all other gas usage
+			if hasSeparateMultiPool {
+				pool.SetGas(0)
+			} else {
+				log.Warn("blocked fee-currency does not have separate multi-gas-pool"+
+					", using default gas-pool for further block building", "fee-currency", tx.FeeCurrency())
+			}
 		}
 	}
 }
