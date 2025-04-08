@@ -59,7 +59,7 @@ jobs:
   #         run: make lint
 
   Generate:
-    runs-on: ["ubuntu-latest"]
+    runs-on: ["8-cpu","self-hosted","org"]
     steps:
         - uses: actions/checkout@v4
 
