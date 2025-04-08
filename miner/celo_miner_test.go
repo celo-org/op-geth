@@ -53,6 +53,7 @@ func createCeloMiner(t *testing.T) *Miner {
 			GasLimit:   11500000,
 			Difficulty: big.NewInt(1048576),
 			Alloc:      core.CeloGenesisAccounts(address),
+			Timestamp:  uint64(time.Now().Unix()),
 		}
 		minerConfig = Config{
 			PendingFeeRecipient:                   common.HexToAddress("123456789"),
@@ -101,7 +102,6 @@ func createCeloMiner(t *testing.T) *Miner {
 // for miners correctly considers the currency of the transaction fee
 func TestMinerFeeCalculationWithCurrencyConversion(t *testing.T) {
 	miner := createCeloMiner(t)
-	timestamp := uint64(time.Now().Unix())
 	rates := common.ExchangeRates{
 		core.DevFeeCurrencyAddr: big.NewRat(2, 1),
 	}
@@ -127,11 +127,12 @@ func TestMinerFeeCalculationWithCurrencyConversion(t *testing.T) {
 	})
 	txs := types.Transactions{tx1, tx2}
 
+	parentBlock := miner.chain.CurrentBlock()
 	// Add transactions & request block
 	miner.txpool.Add(txs, true, false)
 	r := miner.generateWork(&generateParams{
-		parentHash: miner.chain.CurrentBlock().Hash(),
-		timestamp:  timestamp,
+		parentHash: parentBlock.Hash(),
+		timestamp:  parentBlock.Time + 1,
 		random:     common.HexToHash("0xcafebabe"),
 		noTxs:      false,
 		forceTime:  true,
@@ -161,4 +162,86 @@ func TestMinerFeeCalculationWithCurrencyConversion(t *testing.T) {
 		new(big.Int).Mul(fee2, big.NewInt(int64(r.receipts[1].GasUsed))),
 	)
 	assert.Equal(t, expectedMinerFee, r.fees)
+}
+
+func TestBlocklistOnlyForSequencing(t *testing.T) {
+	miner := createCeloMiner(t)
+
+	signer := types.LatestSigner(miner.chainConfig)
+	parentBlock := miner.chain.CurrentBlock()
+	miner.feeCurrencyBlocklist.Add(core.DevFeeCurrencyAddr, *parentBlock)
+
+	var nonce uint64 = 0
+	makeTx := func(addToPool bool) *types.Transaction {
+		tx := types.MustSignNewTx(key, signer, &types.CeloDynamicFeeTxV2{
+			Nonce:       nonce,
+			To:          &testUserAddress,
+			Value:       big.NewInt(1),
+			Gas:         71000,
+			FeeCurrency: &core.DevFeeCurrencyAddr,
+			GasFeeCap:   big.NewInt(100 * params.GWei),
+			GasTipCap:   big.NewInt(10 * params.GWei),
+		})
+		assert.NotNil(t, parentBlock)
+		if addToPool {
+			miner.txpool.Add(types.Transactions{tx}, true, false)
+		}
+		return tx
+	}
+
+	tx := makeTx(true)
+	require.True(t, miner.feeCurrencyBlocklist.IsBlocked(*tx.FeeCurrency(), parentBlock))
+
+	// pending block building, blocklist disabled
+	r := miner.generateWork(&generateParams{
+		parentHash: parentBlock.Hash(),
+		timestamp:  parentBlock.Time + 1,
+		random:     common.HexToHash("0xcafebabe"),
+		noTxs:      false,
+		forceTime:  true,
+		isPending:  true,
+	}, false)
+
+	// Make sure the transactions are finalized
+	require.Equal(t, 1, len(r.block.Transactions()), "block should have 1 transactions")
+	require.False(t, tx.Rejected(), "tx should not be rejected")
+
+	// make a transaction that's not in the pool
+	tx2 := makeTx(false)
+
+	// add to pool once more to the pool
+	makeTx(true)
+
+	// l1 derivation block building, blocklist disabled
+	r2 := miner.generateWork(&generateParams{
+		parentHash: parentBlock.Hash(),
+		timestamp:  parentBlock.Time + 1,
+		random:     common.HexToHash("0xcafebabe"),
+		noTxs:      true,
+		forceTime:  true,
+		isPending:  false,
+		txs:        types.Transactions{tx2},
+	}, false)
+
+	require.NoError(t, r2.err)
+
+	// the mempool tx should not be included since we are omitting the mempool
+	require.Equal(t, 1, len(r2.block.Transactions()), "block should have 1 transaction")
+	require.Equal(t, 1, len(r2.receipts), "block should have 1 transaction receipts")
+	require.False(t, tx2.Rejected(), "tx should not be rejected")
+
+	// mempool block building, blocklist enabled
+	// and the tx has a blocked fee-currency
+	r3 := miner.generateWork(&generateParams{
+		parentHash: parentBlock.Hash(),
+		timestamp:  parentBlock.Time + 1,
+		random:     common.HexToHash("0xcafebabe"),
+		noTxs:      false,
+		forceTime:  true,
+		isPending:  false,
+	}, false)
+	require.NoError(t, r3.err)
+
+	// third tx should not be included since it's using a blocked fee-currency
+	require.Equal(t, 0, len(r3.block.Transactions()), "block should have 0 transactions")
 }
