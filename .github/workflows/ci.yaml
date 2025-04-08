@@ -78,6 +78,11 @@ jobs:
         - name: Generate check
           # Run go generate and see if anything changed.
           run: |
+            echo $PATH || true
+            echo $GOPATH || true
+            which protoc-gen-go || true
+            which protoc || true
+            echo "Running go generate ./..."  || true
             go generate ./...
             if [ -n "$(git status --porcelain)" ]; then
               echo "Changes detected after running 'go generate ./...' run generate locally and commit the changes."
