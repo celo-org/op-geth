@@ -72,14 +72,14 @@ jobs:
           uses: arduino/setup-protoc@v3
 
         - name: Installing protoc-gen-go
-          run: |
-            go get google.golang.org/protobuf
+          run: go get google.golang.org/protobuf
 
         - name: Generate check
           # Run go generate and see if anything changed.
           run: |
             echo $PATH || true
-            echo $GOPATH || true
+            echo "GOBIN"
+            echo $GOBIN || true
             which protoc-gen-go || true
             which protoc || true
             echo "Running go generate ./..."  || true
@@ -88,4 +88,3 @@ jobs:
               echo "Changes detected after running 'go generate ./...' run generate locally and commit the changes."
               exit 1
             fi
-          shell: sh
