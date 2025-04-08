@@ -72,11 +72,14 @@ jobs:
           uses: arduino/setup-protoc@v3
 
         - name: Installing protoc-gen-go
-          run: go get google.golang.org/protobuf
+          run: |
+            export PATH=$PATH:$(go env GOPATH)/bin
+            go get google.golang.org/protobuf
 
         - name: Generate check
           # Run go generate and see if anything changed.
           run: |
+            export PATH=$PATH:$(go env GOPATH)/bin
             echo $PATH || true
             echo "GOBIN"
             echo $GOBIN || true
