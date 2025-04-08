@@ -106,24 +106,24 @@ func TestMultiCurrencyGasPool(t *testing.T) {
 				false,
 			)
 
-			pool, _ := mgp.PoolFor(c.feeCurrency)
+			pool, hasMultiPool := mgp.PoolFor(c.feeCurrency)
 			pool.SubGas(uint64(subGasAmount))
+			result := pool.Gas()
+
+			defaultPool, defaultHasMultipool := mgp.PoolFor(nil)
+			assert.False(t, defaultHasMultipool)
 
 			if c.defaultPoolExpected {
-				pool, exists := mgp.PoolFor(nil)
-				assert.False(t, exists)
-				result := pool.Gas()
+				assert.False(t, hasMultiPool)
 				if result != c.expectedValue {
 					t.Error("Default pool expected", c.expectedValue, "got", result)
 				}
 			} else {
-				pool, exists := mgp.PoolFor(c.feeCurrency)
-				assert.True(t, exists)
-				result := pool.Gas()
-
+				assert.True(t, hasMultiPool)
+				assert.Equal(t, defaultPool.Gas(), blockGasLimit)
 				if result != c.expectedValue {
 					t.Error(
-						"Expected pool", c.feeCurrency, "value", c.expectedValue,
+						"Expected multi-gas-pool for currency", c.feeCurrency, "value", c.expectedValue,
 						"got", result,
 					)
 				}
