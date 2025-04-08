@@ -868,6 +868,9 @@ func (miner *Miner) registerFeeCurrencyTxFailure(env *environment, tx *types.Tra
 			// block all other gas usage
 			if hasSeparateMultiPool {
 				pool.SetGas(0)
+			} else {
+				log.Warn("blocked fee-currency does not have separate multi-gas-pool" +
+					", using default gas-pool for further block building")
 			}
 		}
 		// also add the fee-currency to a worker-wide blocklist,
