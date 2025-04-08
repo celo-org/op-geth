@@ -23,37 +23,44 @@ func NewMultiGasPool(
 	allowlist common.AddressSet,
 	defaultLimit float64,
 	limitsMapping FeeCurrencyLimitMapping,
+	isDeriving bool,
 ) *MultiGasPool {
-	pools := make(map[FeeCurrency]*GasPool, len(allowlist))
+	multiGasPool := &MultiGasPool{
+		defaultPool: new(GasPool).AddGas(blockGasLimit),
+	}
+
+	// we want to deactivate the separate pools for
+	// fee-currencies when we are deriving from l1.
+	// The parameters are locally configurable,
+	// and we don't want them to differ
+	// from the "consensus", i.e. the ones
+	// that the sequencer used for building.
+	if isDeriving {
+		return multiGasPool
+	}
+	multiGasPool.pools = make(map[FeeCurrency]*GasPool, len(allowlist))
 
 	for currency := range allowlist {
 		fraction, ok := limitsMapping[currency]
 		if !ok {
 			fraction = defaultLimit
 		}
-
-		pools[currency] = new(GasPool).AddGas(
+		multiGasPool.pools[currency] = new(GasPool).AddGas(
 			uint64(float64(blockGasLimit) * fraction),
 		)
 	}
 
-	// A special case for CELO which doesn't have a limit
-	celoPool := new(GasPool).AddGas(blockGasLimit)
-
-	return &MultiGasPool{
-		pools:       pools,
-		defaultPool: celoPool,
-	}
+	return multiGasPool
 }
 
 // PoolFor returns a configured pool for the given fee currency or the default
-// one otherwise
-func (mgp MultiGasPool) PoolFor(feeCurrency *FeeCurrency) *GasPool {
+// one otherwise, the returned boolean is true when a custom fee currency gas pool is returned.
+func (mgp MultiGasPool) PoolFor(feeCurrency *FeeCurrency) (*GasPool, bool) {
 	if feeCurrency == nil || mgp.pools[*feeCurrency] == nil {
-		return mgp.defaultPool
+		return mgp.defaultPool, false
 	}
 
-	return mgp.pools[*feeCurrency]
+	return mgp.pools[*feeCurrency], true
 }
 
 func (mgp MultiGasPool) Copy() *MultiGasPool {
