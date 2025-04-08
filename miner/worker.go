@@ -90,6 +90,9 @@ type environment struct {
 	multiGasPool         *core.MultiGasPool // available per-fee-currency gas used to pack transactions
 	feeCurrencyAllowlist common.AddressSet
 	feeCurrencyContext   *common.FeeCurrencyContext
+	// used for derivation / pending block building - in that case we don't
+	// want to use any blocklist features
+	blocklistsDisabled bool
 }
 
 const (
@@ -128,6 +131,7 @@ type generateParams struct {
 	eip1559Params []byte             // Optional EIP-1559 parameters
 	interrupt     *atomic.Int32      // Optional interruption signal to pass down to worker.generateWork
 	isUpdate      bool               // Optional flag indicating that this is building a discardable update
+	isPending     bool               // Optional flag indicating that this is building a pending block
 
 	rpcCtx context.Context // context to control block-building RPC work. No RPC allowed if nil.
 }
@@ -158,6 +162,7 @@ func (miner *Miner) generateWork(params *generateParams, witness bool) *newPaylo
 			work.feeCurrencyAllowlist,
 			miner.config.FeeCurrencyDefault,
 			miner.config.FeeCurrencyLimits,
+			work.noTxs,
 		)
 	}
 
@@ -173,7 +178,8 @@ func (miner *Miner) generateWork(params *generateParams, witness bool) *newPaylo
 		// the non-fee currency pool in the multipool is not used, but for consistency
 		// subtract the gas. Don't check the error either, this has been checked already
 		// with the work.gasPool.
-		work.multiGasPool.PoolFor(nil).SubGas(tx.Gas())
+		pool, _ := work.multiGasPool.PoolFor(nil)
+		pool.SubGas(tx.Gas())
 	}
 	if !params.noTxs {
 		// use shared interrupt if present
@@ -336,18 +342,28 @@ func (miner *Miner) prepareWork(genParams *generateParams, witness bool) (*envir
 		return nil, err
 	}
 	env.noTxs = genParams.noTxs
-	if evicted := miner.feeCurrencyBlocklist.Evict(parent); len(evicted) > 0 {
-		log.Warn(
-			"Evicted temporarily blocked fee-currencies from local block-list",
-			"evicted-fee-currencies", evicted,
-			"eviction-timeout-seconds", EvictionTimeoutSeconds,
+	// don't do anything blocklist related when we are:
+	// - deriving from L1
+	// - building the pending block
+	// because this could poison the blocklist or prevent
+	// derivation from executing consensus blocks when the blocklist
+	// is poisoned.
+	env.blocklistsDisabled = env.noTxs || genParams.isPending
+	env.feeCurrencyAllowlist = common.CurrencyAllowlist(env.feeCurrencyContext.ExchangeRates)
+	if !env.blocklistsDisabled {
+		if evicted := miner.feeCurrencyBlocklist.Evict(parent); len(evicted) > 0 {
+			log.Warn(
+				"Evicted temporarily blocked fee-currencies from local block-list",
+				"evicted-fee-currencies", evicted,
+				"eviction-timeout-seconds", EvictionTimeoutSeconds,
+			)
+			feeCurrenciesInBlocklistCounter.Dec(int64(len(evicted)))
+		}
+		env.feeCurrencyAllowlist = miner.feeCurrencyBlocklist.FilterAllowlist(
+			env.feeCurrencyAllowlist,
+			header,
 		)
-		feeCurrenciesInBlocklistCounter.Dec(int64(len(evicted)))
 	}
-	env.feeCurrencyAllowlist = miner.feeCurrencyBlocklist.FilterAllowlist(
-		common.CurrencyAllowlist(env.feeCurrencyContext.ExchangeRates),
-		header,
-	)
 
 	if header.ParentBeaconRoot != nil {
 		core.ProcessBeaconBlockRoot(*header.ParentBeaconRoot, env.evm)
@@ -421,8 +437,8 @@ func (miner *Miner) commitTransaction(env *environment, tx *types.Transaction) e
 	receipt, err := miner.applyTransaction(env, tx)
 	if err != nil {
 		if errors.Is(err, contracts.ErrFeeCurrencyEVMCall) {
-			log.Warn(
-				"fee-currency EVM execution error, temporarily blocking fee-currency in local txpools",
+			log.Error(
+				"fee-currency EVM execution error",
 				"tx-hash", tx.Hash(),
 				"fee-currency", tx.FeeCurrency(),
 				"error", err.Error(),
@@ -548,6 +564,7 @@ func (miner *Miner) commitTransactions(env *environment, plainTxs, blobTxs *tran
 			env.feeCurrencyAllowlist,
 			miner.config.FeeCurrencyDefault,
 			miner.config.FeeCurrencyLimits,
+			env.noTxs,
 		)
 	}
 	for {
@@ -626,7 +643,8 @@ func (miner *Miner) commitTransactions(env *environment, plainTxs, blobTxs *tran
 				continue
 			}
 		}
-		if left := env.multiGasPool.PoolFor(ltx.FeeCurrency).Gas(); left < ltx.Gas {
+		pool, _ := env.multiGasPool.PoolFor(ltx.FeeCurrency)
+		if left := pool.Gas(); left < ltx.Gas {
 			log.Trace(
 				"Not enough specific fee-currency gas left for transaction",
 				"currency", ltx.FeeCurrency, "hash", ltx.Hash,
@@ -683,12 +701,13 @@ func (miner *Miner) commitTransactions(env *environment, plainTxs, blobTxs *tran
 			txs.Pop()
 
 		case errors.Is(err, nil):
-			err := env.multiGasPool.PoolFor(tx.FeeCurrency()).SubGas(gasUsed)
+			pool, _ := env.multiGasPool.PoolFor(tx.FeeCurrency())
+			err := pool.SubGas(gasUsed)
 			if err != nil {
 				// Should never happen as we check it above
 				log.Warn(
 					"Unexpectedly reached limit for fee currency, but tx will not be skipped",
-					"hash", tx.Hash(), "gas", env.multiGasPool.PoolFor(tx.FeeCurrency()).Gas(),
+					"hash", tx.Hash(), "gas", pool.Gas(),
 					"tx gas used", gasUsed,
 				)
 				// If we reach this codepath, we want to still include the transaction,
@@ -837,18 +856,33 @@ func (miner *Miner) validateParams(genParams *generateParams) (time.Duration, er
 	return time.Duration(blockTime) * time.Second, nil
 }
 
-func (miner *Miner) registerFeeCurrencyTxFailure(env *environment, tx *types.Transaction, err error) {
-	// the fee-currency is still in the allowlist of this environment,
-	// so set the fee-currency block gas limit to 0 to prevent other
-	// transactions.
-	if miner.feeCurrencyBlocklist.BlockingEnabled(*tx.FeeCurrency()) {
-		pool := env.multiGasPool.PoolFor(tx.FeeCurrency())
-		pool.SetGas(0)
-	}
-	// also add the fee-currency to a worker-wide blocklist,
-	// so that they are not allowlisted in the following blocks
-	// (only locally in the txpool, not consensus-critical)
-	if miner.feeCurrencyBlocklist.Add(*tx.FeeCurrency(), *env.header) {
-		feeCurrenciesInBlocklistCounter.Inc(1)
+func (miner *Miner) registerFeeCurrencyTxFailure(env *environment, tx *types.Transaction, _ error) {
+	if !env.blocklistsDisabled {
+		// add the fee-currency to a worker-wide blocklist,
+		// so that they are not allowlisted in the following blocks
+		// (only locally in the txpool, not consensus-critical)
+		if miner.feeCurrencyBlocklist.Add(*tx.FeeCurrency(), *env.header) {
+			log.Warn(
+				"added fee-currency to local blocklist",
+				"fee-currency", tx.FeeCurrency(),
+			)
+			feeCurrenciesInBlocklistCounter.Inc(1)
+		}
+
+		if miner.feeCurrencyBlocklist.BlockingEnabled(*tx.FeeCurrency()) {
+			// the fee-currency is still in the allowlist of this environment,
+			// so set the fee-currency block gas limit to 0 to prevent other
+			// transactions.
+			pool, hasSeparateMultiPool := env.multiGasPool.PoolFor(tx.FeeCurrency())
+			// if for whatever reason we didn't set a separate multipool
+			// for this fee-currency, we don't want to completely
+			// block all other gas usage
+			if hasSeparateMultiPool {
+				pool.SetGas(0)
+			} else {
+				log.Warn("blocked fee-currency does not have separate multi-gas-pool"+
+					", using default gas-pool for further block building", "fee-currency", tx.FeeCurrency())
+			}
+		}
 	}
 }
