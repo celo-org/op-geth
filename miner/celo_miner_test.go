@@ -192,7 +192,7 @@ func TestBlocklistOnlyForSequencing(t *testing.T) {
 	tx := makeTx(true)
 	require.True(t, miner.feeCurrencyBlocklist.IsBlocked(*tx.FeeCurrency(), parentBlock))
 
-	// pending block building
+	// pending block building, blocklist disabled
 	r := miner.generateWork(&generateParams{
 		parentHash: parentBlock.Hash(),
 		timestamp:  parentBlock.Time + 1,
@@ -212,7 +212,7 @@ func TestBlocklistOnlyForSequencing(t *testing.T) {
 	// add to pool once more to the pool
 	makeTx(true)
 
-	// l1 derivation block building
+	// l1 derivation block building, blocklist disabled
 	r2 := miner.generateWork(&generateParams{
 		parentHash: parentBlock.Hash(),
 		timestamp:  parentBlock.Time + 1,
@@ -230,8 +230,8 @@ func TestBlocklistOnlyForSequencing(t *testing.T) {
 	require.Equal(t, 1, len(r2.receipts), "block should have 1 transaction receipts")
 	require.False(t, tx2.Rejected(), "tx should not be rejected")
 
-	// mempool block building, tx
-	// but the tx has a blocked fee-currency
+	// mempool block building, blocklist enabled
+	// and the tx has a blocked fee-currency
 	r3 := miner.generateWork(&generateParams{
 		parentHash: parentBlock.Hash(),
 		timestamp:  parentBlock.Time + 1,
