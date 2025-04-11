@@ -166,6 +166,7 @@ func newTestBackend(t *testing.T, londonBlock *big.Int, cancunBlock *big.Int, pe
 		}
 	}
 	config.LondonBlock = londonBlock
+	config.GingerbreadBlock = londonBlock
 	config.ArrowGlacierBlock = londonBlock
 	config.GrayGlacierBlock = londonBlock
 	if cancunBlock != nil {
