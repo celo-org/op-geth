@@ -55,6 +55,7 @@ import (
 const estimateGasErrorRatio = 0.015
 
 var errBlobTxNotSupported = errors.New("signing blob transactions not supported")
+var emptyExchangeRates = make(common.ExchangeRates)
 
 // EthereumAPI provides an API to access Ethereum related information.
 type EthereumAPI struct {
@@ -296,11 +297,11 @@ func (api *EthereumAccountAPI) Accounts() []common.Address {
 
 // BlockChainAPI provides an API to access Ethereum blockchain data.
 type BlockChainAPI struct {
-	b Backend
+	b CeloBackend
 }
 
 // NewBlockChainAPI creates a new Ethereum blockchain API.
-func NewBlockChainAPI(b Backend) *BlockChainAPI {
+func NewBlockChainAPI(b CeloBackend) *BlockChainAPI {
 	return &BlockChainAPI{b}
 }
 
@@ -773,7 +774,7 @@ func applyMessage(ctx context.Context, b Backend, args TransactionArgs, state *s
 	if err := args.CallDefaults(gp.Gas(), blockContext.BaseFee, b.ChainConfig().ChainID); err != nil {
 		return nil, err
 	}
-	msg := args.ToMessage(header.BaseFee, skipChecks, skipChecks)
+	msg := args.ToMessage(header.BaseFee, skipChecks, skipChecks, blockContext.ExchangeRates)
 	// Lower the basefee to 0 to avoid breaking EVM
 	// invariants (basefee < feecap).
 	if msg.GasPrice.Sign() == 0 {
@@ -816,7 +817,7 @@ func applyMessageWithEVM(ctx context.Context, evm *vm.EVM, msg *core.Message, ti
 	return result, nil
 }
 
-func DoCall(ctx context.Context, b Backend, args TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash, overrides *override.StateOverride, blockOverrides *override.BlockOverrides, timeout time.Duration, globalGasCap uint64) (*core.ExecutionResult, error) {
+func DoCall(ctx context.Context, b CeloBackend, args TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash, overrides *override.StateOverride, blockOverrides *override.BlockOverrides, timeout time.Duration, globalGasCap uint64) (*core.ExecutionResult, error) {
 	defer func(start time.Time) { log.Debug("Executing EVM call finished", "runtime", time.Since(start)) }(time.Now())
 
 	state, header, err := b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
@@ -910,7 +911,7 @@ func (api *BlockChainAPI) SimulateV1(ctx context.Context, opts simOpts, blockNrO
 // successfully at block `blockNrOrHash`. It returns error if the transaction would revert, or if
 // there are unexpected failures. The gas limit is capped by both `args.Gas` (if non-nil &
 // non-zero) and `gasCap` (if non-zero).
-func DoEstimateGas(ctx context.Context, b Backend, args TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash, overrides *override.StateOverride, blockOverrides *override.BlockOverrides, gasCap uint64) (hexutil.Uint64, error) {
+func DoEstimateGas(ctx context.Context, b CeloBackend, args TransactionArgs, blockNrOrHash rpc.BlockNumberOrHash, overrides *override.StateOverride, blockOverrides *override.BlockOverrides, gasCap uint64) (hexutil.Uint64, error) {
 	// Retrieve the base state and mutate it with any overrides
 	state, header, err := b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
 	if state == nil || err != nil {
@@ -936,10 +937,28 @@ func DoEstimateGas(ctx context.Context, b Backend, args TransactionArgs, blockNr
 	if err := args.CallDefaults(gasCap, header.BaseFee, b.ChainConfig().ChainID); err != nil {
 		return 0, err
 	}
-	call := args.ToMessage(header.BaseFee, true, true)
+
+	// Celo specific: get exchange rates if fee currency is specified
+	exchangeRates := emptyExchangeRates
+	if args.FeeCurrency != nil {
+		// It is debatable whether we should use Hash or ParentHash here. Usually,
+		// user would probably like the recent rates after the block, so we use Hash.
+		exchangeRates, err = b.GetExchangeRates(ctx, header.Hash())
+		if err != nil {
+			return 0, fmt.Errorf("get exchange rates for block: %v err: %w", header.Hash(), err)
+		}
+	}
+
+	call := args.ToMessage(header.BaseFee, true, true, exchangeRates)
+
+	// Celo specific: get balance
+	balance, err := b.GetFeeBalance(ctx, opts.Header.Hash(), call.From, args.FeeCurrency)
+	if err != nil {
+		return 0, err
+	}
 
 	// Run the gas estimation and wrap any revertals into a custom return
-	estimate, revert, err := gasestimator.Estimate(ctx, call, opts, gasCap)
+	estimate, revert, err := gasestimator.Estimate(ctx, call, opts, gasCap, exchangeRates, balance)
 	if err != nil {
 		if len(revert) > 0 {
 			return 0, newRevertError(revert)
@@ -1315,7 +1334,7 @@ func (api *BlockChainAPI) CreateAccessList(ctx context.Context, args Transaction
 // AccessList creates an access list for the given transaction.
 // If the accesslist creation fails an error is returned.
 // If the transaction itself fails, an vmErr is returned.
-func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrHash, args TransactionArgs, state *state.StateDB) (acl types.AccessList, gasUsed uint64, vmErr error, err error) {
+func AccessList(ctx context.Context, b CeloBackend, blockNrOrHash rpc.BlockNumberOrHash, args TransactionArgs, state *state.StateDB) (acl types.AccessList, gasUsed uint64, vmErr error, err error) {
 	// Retrieve the execution context
 	db, header, err := b.StateAndHeaderByNumberOrHash(ctx, blockNrOrHash)
 	if db == nil || err != nil {
@@ -1362,7 +1381,17 @@ func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrH
 		statedb := db.Copy()
 		// Set the accesslist to the last al
 		args.AccessList = &accessList
-		msg := args.ToMessage(header.BaseFee, true, true)
+		exchangeRates := emptyExchangeRates
+		if args.FeeCurrency != nil {
+			// Always use the header's parent here, since we want to create the list at the
+			// queried block, but want to use the exchange rates before (at the beginning of)
+			// the queried block
+			exchangeRates, err = b.GetExchangeRates(ctx, header.ParentHash)
+			if err != nil {
+				return nil, 0, nil, fmt.Errorf("get exchange rates for block: %v err: %w", header.Hash(), err)
+			}
+		}
+		msg := args.ToMessage(header.BaseFee, true, true, exchangeRates)
 
 		// Apply the transaction with the access list tracer
 		tracer := logger.NewAccessListTracer(accessList, args.from(), to, precompiles)
@@ -1390,13 +1419,13 @@ func AccessList(ctx context.Context, b Backend, blockNrOrHash rpc.BlockNumberOrH
 
 // TransactionAPI exposes methods for reading and creating transaction data.
 type TransactionAPI struct {
-	b         Backend
+	b         CeloBackend
 	nonceLock *AddrLocker
 	signer    types.Signer
 }
 
 // NewTransactionAPI creates a new RPC service with methods for interacting with transactions.
-func NewTransactionAPI(b Backend, nonceLock *AddrLocker) *TransactionAPI {
+func NewTransactionAPI(b CeloBackend, nonceLock *AddrLocker) *TransactionAPI {
 	// The signer used by the API should always be the 'latest' known one because we expect
 	// signers to be backwards-compatible with old transactions.
 	signer := types.LatestSigner(b.ChainConfig())
