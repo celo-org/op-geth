@@ -55,7 +55,7 @@ func (s cel2Signer) Equal(s2 Signer) bool {
 }
 
 func (s cel2Signer) SignatureValues(tx *Transaction, sig []byte) (R, S, V *big.Int, err error) {
-	if tx.Type() != CeloDynamicFeeTxType && tx.Type() != CeloDenominatedTxType {
+	if tx.Type() != CeloDynamicFeeTxV2Type && tx.Type() != CeloDenominatedTxType {
 		return s.londonSigner.SignatureValues(tx, sig)
 	}
 
