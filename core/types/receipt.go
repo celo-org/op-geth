@@ -628,10 +628,12 @@ func (rs Receipts) DeriveFields(config *params.ChainConfig, blockHash common.Has
 	signer := MakeSigner(config, new(big.Int).SetUint64(blockNumber), blockTime)
 
 	logIndex := uint(0)
-	if len(txs) != len(rs) {
+
+	// If rs are one longer than txs it indicates the presence of a celo block receipt.
+	if len(txs) != len(rs) && len(txs)+1 != len(rs) {
 		return errors.New("transaction and receipt count mismatch")
 	}
-	for i := 0; i < len(rs); i++ {
+	for i := 0; i < len(txs); i++ {
 		var cumulativeGasUsed uint64
 		if i > 0 {
 			cumulativeGasUsed = rs[i-1].CumulativeGasUsed
@@ -679,6 +681,19 @@ func (rs Receipts) DeriveFields(config *params.ChainConfig, blockHash common.Has
 		}
 
 		logIndex += uint(len(rs[i].Logs))
+	}
+
+	// This is a celo block receipt, which uses the block hash in place of the tx hash.
+	if len(txs)+1 == len(rs) {
+		j := len(txs)
+		for k := 0; k < len(rs[j].Logs); k++ {
+			rs[j].Logs[k].BlockNumber = blockNumber
+			rs[j].Logs[k].BlockHash = blockHash
+			rs[j].Logs[k].TxHash = blockHash
+			rs[j].Logs[k].TxIndex = uint(j)
+			rs[j].Logs[k].Index = logIndex
+			logIndex++
+		}
 	}
 
 	if config.IsOptimismBedrock(new(big.Int).SetUint64(blockNumber)) && len(txs) >= 2 {

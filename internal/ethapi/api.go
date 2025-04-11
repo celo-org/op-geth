@@ -733,7 +733,8 @@ func (api *BlockChainAPI) GetBlockReceipts(ctx context.Context, blockNrOrHash rp
 		}
 	}
 	txs := block.Transactions()
-	if len(txs) != len(receipts) {
+	// Legacy Celo blocks sometimes include an extra block receipt. See https://docs.celo.org/developer/migrate/from-ethereum#core-contract-calls
+	if len(txs) != len(receipts) && len(txs)+1 != len(receipts) {
 		return nil, fmt.Errorf("receipts length mismatch: %d vs %d", len(txs), len(receipts))
 	}
 	// Derive the sender.
@@ -741,7 +742,11 @@ func (api *BlockChainAPI) GetBlockReceipts(ctx context.Context, blockNrOrHash rp
 
 	result := make([]map[string]interface{}, len(receipts))
 	for i, receipt := range receipts {
-		result[i] = MarshalReceipt(receipt, block.Hash(), block.NumberU64(), signer, txs[i], i, api.b.ChainConfig())
+		if i == len(txs) {
+			result[i] = marshalBlockReceipt(receipt, block.Hash(), block.NumberU64(), i)
+		} else {
+			result[i] = MarshalReceipt(receipt, block.Hash(), block.NumberU64(), signer, txs[i], i, api.b.ChainConfig())
+		}
 	}
 	return result, nil
 }
