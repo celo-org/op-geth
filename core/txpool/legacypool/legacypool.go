@@ -32,6 +32,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/prque"
 	"github.com/ethereum/go-ethereum/consensus/misc/eip1559"
+	"github.com/ethereum/go-ethereum/contracts"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/txpool"
@@ -280,8 +281,9 @@ type LegacyPool struct {
 	filterCtx      context.Context        // Filters may use this context with external resources
 	filterCancel   context.CancelFunc     // Cancel function for the filter context
 
-	// Celo
-	feeCurrencyValidator txpool.FeeCurrencyValidator
+	// Celo specific
+	celoBackend  *contracts.CeloBackend // For fee currency balances & exchange rate calculation
+	currentRates common.ExchangeRates   // current exchange rates for fee currencies
 }
 
 type txpoolResetRequest struct {
@@ -310,9 +312,6 @@ func New(config Config, chain BlockChain) *LegacyPool {
 		reorgDoneCh:     make(chan chan struct{}),
 		reorgShutdownCh: make(chan struct{}),
 		initDoneCh:      make(chan struct{}),
-
-		// CELO fields
-		feeCurrencyValidator: txpool.NewFeeCurrencyValidator(),
 	}
 	pool.priced = newPricedList(pool.all)
 
@@ -353,6 +352,7 @@ func (pool *LegacyPool) Init(gasTip uint64, head *types.Header, reserver txpool.
 	pool.currentHead.Store(head)
 	pool.currentState = statedb
 	pool.pendingNonces = newNoncer(statedb)
+	pool.recreateCeloProperties()
 
 	// OP-Stack addition
 	pool.resetRollupCostFn(head.Time, statedb)
@@ -589,14 +589,10 @@ func (pool *LegacyPool) Pending(filter txpool.PendingFilter) map[common.Address]
 
 	// Convert the new uint256.Int types to the old big.Int ones used by the legacy pool
 	var (
-		minTipBig  *big.Int
-		baseFeeBig *big.Int
+		minTipBig *big.Int
 	)
 	if filter.MinTip != nil {
 		minTipBig = filter.MinTip.ToBig()
-	}
-	if filter.BaseFee != nil {
-		baseFeeBig = filter.BaseFee.ToBig()
 	}
 	pending := make(map[common.Address][]*txpool.LazyTransaction, len(pool.pending))
 	for addr, list := range pool.pending {
@@ -605,7 +601,7 @@ func (pool *LegacyPool) Pending(filter txpool.PendingFilter) map[common.Address]
 		// If the miner requests tip enforcement, cap the lists now
 		if minTipBig != nil {
 			for i, tx := range txs {
-				if tx.EffectiveGasTipIntCmp(minTipBig, baseFeeBig) < 0 {
+				if tx.EffectiveGasTipIntCmp(minTipBig, pool.priced.urgent.GetNativeBaseFee()) < 0 {
 					txs = txs[:i]
 					break
 				}
@@ -664,7 +660,7 @@ func (pool *LegacyPool) ValidateTxBasics(tx *types.Transaction) error {
 		EffectiveGasCeil: pool.config.EffectiveGasCeil,
 		MaxTxGasLimit:    pool.config.MaxTxGasLimit,
 	}
-	return txpool.CeloValidateTransaction(tx, pool.currentHead.Load(), pool.signer, opts, pool.currentState, pool.feeCurrencyValidator)
+	return txpool.CeloValidateTransaction(tx, pool.currentHead.Load(), pool.signer, opts, pool.currentRates)
 }
 
 // validateTx checks whether a transaction is valid according to the consensus
@@ -675,36 +671,44 @@ func (pool *LegacyPool) validateTx(tx *types.Transaction) error {
 
 		FirstNonceGap:    nil, // Pool allows arbitrary arrival order, don't invalidate nonce gaps
 		UsedAndLeftSlots: nil, // Pool has own mechanism to limit the number of transactions
-		ExistingExpenditure: func(addr common.Address) *big.Int {
+		ExistingExpenditure: func(addr common.Address) (*big.Int, *big.Int) {
 			if list := pool.pending[addr]; list != nil {
-				return list.totalcost.ToBig()
+				return list.TotalCostFor(tx.FeeCurrency()).ToBig(), list.TotalCostFor(nil).ToBig()
 			}
-			return new(big.Int)
+			return new(big.Int), new(big.Int)
 		},
-		ExistingCost: func(addr common.Address, nonce uint64) *big.Int {
+		ExistingCost: func(addr common.Address, nonce uint64) (*big.Int, *big.Int) {
 			if list := pool.pending[addr]; list != nil {
 				if tx := list.txs.Get(nonce); tx != nil {
 					// The total cost is guaranteed to not overflow because it got already
 					// successfully added to the list.
 					cost, _ := txpool.TotalTxCost(tx, pool.rollupCostFn)
-					return cost.ToBig()
+					return tx.FeeCurrencyCost(), cost.ToBig()
 				}
 			}
-			return nil
+			return nil, nil
 		},
 		RollupCostFn: pool.rollupCostFn,
+		ExistingBalance: func(addr common.Address, feeCurrency *common.Address) *big.Int {
+			return contracts.GetFeeBalance(pool.celoBackend, addr, feeCurrency)
+		},
 	}
 
-	// Adapt to celo validation options
-	celoOpts := &txpool.CeloValidationOptionsWithState{
-		ValidationOptionsWithState: *opts,
-		FeeCurrencyValidator:       pool.feeCurrencyValidator,
-	}
-
-	if err := txpool.ValidateTransactionWithState(tx, pool.signer, celoOpts); err != nil {
+	if err := txpool.ValidateTransactionWithState(tx, pool.signer, opts); err != nil {
 		return err
 	}
-	return pool.validateAuth(tx)
+	if err := pool.validateAuth(tx); err != nil {
+		return err
+	}
+	if tx.FeeCurrency() != nil {
+		from, err := pool.signer.Sender(tx) // already validated (and cached), but cleaner to check
+		if err != nil {
+			log.Error("Transaction sender recovery failed", "err", err)
+			return err
+		}
+		return contracts.TryDebitFees(tx, from, pool.celoBackend)
+	}
+	return nil
 }
 
 // checkDelegationLimit determines if the tx sender is delegated or has a
@@ -878,7 +882,7 @@ func (pool *LegacyPool) add(tx *types.Transaction) (replaced bool, err error) {
 	// Try to replace an existing transaction in the pending pool
 	if list := pool.pending[from]; list != nil && list.Contains(tx.Nonce()) {
 		// Nonce already pending, check if required price bump is met
-		inserted, old := list.Add(tx, pool.config.PriceBump)
+		inserted, old := list.Add(tx, pool.config.PriceBump, pool.currentRates)
 		if !inserted {
 			pendingDiscardMeter.Mark(1)
 			return false, txpool.ErrReplaceUnderpriced
@@ -941,7 +945,7 @@ func (pool *LegacyPool) enqueueTx(hash common.Hash, tx *types.Transaction, addAl
 	if pool.queue[from] == nil {
 		pool.queue[from] = newRollupList(false, pool)
 	}
-	inserted, old := pool.queue[from].Add(tx, pool.config.PriceBump)
+	inserted, old := pool.queue[from].Add(tx, pool.config.PriceBump, pool.currentRates)
 	if !inserted {
 		// An older transaction was better, discard this
 		queuedDiscardMeter.Mark(1)
@@ -983,7 +987,7 @@ func (pool *LegacyPool) promoteTx(addr common.Address, hash common.Hash, tx *typ
 	}
 	list := pool.pending[addr]
 
-	inserted, old := list.Add(tx, pool.config.PriceBump)
+	inserted, old := list.Add(tx, pool.config.PriceBump, pool.currentRates)
 	if !inserted {
 		// An older transaction was better, discard this
 		pool.all.Remove(hash)
@@ -1404,7 +1408,7 @@ func (pool *LegacyPool) runReorg(done chan struct{}, reset *txpoolResetRequest, 
 		if reset.newHead != nil {
 			if pool.chainconfig.IsLondon(new(big.Int).Add(reset.newHead.Number, big.NewInt(1))) {
 				pendingBaseFee := eip1559.CalcBaseFee(pool.chainconfig, reset.newHead, reset.newHead.Time+1)
-				pool.priced.SetBaseFee(pendingBaseFee)
+				pool.priced.SetBaseFeeAndRates(pendingBaseFee, pool.currentRates)
 			} else {
 				pool.priced.Reheap()
 			}
@@ -1534,6 +1538,7 @@ func (pool *LegacyPool) reset(oldHead, newHead *types.Header) {
 	pool.currentHead.Store(newHead)
 	pool.currentState = statedb
 	pool.pendingNonces = newNoncer(statedb)
+	pool.recreateCeloProperties()
 
 	// OP-Stack addition
 	pool.resetRollupCostFn(newHead.Time, statedb)
@@ -1572,9 +1577,9 @@ func (pool *LegacyPool) promoteExecutables(accounts []common.Address) []*types.T
 			pool.all.Remove(tx.Hash())
 		}
 		log.Trace("Removed old queued transactions", "count", len(forwards))
-		balance := pool.currentState.GetBalance(addr)
+
 		// Drop all transactions that are too costly (low balance or out of gas)
-		drops, _ := list.Filter(balance, gasLimit)
+		drops, _ := pool.filter(list, addr, gasLimit)
 		for _, tx := range drops {
 			pool.all.Remove(tx.Hash())
 		}
@@ -1761,9 +1766,8 @@ func (pool *LegacyPool) demoteUnexecutables() {
 			pool.all.Remove(hash)
 			log.Trace("Removed old pending transaction", "hash", hash)
 		}
-		balance := pool.currentState.GetBalance(addr)
 		// Drop all transactions that are too costly (low balance or out of gas), and queue any invalids back for later
-		drops, invalids := list.Filter(balance, gasLimit)
+		drops, invalids := pool.filter(list, addr, gasLimit)
 		for _, tx := range drops {
 			hash := tx.Hash()
 			pool.all.Remove(hash)
