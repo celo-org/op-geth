@@ -103,7 +103,7 @@ func CeloGenesisAccounts(fundedAddr common.Address) GenesisAlloc {
 			Balance: big.NewInt(0),
 			Storage: map[common.Hash]common.Hash{
 				CalcMapAddr(common.HexToHash("0x0"), common.BytesToHash(DevAddr.Bytes())):    devBalance32, // _balances[DevAddr]
-				CalcMapAddr(common.HexToHash("0x0"), common.BytesToHash(DevAddr2.Bytes())):   devBalance32, // _balances[DevAddr]
+				CalcMapAddr(common.HexToHash("0x0"), common.BytesToHash(DevAddr2.Bytes())):   devBalance32, // _balances[DevAddr2]
 				CalcMapAddr(common.HexToHash("0x0"), common.BytesToHash(fundedAddr.Bytes())): devBalance32, // _balances[fund]
 				common.HexToHash("0x2"): devBalance32, // _totalSupply
 			},
