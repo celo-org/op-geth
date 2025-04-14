@@ -37,9 +37,10 @@ func incHash(addr common.Hash, i int64) common.Hash {
 }
 
 var (
-	DevPrivateKey, _ = crypto.HexToECDSA("2771aff413cac48d9f8c114fabddd9195a2129f3c2c436caa07e27bb7f58ead5")
-	DevAddr          = common.BytesToAddress(DevAddr32.Bytes())
-	DevAddr32        = common.HexToHash("0x42cf1bbc38BaAA3c4898ce8790e21eD2738c6A4a")
+	DevPrivateKey, _  = crypto.HexToECDSA("2771aff413cac48d9f8c114fabddd9195a2129f3c2c436caa07e27bb7f58ead5")
+	DevAddr           = common.HexToAddress("0x42cf1bbc38BaAA3c4898ce8790e21eD2738c6A4a")
+	DevPrivateKey2, _ = crypto.HexToECDSA("fbc0c0a6b8e05a2770632982af1ea41bd444390b34476b52d57b0d455911a94c")
+	DevAddr2          = common.HexToAddress("0xf280E427723B0ee6a1eF614ffFBDE15DB5fED5b1")
 
 	DevFeeCurrencyAddr      = common.HexToAddress("0x000000000000000000000000000000000000ce16") // worth half as much as native CELO
 	DevFeeCurrencyAddr2     = common.HexToAddress("0x000000000000000000000000000000000000ce17") // worth twice as much as native CELO
@@ -91,7 +92,8 @@ func CeloGenesisAccounts(fundedAddr common.Address) GenesisAlloc {
 			Code:    feeCurrencyBytecode,
 			Balance: big.NewInt(0),
 			Storage: map[common.Hash]common.Hash{
-				CalcMapAddr(common.HexToHash("0x0"), DevAddr32):                              devBalance32, // _balances[DevAddr]
+				CalcMapAddr(common.HexToHash("0x0"), common.BytesToHash(DevAddr.Bytes())):    devBalance32, // _balances[DevAddr]
+				CalcMapAddr(common.HexToHash("0x0"), common.BytesToHash(DevAddr2.Bytes())):   devBalance32, // _balances[DevAddr2]
 				CalcMapAddr(common.HexToHash("0x0"), common.BytesToHash(fundedAddr.Bytes())): devBalance32, // _balances[fund]
 				common.HexToHash("0x2"): devBalance32, // _totalSupply
 			},
@@ -100,7 +102,8 @@ func CeloGenesisAccounts(fundedAddr common.Address) GenesisAlloc {
 			Code:    feeCurrencyBytecode,
 			Balance: big.NewInt(0),
 			Storage: map[common.Hash]common.Hash{
-				CalcMapAddr(common.HexToHash("0x0"), DevAddr32):                              devBalance32, // _balances[DevAddr]
+				CalcMapAddr(common.HexToHash("0x0"), common.BytesToHash(DevAddr.Bytes())):    devBalance32, // _balances[DevAddr]
+				CalcMapAddr(common.HexToHash("0x0"), common.BytesToHash(DevAddr2.Bytes())):   devBalance32, // _balances[DevAddr]
 				CalcMapAddr(common.HexToHash("0x0"), common.BytesToHash(fundedAddr.Bytes())): devBalance32, // _balances[fund]
 				common.HexToHash("0x2"): devBalance32, // _totalSupply
 			},
@@ -129,6 +132,9 @@ func CeloGenesisAccounts(fundedAddr common.Address) GenesisAlloc {
 			// This oracle is available for tests of contracts outside the celo_genesis, so no initialization is done at this point
 		},
 		DevAddr: {
+			Balance: DevBalance,
+		},
+		DevAddr2: {
 			Balance: DevBalance,
 		},
 		FaucetAddr: {
