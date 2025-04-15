@@ -21,7 +21,7 @@ on:
         required: true
         default: false
   schedule:
-     - cron: "0 2 * * *" # every day at 2am
+     - cron: "0 2 * * 4" # Wednesday at 2am
 
 jobs:
   test-snap-sync:
