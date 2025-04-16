@@ -19,7 +19,7 @@ function deploy_fee_currency() {
 	(
 		DEFAULT_INTRINSIC_GAS=60000
 		local fee_currency=$(
-			forge create --json --broadcast --root "$SCRIPT_DIR/debug-fee-currency" --contracts "$SCRIPT_DIR/debug-fee-currency" --private-key $ACC_PRIVKEY DebugFeeCurrency.sol:DebugFeeCurrency --constructor-args '100000000000000000000000000' $1 $2 $3 | jq .deployedTo -r
+			forge create --json --root "$SCRIPT_DIR/debug-fee-currency" --contracts "$SCRIPT_DIR/debug-fee-currency" --private-key $ACC_PRIVKEY DebugFeeCurrency.sol:DebugFeeCurrency --constructor-args '100000000000000000000000000' $1 $2 $3 | jq .deployedTo -r
 		)
 		if [ -z "${fee_currency}" ]; then
 			exit 1
