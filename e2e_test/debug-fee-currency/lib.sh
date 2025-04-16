@@ -89,3 +89,21 @@ function assert_cip_64_tx() {
 function estimate_tx() {
 	$SCRIPT_DIR/js-tests/estimate_tx.mjs "$(cast chain-id)" $1 $2
 }
+
+# args:
+# 	$1: feeCurrency (address):
+function enable_block_list_fee_currency() {
+	cast rpc admin_enableBlocklistFeeCurrencies '["'"$1"'"]'
+}
+
+# args:
+# 	$1: feeCurrency (address):
+function disable_block_list_fee_currency() {
+	cast rpc admin_disableBlocklistFeeCurrencies '["'"$1"'"]'
+}
+
+# args:
+# 	$1: feeCurrency (address):
+function unblock_fee_currency() {
+	cast rpc admin_unblockFeeCurrency $1
+}
