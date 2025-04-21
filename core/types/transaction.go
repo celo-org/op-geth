@@ -220,6 +220,8 @@ func (tx *Transaction) decodeTyped(b []byte) (TxData, error) {
 		inner = new(DynamicFeeTx)
 	case CeloDynamicFeeTxType:
 		inner = new(CeloDynamicFeeTx)
+	case CeloDynamicFeeTxV2Type:
+		inner = new(CeloDynamicFeeTxV2)
 	case BlobTxType:
 		inner = new(BlobTx)
 	case SetCodeTxType:
