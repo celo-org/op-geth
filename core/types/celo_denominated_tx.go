@@ -8,6 +8,8 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 )
 
+const CeloDenominatedTxType = 0x7a
+
 type CeloDenominatedTx struct {
 	ChainID    *big.Int
 	Nonce      uint64
