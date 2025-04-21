@@ -117,7 +117,3 @@ func (tx *CeloDenominatedTx) encode(b *bytes.Buffer) error {
 func (tx *CeloDenominatedTx) decode(input []byte) error {
 	return rlp.DecodeBytes(input, tx)
 }
-
-func (tx *CeloDenominatedTx) feeCurrency() *common.Address { return tx.FeeCurrency }
-
-func (tx *CeloDenominatedTx) maxFeeInFeeCurrency() *big.Int { return tx.MaxFeeInFeeCurrency }
