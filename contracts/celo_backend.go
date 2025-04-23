@@ -69,6 +69,7 @@ func (b *CeloBackend) NewEVM(feeCurrencyContext *common.FeeCurrencyContext) *vm.
 				panic("Non-zero transfers not implemented, yet.")
 			}
 		},
+		Random: &common.Hash{}, // Setting this is important since it is used to set IsMerge
 	}
 	if feeCurrencyContext != nil {
 		blockCtx.FeeCurrencyContext = *feeCurrencyContext
