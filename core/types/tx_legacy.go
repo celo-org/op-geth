@@ -25,13 +25,25 @@ import (
 
 // LegacyTx is the transaction data of the original Ethereum transactions.
 type LegacyTx struct {
-	Nonce    uint64          // nonce of sender account
-	GasPrice *big.Int        // wei per gas
-	Gas      uint64          // gas limit
-	To       *common.Address `rlp:"nil"` // nil means contract creation
-	Value    *big.Int        // wei amount
-	Data     []byte          // contract invocation input data
-	V, R, S  *big.Int        // signature values
+	Nonce    uint64   // nonce of sender account
+	GasPrice *big.Int // wei per gas
+	Gas      uint64   // gas limit
+
+	// Celo-specific fields
+	FeeCurrency         *common.Address // nil means native currency
+	GatewayFeeRecipient *common.Address // nil means no gateway fee is paid
+	GatewayFee          *big.Int
+
+	To      *common.Address `rlp:"nil"` // nil means contract creation
+	Value   *big.Int        // wei amount
+	Data    []byte          // contract invocation input data
+	V, R, S *big.Int        // signature values
+
+	// This is only used when marshaling to JSON.
+	Hash *common.Hash `rlp:"-"`
+
+	// Whether this is a celo legacy transaction (i.e. with FeeCurrency, GatewayFeeRecipient and GatewayFee)
+	CeloLegacy bool `rlp:"-"`
 }
 
 // NewTransaction creates an unsigned legacy transaction.
@@ -72,6 +84,12 @@ func (tx *LegacyTx) copy() TxData {
 		V:        new(big.Int),
 		R:        new(big.Int),
 		S:        new(big.Int),
+
+		// Celo specific fields
+		FeeCurrency:         copyAddressPtr(tx.FeeCurrency),
+		GatewayFeeRecipient: copyAddressPtr(tx.GatewayFeeRecipient),
+		GatewayFee:          copyBigInt(tx.GatewayFee),
+		CeloLegacy:          tx.CeloLegacy,
 	}
 	if tx.Value != nil {
 		cpy.Value.Set(tx.Value)
