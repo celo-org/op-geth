@@ -89,6 +89,24 @@ var (
 		Logs:              []*Log{},
 		Type:              PostExecTxType,
 	}
+	celoDynamicFeeReceipt = &Receipt{
+		Status:            ReceiptStatusFailed,
+		CumulativeGasUsed: 1,
+		Logs: []*Log{
+			{
+				Address: common.BytesToAddress([]byte{0x11}),
+				Topics:  []common.Hash{common.HexToHash("dead"), common.HexToHash("beef")},
+				Data:    []byte{0x01, 0x00, 0xff},
+			},
+			{
+				Address: common.BytesToAddress([]byte{0x01, 0x11}),
+				Topics:  []common.Hash{common.HexToHash("dead"), common.HexToHash("beef")},
+				Data:    []byte{0x01, 0x00, 0xff},
+			},
+		},
+		BaseFee: new(big.Int).SetUint64(1),
+		Type:    CeloDynamicFeeTxV2Type,
+	}
 
 	// Create a few transactions to have receipts for
 	to2 = common.HexToAddress("0x2")
@@ -602,6 +620,24 @@ func TestReceiptMarshalBinary(t *testing.T) {
 	}
 	if len(have) == 0 || have[0] != PostExecTxType {
 		t.Errorf("expected encoded receipt to start with PostExecTxType (0x%x), got %x", PostExecTxType, have)
+	}
+
+	// Celo Dynamic Fee Receipt
+	buf.Reset()
+	celoDynamicFeeReceipt.Bloom = CreateBloom(celoDynamicFeeReceipt)
+	have, err = celoDynamicFeeReceipt.MarshalBinary()
+	if err != nil {
+		t.Fatalf("marshal binary error: %v", err)
+	}
+	celoDynamicFeeReceipts := Receipts{celoDynamicFeeReceipt}
+	celoDynamicFeeReceipts.EncodeIndex(0, buf)
+	haveEncodeIndex = buf.Bytes()
+	if !bytes.Equal(have, haveEncodeIndex) {
+		t.Errorf("BinaryMarshal and EncodeIndex mismatch, got %x want %x", have, haveEncodeIndex)
+	}
+	celoDynamicFeeWant := common.FromHex("7bf901c68001b9010000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000500000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000000000000000000010000080000000000000000000004000000000000000000000000000040000000000000000000000000000800000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000f8bef85d940000000000000000000000000000000000000011f842a0000000000000000000000000000000000000000000000000000000000000deada0000000000000000000000000000000000000000000000000000000000000beef830100fff85d940000000000000000000000000000000000000111f842a0000000000000000000000000000000000000000000000000000000000000deada0000000000000000000000000000000000000000000000000000000000000beef830100ff01")
+	if !bytes.Equal(have, celoDynamicFeeWant) {
+		t.Errorf("encoded RLP mismatch, got %x want %x", have, celoDynamicFeeWant)
 	}
 }
 
