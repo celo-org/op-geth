@@ -57,6 +57,10 @@ func MakeSigner(config *params.ChainConfig, blockNumber *big.Int, blockTime uint
 	default:
 		signer = FrontierSigner{}
 	}
+
+	// Apply the celo overlay signer, if no celo forks have been enabled then the given signer is returned.
+	signer = makeCeloSigner(config, blockTime, signer)
+
 	return signer
 }
 
@@ -73,6 +77,13 @@ func LatestSigner(config *params.ChainConfig) Signer {
 		switch {
 		case config.IsthmusTime != nil:
 			signer = NewIsthmusSigner(config.ChainID)
+		case config.Cel2Time != nil:
+			if config.CancunTime != nil {
+				// This branch is only used in testing
+				return latestCeloSigner(config.ChainID, NewCancunSigner(config.ChainID))
+			} else {
+				return latestCeloSigner(config.ChainID, NewLondonSigner(config.ChainID))
+			}
 		case config.PragueTime != nil && !config.IsOptimism():
 			signer = NewPragueSigner(config.ChainID)
 		case config.CancunTime != nil && !config.IsOptimism():
@@ -102,7 +113,7 @@ func LatestSigner(config *params.ChainConfig) Signer {
 func LatestSignerForChainID(chainID *big.Int) Signer {
 	var signer Signer
 	if chainID != nil {
-		signer = NewPragueSigner(chainID)
+		signer = latestCeloSigner(chainID, NewPragueSigner(chainID))
 	} else {
 		signer = HomesteadSigner{}
 	}
