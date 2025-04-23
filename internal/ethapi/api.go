@@ -1090,6 +1090,12 @@ type RPCTransaction struct {
 	IsSystemTx *bool        `json:"isSystemTx,omitempty"`
 	// deposit-tx post-Canyon only
 	DepositReceiptVersion *hexutil.Uint64 `json:"depositReceiptVersion,omitempty"`
+
+	// Celo
+	FeeCurrency         *common.Address `json:"feeCurrency,omitempty"`
+	EthCompatible       *bool           `json:"ethCompatible,omitempty"`
+	GatewayFee          *hexutil.Big    `json:"gatewayFee,omitempty"`
+	GatewayFeeRecipient *common.Address `json:"gatewayFeeRecipient,omitempty"`
 }
 
 // newRPCTransaction returns a transaction that will serialize to the RPC
@@ -1111,6 +1117,16 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 		V:        (*hexutil.Big)(v),
 		R:        (*hexutil.Big)(r),
 		S:        (*hexutil.Big)(s),
+		// Celo
+		FeeCurrency: tx.FeeCurrency(),
+		// Unfortunately we need to set the gateway fee since this
+		// (0x3f33789ee7c52eacfe8b1a2afab8455aaf65f860dfa36f1afa466eb69bfa312e)
+		// tx on alfajores actually set it.
+		GatewayFee: (*hexutil.Big)(tx.GatewayFee()),
+		// Unfortunately we need to set the gateway fee recipient since this
+		// (0x7a2624134a8c634b38520dbb61f8fe2013e0817d446224f3d866ce3de92f4e98)
+		// tx on alfajores actually set it.
+		GatewayFeeRecipient: tx.GatewayFeeRecipient(),
 	}
 	if blockHash != (common.Hash{}) {
 		result.BlockHash = &blockHash
@@ -1145,6 +1161,11 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 			result.ChainID = (*hexutil.Big)(id)
 		}
 
+		if tx.IsCeloLegacy() {
+			// If this is a celo legacy transaction then set eth compatible to false
+			result.EthCompatible = new(bool)
+		}
+
 	case types.AccessListTxType:
 		al := tx.AccessList()
 		yparity := hexutil.Uint64(v.Sign())
@@ -1152,7 +1173,7 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 		result.ChainID = (*hexutil.Big)(tx.ChainId())
 		result.YParity = &yparity
 
-	case types.DynamicFeeTxType:
+	case types.DynamicFeeTxType, types.CeloDynamicFeeTxV2Type:
 		al := tx.AccessList()
 		yparity := hexutil.Uint64(v.Sign())
 		result.Accesses = &al
@@ -1160,14 +1181,32 @@ func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber
 		result.YParity = &yparity
 		result.GasFeeCap = (*hexutil.Big)(tx.GasFeeCap())
 		result.GasTipCap = (*hexutil.Big)(tx.GasTipCap())
-		// if the transaction has been mined, compute the effective gas price
-		if baseFee != nil && blockHash != (common.Hash{}) {
-			// price = min(gasTipCap + baseFee, gasFeeCap)
-			result.GasPrice = (*hexutil.Big)(effectiveGasPrice(tx, baseFee))
-		} else {
-			result.GasPrice = (*hexutil.Big)(tx.GasFeeCap())
-		}
 
+		// Note that celo denominated txs always have the gas price denominated in celo (the native currency)
+		isNativeFeeCurrency := tx.FeeCurrency() == nil
+		isGingerbread := config.IsGingerbread(new(big.Int).SetUint64(blockNumber))
+		isCel2 := config.IsCel2(blockTime)
+
+		if blockHash == (common.Hash{}) {
+			// This is a pending transaction, for pending transactions we set the gas price to gas fee cap.
+			result.GasPrice = (*hexutil.Big)(tx.GasFeeCap())
+		} else if isGingerbread && isNativeFeeCurrency {
+			// Post gingerbread mined transaction with a native fee currency, we can compute the effective gas price.
+			result.GasPrice = (*hexutil.Big)(effectiveGasPrice(tx, baseFee))
+		} else if isCel2 && tx.Type() == types.CeloDynamicFeeTxV2Type && receipt != nil {
+			// Mined post Cel2 celoDynamicFeeTxV2 transaction with non native fee currency, we get the gas price from
+			// the receipt.
+			result.GasPrice = (*hexutil.Big)(receipt.EffectiveGasPrice)
+		} else {
+			// Otherwise this is either a:
+			// -  pre-gingerbread transaction
+			// -  post-gingerbread native fee currency transaction but no base fee was provided
+			// -  post-gingerbread pre-cel2 transaction with a non-native fee currency
+			// -  post cel2 transaction with a non-native fee currency in a bad block (and therefore without a receipt)
+			//
+			// In these cases we can't calculate the gas price.
+			result.GasPrice = nil
+		}
 	case types.BlobTxType:
 		al := tx.AccessList()
 		yparity := hexutil.Uint64(v.Sign())
@@ -1238,12 +1277,12 @@ func newRPCTransactionFromBlockIndex(ctx context.Context, b *types.Block, index 
 		return nil
 	}
 	tx := txs[index]
-	rcpt := depositTxReceipt(ctx, b.Hash(), index, backend, tx)
+	rcpt := txReceipt(ctx, b.Hash(), index, backend, tx)
 	return newRPCTransaction(tx, b.Hash(), b.NumberU64(), b.Time(), index, b.BaseFee(), config, rcpt)
 }
 
-func depositTxReceipt(ctx context.Context, blockHash common.Hash, index uint64, backend Backend, tx *types.Transaction) *types.Receipt {
-	if tx.Type() != types.DepositTxType {
+func txReceipt(ctx context.Context, blockHash common.Hash, index uint64, backend Backend, tx *types.Transaction) *types.Receipt {
+	if tx.Type() != types.DepositTxType && tx.Type() != types.CeloDynamicFeeTxV2Type {
 		return nil
 	}
 	receipts, err := backend.GetReceipts(ctx, blockHash)
@@ -1505,7 +1544,7 @@ func (api *TransactionAPI) GetTransactionByHash(ctx context.Context, hash common
 	if err != nil {
 		return nil, err
 	}
-	rcpt := depositTxReceipt(ctx, blockHash, index, api.b, tx)
+	rcpt := txReceipt(ctx, blockHash, index, api.b, tx)
 	return newRPCTransaction(tx, blockHash, blockNumber, header.Time, index, header.BaseFee, api.b.ChainConfig(), rcpt), nil
 }
 
@@ -1569,13 +1608,24 @@ func marshalReceipt(receipt *types.Receipt, blockHash common.Hash, blockNumber u
 		"logs":              receipt.Logs,
 		"logsBloom":         receipt.Bloom,
 		"type":              hexutil.Uint(tx.Type()),
-		"effectiveGasPrice": (*hexutil.Big)(receipt.EffectiveGasPrice),
+	}
+
+	// omit the effectiveGasPrice when it is nil, for Celo L1 backwards compatibility.
+	if receipt.EffectiveGasPrice != nil || chainConfig.IsGingerbread(new(big.Int).SetUint64(blockNumber)) {
+		fields["effectiveGasPrice"] = (*hexutil.Big)(receipt.EffectiveGasPrice)
 	}
 
 	if chainConfig.Optimism != nil && !tx.IsDepositTx() {
-		fields["l1GasPrice"] = (*hexutil.Big)(receipt.L1GasPrice)
-		fields["l1GasUsed"] = (*hexutil.Big)(receipt.L1GasUsed)
-		fields["l1Fee"] = (*hexutil.Big)(receipt.L1Fee)
+		// These three fields are not present receipts migrated from l1 Celo
+		if receipt.L1GasPrice != nil {
+			fields["l1GasPrice"] = (*hexutil.Big)(receipt.L1GasPrice)
+		}
+		if receipt.L1GasUsed != nil {
+			fields["l1GasUsed"] = (*hexutil.Big)(receipt.L1GasUsed)
+		}
+		if receipt.L1Fee != nil {
+			fields["l1Fee"] = (*hexutil.Big)(receipt.L1Fee)
+		}
 		// Fields removed with Ecotone
 		if receipt.FeeScalar != nil {
 			fields["l1FeeScalar"] = receipt.FeeScalar.String()

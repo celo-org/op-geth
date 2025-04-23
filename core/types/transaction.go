@@ -209,6 +209,11 @@ func (tx *Transaction) decodeTyped(b []byte) (TxData, error) {
 	if len(b) <= 1 {
 		return nil, errShortTypedTx
 	}
+
+	if inner, isCelo, err := celoDecodeTyped(b); isCelo {
+		return inner, err
+	}
+
 	var inner TxData
 	switch b[0] {
 	case AccessListTxType:
