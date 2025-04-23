@@ -134,3 +134,22 @@ func (tx *CeloDynamicFeeTx) encode(b *bytes.Buffer) error {
 func (tx *CeloDynamicFeeTx) decode(input []byte) error {
 	return rlp.DecodeBytes(input, tx)
 }
+
+func (tx *CeloDynamicFeeTx) sigHash(chainID *big.Int) common.Hash {
+	return prefixedRlpHash(
+		CeloDynamicFeeTxV2Type,
+		[]any{
+			chainID,
+			tx.Nonce,
+			tx.GasTipCap,
+			tx.GasFeeCap,
+			tx.Gas,
+			tx.FeeCurrency,
+			tx.GatewayFeeRecipient,
+			tx.GatewayFee,
+			tx.To,
+			tx.Value,
+			tx.Data,
+			tx.AccessList,
+		})
+}
