@@ -180,6 +180,7 @@ var (
 		ShanghaiTime:            newUint64(0),
 		CancunTime:              newUint64(0),
 		Cel2Time:                newUint64(0),
+		GingerbreadBlock:        big.NewInt(0),
 		TerminalTotalDifficulty: big.NewInt(0),
 		PragueTime:              newUint64(0),
 		BlobScheduleConfig: &BlobScheduleConfig{
@@ -273,6 +274,7 @@ var (
 		CancunTime:              nil,
 		PragueTime:              nil,
 		VerkleTime:              nil,
+		GingerbreadBlock:        big.NewInt(0),
 		Cel2Time:                nil,
 		TerminalTotalDifficulty: nil,
 		Ethash:                  new(EthashConfig),
@@ -304,6 +306,7 @@ var (
 		PragueTime:              newUint64(0),
 		OsakaTime:               nil,
 		VerkleTime:              nil,
+		GingerbreadBlock:        big.NewInt(0),
 		TerminalTotalDifficulty: big.NewInt(0),
 		Ethash:                  new(EthashConfig),
 		Clique:                  nil,
