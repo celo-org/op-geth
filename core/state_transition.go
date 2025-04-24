@@ -687,8 +687,7 @@ func (st *stateTransition) innerExecute() (*ExecutionResult, error) {
 		}, nil
 	}
 
-	err = st.distributeTxFees()
-	if err != nil {
+	if err := st.distributeTxFees(); err != nil {
 		return nil, err
 	}
 
