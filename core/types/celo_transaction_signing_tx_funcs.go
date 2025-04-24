@@ -18,6 +18,9 @@ var (
 			return nil, nil, nil, fmt.Errorf("%w %v", ErrDeprecatedTxType, tx.Type())
 		},
 		sender: func(tx *Transaction, hashFunc func(tx *Transaction, chainID *big.Int) common.Hash, signerChainID *big.Int) (common.Address, error) {
+			if tx.IsCeloLegacy() {
+				return common.Address{}, fmt.Errorf("%w %v %v", ErrDeprecatedTxType, tx.Type(), "(celo legacy)")
+			}
 			return common.Address{}, fmt.Errorf("%w %v", ErrDeprecatedTxType, tx.Type())
 		},
 	}
