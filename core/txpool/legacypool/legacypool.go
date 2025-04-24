@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/exchange"
 	"github.com/ethereum/go-ethereum/common/prque"
 	"github.com/ethereum/go-ethereum/consensus/misc/eip1559"
 	"github.com/ethereum/go-ethereum/contracts"
@@ -589,9 +590,11 @@ func (pool *LegacyPool) Pending(filter txpool.PendingFilter) map[common.Address]
 		if filter.MinTip != nil || filter.GasLimitCap != 0 {
 			for i, tx := range txs {
 				if filter.MinTip != nil {
-					// Get base fee from pool's price tracking for multi-currency support
-					baseFee := pool.priced.urgent.GetNativeBaseFee()
-					if tx.EffectiveGasTipIntCmp(filter.MinTip, baseFee) < 0 {
+					minTipInFeeCurrency, err := exchange.ConvertCeloToCurrency(pool.feeCurrencyContext.ExchangeRates, tx.FeeCurrency(), filter.MinTip.ToBig())
+					minTip256, minTipOverflow := uint256.FromBig(minTipInFeeCurrency)
+					baseFee256, baseFeeOverflow := uint256.FromBig(pool.priced.urgent.GetBaseFeeIn(tx.FeeCurrency()))
+
+					if err != nil || minTipOverflow || baseFeeOverflow || tx.EffectiveGasTipIntCmp(minTip256, baseFee256) < 0 {
 						txs = txs[:i]
 						break
 					}
