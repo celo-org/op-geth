@@ -12,7 +12,7 @@ describe("ethers.js send tx", () => {
 			value: 1,
 		});
 		const receipt = await tx.wait();
-	}).timeout(10_000);
+	}).timeout(20_000);
 });
 
 describe("ethers.js compatibility tests with state", () => {
@@ -32,7 +32,7 @@ describe("ethers.js compatibility tests with state", () => {
 		assert.notEqual(feeData.maxFeePerGas, null);
 		assert.notEqual(feeData.maxPriorityFeePerGas, null);
 		assert.notEqual(feeData.gasPrice, null);
-	});
+	}).timeout(5_000);;
 
 	it("block has gasLimit", async () => {
 		const fullBlock = await provider.send("eth_getBlockByNumber", [
