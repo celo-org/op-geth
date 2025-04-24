@@ -54,6 +54,7 @@ import (
 	"github.com/ethereum/go-ethereum/eth/tracers"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/event"
+	"github.com/ethereum/go-ethereum/internal/celoapi"
 	"github.com/ethereum/go-ethereum/internal/ethapi"
 	"github.com/ethereum/go-ethereum/internal/sequencerapi"
 	"github.com/ethereum/go-ethereum/internal/shutdowncheck"
@@ -487,7 +488,8 @@ func makeExtraData(extra []byte) []byte {
 // APIs return the collection of RPC services the ethereum package offers.
 // NOTE, some of these services probably need to be moved to somewhere else.
 func (s *Ethereum) APIs() []rpc.API {
-	apis := ethapi.GetAPIs(s.APIBackend)
+	celoBackend := celoapi.NewCeloAPIBackend(s.APIBackend)
+	apis := ethapi.GetAPIs(celoBackend)
 
 	// Append any Sequencer APIs as enabled
 	if s.config.RollupSequencerTxConditionalEnabled {
@@ -513,6 +515,13 @@ func (s *Ethereum) APIs() []rpc.API {
 		}, {
 			Namespace: "net",
 			Service:   s.netRPCService,
+		},
+		// CELO specific API backend.
+		// For methods in the backend that are already defined (match by name)
+		// on the eth namespace, this will overwrite the original procedures.
+		{
+			Namespace: "eth",
+			Service:   celoapi.NewCeloAPI(s, celoBackend),
 		},
 	}...)
 }
