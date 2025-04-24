@@ -90,10 +90,23 @@ func DebitFees(evm *vm.EVM, feeCurrency *common.Address, address common.Address,
 		// debitGasFees(address from, uint256 value) parameters
 		address, amount,
 	)
-	if errors.Is(err, vm.ErrOutOfGas) {
-		// This basically is a configuration / contract error, since
-		// the contract itself used way more gas than was expected (including grace limit)
-		return 0, fmt.Errorf("surpassed maximum allowed intrinsic gas for fee currency: %w", err)
+	if err != nil {
+		if errors.Is(err, vm.ErrOutOfGas) {
+			// This basically is a configuration / contract error, since
+			// the contract itself used way more gas than was expected (including grace limit)
+			return 0, fmt.Errorf(
+				"%w: surpassed maximum allowed intrinsic gas for DebitFees() in fee-currency: %w",
+				ErrFeeCurrencyEVMCall,
+				err,
+			)
+		}
+		// This error could still be caused by lack of gas, since those are not always propagated from sub-calls.
+		// See https://github.com/celo-org/op-geth/issues/346#issuecomment-3027651249
+		return 0, fmt.Errorf(
+			"%w: DebitFees() call error: %w",
+			ErrFeeCurrencyEVMCall,
+			err,
+		)
 	}
 
 	gasUsed := maxIntrinsicGasCost - leftoverGas
@@ -152,10 +165,23 @@ func CreditFees(
 		// )
 		txSender, tipReceiver, common.ZeroAddress, baseFeeReceiver, refund, feeTip, common.Big0, baseFee,
 	)
-	if errors.Is(err, vm.ErrOutOfGas) {
-		// This is a configuration / contract error, since
-		// the contract itself used way more gas than was expected (including grace limit)
-		return fmt.Errorf("surpassed maximum allowed intrinsic gas for fee currency: %w", err)
+	if err != nil {
+		if errors.Is(err, vm.ErrOutOfGas) {
+			// This is a configuration / contract error, since
+			// the contract itself used way more gas than was expected (including grace limit)
+			return fmt.Errorf(
+				"%w: surpassed maximum allowed intrinsic gas for CreditFees() in fee-currency: %w",
+				ErrFeeCurrencyEVMCall,
+				err,
+			)
+		}
+		// This error could still be caused by lack of gas, since those are not always propagated from sub-calls.
+		// See https://github.com/celo-org/op-geth/issues/346#issuecomment-3027651249
+		return fmt.Errorf(
+			"%w: CreditFees() call error: %w",
+			ErrFeeCurrencyEVMCall,
+			err,
+		)
 	}
 
 	gasUsed := maxAllowedGasForCredit - leftoverGas
@@ -167,8 +193,20 @@ func CreditFees(
 		return fmt.Errorf("%w: %x", exchange.ErrUnregisteredFeeCurrency, feeCurrency)
 	}
 	gasUsedForDebitAndCredit := gasUsedDebit + gasUsed
-	if gasUsedForDebitAndCredit > intrinsicGas {
-		log.Info("Gas usage for debit+credit exceeds intrinsic gas!", "gasUsed", gasUsedForDebitAndCredit, "intrinsicGas", intrinsicGas, "feeCurrency", feeCurrency)
+	if gasUsedForDebitAndCredit > 2*intrinsicGas {
+		log.Info(
+			"Gas usage for debit+credit exceeds intrinsic gas!",
+			"gasUsed", gasUsedForDebitAndCredit,
+			"intrinsicGas", intrinsicGas,
+			"feeCurrency", feeCurrency,
+		)
+	} else if gasUsedForDebitAndCredit > intrinsicGas {
+		log.Trace(
+			"Gas usage for debit+credit exceeds intrinsic gas, within a factor of 2.",
+			"gasUsed", gasUsedForDebitAndCredit,
+			"intrinsicGas", intrinsicGas,
+			"feeCurrency", feeCurrency,
+		)
 	}
 	return err
 }
