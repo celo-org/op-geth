@@ -590,6 +590,50 @@ func newTestAccountManager(t *testing.T) (*accounts.Manager, accounts.Account) {
 	return am, acc
 }
 
+var errCeloNotImplemented error = errors.New("Celo backend test functionality not implemented")
+
+type celoTestBackend struct {
+	*testBackend
+}
+
+func (c *celoTestBackend) GetFeeBalance(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash, account common.Address, feeCurrency *common.Address) (*big.Int, error) {
+	if feeCurrency == nil {
+		header, err := c.HeaderByNumberOrHash(ctx, blockNumOrHash)
+		if err != nil {
+			return nil, fmt.Errorf("retrieve header by hash in testBackend: %w", err)
+		}
+
+		state, _, err := c.StateAndHeaderByNumber(ctx, rpc.BlockNumber(header.Number.Int64()))
+		if err != nil {
+			return nil, err
+		}
+		return state.GetBalance(account).ToBig(), nil
+	}
+	// Celo specific backend features are currently not tested
+	return nil, errCeloNotImplemented
+}
+
+func (c *celoTestBackend) GetExchangeRates(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash) (common.ExchangeRates, error) {
+	var er common.ExchangeRates
+	return er, nil
+}
+
+func (c *celoTestBackend) ConvertToCurrency(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash, value *big.Int, feeCurrency *common.Address) (*big.Int, error) {
+	if feeCurrency == nil {
+		return value, nil
+	}
+	// Celo specific backend features are currently not tested
+	return nil, errCeloNotImplemented
+}
+
+func (c *celoTestBackend) ConvertToCelo(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash, value *big.Int, feeCurrency *common.Address) (*big.Int, error) {
+	if feeCurrency == nil {
+		return value, nil
+	}
+	// Celo specific backend features are currently not tested
+	return nil, errCeloNotImplemented
+}
+
 type testBackend struct {
 	db      ethdb.Database
 	chain   *core.BlockChain
@@ -598,7 +642,7 @@ type testBackend struct {
 	acc     accounts.Account
 }
 
-func newTestBackend(t *testing.T, n int, gspec *core.Genesis, engine consensus.Engine, generator func(i int, b *core.BlockGen)) *testBackend {
+func newTestBackend(t *testing.T, n int, gspec *core.Genesis, engine consensus.Engine, generator func(i int, b *core.BlockGen)) *celoTestBackend {
 	var (
 		cacheConfig = &core.CacheConfig{
 			TrieCleanLimit:    256,
@@ -622,7 +666,9 @@ func newTestBackend(t *testing.T, n int, gspec *core.Genesis, engine consensus.E
 	}
 
 	backend := &testBackend{db: db, chain: chain, accman: accman, acc: acc}
-	return backend
+	return &celoTestBackend{
+		testBackend: backend,
+	}
 }
 
 func (b *testBackend) setPendingBlock(block *types.Block) {
@@ -3321,7 +3367,7 @@ func TestRPCGetBlockOrHeader(t *testing.T) {
 	}
 }
 
-func setupReceiptBackend(t *testing.T, genBlocks int) (*testBackend, []common.Hash) {
+func setupReceiptBackend(t *testing.T, genBlocks int) (*celoTestBackend, []common.Hash) {
 	config := *params.MergedTestChainConfig
 	var (
 		acc1Key, _ = crypto.HexToECDSA("8a1f9a8f95be41cd7ccb6168179afb4504aefe388d1e14474d32c45c72ce7b7a")
