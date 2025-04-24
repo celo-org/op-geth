@@ -1,48 +1,9 @@
 import { assert } from "chai";
 import "mocha";
 import {
-	createPublicClient,
-	createWalletClient,
-	http,
-	defineChain,
 	parseAbi,
 } from "viem";
-import { celoAlfajores } from "viem/chains";
-import { privateKeyToAccount } from "viem/accounts";
-
-// Setup up chain
-const devChain = defineChain({
-	...celoAlfajores,
-	id: 1337,
-	name: "local dev chain",
-	network: "dev",
-	rpcUrls: {
-		default: {
-			http: [process.env.ETH_RPC_URL],
-		},
-	},
-});
-
-const chain = (() => {
-	switch (process.env.NETWORK) {
-		case 'alfajores':
-			return celoAlfajores
-		default:
-			return devChain
-	};
-})();
-
-// Set up clients/wallet
-const publicClient = createPublicClient({
-	chain: chain,
-	transport: http(),
-});
-const account = privateKeyToAccount(process.env.ACC_PRIVKEY);
-const walletClient = createWalletClient({
-	account,
-	chain: chain,
-	transport: http(),
-});
+import { publicClient, walletClient } from "./viem_setup.mjs"
 
 const TX_GAS = 21000;
 
@@ -69,13 +30,12 @@ const testNonceBump = async (
 	shouldReplace,
 ) => {
 	const syncBarrierRequest = await walletClient.prepareTransactionRequest({
-		account,
+
 		to: "0x00000000000000000000000000000000DeaDBeef",
 		value: 2,
 		gas: 22000,
 	});
 	const firstTxHash = await walletClient.sendTransaction({
-		account,
 		to: "0x00000000000000000000000000000000DeaDBeef",
 		value: 2,
 		gas: await getIntrinsicGasForFeeCurrency(TX_GAS, firstCurrency),
@@ -87,7 +47,6 @@ const testNonceBump = async (
 	var secondTxHash;
 	try {
 		secondTxHash = await walletClient.sendTransaction({
-			account,
 			to: "0x00000000000000000000000000000000DeaDBeef",
 			value: 3,
 			gas: await getIntrinsicGasForFeeCurrency(TX_GAS, secondCurrency),
@@ -104,7 +63,7 @@ const testNonceBump = async (
 			shouldReplace
 		) {
 			throw err; // Only throw if unexpected error.
-	  }
+		}
 	}
 	const syncBarrierSignature =
 		await walletClient.signTransaction(syncBarrierRequest);
@@ -124,7 +83,6 @@ const testNonceBump = async (
 describe("viem send tx", () => {
 	it("send basic tx and check receipt", async () => {
 		const request = await walletClient.prepareTransactionRequest({
-			account,
 			to: "0x00000000000000000000000000000000DeaDBeef",
 			value: 1,
 			gas: TX_GAS,
@@ -139,7 +97,6 @@ describe("viem send tx", () => {
 
 	it("send basic tx using viem gas estimation and check receipt", async () => {
 		const request = await walletClient.prepareTransactionRequest({
-			account,
 			to: "0x00000000000000000000000000000000DeaDBeef",
 			value: 1,
 		});
@@ -154,7 +111,6 @@ describe("viem send tx", () => {
 	it("send fee currency tx with explicit gas fields and check receipt", async () => {
 		const [maxFeePerGas, tip] = await getGasFees(publicClient, 2n, process.env.FEE_CURRENCY);
 		const request = await walletClient.prepareTransactionRequest({
-			account,
 			to: "0x00000000000000000000000000000000DeaDBeef",
 			value: 2,
 			gas: await getIntrinsicGasForFeeCurrency(TX_GAS, process.env.FEE_CURRENCY),
@@ -172,7 +128,6 @@ describe("viem send tx", () => {
 
 	it("test gas price difference for fee currency", async () => {
 		const request = await walletClient.prepareTransactionRequest({
-			account,
 			to: "0x00000000000000000000000000000000DeaDBeef",
 			value: 2,
 			gas: await getIntrinsicGasForFeeCurrency(TX_GAS, process.env.FEE_CURRENCY),
@@ -217,8 +172,8 @@ describe("viem send tx", () => {
 		// The expected value for the max fee should be the (baseFeePerGas * multiplier) + maxPriorityFeePerGas
 		// Instead what is currently returned is (maxFeePerGas * multiplier) + maxPriorityFeePerGas
 		const maxPriorityFeeInFeeCurrency = (maxPriorityFeePerGasNative * numerator) / denominator;
-    const maxFeeInFeeCurrency = ((block.baseFeePerGas +maxPriorityFeePerGasNative)*numerator) /denominator;
-		assert.equal(fees.maxFeePerGas, ((maxFeeInFeeCurrency*12n)/10n) + maxPriorityFeeInFeeCurrency);
+		const maxFeeInFeeCurrency = ((block.baseFeePerGas + maxPriorityFeePerGasNative) * numerator) / denominator;
+		assert.equal(fees.maxFeePerGas, ((maxFeeInFeeCurrency * 12n) / 10n) + maxPriorityFeeInFeeCurrency);
 		assert.equal(fees.maxPriorityFeePerGas, maxPriorityFeeInFeeCurrency);
 
 		// check that the prepared transaction request uses the
@@ -229,7 +184,6 @@ describe("viem send tx", () => {
 
 	it("send fee currency with gas estimation tx and check receipt", async () => {
 		const request = await walletClient.prepareTransactionRequest({
-			account,
 			to: "0x00000000000000000000000000000000DeaDBeef",
 			value: 2,
 			feeCurrency: process.env.FEE_CURRENCY,
@@ -302,7 +256,6 @@ describe("viem send tx", () => {
 
 	it("send tx with unregistered fee currency", async () => {
 		const request = await walletClient.prepareTransactionRequest({
-			account,
 			to: "0x00000000000000000000000000000000DeaDBeef",
 			value: 2,
 			gas: await getIntrinsicGasForFeeCurrency(TX_GAS, process.env.FEE_CURRENCY),
@@ -351,7 +304,6 @@ describe("viem send tx", () => {
 		}
 		const maxFeePerGas = convertedBaseFee + 2n;
 		const request = await walletClient.prepareTransactionRequest({
-			account,
 			to: "0x00000000000000000000000000000000DeaDBeef",
 			value: 2,
 			gas: await getIntrinsicGasForFeeCurrency(TX_GAS, fc),
@@ -371,13 +323,13 @@ describe("viem send tx", () => {
 });
 
 async function getRate(feeCurrencyAddress) {
-		const abi = parseAbi(['function getExchangeRate(address token) public view returns (uint256 numerator, uint256 denominator)']);
-		const [numerator, denominator] = await publicClient.readContract({
-			address: process.env.FEE_CURRENCY_DIRECTORY_ADDR,
-			abi: abi,
-			functionName: 'getExchangeRate',
-			args: [feeCurrencyAddress],
-		});
+	const abi = parseAbi(['function getExchangeRate(address token) public view returns (uint256 numerator, uint256 denominator)']);
+	const [numerator, denominator] = await publicClient.readContract({
+		address: process.env.FEE_CURRENCY_DIRECTORY_ADDR,
+		abi: abi,
+		functionName: 'getExchangeRate',
+		args: [feeCurrencyAddress],
+	});
 	return {
 		toFeeCurrency: (v) => (v * numerator) / denominator,
 		toNative: (v) => (v * denominator) / numerator,
