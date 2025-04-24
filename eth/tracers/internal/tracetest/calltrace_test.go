@@ -128,7 +128,7 @@ func testCallTracer(tracerName string, dirPath string, t *testing.T) {
 			if tracer.Hooks != nil {
 				logState = state.NewHookedState(st.StateDB, tracer.Hooks)
 			}
-			msg, err := core.TransactionToMessage(tx, signer, context.BaseFee, context.ExchangeRates)
+			msg, err := core.TransactionToMessage(tx, signer, context.BaseFee, context.FeeCurrencyContext.ExchangeRates)
 			if err != nil {
 				t.Fatalf("failed to prepare transaction for tracing: %v", err)
 			}
@@ -206,7 +206,7 @@ func benchTracer(tracerName string, test *callTracerTest, b *testing.B) {
 	}
 	signer := types.MakeSigner(test.Genesis.Config, new(big.Int).SetUint64(uint64(test.Context.Number)), uint64(test.Context.Time))
 	context := test.Context.toBlockContext(test.Genesis)
-	msg, err := core.TransactionToMessage(tx, signer, context.BaseFee, context.ExchangeRates)
+	msg, err := core.TransactionToMessage(tx, signer, context.BaseFee, context.FeeCurrencyContext.ExchangeRates)
 	if err != nil {
 		b.Fatalf("failed to prepare transaction for tracing: %v", err)
 	}
