@@ -23,7 +23,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/exchange"
-	"github.com/ethereum/go-ethereum/contracts"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
@@ -70,7 +69,7 @@ func (result *ExecutionResult) Revert() []byte {
 }
 
 // IntrinsicGas computes the 'intrinsic gas' for a message with the given data.
-func IntrinsicGas(data []byte, accessList types.AccessList, authList []types.SetCodeAuthorization, isContractCreation, isHomestead, isEIP2028, isEIP3860 bool, feeCurrency *common.Address) (uint64, error) {
+func IntrinsicGas(data []byte, accessList types.AccessList, authList []types.SetCodeAuthorization, isContractCreation, isHomestead, isEIP2028, isEIP3860 bool, feeCurrency *common.Address, feeIntrinsicGas common.IntrinsicGasCosts) (uint64, error) {
 	// Set the starting gas for the raw transaction
 	var gas uint64
 	if isContractCreation && isHomestead {
@@ -128,10 +127,14 @@ func IntrinsicGas(data []byte, accessList types.AccessList, authList []types.Set
 	// In this case, however, the user always ends up paying `maxGasForDebitAndCreditTransactions`
 	// keeping it consistent.
 	if feeCurrency != nil {
-		if (math.MaxUint64 - gas) < contracts.IntrinsicGasForAlternativeFeeCurrency {
+		intrinsicGasForFeeCurrency, ok := common.CurrencyIntrinsicGasCost(feeIntrinsicGas, feeCurrency)
+		if !ok {
+			return 0, fmt.Errorf("%w: %x", exchange.ErrUnregisteredFeeCurrency, feeCurrency)
+		}
+		if (math.MaxUint64 - gas) < intrinsicGasForFeeCurrency {
 			return 0, ErrGasUintOverflow
 		}
-		gas += contracts.IntrinsicGasForAlternativeFeeCurrency
+		gas += intrinsicGasForFeeCurrency
 	}
 
 	if accessList != nil {
@@ -281,6 +284,8 @@ type stateTransition struct {
 	initialGas   uint64
 	state        vm.StateDB
 	evm          *vm.EVM
+
+	feeCurrencyGasUsed uint64
 }
 
 // newStateTransition initialises and returns a new state transition object.
@@ -401,7 +406,7 @@ func (st *stateTransition) preCheck() error {
 		if !st.evm.ChainConfig().IsCel2(st.evm.Context.Time) {
 			return ErrCel2NotEnabled
 		} else {
-			if !common.IsCurrencyAllowed(st.evm.Context.ExchangeRates, msg.FeeCurrency) {
+			if !common.IsCurrencyAllowed(st.evm.Context.FeeCurrencyContext.ExchangeRates, msg.FeeCurrency) {
 				log.Trace("fee currency not allowed", "fee currency address", msg.FeeCurrency)
 				return fmt.Errorf("%w: %x", exchange.ErrUnregisteredFeeCurrency, msg.FeeCurrency)
 			}
@@ -428,7 +433,7 @@ func (st *stateTransition) preCheck() error {
 
 			// This will panic if baseFee is nil, but basefee presence is verified
 			// as part of header validation.
-			baseFeeInFeeCurrency, err := exchange.ConvertCeloToCurrency(st.evm.Context.ExchangeRates, msg.FeeCurrency, st.evm.Context.BaseFee)
+			baseFeeInFeeCurrency, err := exchange.ConvertCeloToCurrency(st.evm.Context.FeeCurrencyContext.ExchangeRates, msg.FeeCurrency, st.evm.Context.BaseFee)
 			if err != nil {
 				return fmt.Errorf("preCheck: %w", err)
 			}
@@ -568,7 +573,16 @@ func (st *stateTransition) innerExecute() (*ExecutionResult, error) {
 	}
 
 	// Check clauses 4-5, subtract intrinsic gas if everything is correct
-	gas, err := IntrinsicGas(msg.Data, msg.AccessList, msg.SetCodeAuthorizations, contractCreation, rules.IsHomestead, rules.IsIstanbul, rules.IsShanghai, msg.FeeCurrency)
+	gas, err := IntrinsicGas(
+		msg.Data,
+		msg.AccessList, msg.SetCodeAuthorizations,
+		contractCreation,
+		rules.IsHomestead,
+		rules.IsIstanbul,
+		rules.IsShanghai,
+		msg.FeeCurrency,
+		st.evm.Context.FeeCurrencyContext.IntrinsicGasCosts,
+	)
 	if err != nil {
 		return nil, err
 	}
