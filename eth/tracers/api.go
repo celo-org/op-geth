@@ -272,7 +272,7 @@ func (api *API) traceChain(start, end *types.Block, config *TraceConfig, closed 
 				)
 				// Trace all the transactions contained within
 				for i, tx := range task.block.Transactions() {
-					msg, _ := core.TransactionToMessage(tx, signer, task.block.BaseFee(), blockCtx.ExchangeRates)
+					msg, _ := core.TransactionToMessage(tx, signer, task.block.BaseFee(), blockCtx.FeeCurrencyContext.ExchangeRates)
 					txctx := &Context{
 						BlockHash:   task.block.Hash(),
 						BlockNumber: task.block.Number(),
@@ -576,7 +576,7 @@ func (api *API) IntermediateRoots(ctx context.Context, hash common.Hash, config 
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee(), vmctx.ExchangeRates)
+		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee(), vmctx.FeeCurrencyContext.ExchangeRates)
 		statedb.SetTxContext(tx.Hash(), i)
 		if _, err := core.ApplyMessage(evm, msg, new(core.GasPool).AddGas(msg.GasLimit)); err != nil {
 			log.Warn("Tracing intermediate roots did not complete", "txindex", i, "txhash", tx.Hash(), "err", err)
@@ -654,7 +654,7 @@ func (api *API) traceBlock(ctx context.Context, block *types.Block, config *Trac
 	)
 	for i, tx := range txs {
 		// Generate the next state snapshot fast without tracing
-		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee(), blockCtx.ExchangeRates)
+		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee(), blockCtx.FeeCurrencyContext.ExchangeRates)
 		txctx := &Context{
 			BlockHash:   blockHash,
 			BlockNumber: block.Number(),
@@ -733,7 +733,7 @@ txloop:
 		}
 
 		// Generate the next state snapshot fast without tracing
-		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee(), blockCtx.ExchangeRates)
+		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee(), blockCtx.FeeCurrencyContext.ExchangeRates)
 		statedb.SetTxContext(tx.Hash(), i)
 		if _, err := core.ApplyMessage(evm, msg, new(core.GasPool).AddGas(msg.GasLimit)); err != nil {
 			failed = err
@@ -817,7 +817,7 @@ func (api *API) standardTraceBlockToFile(ctx context.Context, block *types.Block
 	for i, tx := range block.Transactions() {
 		// Prepare the transaction for un-traced execution
 		var (
-			msg, _ = core.TransactionToMessage(tx, signer, block.BaseFee(), vmctx.ExchangeRates)
+			msg, _ = core.TransactionToMessage(tx, signer, block.BaseFee(), vmctx.FeeCurrencyContext.ExchangeRates)
 			vmConf vm.Config
 			dump   *os.File
 			writer *bufio.Writer
@@ -1007,7 +1007,7 @@ func (api *API) TraceCall(ctx context.Context, args ethapi.TransactionArgs, bloc
 		return nil, err
 	}
 	var (
-		msg         = args.ToMessage(vmctx.BaseFee, true, true, vmctx.ExchangeRates)
+		msg         = args.ToMessage(vmctx.BaseFee, true, true, vmctx.FeeCurrencyContext.ExchangeRates)
 		tx          = args.ToTransaction(types.LegacyTxType)
 		traceConfig *TraceConfig
 	)
