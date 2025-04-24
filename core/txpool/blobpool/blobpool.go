@@ -329,8 +329,8 @@ type BlobPool struct {
 	lock sync.RWMutex // Mutex protecting the pool during reorg handling
 
 	// Celo specific
-	celoBackend  *contracts.CeloBackend // For fee currency balances & exchange rate calculation
-	currentRates common.ExchangeRates   // current exchange rates for fee currencies
+	celoBackend        *contracts.CeloBackend // For fee currency balances & exchange rate calculation
+	feeCurrencyContext common.FeeCurrencyContext
 }
 
 // New creates a new blob transaction pool to gather, sort and filter inbound
@@ -348,7 +348,7 @@ func New(config Config, chain BlockChain, hasPendingAuth func(common.Address) bo
 		lookup:         newLookup(),
 		index:          make(map[common.Address][]*blobTxMeta),
 		spent:          make(map[common.Address]*uint256.Int),
-		txValidationFn: txpool.ValidateTransaction,
+		txValidationFn: txpool.CeloValidateTransaction,
 	}
 }
 
@@ -1111,7 +1111,7 @@ func (p *BlobPool) ValidateTxBasics(tx *types.Transaction) error {
 		MaxSize:   txMaxSize,
 		MinTip:    p.gasTip.ToBig(),
 	}
-	return txpool.ValidateTransaction(tx, p.head, p.signer, opts)
+	return txpool.ValidateTransaction(tx, p.head, p.signer, opts, p.feeCurrencyContext)
 }
 
 // checkDelegationLimit determines if the tx sender is delegated or has a
@@ -1158,7 +1158,7 @@ func (p *BlobPool) validateTx(tx *types.Transaction) error {
 		MaxSize:   txMaxSize,
 		MinTip:    p.gasTip.ToBig(),
 	}
-	if err := p.txValidationFn(tx, p.head, p.signer, baseOpts); err != nil {
+	if err := p.txValidationFn(tx, p.head, p.signer, baseOpts, p.feeCurrencyContext); err != nil {
 		return err
 	}
 	// Ensure the transaction adheres to the stateful pool filters (nonce, balance)
