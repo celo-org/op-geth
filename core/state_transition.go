@@ -816,6 +816,7 @@ func (st *stateTransition) innerExecute() (*ExecutionResult, error) {
 			l1Cost,
 			st.feeCurrencyGasUsed,
 		); err != nil {
+			err = fmt.Errorf("error crediting fee-currency: %w", err)
 			log.Error("Error crediting", "from", from, "coinbase", st.evm.Context.Coinbase, "feeHandler", feeHandlerAddress, "err", err)
 			return nil, err
 		}
