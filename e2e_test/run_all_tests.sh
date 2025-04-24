@@ -11,7 +11,7 @@ if [ -z $NETWORK ]; then
     cd "$SCRIPT_DIR/.." || exit 1
     make geth
     trap 'kill %%' EXIT # kill bg job at exit
-    build/bin/geth --dev --http --http.api eth,web3,net --txpool.nolocals &>"$SCRIPT_DIR/geth.log" &
+    build/bin/geth --dev --http --http.api eth,web3,net,admin --txpool.nolocals &>"$SCRIPT_DIR/geth.log" &
     
     # Wait for geth to be ready
     for _ in {1..10}; do
@@ -39,7 +39,7 @@ for f in test_*"$TEST_GLOB"*; do
 	if [[ -n $NETWORK ]]; then
 		case $f in
 		  # Skip tests that require a local network.
-		  test_fee_currency_fails_on_credit.sh|test_fee_currency_fails_on_debit.sh|test_fee_currency_fails_intrinsic.sh|test_value_and_fee_currency_balance_check.sh|test_fee_currency_gas_estimation.sh)
+		  test_fee_currency_fails_on_credit.sh|test_fee_currency_fails_on_debit.sh|test_fee_currency_fails_intrinsic.sh|test_value_and_fee_currency_balance_check.sh|test_fee_currency_gas_estimation.sh|test_fee_currency_disable_blocking.sh|test_fee_currency_disable_and_enable_blocking.sh|test_fee_currency_unblock.sh)
 		  echo "skipping file $f"
 		  continue
 		  ;;
