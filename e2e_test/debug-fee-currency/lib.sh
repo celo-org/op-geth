@@ -19,7 +19,7 @@ function deploy_fee_currency() {
 	(
 		DEFAULT_INTRINSIC_GAS=60000
 		local fee_currency=$(
-			forge create --root "$SCRIPT_DIR/debug-fee-currency" --contracts "$SCRIPT_DIR/debug-fee-currency" --private-key $ACC_PRIVKEY DebugFeeCurrency.sol:DebugFeeCurrency --constructor-args '100000000000000000000000000' $1 $2 $3 --json | jq .deployedTo -r
+			forge create --json --root "$SCRIPT_DIR/debug-fee-currency" --contracts "$SCRIPT_DIR/debug-fee-currency" --private-key $ACC_PRIVKEY DebugFeeCurrency.sol:DebugFeeCurrency --constructor-args '100000000000000000000000000' $1 $2 $3 | jq .deployedTo -r
 		)
 		if [ -z "${fee_currency}" ]; then
 			exit 1
@@ -88,4 +88,22 @@ function assert_cip_64_tx() {
 # 		which fee-currency address to use for the default CIP-64 transaction
 function estimate_tx() {
 	$SCRIPT_DIR/js-tests/estimate_tx.mjs "$(cast chain-id)" $1 $2
+}
+
+# args:
+# 	$1: feeCurrency (address):
+function enable_block_list_fee_currency() {
+	cast rpc admin_enableBlocklistFeeCurrencies '["'"$1"'"]'
+}
+
+# args:
+# 	$1: feeCurrency (address):
+function disable_block_list_fee_currency() {
+	cast rpc admin_disableBlocklistFeeCurrencies '["'"$1"'"]'
+}
+
+# args:
+# 	$1: feeCurrency (address):
+function unblock_fee_currency() {
+	cast rpc admin_unblockFeeCurrency $1
 }
