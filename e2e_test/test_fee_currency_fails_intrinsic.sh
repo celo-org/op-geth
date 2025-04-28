@@ -30,4 +30,4 @@ trap 'kill %%' EXIT # kill bg tail job on exit
 sleep 0.5
 # although we sent a transaction wih faulty fee-currency twice,
 # the EVM call should have been executed only once
-if [ "$(grep -Ec "fee-currency EVM execution error, temporarily blocking fee-currency in local txpools .+ surpassed maximum allowed intrinsic gas for CreditFees\(\) in fee-currency" debug-fee-currency/geth.intrinsic.log)" -ne 1 ]; then exit 1; fi
+if [ "$(grep -Ec "fee-currency EVM execution error.+fee-currency contract error during internal EVM call: surpassed maximum allowed intrinsic gas for CreditFees\(\) in fee-currency" debug-fee-currency/geth.intrinsic.log)" -ne 1 ]; then exit 1; fi
