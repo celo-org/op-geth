@@ -17,13 +17,13 @@
 package miner
 
 import (
-	"fmt"
 	"math/big"
 	"math/rand"
 	"testing"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/consensus/misc/eip1559"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
@@ -41,77 +41,112 @@ func TestMinerFillTransactionsOrdering(t *testing.T) {
 		address1 = core.DevAddr
 		key2     = core.DevPrivateKey2
 
-		miner       = createCeloMiner(t)
-		signer      = types.LatestSigner(miner.chainConfig)
-		parentBlock = miner.chain.CurrentBlock()
+		miner        = createCeloMiner(t)
+		signer       = types.LatestSigner(miner.chainConfig)
+		parentHeader = miner.chain.CurrentBlock()
 	)
 
-	// BaseFee: 0.875 GWei
-	txs := []*types.Transaction{
-		// Effective: 100 GWei
-		types.MustSignNewTx(key1, signer, &types.LegacyTx{
-			Nonce:    0,
-			To:       &common.ZeroAddress,
-			Value:    big.NewInt(1),
-			Gas:      71000,
-			GasPrice: big.NewInt(100 * params.GWei),
-		}),
-		// Effective: 99 GWei
-		types.MustSignNewTx(key2, signer, &types.LegacyTx{
-			Nonce:    0,
-			To:       &common.ZeroAddress,
-			Value:    big.NewInt(2),
-			Gas:      71000,
-			GasPrice: big.NewInt(99 * params.GWei),
-		}),
-		// Effective: 98.875 GWei
-		types.MustSignNewTx(key2, signer, &types.DynamicFeeTx{
-			ChainID:   miner.chainConfig.ChainID,
-			Nonce:     1,
-			To:        &common.ZeroAddress,
-			Value:     big.NewInt(3),
-			Gas:       71000,
-			GasFeeCap: big.NewInt(10000 * params.GWei),
-			GasTipCap: big.NewInt(98 * params.GWei),
-		}),
-		// Effective: 97.875 GWei
-		types.MustSignNewTx(key1, signer, &types.CeloDynamicFeeTxV2{
-			ChainID:     miner.chainConfig.ChainID,
-			Nonce:       1,
-			To:          &common.ZeroAddress,
-			Value:       big.NewInt(4),
-			Gas:         71000,
-			GasFeeCap:   big.NewInt(10000 * params.GWei),
-			GasTipCap:   big.NewInt(194 * params.GWei),
-			FeeCurrency: &core.DevFeeCurrencyAddr,
-		}),
-		// Effective: 90 GWei
-		types.MustSignNewTx(key1, signer, &types.AccessListTx{
-			Nonce:    2,
-			To:       &common.ZeroAddress,
-			Value:    big.NewInt(5),
-			Gas:      71000,
-			GasPrice: big.NewInt(95 * params.GWei),
-		}),
-		// Effective: 50 GWei
-		types.MustSignNewTx(key2, signer, &types.LegacyTx{
-			Nonce:    2,
-			To:       &common.ZeroAddress,
-			Value:    big.NewInt(6),
-			Gas:      71000,
-			GasPrice: big.NewInt(50 * params.GWei),
-		}),
-		// Effective: 200 GWei
-		types.MustSignNewTx(key2, signer, &types.LegacyTx{
-			Nonce:    3,
-			To:       &common.ZeroAddress,
-			Value:    big.NewInt(7),
-			Gas:      71000,
-			GasPrice: big.NewInt(200 * params.GWei),
-		}),
+	txAndEffectiveGasPrices := []struct {
+		tx               *types.Transaction
+		expectedGasPrice *big.Int // expected effective gas price on Celo after base-fee reduction
+	}{
+		{
+			expectedGasPrice: big.NewInt(99.125 * params.GWei),
+			tx: types.MustSignNewTx(key1, signer, &types.LegacyTx{
+				Nonce:    0,
+				To:       &common.ZeroAddress,
+				Value:    big.NewInt(1),
+				Gas:      71000,
+				GasPrice: big.NewInt(100 * params.GWei),
+			}),
+		},
+		{
+			expectedGasPrice: big.NewInt(98.125 * params.GWei),
+			tx: types.MustSignNewTx(key2, signer, &types.LegacyTx{
+				Nonce:    0,
+				To:       &common.ZeroAddress,
+				Value:    big.NewInt(2),
+				Gas:      71000,
+				GasPrice: big.NewInt(99 * params.GWei),
+			}),
+		},
+		{
+			expectedGasPrice: big.NewInt(98 * params.GWei),
+			tx: types.MustSignNewTx(key2, signer, &types.DynamicFeeTx{
+				ChainID:   miner.chainConfig.ChainID,
+				Nonce:     1,
+				To:        &common.ZeroAddress,
+				Value:     big.NewInt(3),
+				Gas:       71000,
+				GasFeeCap: big.NewInt(10000 * params.GWei),
+				GasTipCap: big.NewInt(98 * params.GWei),
+			}),
+		},
+		{
+			// 97.875 GWei
+			expectedGasPrice: big.NewInt(97 * params.GWei),
+			tx: types.MustSignNewTx(key1, signer, &types.CeloDynamicFeeTxV2{
+				ChainID:     miner.chainConfig.ChainID,
+				Nonce:       1,
+				To:          &common.ZeroAddress,
+				Value:       big.NewInt(4),
+				Gas:         71000,
+				GasFeeCap:   big.NewInt(10000 * params.GWei),
+				GasTipCap:   big.NewInt(194 * params.GWei),
+				FeeCurrency: &core.DevFeeCurrencyAddr,
+			}),
+		},
+		{
+			expectedGasPrice: big.NewInt(94.125 * params.GWei),
+			tx: types.MustSignNewTx(key1, signer, &types.AccessListTx{
+				Nonce:    2,
+				To:       &common.ZeroAddress,
+				Value:    big.NewInt(5),
+				Gas:      71000,
+				GasPrice: big.NewInt(95 * params.GWei),
+			}),
+		},
+		{
+			expectedGasPrice: big.NewInt(49.125 * params.GWei),
+			tx: types.MustSignNewTx(key2, signer, &types.LegacyTx{
+				Nonce:    2,
+				To:       &common.ZeroAddress,
+				Value:    big.NewInt(6),
+				Gas:      71000,
+				GasPrice: big.NewInt(50 * params.GWei),
+			}),
+		},
+		{
+			expectedGasPrice: big.NewInt(199.125 * params.GWei),
+			tx: types.MustSignNewTx(key2, signer, &types.LegacyTx{
+				Nonce:    3,
+				To:       &common.ZeroAddress,
+				Value:    big.NewInt(7),
+				Gas:      71000,
+				GasPrice: big.NewInt(200 * params.GWei),
+			}),
+		},
 	}
 
-	assertNoErrors := func(t *testing.T, errs []error) {
+	// Get BaseFee and Rates
+	baseFee := eip1559.CalcBaseFee(miner.chainConfig, parentHeader, parentHeader.Time+1)
+
+	stateDb, err := miner.backend.BlockChain().StateAt(parentHeader.Root)
+	require.NoError(t, err)
+	rates := core.GetExchangeRates(parentHeader, miner.chainConfig, stateDb)
+
+	// Creates a slice of transactions while validating effective gas prices
+	txs := make([]*types.Transaction, len(txAndEffectiveGasPrices))
+	for idx := range txAndEffectiveGasPrices {
+		txs[idx] = txAndEffectiveGasPrices[idx].tx
+
+		effectiveGasPrice, err := txs[idx].EffectiveGasTipInCelo(baseFee, rates)
+		require.NoError(t, err)
+
+		require.Equal(t, txAndEffectiveGasPrices[idx].expectedGasPrice, effectiveGasPrice)
+	}
+
+	requireNoErrors := func(t *testing.T, errs []error) {
 		t.Helper()
 		for _, err := range errs {
 			require.NoError(t, err)
@@ -124,11 +159,11 @@ func TestMinerFillTransactionsOrdering(t *testing.T) {
 		txs := shuffle(txs)
 
 		errs := miner.txpool.Add(txs, true, false)
-		assertNoErrors(t, errs)
+		requireNoErrors(t, errs)
 
 		res := miner.generateWork(&generateParams{
-			parentHash: parentBlock.Hash(),
-			timestamp:  parentBlock.Time + 1,
+			parentHash: parentHeader.Hash(),
+			timestamp:  parentHeader.Time + 1,
 			random:     common.HexToHash("0xcafebabe"),
 			noTxs:      false,
 			forceTime:  true,
@@ -148,11 +183,11 @@ func TestMinerFillTransactionsOrdering(t *testing.T) {
 
 		miner.txpool.Clear()
 		errs := miner.txpool.Add(txs, false, false)
-		assertNoErrors(t, errs)
+		requireNoErrors(t, errs)
 
 		res := miner.generateWork(&generateParams{
-			parentHash: parentBlock.Hash(),
-			timestamp:  parentBlock.Time + 1,
+			parentHash: parentHeader.Hash(),
+			timestamp:  parentHeader.Time + 1,
 			random:     common.HexToHash("0xcafebabe"),
 			noTxs:      false,
 			forceTime:  true,
@@ -181,7 +216,7 @@ func TestMinerFillTransactionsOrdering(t *testing.T) {
 
 			isAccount1 := sender == address1
 			errs := miner.txpool.Add([]*types.Transaction{tx}, isAccount1, false)
-			assertNoErrors(t, errs)
+			requireNoErrors(t, errs)
 
 			if isAccount1 {
 				acc1TxNum++
@@ -191,8 +226,8 @@ func TestMinerFillTransactionsOrdering(t *testing.T) {
 		}
 
 		res := miner.generateWork(&generateParams{
-			parentHash: parentBlock.Hash(),
-			timestamp:  parentBlock.Time + 1,
+			parentHash: parentHeader.Hash(),
+			timestamp:  parentHeader.Time + 1,
 			random:     common.HexToHash("0xcafebabe"),
 			noTxs:      false,
 			forceTime:  true,
@@ -206,12 +241,10 @@ func TestMinerFillTransactionsOrdering(t *testing.T) {
 			sender, _ := types.Sender(signer, tx)
 
 			if sender == address1 {
-				fmt.Printf("address1 %s\n", sender)
 				assert.Equal(t, acc1TxCount, tx.Nonce())
 				assert.Zero(t, acc2TxCount, "transactions from Account2 should not be ordered before transactions from Account1")
 				acc1TxCount++
 			} else {
-				fmt.Printf("address2 %s\n", sender)
 				assert.Equal(t, acc2TxCount, tx.Nonce())
 				assert.Equal(t, acc1TxNum, acc1TxCount, "transactions from Account1 should not be ordered after transactions from Account2")
 				acc2TxCount++
