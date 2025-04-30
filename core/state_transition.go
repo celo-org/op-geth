@@ -23,6 +23,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/exchange"
+	"github.com/ethereum/go-ethereum/contracts"
+	"github.com/ethereum/go-ethereum/contracts/addresses"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
@@ -683,9 +685,94 @@ func (st *stateTransition) innerExecute() (*ExecutionResult, error) {
 		}, nil
 	}
 
-	if err := st.distributeTxFees(); err != nil {
-		return nil, err
+	effectiveTip := msg.GasPrice
+	if rules.IsLondon {
+		effectiveTip = new(big.Int).Sub(msg.GasFeeCap, st.evm.Context.BaseFee)
+		if effectiveTip.Cmp(msg.GasTipCap) > 0 {
+			effectiveTip = msg.GasTipCap
+		}
 	}
+
+	effectiveTipU256, _ := uint256.FromBig(effectiveTip)
+	if st.evm.Config.NoBaseFee && msg.GasFeeCap.Sign() == 0 && msg.GasTipCap.Sign() == 0 {
+		// Skip fee payment when NoBaseFee is set and the fee fields
+		// are 0. This avoids a negative effectiveTip being applied to
+		// the coinbase when simulating calls.
+	} else if msg.FeeCurrency == nil {
+		fee := new(uint256.Int).SetUint64(st.gasUsed())
+		fee.Mul(fee, effectiveTipU256)
+		st.state.AddBalance(st.evm.Context.Coinbase, fee, tracing.BalanceIncreaseRewardTransactionFee)
+		// add the coinbase to the witness iff the fee is greater than 0
+		if rules.IsEIP4762 && fee.Sign() != 0 {
+			st.evm.AccessEvents.AddAccount(st.evm.Context.Coinbase, true)
+		}
+
+		// Check that we are post bedrock to enable op-geth to be able to create pseudo pre-bedrock blocks (these are pre-bedrock, but don't follow l2 geth rules)
+		// Note optimismConfig will not be nil if rules.IsOptimismBedrock is true
+		if optimismConfig := st.evm.ChainConfig().Optimism; optimismConfig != nil && rules.IsOptimismBedrock && !st.msg.IsDepositTx {
+			gasCost := new(big.Int).Mul(new(big.Int).SetUint64(st.gasUsed()), st.evm.Context.BaseFee)
+			amtU256, overflow := uint256.FromBig(gasCost)
+			if overflow {
+				return nil, fmt.Errorf("optimism gas cost overflows U256: %d", gasCost)
+			}
+			st.state.AddBalance(params.OptimismBaseFeeRecipient, amtU256, tracing.BalanceIncreaseRewardTransactionFee)
+			if l1Cost := st.evm.Context.L1CostFunc(st.msg.RollupCostData, st.evm.Context.Time); l1Cost != nil {
+				amtU256, overflow = uint256.FromBig(l1Cost)
+				if overflow {
+					return nil, fmt.Errorf("optimism l1 cost overflows U256: %d", l1Cost)
+				}
+				st.state.AddBalance(params.OptimismL1FeeRecipient, amtU256, tracing.BalanceIncreaseRewardTransactionFee)
+			}
+		}
+	} else {
+		feeCurrency := st.msg.FeeCurrency
+		// Refunds for non fee currency transactions are handled in refundGas,
+		// but for fee currency transactions we handle the refund in CreditFees.
+		refund := new(big.Int).Mul(new(big.Int).SetUint64(st.gasRemaining), st.msg.GasPrice)
+
+		// Calculate the base fee and tip
+		gasUsed := new(big.Int).SetUint64(st.gasUsed())
+		totalTxFee := new(big.Int).Mul(gasUsed, st.msg.GasPrice)
+		baseTxFee := new(big.Int).Mul(gasUsed, st.calculateBaseFee())
+		// No need to do effectiveTip calculation, because st.gasPrice == effectiveGasPrice, and effectiveTip = effectiveGasPrice - baseTxFee
+		tipTxFee := new(big.Int).Sub(totalTxFee, baseTxFee)
+		from := st.msg.From
+		feeHandlerAddress := addresses.GetAddressesOrDefault(st.evm.ChainConfig().ChainID, addresses.MainnetAddresses).FeeHandler
+
+		log.Trace("distributeTxFees", "from", from, "refund", refund, "feeCurrency", feeCurrency,
+			"coinbaseFeeRecipient", st.evm.Context.Coinbase, "coinbaseFee", tipTxFee,
+			"feeHandler", feeHandlerAddress, "communityFundFee", baseTxFee)
+
+		var l1Cost *big.Int
+		// Check that we are post bedrock to enable op-geth to be able to create pseudo pre-bedrock blocks (these are pre-bedrock, but don't follow l2 geth rules)
+		// Note optimismConfig will not be nil if rules.IsOptimismBedrock is true
+		if optimismConfig := st.evm.ChainConfig().Optimism; optimismConfig != nil &&
+			rules.IsOptimismBedrock && !st.msg.IsDepositTx {
+			l1Cost = st.evm.Context.L1CostFunc(st.msg.RollupCostData, st.evm.Context.Time)
+		}
+		if l1Cost != nil {
+			l1Cost, _ = exchange.ConvertCeloToCurrency(st.evm.Context.FeeCurrencyContext.ExchangeRates, feeCurrency, l1Cost)
+		}
+		if err := contracts.CreditFees(
+			st.evm,
+			feeCurrency,
+			st.msg.From,
+			st.evm.Context.Coinbase,
+			feeHandlerAddress,
+			params.OptimismL1FeeRecipient,
+			refund,
+			tipTxFee,
+			baseTxFee,
+			l1Cost,
+			st.feeCurrencyGasUsed,
+		); err != nil {
+			log.Error("Error crediting", "from", from, "coinbase", st.evm.Context.Coinbase, "feeHandler", feeHandlerAddress, "err", err)
+			return nil, err
+		}
+	}
+	// if err := st.distributeTxFees(); err != nil {
+	// 	return nil, err
+	// }
 
 	return &ExecutionResult{
 		UsedGas:     st.gasUsed(),
@@ -766,11 +853,23 @@ func (st *stateTransition) refundGas(refundQuotient uint64) uint64 {
 
 	st.gasRemaining += refund
 
-	// Gas refund now handled in `distributeTxFees`
-
 	// Also return remaining gas to the block gas counter so it is
 	// available for the next transaction.
 	st.gp.AddGas(st.gasRemaining)
+
+	// If the transaction uses a fee currency then the refund will be done in the call to CreditFees.
+	if st.msg.FeeCurrency != nil {
+		return refund
+	}
+
+	// Return ETH for remaining gas, exchanged at the original rate.
+	remaining := uint256.NewInt(st.gasRemaining)
+	remaining.Mul(remaining, uint256.MustFromBig(st.msg.GasPrice))
+	st.state.AddBalance(st.msg.From, remaining, tracing.BalanceIncreaseGasReturn)
+
+	if st.evm.Config.Tracer != nil && st.evm.Config.Tracer.OnGasChange != nil && st.gasRemaining > 0 {
+		st.evm.Config.Tracer.OnGasChange(st.gasRemaining, 0, tracing.GasChangeTxLeftOverReturned)
+	}
 
 	return refund
 }
