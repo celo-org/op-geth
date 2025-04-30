@@ -43,7 +43,18 @@ for f in test_*"$TEST_GLOB"*; do
 		  echo "skipping file $f"
 		  continue
 		  ;;
-	    esac
+		esac
+	else
+		# locally this test doesn't work because we only send the base fee to
+		# the base fee recipient when optimsim config is set and the bedrock
+		# block has passed, but the dev mode config does not set the optimsim
+		# config or bedrock block.
+		case $f in
+		  test_base_fee_recipient.sh)
+		  echo "skipping file $f"
+		  continue
+		  ;;
+		esac
 	fi
 	echo -e "\nRun $f"
 	if "./$f"; then
