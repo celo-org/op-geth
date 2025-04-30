@@ -715,6 +715,13 @@ func (st *stateTransition) innerExecute() (*ExecutionResult, error) {
 			if overflow {
 				return nil, fmt.Errorf("optimism gas cost overflows U256: %d", gasCost)
 			}
+			// In celo we send the base fee to the fee handler
+			if rules.IsCel2 {
+				feeHandlerAddress := addresses.GetAddressesOrDefault(st.evm.ChainConfig().ChainID, addresses.MainnetAddresses).FeeHandler
+				st.state.AddBalance(feeHandlerAddress, amtU256, tracing.BalanceIncreaseRewardTransactionFee)
+			} else if st.evm.ChainConfig().Optimism != nil {
+				st.state.AddBalance(params.OptimismBaseFeeRecipient, amtU256, tracing.BalanceIncreaseRewardTransactionFee)
+			}
 			st.state.AddBalance(params.OptimismBaseFeeRecipient, amtU256, tracing.BalanceIncreaseRewardTransactionFee)
 			if l1Cost := st.evm.Context.L1CostFunc(st.msg.RollupCostData, st.evm.Context.Time); l1Cost != nil {
 				amtU256, overflow = uint256.FromBig(l1Cost)
