@@ -67,6 +67,16 @@ func CeloValidateTransaction(tx *types.Transaction, head *types.Header,
 	}
 
 	if opts.Config.Celo != nil {
+		baseFeeFloor, err := exchange.ConvertCeloToCurrency(currencyCtx.ExchangeRates, tx.FeeCurrency(), new(big.Int).SetUint64(opts.Config.Celo.EIP1559BaseFeeFloor))
+		if err != nil {
+			return err
+		}
+
+		// Check that the fee cap exceeds the base fee floor
+		if baseFeeFloor.Cmp(tx.GasFeeCap()) == 1 {
+			return ErrGasPriceDoesNotExceedBaseFeeFloor
+		}
+
 		// Make sure that the effective gas tip at the base fee floor is at least the
 		// requested min-tip.
 		// The min-tip for local transactions is set to 0, we can skip checking here.
@@ -76,26 +86,9 @@ func CeloValidateTransaction(tx *types.Transaction, head *types.Header,
 			if err != nil {
 				return err
 			}
-			baseFeeFloor, err := exchange.ConvertCeloToCurrency(currencyCtx.ExchangeRates, tx.FeeCurrency(), new(big.Int).SetUint64(opts.Config.Celo.EIP1559BaseFeeFloor))
-			if err != nil {
-				return err
-			}
 			if tx.EffectiveGasTipIntCmp(minTip, baseFeeFloor) < 0 {
 				return ErrUnderpriced
 			}
-		}
-
-		celoGasPrice, err := exchange.ConvertCurrencyToCelo(
-			currencyCtx.ExchangeRates,
-			tx.FeeCurrency(),
-			tx.GasFeeCap(),
-		)
-		if err != nil {
-			return err
-		}
-
-		if new(big.Int).SetUint64(opts.Config.Celo.EIP1559BaseFeeFloor).Cmp(celoGasPrice) == 1 {
-			return ErrGasPriceDoesNotExceedBaseFeeFloor
 		}
 	}
 	return nil

@@ -111,18 +111,17 @@ func TestBelowBaseFeeFloorValidityCheck(t *testing.T) {
 	// gas-price below base-fee-floor should return early
 	// and thus raise an error in the validation
 
-	// use local transactions here to skip the min-tip conversion
-	// the PriceLimit config is set to 1, so we need at least a tip of 1
-	tx := pricedCip64Transaction(defaultChainConfig, 0, 21000, big.NewInt(99), big.NewInt(0), nil, key)
+	// We need to ensure that the tip cap fulfils the min tip requirement since that is checked first in ValidateTransaction.
+	tx := pricedCip64Transaction(defaultChainConfig, 0, 21000, big.NewInt(99), big.NewInt(1), nil, key)
 	if err, want := pool.addRemoteSync(tx), txpool.ErrGasPriceDoesNotExceedBaseFeeFloor; !errors.Is(err, want) {
 		t.Errorf("want %v have %v", want, err)
 	}
 	// also test with fee currency conversion
-	tx = pricedCip64Transaction(defaultChainConfig, 0, 21000+feeCurrencyIntrinsicGas, big.NewInt(198), big.NewInt(0), &feeCurrencyOne, key)
+	tx = pricedCip64Transaction(defaultChainConfig, 0, 21000+feeCurrencyIntrinsicGas, big.NewInt(198), big.NewInt(2), &feeCurrencyOne, key)
 	if err, want := pool.addRemoteSync(tx), txpool.ErrGasPriceDoesNotExceedBaseFeeFloor; !errors.Is(err, want) {
 		t.Errorf("want %v have %v", want, err)
 	}
-	tx = pricedCip64Transaction(defaultChainConfig, 0, 21000+feeCurrencyIntrinsicGas, big.NewInt(48), big.NewInt(0), &feeCurrencyTwo, key)
+	tx = pricedCip64Transaction(defaultChainConfig, 0, 21000+feeCurrencyIntrinsicGas, big.NewInt(48), big.NewInt(1), &feeCurrencyTwo, key)
 	if err, want := pool.addRemoteSync(tx), txpool.ErrGasPriceDoesNotExceedBaseFeeFloor; !errors.Is(err, want) {
 		t.Errorf("want %v have %v", want, err)
 	}
