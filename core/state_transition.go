@@ -777,9 +777,6 @@ func (st *stateTransition) innerExecute() (*ExecutionResult, error) {
 			return nil, err
 		}
 	}
-	// if err := st.distributeTxFees(); err != nil {
-	// 	return nil, err
-	// }
 
 	return &ExecutionResult{
 		UsedGas:     st.gasUsed(),
