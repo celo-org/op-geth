@@ -44,12 +44,12 @@ func TestMinerFillTransactionsOrdering(t *testing.T) {
 		parentHeader = miner.chain.CurrentBlock()
 	)
 
-	txAndExpectedGasPrices := []struct {
-		tx               *types.Transaction
-		expectedGasPrice *big.Int // expected effective gas price on Celo after base-fee reduction
+	txAndExpectedEffectiveTips := []struct {
+		tx                   *types.Transaction
+		expectedEffectiveTip *big.Int // expected effective gas price on Celo after base-fee reduction
 	}{
 		{
-			expectedGasPrice: big.NewInt(99.125 * params.GWei),
+			expectedEffectiveTip: big.NewInt(99.125 * params.GWei),
 			tx: types.MustSignNewTx(key1, signer, &types.LegacyTx{
 				Nonce:    0,
 				To:       &common.ZeroAddress,
@@ -59,7 +59,7 @@ func TestMinerFillTransactionsOrdering(t *testing.T) {
 			}),
 		},
 		{
-			expectedGasPrice: big.NewInt(98.125 * params.GWei),
+			expectedEffectiveTip: big.NewInt(98.125 * params.GWei),
 			tx: types.MustSignNewTx(key2, signer, &types.LegacyTx{
 				Nonce:    0,
 				To:       &common.ZeroAddress,
@@ -69,7 +69,7 @@ func TestMinerFillTransactionsOrdering(t *testing.T) {
 			}),
 		},
 		{
-			expectedGasPrice: big.NewInt(98 * params.GWei),
+			expectedEffectiveTip: big.NewInt(98 * params.GWei),
 			tx: types.MustSignNewTx(key2, signer, &types.DynamicFeeTx{
 				ChainID:   miner.chainConfig.ChainID,
 				Nonce:     1,
@@ -81,7 +81,7 @@ func TestMinerFillTransactionsOrdering(t *testing.T) {
 			}),
 		},
 		{
-			expectedGasPrice: big.NewInt(97 * params.GWei),
+			expectedEffectiveTip: big.NewInt(97 * params.GWei),
 			tx: types.MustSignNewTx(key1, signer, &types.CeloDynamicFeeTxV2{
 				ChainID:     miner.chainConfig.ChainID,
 				Nonce:       1,
@@ -94,7 +94,7 @@ func TestMinerFillTransactionsOrdering(t *testing.T) {
 			}),
 		},
 		{
-			expectedGasPrice: big.NewInt(94.125 * params.GWei),
+			expectedEffectiveTip: big.NewInt(94.125 * params.GWei),
 			tx: types.MustSignNewTx(key1, signer, &types.AccessListTx{
 				Nonce:    2,
 				To:       &common.ZeroAddress,
@@ -104,7 +104,7 @@ func TestMinerFillTransactionsOrdering(t *testing.T) {
 			}),
 		},
 		{
-			expectedGasPrice: big.NewInt(49.125 * params.GWei),
+			expectedEffectiveTip: big.NewInt(49.125 * params.GWei),
 			tx: types.MustSignNewTx(key2, signer, &types.LegacyTx{
 				Nonce:    2,
 				To:       &common.ZeroAddress,
@@ -114,7 +114,7 @@ func TestMinerFillTransactionsOrdering(t *testing.T) {
 			}),
 		},
 		{
-			expectedGasPrice: big.NewInt(199.125 * params.GWei),
+			expectedEffectiveTip: big.NewInt(199.125 * params.GWei),
 			tx: types.MustSignNewTx(key2, signer, &types.LegacyTx{
 				Nonce:    3,
 				To:       &common.ZeroAddress,
@@ -159,14 +159,14 @@ func TestMinerFillTransactionsOrdering(t *testing.T) {
 	rates := core.GetExchangeRates(parentHeader, miner.chainConfig, stateDb)
 
 	// Creates a slice of transactions while validating effective gas prices
-	txs := make([]*types.Transaction, len(txAndExpectedGasPrices))
-	for idx := range txAndExpectedGasPrices {
-		txs[idx] = txAndExpectedGasPrices[idx].tx
+	txs := make([]*types.Transaction, len(txAndExpectedEffectiveTips))
+	for idx := range txAndExpectedEffectiveTips {
+		txs[idx] = txAndExpectedEffectiveTips[idx].tx
 
 		effectiveGasPrice, err := txs[idx].EffectiveGasTipInCelo(baseFee, rates)
 		require.NoError(t, err)
 
-		require.Equal(t, txAndExpectedGasPrices[idx].expectedGasPrice, effectiveGasPrice)
+		require.Equal(t, txAndExpectedEffectiveTips[idx].expectedEffectiveTip, effectiveGasPrice)
 	}
 
 	requireNoErrors := func(t *testing.T, errs []error) {
