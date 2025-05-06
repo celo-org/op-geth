@@ -52,12 +52,14 @@
         "londonBlock": 0,
         "arrowGlacierBlock": 0,
         "grayGlacierBlock": 0,
+        "bedrockBlock": 0,
         "shanghaiTime": 0,
         "cancunTime": 0,
         "cel2Time": 0,
         "gingerbreadBlock": 0,
         "terminalTotalDifficulty": 0,
-        "terminalTotalDifficultyPassed": true
+        "terminalTotalDifficultyPassed": true,
+        "optimism": {}
       }
   },
   "context": {
