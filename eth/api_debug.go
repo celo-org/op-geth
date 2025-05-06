@@ -225,7 +225,7 @@ func (api *DebugAPI) StorageRangeAt(ctx context.Context, blockNrOrHash rpc.Block
 	if block == nil {
 		return StorageRangeResult{}, fmt.Errorf("block %v not found", blockNrOrHash)
 	}
-	_, _, statedb, release, err := api.eth.stateAtTransaction(ctx, block, txIndex, 0)
+	_, _, statedb, release, _, err := api.eth.stateAtTransaction(ctx, block, txIndex, 0)
 	if err != nil {
 		return StorageRangeResult{}, err
 	}
