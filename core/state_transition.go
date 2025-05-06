@@ -732,49 +732,50 @@ func (st *stateTransition) innerExecute() (*ExecutionResult, error) {
 			}
 		}
 	} else {
-		feeCurrency := st.msg.FeeCurrency
-		// Refunds for non fee currency transactions are handled in refundGas,
-		// but for fee currency transactions we handle the refund in CreditFees.
-		refund := new(big.Int).Mul(new(big.Int).SetUint64(st.gasRemaining), st.msg.GasPrice)
-
-		// Calculate the base fee and tip
-		gasUsed := new(big.Int).SetUint64(st.gasUsed())
-		totalTxFee := new(big.Int).Mul(gasUsed, st.msg.GasPrice)
-		baseTxFee := new(big.Int).Mul(gasUsed, st.calculateBaseFee())
-		// No need to do effectiveTip calculation, because st.gasPrice == effectiveGasPrice, and effectiveTip = effectiveGasPrice - baseTxFee
-		tipTxFee := new(big.Int).Sub(totalTxFee, baseTxFee)
-		from := st.msg.From
-		feeHandlerAddress := addresses.GetAddressesOrDefault(st.evm.ChainConfig().ChainID, addresses.MainnetAddresses).FeeHandler
-
-		log.Trace("distributeTxFees", "from", from, "refund", refund, "feeCurrency", feeCurrency,
-			"coinbaseFeeRecipient", st.evm.Context.Coinbase, "coinbaseFee", tipTxFee,
-			"feeHandler", feeHandlerAddress, "communityFundFee", baseTxFee)
-
-		var l1Cost *big.Int
 		// Check that we are post bedrock to enable op-geth to be able to create pseudo pre-bedrock blocks (these are pre-bedrock, but don't follow l2 geth rules)
 		// Note optimismConfig will not be nil if rules.IsOptimismBedrock is true
 		if optimismConfig := st.evm.ChainConfig().Optimism; optimismConfig != nil &&
 			rules.IsOptimismBedrock && !st.msg.IsDepositTx {
-			l1Cost = st.evm.Context.L1CostFunc(st.msg.RollupCostData, st.evm.Context.Time)
-		}
-		if l1Cost != nil {
-			l1Cost, _ = exchange.ConvertCeloToCurrency(st.evm.Context.FeeCurrencyContext.ExchangeRates, feeCurrency, l1Cost)
-		}
-		if err := contracts.CreditFees(
-			st.evm,
-			feeCurrency,
-			st.msg.From,
-			st.evm.Context.Coinbase,
-			feeHandlerAddress,
-			params.OptimismL1FeeRecipient,
-			refund,
-			tipTxFee,
-			baseTxFee,
-			l1Cost,
-			st.feeCurrencyGasUsed,
-		); err != nil {
-			log.Error("Error crediting", "from", from, "coinbase", st.evm.Context.Coinbase, "feeHandler", feeHandlerAddress, "err", err)
-			return nil, err
+			feeCurrency := st.msg.FeeCurrency
+			// Refunds for non fee currency transactions are handled in refundGas,
+			// but for fee currency transactions we handle the refund in CreditFees.
+			refund := new(big.Int).Mul(new(big.Int).SetUint64(st.gasRemaining), st.msg.GasPrice)
+
+			// Calculate the base fee and tip
+			gasUsed := new(big.Int).SetUint64(st.gasUsed())
+			totalTxFee := new(big.Int).Mul(gasUsed, st.msg.GasPrice)
+			baseTxFee := new(big.Int).Mul(gasUsed, st.calculateBaseFee())
+			// No need to do effectiveTip calculation, because st.gasPrice == effectiveGasPrice, and effectiveTip = effectiveGasPrice - baseTxFee
+			tipTxFee := new(big.Int).Sub(totalTxFee, baseTxFee)
+			from := st.msg.From
+			feeHandlerAddress := addresses.GetAddressesOrDefault(st.evm.ChainConfig().ChainID, addresses.MainnetAddresses).FeeHandler
+
+			log.Trace("distributeTxFees", "from", from, "refund", refund, "feeCurrency", feeCurrency,
+				"coinbaseFeeRecipient", st.evm.Context.Coinbase, "coinbaseFee", tipTxFee,
+				"feeHandler", feeHandlerAddress, "communityFundFee", baseTxFee)
+
+			l1Cost := st.evm.Context.L1CostFunc(st.msg.RollupCostData, st.evm.Context.Time)
+
+			if l1Cost != nil {
+				l1Cost, _ = exchange.ConvertCeloToCurrency(st.evm.Context.FeeCurrencyContext.ExchangeRates, feeCurrency, l1Cost)
+			}
+			if err := contracts.CreditFees(
+				st.evm,
+				feeCurrency,
+				st.msg.From,
+				st.evm.Context.Coinbase,
+				feeHandlerAddress,
+				params.OptimismL1FeeRecipient,
+				refund,
+				tipTxFee,
+				baseTxFee,
+				l1Cost,
+				st.feeCurrencyGasUsed,
+			); err != nil {
+				log.Error("Error crediting", "from", from, "coinbase", st.evm.Context.Coinbase, "feeHandler", feeHandlerAddress, "err", err)
+				return nil, err
+			}
+
 		}
 	}
 
