@@ -126,7 +126,7 @@ func NewL1CostFunc(config *params.ChainConfig, statedb StateGetter) L1CostFunc {
 	selectFunc := func(blockTime uint64) l1CostFunc {
 		// Alfajores requires a custom cost function see link for a detailed explanation
 		// https://github.com/celo-org/op-geth/pull/271
-		if config.IsCel2(blockTime) && config.ChainID.Uint64() == params.CeloAlfajoresChainID {
+		if config.IsCel2(blockTime) && !config.IsHolocene(blockTime) && config.ChainID.Uint64() == params.CeloAlfajoresChainID {
 			return func(rcd RollupCostData) (fee, gasUsed *big.Int) { return new(big.Int), new(big.Int) }
 		}
 		if !config.IsOptimismEcotone(blockTime) {
