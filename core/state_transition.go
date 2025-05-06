@@ -755,7 +755,6 @@ func (st *stateTransition) innerExecute() (*ExecutionResult, error) {
 				"feeHandler", feeHandlerAddress, "communityFundFee", baseTxFee)
 
 			l1Cost := st.evm.Context.L1CostFunc(st.msg.RollupCostData, st.evm.Context.Time)
-
 			if l1Cost != nil {
 				l1Cost, _ = exchange.ConvertCeloToCurrency(st.evm.Context.FeeCurrencyContext.ExchangeRates, feeCurrency, l1Cost)
 			}
@@ -776,6 +775,10 @@ func (st *stateTransition) innerExecute() (*ExecutionResult, error) {
 				return nil, err
 			}
 
+			// execute the tracer that has been skipped in the modified st.refundGas() for fee-currency txs
+			if st.evm.Config.Tracer != nil && st.evm.Config.Tracer.OnGasChange != nil && st.gasRemaining > 0 {
+				st.evm.Config.Tracer.OnGasChange(st.gasRemaining, 0, tracing.GasChangeTxLeftOverReturned)
+			}
 		}
 	}
 
