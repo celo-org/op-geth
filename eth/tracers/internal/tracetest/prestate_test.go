@@ -18,6 +18,7 @@ package tracetest
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -67,12 +68,16 @@ func testPrestateTracer(tracerName string, dirPath string, t *testing.T) {
 		t.Fatalf("failed to retrieve tracer test suite: %v", err)
 	}
 	for _, file := range files {
+		println("running", file.Name())
 		if !strings.HasSuffix(file.Name(), ".json") {
 			continue
 		}
 		t.Run(camel(strings.TrimSuffix(file.Name(), ".json")), func(t *testing.T) {
-			t.Parallel()
+			// t.Parallel()
 
+			if t.Name() == "TestPrestateWithDiffModeTracer/feeCurrency" {
+				println("failure case")
+			}
 			var (
 				test = new(prestateTracerTest)
 				tx   = new(types.Transaction)
@@ -86,6 +91,7 @@ func testPrestateTracer(tracerName string, dirPath string, t *testing.T) {
 			if err := tx.UnmarshalBinary(common.FromHex(test.Input)); err != nil {
 				t.Fatalf("failed to parse testcase input: %v", err)
 			}
+			fmt.Printf("%v %+v\n", t.Name(), test.Genesis.Config.Optimism)
 			// Configure a blockchain with the given prestate
 			var (
 				signer  = types.MakeSigner(test.Genesis.Config, new(big.Int).SetUint64(uint64(test.Context.Number)), uint64(test.Context.Time))
