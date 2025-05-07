@@ -1,0 +1,40 @@
+name: Check rebase
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_ref:
+        description: 'Base branch, tag, or commit SHA'
+        required: true
+        type: string
+
+jobs:
+  check-commits:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch full history
+
+    - uses: actions/setup-go@v5
+      with:
+        go-version: '1.22'
+
+    - name: Get list of new commits
+      id: commits
+      run: |
+        git log --format="%H" "${{ github.event.inputs.base_ref }}"..HEAD > commits.txt
+        echo "Found $(wc -l < commits.txt) new commits"
+        cat commits.txt
+
+    - name: Run checks for each commit
+      run: |
+        failed=0; 
+        while read commit; do
+          echo "-----"
+          echo "Checking commit $commit"
+          git checkout "$commit"
+          go build ./... && make lint && go test ./... || failed=1
+        done < commits.txt
+        exit $failed
