@@ -32,9 +32,24 @@ jobs:
       run: |
         failed=0; 
         while read commit; do
-          echo "-----"
-          echo "Checking commit $commit"
-          git checkout "$commit"
-          go build ./... && make lint && go test ./... || failed=1
+          if ! go build > output.log 2>&1; then
+            failed=1
+            echo "commit $commit: failed build"
+            cat output.log
+            continue
+          fi
+          if ! make lint > output.log 2>&1; then
+            failed=1
+            echo "commit $commit: failed lint"
+            cat output.log
+            continue
+          fi
+          if ! go test ./... > output.log 2>&1; then
+            failed=1
+            echo "commit $commit: failed test"
+            cat output.log
+            continue
+          fi
+          echo "commit $commit: good"
         done < commits.txt
         exit $failed
