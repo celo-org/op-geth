@@ -22,9 +22,9 @@ import (
 	"slices"
 	"sort"
 
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
 	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/crypto"
 )
 
 type revision struct {

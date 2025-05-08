@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
 	"github.com/tenderly/net-celo/common"
 	"github.com/tenderly/net-celo/common/hexutil"
@@ -34,6 +33,7 @@ import (
 	"github.com/tenderly/net-celo/core/tracing"
 	"github.com/tenderly/net-celo/core/types"
 	"github.com/tenderly/net-celo/core/vm"
+	"github.com/tenderly/net-celo/crypto"
 	"github.com/tenderly/net-celo/ethdb"
 	"github.com/tenderly/net-celo/log"
 	"github.com/tenderly/net-celo/params"

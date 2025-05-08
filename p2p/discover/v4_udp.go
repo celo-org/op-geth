@@ -29,7 +29,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/tenderly/net-celo/crypto"
 	"github.com/tenderly/net-celo/log"
 	"github.com/tenderly/net-celo/p2p/discover/v4wire"
 	"github.com/tenderly/net-celo/p2p/enode"

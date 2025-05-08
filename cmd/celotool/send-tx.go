@@ -21,9 +21,9 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/tenderly/net-celo/common"
 	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/crypto"
 	"github.com/tenderly/net-celo/ethclient"
 	"github.com/urfave/cli/v2"
 )

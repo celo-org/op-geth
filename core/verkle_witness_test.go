@@ -24,7 +24,6 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-verkle"
 	"github.com/holiman/uint256"
 	"github.com/tenderly/net-celo/common"
@@ -34,6 +33,7 @@ import (
 	"github.com/tenderly/net-celo/core/state"
 	"github.com/tenderly/net-celo/core/types"
 	"github.com/tenderly/net-celo/core/vm"
+	"github.com/tenderly/net-celo/crypto"
 	"github.com/tenderly/net-celo/params"
 	"github.com/tenderly/net-celo/trie/utils"
 	"github.com/tenderly/net-celo/triedb"

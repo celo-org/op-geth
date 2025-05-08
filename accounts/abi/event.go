@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/crypto"
 )
 
 // Event is an event potentially triggered by the EVM's LOG mechanism. The Event

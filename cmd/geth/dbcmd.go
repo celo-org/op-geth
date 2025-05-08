@@ -28,7 +28,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/olekukonko/tablewriter"
 	"github.com/tenderly/net-celo/cmd/utils"
 	"github.com/tenderly/net-celo/common"
@@ -37,6 +36,7 @@ import (
 	"github.com/tenderly/net-celo/core/rawdb"
 	"github.com/tenderly/net-celo/core/state/snapshot"
 	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/crypto"
 	"github.com/tenderly/net-celo/ethdb"
 	"github.com/tenderly/net-celo/log"
 	"github.com/tenderly/net-celo/rlp"

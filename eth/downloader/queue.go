@@ -26,10 +26,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ethereum/go-ethereum/crypto/kzg4844"
 	"github.com/tenderly/net-celo/common"
 	"github.com/tenderly/net-celo/common/prque"
 	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/crypto/kzg4844"
 	"github.com/tenderly/net-celo/eth/ethconfig"
 	"github.com/tenderly/net-celo/log"
 	"github.com/tenderly/net-celo/metrics"

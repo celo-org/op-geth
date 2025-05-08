@@ -29,7 +29,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/crypto/kzg4844"
 	"github.com/holiman/billy"
 	"github.com/holiman/uint256"
 	"github.com/tenderly/net-celo/common"
@@ -40,6 +39,7 @@ import (
 	"github.com/tenderly/net-celo/core/state"
 	"github.com/tenderly/net-celo/core/txpool"
 	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/crypto/kzg4844"
 	"github.com/tenderly/net-celo/event"
 	"github.com/tenderly/net-celo/log"
 	"github.com/tenderly/net-celo/metrics"

@@ -58,7 +58,7 @@ import (
 	"time"
 
 	"github.com/cespare/cp"
-	"github.com/ethereum/go-ethereum/crypto/signify"
+	"github.com/tenderly/net-celo/crypto/signify"
 	"github.com/tenderly/net-celo/internal/build"
 	"github.com/tenderly/net-celo/internal/version"
 )

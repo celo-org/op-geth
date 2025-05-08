@@ -27,11 +27,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/tenderly/net-celo/accounts/keystore"
 	"github.com/tenderly/net-celo/common"
 	"github.com/tenderly/net-celo/common/hexutil"
 	"github.com/tenderly/net-celo/common/math"
+	"github.com/tenderly/net-celo/crypto"
 	"github.com/tenderly/net-celo/signer/core"
 	"github.com/tenderly/net-celo/signer/core/apitypes"
 )

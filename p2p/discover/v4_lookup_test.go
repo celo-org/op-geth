@@ -24,7 +24,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/tenderly/net-celo/crypto"
 	"github.com/tenderly/net-celo/p2p/discover/v4wire"
 	"github.com/tenderly/net-celo/p2p/enode"
 	"github.com/tenderly/net-celo/p2p/enr"

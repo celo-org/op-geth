@@ -24,12 +24,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tenderly/net-celo/common"
 	"github.com/tenderly/net-celo/common/hexutil"
 	"github.com/tenderly/net-celo/common/math"
+	"github.com/tenderly/net-celo/crypto"
 )
 
 func TestBytesPadding(t *testing.T) {

@@ -35,8 +35,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/crypto/kzg4844"
 	pcsclite "github.com/gballet/go-libpcsclite"
 	gopsutil "github.com/shirou/gopsutil/mem"
 	"github.com/tenderly/net-celo/accounts"
@@ -50,6 +48,8 @@ import (
 	"github.com/tenderly/net-celo/core/txpool/blobpool"
 	"github.com/tenderly/net-celo/core/txpool/legacypool"
 	"github.com/tenderly/net-celo/core/vm"
+	"github.com/tenderly/net-celo/crypto"
+	"github.com/tenderly/net-celo/crypto/kzg4844"
 	"github.com/tenderly/net-celo/eth"
 	"github.com/tenderly/net-celo/eth/catalyst"
 	"github.com/tenderly/net-celo/eth/ethconfig"

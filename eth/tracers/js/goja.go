@@ -32,10 +32,10 @@ import (
 	"github.com/tenderly/net-celo/eth/tracers/internal"
 	"github.com/tenderly/net-celo/params"
 
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/tenderly/net-celo/common"
 	"github.com/tenderly/net-celo/common/hexutil"
 	"github.com/tenderly/net-celo/core/vm"
+	"github.com/tenderly/net-celo/crypto"
 	jsassets "github.com/tenderly/net-celo/eth/tracers/js/internal/tracers"
 )
 

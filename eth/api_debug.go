@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/tenderly/net-celo/common"
 	"github.com/tenderly/net-celo/common/hexutil"
 	"github.com/tenderly/net-celo/core"
@@ -30,6 +29,7 @@ import (
 	"github.com/tenderly/net-celo/core/state"
 	"github.com/tenderly/net-celo/core/stateless"
 	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/crypto"
 	"github.com/tenderly/net-celo/internal/ethapi"
 	"github.com/tenderly/net-celo/log"
 	"github.com/tenderly/net-celo/rlp"

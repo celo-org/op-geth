@@ -22,9 +22,9 @@ import (
 	"encoding/binary"
 	"time"
 
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/tenderly/net-celo/common/lru"
 	"github.com/tenderly/net-celo/common/mclock"
+	"github.com/tenderly/net-celo/crypto"
 	"github.com/tenderly/net-celo/p2p/enode"
 )
 

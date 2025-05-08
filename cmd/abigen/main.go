@@ -24,10 +24,10 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/tenderly/net-celo/accounts/abi/bind"
 	"github.com/tenderly/net-celo/cmd/utils"
 	"github.com/tenderly/net-celo/common/compiler"
+	"github.com/tenderly/net-celo/crypto"
 	"github.com/tenderly/net-celo/internal/flags"
 	"github.com/tenderly/net-celo/log"
 	"github.com/urfave/cli/v2"

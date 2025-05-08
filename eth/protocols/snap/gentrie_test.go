@@ -22,9 +22,9 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/tenderly/net-celo/common"
 	"github.com/tenderly/net-celo/core/rawdb"
+	"github.com/tenderly/net-celo/crypto"
 	"github.com/tenderly/net-celo/ethdb"
 	"github.com/tenderly/net-celo/internal/testrand"
 	"github.com/tenderly/net-celo/trie"
