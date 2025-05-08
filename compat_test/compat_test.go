@@ -14,15 +14,15 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/stretchr/testify/require"
+	"github.com/tenderly/net-celo"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/common/hexutil"
+	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/ethclient"
+	"github.com/tenderly/net-celo/params"
+	"github.com/tenderly/net-celo/rlp"
+	"github.com/tenderly/net-celo/rpc"
 	"golang.org/x/sync/errgroup"
 )
 

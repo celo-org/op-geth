@@ -3,8 +3,8 @@ package core
 import (
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/assert"
+	"github.com/tenderly/net-celo/common"
 )
 
 func TestMultiCurrencyGasPool(t *testing.T) {

@@ -30,12 +30,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common/mclock"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/p2p/discover/v5wire"
-	"github.com/ethereum/go-ethereum/p2p/enode"
-	"github.com/ethereum/go-ethereum/p2p/enr"
-	"github.com/ethereum/go-ethereum/p2p/netutil"
+	"github.com/tenderly/net-celo/common/mclock"
+	"github.com/tenderly/net-celo/log"
+	"github.com/tenderly/net-celo/p2p/discover/v5wire"
+	"github.com/tenderly/net-celo/p2p/enode"
+	"github.com/tenderly/net-celo/p2p/enr"
+	"github.com/tenderly/net-celo/p2p/netutil"
 )
 
 const (

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/core/vm"
 )
 
 func FuzzEofParsing(f *testing.F) {

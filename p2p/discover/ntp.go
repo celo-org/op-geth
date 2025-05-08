@@ -25,7 +25,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/tenderly/net-celo/log"
 )
 
 const (

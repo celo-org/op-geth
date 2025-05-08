@@ -19,9 +19,9 @@ package vm
 import (
 	gomath "math"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/common/math"
+	"github.com/tenderly/net-celo/params"
 )
 
 func gasSStore4762(evm *EVM, contract *Contract, stack *Stack, mem *Memory, memorySize uint64) (uint64, error) {

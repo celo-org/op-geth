@@ -27,7 +27,7 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/tenderly/net-celo/log"
 )
 
 const (

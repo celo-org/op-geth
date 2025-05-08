@@ -1,7 +1,7 @@
 ## Celo L2 Execution Client
 
 This is a fork of [Optimism's op-geth](https://github.com/ethereum-optimism/op-geth), which itself is a fork of [go-ethereum
-(geth)](https://github.com/ethereum/go-ethereum/). It is used as the execution client for the Celo L2 blockchain.
+(geth)](https://github.com/tenderly/net-celo/). It is used as the execution client for the Celo L2 blockchain.
 
 For more information, see the [Celo L2
 documentation](https://docs.celo.org/cel2), especially the section on [running

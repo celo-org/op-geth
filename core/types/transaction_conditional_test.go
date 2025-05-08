@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/tenderly/net-celo/common"
 )
 
 func TestTransactionConditionalCost(t *testing.T) {

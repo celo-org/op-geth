@@ -26,17 +26,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus/ethash"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/bloombits"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/internal/ethapi"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/consensus/ethash"
+	"github.com/tenderly/net-celo/core"
+	"github.com/tenderly/net-celo/core/bloombits"
+	"github.com/tenderly/net-celo/core/rawdb"
+	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/ethdb"
+	"github.com/tenderly/net-celo/event"
+	"github.com/tenderly/net-celo/internal/ethapi"
+	"github.com/tenderly/net-celo/params"
+	"github.com/tenderly/net-celo/rpc"
 )
 
 type testBackend struct {

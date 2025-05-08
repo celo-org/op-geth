@@ -21,10 +21,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/ethereum/go-ethereum/trie"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/rlp"
+	"github.com/tenderly/net-celo/trie"
 )
 
 // nodeIterator is an iterator to traverse the entire state trie post-order,

@@ -3,7 +3,7 @@ package types
 import (
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/tenderly/net-celo/rlp"
 )
 
 type celoDynamicReceiptRLP struct {

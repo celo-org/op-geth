@@ -19,17 +19,17 @@ package state
 import (
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/lru"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/state/snapshot"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/trie"
-	"github.com/ethereum/go-ethereum/trie/trienode"
-	"github.com/ethereum/go-ethereum/trie/utils"
-	"github.com/ethereum/go-ethereum/triedb"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/common/lru"
+	"github.com/tenderly/net-celo/core/rawdb"
+	"github.com/tenderly/net-celo/core/state/snapshot"
+	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/crypto"
+	"github.com/tenderly/net-celo/ethdb"
+	"github.com/tenderly/net-celo/trie"
+	"github.com/tenderly/net-celo/trie/trienode"
+	"github.com/tenderly/net-celo/trie/utils"
+	"github.com/tenderly/net-celo/triedb"
 )
 
 const (

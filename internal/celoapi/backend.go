@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/exchange"
-	"github.com/ethereum/go-ethereum/contracts"
-	"github.com/ethereum/go-ethereum/internal/ethapi"
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/common/exchange"
+	"github.com/tenderly/net-celo/contracts"
+	"github.com/tenderly/net-celo/internal/ethapi"
+	"github.com/tenderly/net-celo/rpc"
 )
 
 func NewCeloAPIBackend(b ethapi.Backend) *CeloAPIBackend {

@@ -1,8 +1,8 @@
 package blobpool
 
 import (
-	"github.com/ethereum/go-ethereum/contracts"
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/tenderly/net-celo/contracts"
+	"github.com/tenderly/net-celo/log"
 )
 
 func (pool *BlobPool) recreateCeloProperties() {

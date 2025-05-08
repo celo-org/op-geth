@@ -20,8 +20,8 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/tenderly/net-celo/accounts/abi"
+	"github.com/tenderly/net-celo/common"
 )
 
 var (

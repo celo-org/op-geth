@@ -21,8 +21,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common/mclock"
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/tenderly/net-celo/common/mclock"
+	"github.com/tenderly/net-celo/log"
 )
 
 var (

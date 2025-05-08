@@ -7,14 +7,14 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/internal/blocktest"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/status-im/keycard-go/hexutils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/core/rawdb"
+	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/internal/blocktest"
+	"github.com/tenderly/net-celo/params"
 )
 
 // encodeGasPriceMinimumUpdatedEvent encodes the given gas price minimum value into 32 bytes event data

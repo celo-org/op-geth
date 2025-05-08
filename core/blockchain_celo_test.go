@@ -20,17 +20,17 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/exchange"
-	"github.com/ethereum/go-ethereum/consensus/ethash"
-	"github.com/ethereum/go-ethereum/contracts"
-	"github.com/ethereum/go-ethereum/contracts/addresses"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/stretchr/testify/assert"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/common/exchange"
+	"github.com/tenderly/net-celo/consensus/ethash"
+	"github.com/tenderly/net-celo/contracts"
+	"github.com/tenderly/net-celo/contracts/addresses"
+	"github.com/tenderly/net-celo/core/rawdb"
+	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/core/vm"
+	"github.com/tenderly/net-celo/crypto"
+	"github.com/tenderly/net-celo/params"
 )
 
 // TestNativeTransferWithFeeCurrency tests the following:

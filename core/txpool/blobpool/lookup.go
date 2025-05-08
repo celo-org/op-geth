@@ -17,7 +17,7 @@
 package blobpool
 
 import (
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/tenderly/net-celo/common"
 )
 
 // lookup maps blob versioned hashes to transaction hashes that include them,

@@ -22,15 +22,15 @@ import (
 	"slices"
 	"sync"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/lru"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/common/lru"
+	"github.com/tenderly/net-celo/core"
+	"github.com/tenderly/net-celo/core/state"
+	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/event"
+	"github.com/tenderly/net-celo/log"
+	"github.com/tenderly/net-celo/params"
+	"github.com/tenderly/net-celo/rpc"
 )
 
 const sampleNumber = 3 // Number of transactions sampled in a block

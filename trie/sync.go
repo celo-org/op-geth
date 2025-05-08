@@ -21,15 +21,15 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/common/prque"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/metrics"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/common/hexutil"
+	"github.com/tenderly/net-celo/common/prque"
+	"github.com/tenderly/net-celo/core/rawdb"
+	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/crypto"
+	"github.com/tenderly/net-celo/ethdb"
+	"github.com/tenderly/net-celo/log"
+	"github.com/tenderly/net-celo/metrics"
 )
 
 // ErrNotRequested is returned by the trie sync when it's requested to process a

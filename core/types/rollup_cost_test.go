@@ -9,8 +9,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/params"
 )
 
 var (

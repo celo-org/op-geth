@@ -1,6 +1,6 @@
 package types
 
-import "github.com/ethereum/go-ethereum/params"
+import "github.com/tenderly/net-celo/params"
 
 var (
 	// celoForks is the list of celo forks that are supported by the

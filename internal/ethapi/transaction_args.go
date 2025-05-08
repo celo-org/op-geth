@@ -25,17 +25,17 @@ import (
 	"math"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/exchange"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/consensus/misc/eip4844"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto/kzg4844"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/holiman/uint256"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/common/exchange"
+	"github.com/tenderly/net-celo/common/hexutil"
+	"github.com/tenderly/net-celo/consensus/misc/eip4844"
+	"github.com/tenderly/net-celo/core"
+	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/crypto/kzg4844"
+	"github.com/tenderly/net-celo/log"
+	"github.com/tenderly/net-celo/params"
+	"github.com/tenderly/net-celo/rpc"
 )
 
 var (
@@ -56,7 +56,7 @@ type TransactionArgs struct {
 
 	// We accept "data" and "input" for backwards-compatibility reasons.
 	// "input" is the newer name and should be preferred by clients.
-	// Issue detail: https://github.com/ethereum/go-ethereum/issues/15628
+	// Issue detail: https://github.com/tenderly/net-celo/issues/15628
 	Data  *hexutil.Bytes `json:"data"`
 	Input *hexutil.Bytes `json:"input"`
 
@@ -204,7 +204,7 @@ func (args *TransactionArgs) setFeeDefaults(ctx context.Context, b CeloBackend, 
 	}
 	// If the tx has completely specified a fee mechanism, no default is needed.
 	// This allows users who are not yet synced past London to get defaults for
-	// other tx values. See https://github.com/ethereum/go-ethereum/pull/23274
+	// other tx values. See https://github.com/tenderly/net-celo/pull/23274
 	// for more information.
 	eip1559ParamsSet := args.MaxFeePerGas != nil && args.MaxPriorityFeePerGas != nil
 

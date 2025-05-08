@@ -25,22 +25,22 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/asm"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/tracing"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/core/vm/program"
-	"github.com/ethereum/go-ethereum/eth/tracers"
-	"github.com/ethereum/go-ethereum/eth/tracers/logger"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/tenderly/net-celo/accounts/abi"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/consensus"
+	"github.com/tenderly/net-celo/core"
+	"github.com/tenderly/net-celo/core/asm"
+	"github.com/tenderly/net-celo/core/state"
+	"github.com/tenderly/net-celo/core/tracing"
+	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/core/vm"
+	"github.com/tenderly/net-celo/core/vm/program"
+	"github.com/tenderly/net-celo/eth/tracers"
+	"github.com/tenderly/net-celo/eth/tracers/logger"
+	"github.com/tenderly/net-celo/params"
 
 	// force-load js tracers to trigger registration
-	_ "github.com/ethereum/go-ethereum/eth/tracers/js"
+	_ "github.com/tenderly/net-celo/eth/tracers/js"
 )
 
 func TestDefaults(t *testing.T) {
@@ -610,7 +610,7 @@ func TestEip2929Cases(t *testing.T) {
 
 // TestColdAccountAccessCost test that the cold account access cost is reported
 // correctly
-// see: https://github.com/ethereum/go-ethereum/issues/22649
+// see: https://github.com/tenderly/net-celo/issues/22649
 func TestColdAccountAccessCost(t *testing.T) {
 	for i, tc := range []struct {
 		code []byte

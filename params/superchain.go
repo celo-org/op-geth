@@ -6,8 +6,8 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/superchain"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/superchain"
 )
 
 var OPStackSupport = ProtocolVersionV0{Build: [8]byte{}, Major: 9, Minor: 0, Patch: 0, PreRelease: 0}.Encode()

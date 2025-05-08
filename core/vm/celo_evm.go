@@ -3,9 +3,9 @@ package vm
 import (
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
+	"github.com/tenderly/net-celo/accounts/abi"
+	"github.com/tenderly/net-celo/common"
 )
 
 // Call function from ABI and check revert message after call.

@@ -19,11 +19,11 @@ package node
 import (
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/ethdb/leveldb"
-	"github.com/ethereum/go-ethereum/ethdb/pebble"
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/tenderly/net-celo/core/rawdb"
+	"github.com/tenderly/net-celo/ethdb"
+	"github.com/tenderly/net-celo/ethdb/leveldb"
+	"github.com/tenderly/net-celo/ethdb/pebble"
+	"github.com/tenderly/net-celo/log"
 )
 
 // openOptions contains the options to apply when opening a database.

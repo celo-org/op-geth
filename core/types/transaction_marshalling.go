@@ -22,11 +22,11 @@ import (
 	"io"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/crypto/kzg4844"
-	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/holiman/uint256"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/common/hexutil"
+	"github.com/tenderly/net-celo/crypto/kzg4844"
+	"github.com/tenderly/net-celo/rlp"
 )
 
 // txJSON is the JSON representation of transactions.

@@ -24,11 +24,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/tracing"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/eth/tracers"
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/core/tracing"
+	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/eth/tracers"
+	"github.com/tenderly/net-celo/log"
 )
 
 // fileWritingTracer wraps either a tracer or a logger. On tx start,

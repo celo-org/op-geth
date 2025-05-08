@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/internal/ethapi"
-	"github.com/ethereum/go-ethereum/metrics"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/common/hexutil"
+	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/internal/ethapi"
+	"github.com/tenderly/net-celo/metrics"
+	"github.com/tenderly/net-celo/params"
+	"github.com/tenderly/net-celo/rpc"
 	"golang.org/x/time/rate"
 )
 

@@ -19,13 +19,13 @@ package vm
 import (
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/ethereum/go-ethereum/core/tracing"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/common/math"
+	"github.com/tenderly/net-celo/core/tracing"
+	"github.com/tenderly/net-celo/crypto"
+	"github.com/tenderly/net-celo/log"
+	"github.com/tenderly/net-celo/params"
 )
 
 // PrecompileOverrides is a function that can be used to override the default precompiled contracts

@@ -22,11 +22,11 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/crypto"
+	"github.com/tenderly/net-celo/params"
 )
 
 // TestCeloTransactionMarshalUnmarshal tests that each Celo transactions marshal and unmarshal correctly

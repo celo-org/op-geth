@@ -20,11 +20,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/consensus"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/trie"
+	"github.com/tenderly/net-celo/consensus"
+	"github.com/tenderly/net-celo/core/state"
+	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/params"
+	"github.com/tenderly/net-celo/trie"
 )
 
 // BlockValidator is responsible for validating block headers, uncles and

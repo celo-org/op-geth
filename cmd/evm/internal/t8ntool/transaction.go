@@ -24,13 +24,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/ethereum/go-ethereum/tests"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/common/hexutil"
+	"github.com/tenderly/net-celo/core"
+	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/params"
+	"github.com/tenderly/net-celo/rlp"
+	"github.com/tenderly/net-celo/tests"
 	"github.com/urfave/cli/v2"
 )
 

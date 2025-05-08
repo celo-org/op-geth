@@ -1,4 +1,4 @@
-module github.com/ethereum/go-ethereum
+module github.com/tenderly/net-celo
 
 go 1.22.0
 

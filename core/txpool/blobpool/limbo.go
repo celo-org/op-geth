@@ -19,11 +19,11 @@ package blobpool
 import (
 	"errors"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/holiman/billy"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/log"
+	"github.com/tenderly/net-celo/rlp"
 )
 
 // limboBlob is a wrapper around an opaque blobset that also contains the tx hash

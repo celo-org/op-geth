@@ -20,13 +20,13 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/trie"
 	"github.com/holiman/uint256"
 	"github.com/protolambda/zrnt/eth2/beacon/capella"
 	zrntcommon "github.com/protolambda/zrnt/eth2/beacon/common"
 	"github.com/protolambda/zrnt/eth2/beacon/deneb"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/trie"
 )
 
 type payloadType interface {

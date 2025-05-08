@@ -5,15 +5,15 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/math"
-	"github.com/ethereum/go-ethereum/consensus/misc/eip4844"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/vm"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/common/math"
+	"github.com/tenderly/net-celo/consensus/misc/eip4844"
+	"github.com/tenderly/net-celo/core"
+	"github.com/tenderly/net-celo/core/vm"
 
 	// Force-load native and js packages, to trigger registration
-	_ "github.com/ethereum/go-ethereum/eth/tracers/js"
-	_ "github.com/ethereum/go-ethereum/eth/tracers/native"
+	_ "github.com/tenderly/net-celo/eth/tracers/js"
+	_ "github.com/tenderly/net-celo/eth/tracers/native"
 )
 
 // camel converts a snake cased input string into a camel cased output.

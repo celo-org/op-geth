@@ -19,9 +19,9 @@ package state
 import (
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/trie/utils"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/params"
+	"github.com/tenderly/net-celo/trie/utils"
 )
 
 var (

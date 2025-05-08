@@ -25,10 +25,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/crypto"
+	"github.com/tenderly/net-celo/log"
+	"github.com/tenderly/net-celo/rlp"
 )
 
 var (

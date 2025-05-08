@@ -23,10 +23,10 @@ import (
 	gomath "math"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus/misc"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/consensus/misc"
+	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/params"
 )
 
 // VerifyEIP1559Header verifies some header attributes which were changed in EIP-1559,

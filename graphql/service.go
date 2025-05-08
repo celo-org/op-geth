@@ -24,13 +24,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/eth/filters"
-	"github.com/ethereum/go-ethereum/internal/celoapi"
-	"github.com/ethereum/go-ethereum/internal/ethapi"
-	"github.com/ethereum/go-ethereum/node"
-	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/graph-gophers/graphql-go"
 	gqlErrors "github.com/graph-gophers/graphql-go/errors"
+	"github.com/tenderly/net-celo/eth/filters"
+	"github.com/tenderly/net-celo/internal/celoapi"
+	"github.com/tenderly/net-celo/internal/ethapi"
+	"github.com/tenderly/net-celo/node"
+	"github.com/tenderly/net-celo/rpc"
 )
 
 type handler struct {

@@ -6,9 +6,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/core/vm"
+	"github.com/tenderly/net-celo/params"
 )
 
 func TestEnsureCreate2Deployer(t *testing.T) {

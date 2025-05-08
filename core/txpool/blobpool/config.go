@@ -17,7 +17,7 @@
 package blobpool
 
 import (
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/tenderly/net-celo/log"
 )
 
 // Config are the configuration parameters of the blob transaction pool.

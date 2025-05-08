@@ -27,14 +27,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/eth"
-	"github.com/ethereum/go-ethereum/internal/era"
-	"github.com/ethereum/go-ethereum/internal/ethapi"
-	"github.com/ethereum/go-ethereum/internal/flags"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/trie"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/eth"
+	"github.com/tenderly/net-celo/internal/era"
+	"github.com/tenderly/net-celo/internal/ethapi"
+	"github.com/tenderly/net-celo/internal/flags"
+	"github.com/tenderly/net-celo/params"
+	"github.com/tenderly/net-celo/trie"
 	"github.com/urfave/cli/v2"
 )
 

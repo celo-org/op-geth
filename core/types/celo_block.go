@@ -4,8 +4,8 @@ import (
 	"io"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/rlp"
 )
 
 //go:generate go run ../../rlp/rlpgen -type BeforeGingerbreadHeader --encoder --decoder -out gen_before_gingerbread_header_rlp.go

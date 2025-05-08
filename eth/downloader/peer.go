@@ -25,11 +25,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/eth/protocols/eth"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/p2p/msgrate"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/eth/protocols/eth"
+	"github.com/tenderly/net-celo/event"
+	"github.com/tenderly/net-celo/log"
+	"github.com/tenderly/net-celo/p2p/msgrate"
 )
 
 const (

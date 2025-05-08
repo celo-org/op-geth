@@ -20,8 +20,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/state"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/core/state"
 	"github.com/urfave/cli/v2"
 )
 

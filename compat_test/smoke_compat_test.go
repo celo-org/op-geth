@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/ethclient"
-	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/stretchr/testify/require"
+	"github.com/tenderly/net-celo/ethclient"
+	"github.com/tenderly/net-celo/rpc"
 	"golang.org/x/sync/errgroup"
 )
 

@@ -19,7 +19,7 @@ package pathdb
 import (
 	"bytes"
 
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/tenderly/net-celo/common"
 )
 
 // binaryIterator is a simplistic iterator to step over the accounts or storage

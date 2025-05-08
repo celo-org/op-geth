@@ -29,17 +29,17 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ethereum/go-ethereum/accounts"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/ethdb/memorydb"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/gofrs/flock"
+	"github.com/tenderly/net-celo/accounts"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/common/hexutil"
+	"github.com/tenderly/net-celo/core/rawdb"
+	"github.com/tenderly/net-celo/ethdb"
+	"github.com/tenderly/net-celo/ethdb/memorydb"
+	"github.com/tenderly/net-celo/event"
+	"github.com/tenderly/net-celo/log"
+	"github.com/tenderly/net-celo/p2p"
+	"github.com/tenderly/net-celo/rpc"
 )
 
 // Node is a container on which services can be registered.

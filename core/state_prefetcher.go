@@ -19,10 +19,10 @@ package core
 import (
 	"sync/atomic"
 
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/tenderly/net-celo/core/state"
+	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/core/vm"
+	"github.com/tenderly/net-celo/params"
 )
 
 // statePrefetcher is a basic Prefetcher, which blindly executes a block on top

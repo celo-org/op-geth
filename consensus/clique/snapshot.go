@@ -23,13 +23,13 @@ import (
 	"slices"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/lru"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/common/lru"
+	"github.com/tenderly/net-celo/core/rawdb"
+	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/ethdb"
+	"github.com/tenderly/net-celo/log"
+	"github.com/tenderly/net-celo/params"
 )
 
 // Vote represents a single vote that an authorized signer made to modify the

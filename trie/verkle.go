@@ -22,14 +22,14 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/trie/trienode"
-	"github.com/ethereum/go-ethereum/trie/utils"
-	"github.com/ethereum/go-ethereum/triedb/database"
 	"github.com/ethereum/go-verkle"
 	"github.com/holiman/uint256"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/ethdb"
+	"github.com/tenderly/net-celo/trie/trienode"
+	"github.com/tenderly/net-celo/trie/utils"
+	"github.com/tenderly/net-celo/triedb/database"
 )
 
 var (

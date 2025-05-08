@@ -23,15 +23,15 @@ import (
 	"math"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/contracts"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/state"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/internal/ethapi/override"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/contracts"
+	"github.com/tenderly/net-celo/core"
+	"github.com/tenderly/net-celo/core/state"
+	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/core/vm"
+	"github.com/tenderly/net-celo/internal/ethapi/override"
+	"github.com/tenderly/net-celo/log"
+	"github.com/tenderly/net-celo/params"
 )
 
 // Options are the contextual parameters to execute the requested call.

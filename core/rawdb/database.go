@@ -25,11 +25,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/ethdb/memorydb"
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/olekukonko/tablewriter"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/ethdb"
+	"github.com/tenderly/net-celo/ethdb/memorydb"
+	"github.com/tenderly/net-celo/log"
 )
 
 // freezerdb is a database wrapper that enables ancient chain segment freezing.

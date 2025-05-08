@@ -21,12 +21,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/ethereum/go-ethereum/trie"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/core"
+	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/log"
+	"github.com/tenderly/net-celo/rlp"
+	"github.com/tenderly/net-celo/trie"
 )
 
 func handleGetBlockHeaders(backend Backend, msg Decoder, peer *Peer) error {

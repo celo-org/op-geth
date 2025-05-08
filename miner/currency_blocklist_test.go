@@ -5,9 +5,9 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/core/types"
 )
 
 var (

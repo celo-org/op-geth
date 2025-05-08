@@ -1,12 +1,12 @@
 package core
 
 import (
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/contracts"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/contracts"
+	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/core/vm"
+	"github.com/tenderly/net-celo/log"
+	"github.com/tenderly/net-celo/params"
 )
 
 func GetFeeCurrencyContext(header *types.Header, config *params.ChainConfig, statedb vm.StateDB) *common.FeeCurrencyContext {

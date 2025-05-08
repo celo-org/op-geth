@@ -5,12 +5,12 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/params"
+	"github.com/tenderly/net-celo/rlp"
 )
 
 func TestCeloDynamicFeeTxReceiptEncodeDecode(t *testing.T) {

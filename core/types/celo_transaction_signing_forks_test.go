@@ -3,8 +3,8 @@ package types
 import (
 	"testing"
 
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/stretchr/testify/assert"
+	"github.com/tenderly/net-celo/params"
 )
 
 // Test_forks_activeForks tests that the correct forks are returned for a given block time and chain config

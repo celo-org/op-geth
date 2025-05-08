@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/tenderly/net-celo/common/hexutil"
 )
 
 var _ = (*supplyInfoBurnMarshaling)(nil)

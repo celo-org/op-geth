@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/superchain"
+	"github.com/tenderly/net-celo/superchain"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/params"
 )
 
 func LoadOPStackGenesis(chainID uint64) (*Genesis, error) {

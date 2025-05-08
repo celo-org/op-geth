@@ -25,11 +25,11 @@ import (
 	"time"
 
 	"github.com/VictoriaMetrics/fastcache"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/holiman/uint256"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/core/rawdb"
+	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/rlp"
 )
 
 // randomHash generates a random blob of data and returns it as a hash.
@@ -185,7 +185,7 @@ func TestDiskLayerExternalInvalidationPartialFlatten(t *testing.T) {
 // layer to check the usual mode of operation where the accumulator is retained.
 func TestDiffLayerExternalInvalidationPartialFlatten(t *testing.T) {
 	// Un-commenting this triggers the bloom set to be deterministic. The values below
-	// were used to trigger the flaw described in https://github.com/ethereum/go-ethereum/issues/27254.
+	// were used to trigger the flaw described in https://github.com/tenderly/net-celo/issues/27254.
 	// bloomDestructHasherOffset, bloomAccountHasherOffset, bloomStorageHasherOffset = 14, 24, 5
 
 	// Create an empty base layer and a snapshot tree out of it

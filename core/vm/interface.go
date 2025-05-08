@@ -19,13 +19,13 @@ package vm
 import (
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/stateless"
-	"github.com/ethereum/go-ethereum/core/tracing"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/trie/utils"
 	"github.com/holiman/uint256"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/core/stateless"
+	"github.com/tenderly/net-celo/core/tracing"
+	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/params"
+	"github.com/tenderly/net-celo/trie/utils"
 )
 
 // StateDB is an EVM database for full state querying.

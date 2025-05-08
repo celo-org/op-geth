@@ -23,13 +23,13 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/crypto/kzg4844"
-	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/metrics"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/core"
+	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/crypto/kzg4844"
+	"github.com/tenderly/net-celo/event"
+	"github.com/tenderly/net-celo/log"
+	"github.com/tenderly/net-celo/metrics"
 )
 
 type L1CostFunc func(dataGas types.RollupCostData) *big.Int

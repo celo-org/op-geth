@@ -21,9 +21,9 @@ import (
 	"math"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params/forks"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/log"
+	"github.com/tenderly/net-celo/params/forks"
 )
 
 // Genesis hashes to enforce below configs on.

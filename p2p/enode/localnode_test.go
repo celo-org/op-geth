@@ -22,10 +22,10 @@ import (
 	"net/netip"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/p2p/enr"
-	"github.com/ethereum/go-ethereum/p2p/netutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/tenderly/net-celo/crypto"
+	"github.com/tenderly/net-celo/p2p/enr"
+	"github.com/tenderly/net-celo/p2p/netutil"
 )
 
 func newLocalNodeForTesting() (*LocalNode, *DB) {

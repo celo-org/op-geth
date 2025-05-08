@@ -19,9 +19,9 @@ package state
 import (
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/core/rawdb"
+	"github.com/tenderly/net-celo/crypto"
 )
 
 // Tests that the node iterator indeed walks over the entire database contents.

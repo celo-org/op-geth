@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/rawdb"
-	"github.com/ethereum/go-ethereum/superchain"
-	"github.com/ethereum/go-ethereum/triedb"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/core/rawdb"
+	"github.com/tenderly/net-celo/superchain"
+	"github.com/tenderly/net-celo/triedb"
 )
 
 func TestOPStackGenesis(t *testing.T) {

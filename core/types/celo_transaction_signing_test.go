@@ -7,11 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/crypto"
+	"github.com/tenderly/net-celo/params"
 )
 
 // Tests that by default the celo legacy signer will sign transactions in a protected manner.

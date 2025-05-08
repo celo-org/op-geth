@@ -5,8 +5,8 @@ import (
 	"path"
 	"sync"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/naoina/toml"
+	"github.com/tenderly/net-celo/common"
 )
 
 type Superchain struct {

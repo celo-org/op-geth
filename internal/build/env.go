@@ -99,7 +99,7 @@ func Env() Environment {
 
 // LocalEnv returns build environment metadata gathered from git.
 func LocalEnv() Environment {
-	env := applyEnvFlags(Environment{Name: "local", Repo: "ethereum/go-ethereum"})
+	env := applyEnvFlags(Environment{Name: "local", Repo: "tenderly/net-celo"})
 
 	head := readGitFile("HEAD")
 	if info, err := os.Stat(".git/objects"); err == nil && info.IsDir() && env.Tag == "" {

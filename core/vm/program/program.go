@@ -26,8 +26,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/holiman/uint256"
+	"github.com/tenderly/net-celo/core/vm"
 )
 
 // Program is a simple bytecode container. It can be used to construct

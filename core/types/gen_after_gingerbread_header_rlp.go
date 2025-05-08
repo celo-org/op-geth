@@ -2,8 +2,8 @@
 
 package types
 
-import "github.com/ethereum/go-ethereum/common"
-import "github.com/ethereum/go-ethereum/rlp"
+import "github.com/tenderly/net-celo/common"
+import "github.com/tenderly/net-celo/rlp"
 import "io"
 
 func (obj *AfterGingerbreadHeader) EncodeRLP(_w io.Writer) error {

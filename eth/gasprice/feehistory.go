@@ -26,13 +26,13 @@ import (
 	"slices"
 	"sync/atomic"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/consensus/misc/eip1559"
-	"github.com/ethereum/go-ethereum/consensus/misc/eip4844"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/consensus/misc/eip1559"
+	"github.com/tenderly/net-celo/consensus/misc/eip4844"
+	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/log"
+	"github.com/tenderly/net-celo/params"
+	"github.com/tenderly/net-celo/rpc"
 )
 
 var (

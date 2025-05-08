@@ -33,9 +33,9 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/pmezard/go-difflib/difflib"
 	"github.com/stretchr/testify/assert"
+	"github.com/tenderly/net-celo/core/types"
 )
 
 // EqualBlocks compares two instances of types.Block and returns an error if they are not equal.

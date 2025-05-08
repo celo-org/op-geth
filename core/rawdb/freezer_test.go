@@ -25,10 +25,10 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/core/rawdb/ancienttest"
-	"github.com/ethereum/go-ethereum/ethdb"
-	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/stretchr/testify/require"
+	"github.com/tenderly/net-celo/core/rawdb/ancienttest"
+	"github.com/tenderly/net-celo/ethdb"
+	"github.com/tenderly/net-celo/rlp"
 )
 
 var freezerTestTableDef = map[string]bool{"test": true}

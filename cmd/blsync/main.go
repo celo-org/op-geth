@@ -22,13 +22,13 @@ import (
 	"os"
 	"slices"
 
-	"github.com/ethereum/go-ethereum/beacon/blsync"
-	"github.com/ethereum/go-ethereum/cmd/utils"
-	"github.com/ethereum/go-ethereum/internal/debug"
-	"github.com/ethereum/go-ethereum/internal/flags"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/node"
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/tenderly/net-celo/beacon/blsync"
+	"github.com/tenderly/net-celo/cmd/utils"
+	"github.com/tenderly/net-celo/internal/debug"
+	"github.com/tenderly/net-celo/internal/flags"
+	"github.com/tenderly/net-celo/log"
+	"github.com/tenderly/net-celo/node"
+	"github.com/tenderly/net-celo/rpc"
 	"github.com/urfave/cli/v2"
 )
 

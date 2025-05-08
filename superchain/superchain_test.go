@@ -3,8 +3,8 @@ package superchain
 import (
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
+	"github.com/tenderly/net-celo/common"
 )
 
 func TestGetSuperchain(t *testing.T) {

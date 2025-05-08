@@ -19,7 +19,7 @@ package tests
 import (
 	"testing"
 
-	"github.com/ethereum/go-ethereum/params"
+	"github.com/tenderly/net-celo/params"
 )
 
 func TestTransaction(t *testing.T) {

@@ -20,11 +20,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/eth"
-	"github.com/ethereum/go-ethereum/eth/ethconfig"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/node"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/eth"
+	"github.com/tenderly/net-celo/eth/ethconfig"
+	"github.com/tenderly/net-celo/log"
+	"github.com/tenderly/net-celo/node"
 )
 
 // FullSyncTester is an auxiliary service that allows Geth to perform full sync

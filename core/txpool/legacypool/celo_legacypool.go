@@ -1,11 +1,11 @@
 package legacypool
 
 import (
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/contracts"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/holiman/uint256"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/contracts"
+	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/log"
 )
 
 // filter Filters transactions from the given list, according to remaining balance (per currency)

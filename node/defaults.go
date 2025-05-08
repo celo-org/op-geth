@@ -22,9 +22,9 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/ethereum/go-ethereum/p2p"
-	"github.com/ethereum/go-ethereum/p2p/nat"
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/tenderly/net-celo/p2p"
+	"github.com/tenderly/net-celo/p2p/nat"
+	"github.com/tenderly/net-celo/rpc"
 )
 
 const (

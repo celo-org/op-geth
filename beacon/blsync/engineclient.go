@@ -22,13 +22,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ethereum/go-ethereum/beacon/engine"
-	"github.com/ethereum/go-ethereum/beacon/params"
-	"github.com/ethereum/go-ethereum/beacon/types"
-	"github.com/ethereum/go-ethereum/common"
-	ctypes "github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/rpc"
+	"github.com/tenderly/net-celo/beacon/engine"
+	"github.com/tenderly/net-celo/beacon/params"
+	"github.com/tenderly/net-celo/beacon/types"
+	"github.com/tenderly/net-celo/common"
+	ctypes "github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/log"
+	"github.com/tenderly/net-celo/rpc"
 )
 
 type engineClient struct {

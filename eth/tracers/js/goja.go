@@ -25,18 +25,18 @@ import (
 	"sync"
 
 	"github.com/dop251/goja"
-	"github.com/ethereum/go-ethereum/core/tracing"
-	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/eth/tracers"
-	"github.com/ethereum/go-ethereum/eth/tracers/internal"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
+	"github.com/tenderly/net-celo/core/tracing"
+	"github.com/tenderly/net-celo/core/types"
+	"github.com/tenderly/net-celo/eth/tracers"
+	"github.com/tenderly/net-celo/eth/tracers/internal"
+	"github.com/tenderly/net-celo/params"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ethereum/go-ethereum/core/vm"
-	"github.com/ethereum/go-ethereum/crypto"
-	jsassets "github.com/ethereum/go-ethereum/eth/tracers/js/internal/tracers"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/common/hexutil"
+	"github.com/tenderly/net-celo/core/vm"
+	"github.com/tenderly/net-celo/crypto"
+	jsassets "github.com/tenderly/net-celo/eth/tracers/js/internal/tracers"
 )
 
 var assetTracers = make(map[string]string)

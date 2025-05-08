@@ -21,7 +21,7 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/tenderly/net-celo/common/hexutil"
 )
 
 func celoTransactionMarshal(tx *Transaction) ([]byte, bool, error) {

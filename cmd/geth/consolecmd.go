@@ -21,8 +21,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/cmd/utils"
-	"github.com/ethereum/go-ethereum/console"
+	"github.com/tenderly/net-celo/cmd/utils"
+	"github.com/tenderly/net-celo/console"
 	"github.com/urfave/cli/v2"
 )
 

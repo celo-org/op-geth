@@ -4,9 +4,9 @@ import (
 	"math"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/holiman/uint256"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/core/types"
 )
 
 func (l *list) FilterAllowlisted(rates common.ExchangeRates) (types.Transactions, types.Transactions) {

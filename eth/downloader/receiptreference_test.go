@@ -3,8 +3,8 @@ package downloader
 import (
 	"testing"
 
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/stretchr/testify/assert"
+	"github.com/tenderly/net-celo/core/types"
 )
 
 // makeCorrection is a helper function to create a slice of receipts and a slice of corrected receipts

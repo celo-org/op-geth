@@ -19,8 +19,8 @@ package types
 import (
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/exchange"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/common/exchange"
 )
 
 // IsCeloLegacy returns true if the transaction is a legacy celo transaction.

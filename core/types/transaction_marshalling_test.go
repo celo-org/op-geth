@@ -5,8 +5,8 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
+	"github.com/tenderly/net-celo/common"
 )
 
 func TestTransactionUnmarshalJsonDeposit(t *testing.T) {

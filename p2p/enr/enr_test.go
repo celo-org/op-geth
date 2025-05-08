@@ -24,9 +24,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tenderly/net-celo/rlp"
 )
 
 var rnd = rand.New(rand.NewSource(time.Now().UnixNano()))

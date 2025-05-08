@@ -4,10 +4,10 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/assert"
+	"github.com/tenderly/net-celo/common"
+	"github.com/tenderly/net-celo/core/types"
 )
 
 func txC(nonce int, feeCap int, tipCap int, gas int, currency *common.Address) *types.Transaction {
