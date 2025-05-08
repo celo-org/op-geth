@@ -24,8 +24,8 @@ import (
 	"net"
 	"time"
 
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/tenderly/net-celo/common/mclock"
-	"github.com/tenderly/net-celo/crypto"
 	"github.com/tenderly/net-celo/p2p/discover/v5wire"
 	"github.com/tenderly/net-celo/p2p/enode"
 	"github.com/tenderly/net-celo/p2p/enr"

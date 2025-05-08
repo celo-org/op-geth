@@ -32,6 +32,7 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/mock"
 	"github.com/tenderly/net-celo/common"
 	"github.com/tenderly/net-celo/common/hexutil"
@@ -44,7 +45,6 @@ import (
 	"github.com/tenderly/net-celo/core/tracing"
 	"github.com/tenderly/net-celo/core/types"
 	"github.com/tenderly/net-celo/core/vm"
-	"github.com/tenderly/net-celo/crypto"
 	"github.com/tenderly/net-celo/eth/tracers/logger"
 	"github.com/tenderly/net-celo/ethdb"
 	"github.com/tenderly/net-celo/internal/ethapi"

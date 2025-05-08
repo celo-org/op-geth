@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/tenderly/net-celo/common"
 	"github.com/tenderly/net-celo/consensus/clique"
 	"github.com/tenderly/net-celo/core"
@@ -32,7 +33,6 @@ import (
 	"github.com/tenderly/net-celo/core/txpool/legacypool"
 	"github.com/tenderly/net-celo/core/types"
 	"github.com/tenderly/net-celo/core/vm"
-	"github.com/tenderly/net-celo/crypto"
 	"github.com/tenderly/net-celo/event"
 	"github.com/tenderly/net-celo/params"
 	"github.com/tenderly/net-celo/trie"

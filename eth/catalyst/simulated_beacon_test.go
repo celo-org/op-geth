@@ -22,10 +22,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/tenderly/net-celo/common"
 	"github.com/tenderly/net-celo/core"
 	"github.com/tenderly/net-celo/core/types"
-	"github.com/tenderly/net-celo/crypto"
 	"github.com/tenderly/net-celo/eth"
 	"github.com/tenderly/net-celo/eth/ethconfig"
 	"github.com/tenderly/net-celo/miner"

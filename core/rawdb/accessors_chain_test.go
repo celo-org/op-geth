@@ -27,10 +27,10 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/require"
 	"github.com/tenderly/net-celo/common"
 	"github.com/tenderly/net-celo/core/types"
-	"github.com/tenderly/net-celo/crypto"
 	"github.com/tenderly/net-celo/params"
 	"github.com/tenderly/net-celo/rlp"
 	"golang.org/x/crypto/sha3"

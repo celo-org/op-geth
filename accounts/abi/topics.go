@@ -23,9 +23,9 @@ import (
 	"math/big"
 	"reflect"
 
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/tenderly/net-celo/common"
 	"github.com/tenderly/net-celo/common/math"
-	"github.com/tenderly/net-celo/crypto"
 )
 
 // MakeTopics converts a filter query argument list into a filter topic set.

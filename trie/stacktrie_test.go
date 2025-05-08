@@ -22,10 +22,10 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/assert"
 	"github.com/tenderly/net-celo/common"
 	"github.com/tenderly/net-celo/core/rawdb"
-	"github.com/tenderly/net-celo/crypto"
 )
 
 func TestStackTrieInsertAndHash(t *testing.T) {

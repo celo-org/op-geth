@@ -17,8 +17,8 @@
 package types
 
 import (
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/tenderly/net-celo/common"
-	"github.com/tenderly/net-celo/crypto"
 )
 
 var (

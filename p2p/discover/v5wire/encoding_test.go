@@ -31,9 +31,9 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/tenderly/net-celo/common/hexutil"
 	"github.com/tenderly/net-celo/common/mclock"
-	"github.com/tenderly/net-celo/crypto"
 	"github.com/tenderly/net-celo/p2p/enode"
 )
 

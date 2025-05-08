@@ -106,7 +106,7 @@ compile_fuzzer github.com/tenderly/net-celo/core/types \
   FuzzRLP fuzzRlp \
   $repo/core/types/rlp_fuzzer_test.go
 
-compile_fuzzer github.com/tenderly/net-celo/crypto/blake2b \
+compile_fuzzer github.com/ethereum/go-ethereum/crypto/blake2b \
   Fuzz fuzzBlake2b \
   $repo/crypto/blake2b/blake2b_f_fuzz_test.go
 

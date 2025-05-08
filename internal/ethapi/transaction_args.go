@@ -25,6 +25,7 @@ import (
 	"math"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/crypto/kzg4844"
 	"github.com/holiman/uint256"
 	"github.com/tenderly/net-celo/common"
 	"github.com/tenderly/net-celo/common/exchange"
@@ -32,7 +33,6 @@ import (
 	"github.com/tenderly/net-celo/consensus/misc/eip4844"
 	"github.com/tenderly/net-celo/core"
 	"github.com/tenderly/net-celo/core/types"
-	"github.com/tenderly/net-celo/crypto/kzg4844"
 	"github.com/tenderly/net-celo/log"
 	"github.com/tenderly/net-celo/params"
 	"github.com/tenderly/net-celo/rpc"

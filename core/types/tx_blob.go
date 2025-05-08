@@ -21,9 +21,9 @@ import (
 	"crypto/sha256"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/crypto/kzg4844"
 	"github.com/holiman/uint256"
 	"github.com/tenderly/net-celo/common"
-	"github.com/tenderly/net-celo/crypto/kzg4844"
 	"github.com/tenderly/net-celo/params"
 	"github.com/tenderly/net-celo/rlp"
 )

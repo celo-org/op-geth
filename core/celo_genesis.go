@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/tenderly/net-celo/common"
 	"github.com/tenderly/net-celo/contracts/addresses"
 	"github.com/tenderly/net-celo/contracts/celo"
-	"github.com/tenderly/net-celo/crypto"
 )
 
 // Decode 0x prefixed hex string from file (including trailing newline)

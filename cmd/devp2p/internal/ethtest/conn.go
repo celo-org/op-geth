@@ -25,7 +25,7 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/tenderly/net-celo/crypto"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/tenderly/net-celo/eth/protocols/eth"
 	"github.com/tenderly/net-celo/eth/protocols/snap"
 	"github.com/tenderly/net-celo/p2p"

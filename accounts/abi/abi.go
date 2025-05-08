@@ -24,8 +24,8 @@ import (
 	"io"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/tenderly/net-celo/common"
-	"github.com/tenderly/net-celo/crypto"
 )
 
 // The ABI holds information about a contract's context and available

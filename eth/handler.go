@@ -24,12 +24,12 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/tenderly/net-celo/common"
 	"github.com/tenderly/net-celo/core"
 	"github.com/tenderly/net-celo/core/forkid"
 	"github.com/tenderly/net-celo/core/txpool"
 	"github.com/tenderly/net-celo/core/types"
-	"github.com/tenderly/net-celo/crypto"
 	"github.com/tenderly/net-celo/eth/downloader"
 	"github.com/tenderly/net-celo/eth/ethconfig"
 	"github.com/tenderly/net-celo/eth/fetcher"

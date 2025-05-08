@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/tenderly/net-celo/crypto"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/tenderly/net-celo/p2p/enode"
 	"github.com/tenderly/net-celo/p2p/enr"
 	"github.com/urfave/cli/v2"

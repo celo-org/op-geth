@@ -24,6 +24,8 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/crypto/kzg4844"
 	"github.com/holiman/uint256"
 	"github.com/tenderly/net-celo/common"
 	"github.com/tenderly/net-celo/consensus"
@@ -33,8 +35,6 @@ import (
 	"github.com/tenderly/net-celo/core/state"
 	"github.com/tenderly/net-celo/core/types"
 	"github.com/tenderly/net-celo/core/vm"
-	"github.com/tenderly/net-celo/crypto"
-	"github.com/tenderly/net-celo/crypto/kzg4844"
 	"github.com/tenderly/net-celo/event"
 	"github.com/tenderly/net-celo/params"
 	"github.com/tenderly/net-celo/rpc"

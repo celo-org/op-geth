@@ -23,9 +23,9 @@ import (
 	"math/big"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tenderly/net-celo/crypto"
 	"github.com/tenderly/net-celo/p2p/enr"
 	"github.com/tenderly/net-celo/rlp"
 )

@@ -26,6 +26,7 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/holiman/uint256"
 	"github.com/stretchr/testify/require"
 	"github.com/tenderly/net-celo/common"
@@ -36,7 +37,6 @@ import (
 	"github.com/tenderly/net-celo/core/tracing"
 	"github.com/tenderly/net-celo/core/types"
 	"github.com/tenderly/net-celo/core/vm"
-	"github.com/tenderly/net-celo/crypto"
 	"github.com/tenderly/net-celo/params"
 	"github.com/tenderly/net-celo/triedb"
 )

@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/tenderly/net-celo"
 	"github.com/tenderly/net-celo/accounts"
 	"github.com/tenderly/net-celo/common"
@@ -39,7 +40,6 @@ import (
 	"github.com/tenderly/net-celo/core/state"
 	"github.com/tenderly/net-celo/core/types"
 	"github.com/tenderly/net-celo/core/vm"
-	"github.com/tenderly/net-celo/crypto"
 	"github.com/tenderly/net-celo/eth/gasestimator"
 	"github.com/tenderly/net-celo/eth/tracers/logger"
 	"github.com/tenderly/net-celo/internal/ethapi/override"

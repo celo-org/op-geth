@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/tenderly/net-celo/crypto"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/tenderly/net-celo/rlp"
 )
 

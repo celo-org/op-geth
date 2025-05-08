@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	dcred_secp256k1 "github.com/decred/dcrd/dcrec/secp256k1/v4"
-	"github.com/tenderly/net-celo/crypto/secp256k1"
+	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 )
 
 func TestFuzzer(t *testing.T) {
