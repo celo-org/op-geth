@@ -45,7 +45,7 @@ jobs:
             cat output.log
             continue
           fi
-          if ! go test ./... > output.log 2>&1; then
+          if ! make test > output.log 2>&1; then
             failed=1
             echo "failed test"
             cat output.log
