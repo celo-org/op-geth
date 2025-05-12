@@ -71,6 +71,8 @@ func testNativeTransferWithFeeCurrency(t *testing.T, scheme string, feeCurrencyA
 		}
 	)
 	gspec.Config.Cel2Time = uint64ptr(0)
+	gspec.Config.BedrockBlock = big.NewInt(0)
+	gspec.Config.Optimism = &params.OptimismConfig{EIP1559Elasticity: 50, EIP1559Denominator: 10}
 
 	signer := types.LatestSigner(gspec.Config)
 
