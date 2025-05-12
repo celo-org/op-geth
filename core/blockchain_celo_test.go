@@ -22,7 +22,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/exchange"
-	"github.com/ethereum/go-ethereum/consensus/ethash"
+	"github.com/ethereum/go-ethereum/consensus/beacon"
 	"github.com/ethereum/go-ethereum/contracts"
 	"github.com/ethereum/go-ethereum/contracts/addresses"
 	"github.com/ethereum/go-ethereum/core/rawdb"
@@ -58,7 +58,7 @@ func TestNativeTransferWithFeeCurrencyAndTooLowGasPrice(t *testing.T) {
 func testNativeTransferWithFeeCurrency(t *testing.T, scheme string, feeCurrencyAddr common.Address) {
 	var (
 		aa     = common.HexToAddress("0x000000000000000000000000000000000000aaaa")
-		engine = ethash.NewFaker()
+		engine = beacon.NewFaker()
 
 		// A sender who makes transactions, has some funds
 		key1, _ = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
@@ -72,7 +72,11 @@ func testNativeTransferWithFeeCurrency(t *testing.T, scheme string, feeCurrencyA
 	)
 	gspec.Config.Cel2Time = uint64ptr(0)
 	gspec.Config.BedrockBlock = big.NewInt(0)
-	gspec.Config.Optimism = &params.OptimismConfig{EIP1559Elasticity: 50, EIP1559Denominator: 10}
+	gspec.Config.Optimism = &params.OptimismConfig{EIP1559Elasticity: 2, EIP1559Denominator: 8}
+	gspec.Config.Celo = &params.CeloConfig{
+		EIP1559BaseFeeFloor: 250000000,
+	}
+	gspec.Config.Ethash = nil
 
 	signer := types.LatestSigner(gspec.Config)
 
