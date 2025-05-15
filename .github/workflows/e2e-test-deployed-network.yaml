@@ -33,9 +33,9 @@ jobs:
             node-version: 18
 
         - name: Install Foundry
-          uses: foundry-rs/foundry-toolchain@v1
+          uses: foundry-rs/foundry-toolchain@v1.4.0
           with:
-            version: nightly-143abd6a768eeb52a5785240b763d72a56987b4a
+            version: v1.1.0
 
         - name: Run e2e tests alfajores
           shell: bash
