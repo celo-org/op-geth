@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/contracts/addresses"
 	"github.com/ethereum/go-ethereum/contracts/celo"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/params"
 )
 
 // Decode 0x prefixed hex string from file (including trailing newline)
@@ -182,4 +183,27 @@ func (g *Genesis) SetInitingGenesis() {
 // InitingGenesis returns true if this genesis is being used in the initGenesis operation.
 func (g *Genesis) InitingGenesis() bool {
 	return g.initingGenesis
+}
+
+// CeloDeveloperGenesisBlock returns the 'geth --dev' genesis block with Celo-specific configurations.
+// It differs from the standard DeveloperGenesisBlock in that it:
+// 1. Uses a more realistic chain configuration that mirrors mainnet settings
+// 2. Includes Celo-specific genesis accounts and contract deployments
+// 3. Sets up fee currency contracts and mock oracles for testing
+//
+// This ensures that development mode behaves as closely as possible to mainnet,
+// making it more suitable for testing and development purposes.
+func CeloDeveloperGenesisBlock(gasLimit uint64, faucet *common.Address) *Genesis {
+	genesis := DeveloperGenesisBlock(gasLimit, faucet)
+
+	// Set our own more realistic config
+	config := *params.DevChainConfig
+	genesis.Config = &config
+
+	// Add state from celoGenesisAccounts
+	for addr, data := range CeloGenesisAccounts(common.HexToAddress("0x2")) {
+		genesis.Alloc[addr] = data
+	}
+
+	return genesis
 }

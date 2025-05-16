@@ -66,10 +66,6 @@ async function sendTypedCreateTransaction(type, feeCurrency) {
 	describe("viem smoke test, tx type " + type, () => {
 		const feeCurrency = type == "cip64" ? process.env.FEE_CURRENCY.toLowerCase() : undefined;
 		let l1Fee = 0n;
-		if (!process.env.NETWORK) {
-			// Local dev chain does not have L1 fees (Optimism is unset)
-			l1Fee = undefined;
-		}
 		it("send tx", async () => {
 			const send = await sendTypedTransaction(type, feeCurrency);
 			await check(send, {type, feeCurrency}, {l1Fee});

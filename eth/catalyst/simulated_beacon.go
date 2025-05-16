@@ -171,6 +171,12 @@ func (c *SimulatedBeacon) sealBlock(withdrawals []*types.Withdrawal, timestamp u
 		return fmt.Errorf("failed to sync txpool: %w", err)
 	}
 
+	// Construct optional system transaction, dependent on optimism config.
+	transactions, err := c.payloadSystemTransaction()
+	if err != nil {
+		return err
+	}
+
 	var random [32]byte
 	rand.Read(random[:])
 	fcResponse, err := c.engineAPI.forkchoiceUpdated(c.curForkchoiceState, &engine.PayloadAttributes{
@@ -179,6 +185,8 @@ func (c *SimulatedBeacon) sealBlock(withdrawals []*types.Withdrawal, timestamp u
 		Withdrawals:           withdrawals,
 		Random:                random,
 		BeaconRoot:            &common.Hash{},
+		GasLimit:              c.payloadGasLimit(),
+		Transactions:          transactions,
 	}, engine.PayloadV3, false)
 	if err != nil {
 		return err
