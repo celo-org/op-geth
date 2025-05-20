@@ -22,10 +22,12 @@ func (c *SimulatedBeacon) payloadGasLimit() *uint64 {
 }
 
 func (c *SimulatedBeacon) payloadSystemTransaction() ([][]byte, error) {
-	// Post ecotone we need to provide a system transaction to set L1 gas params, we don't actually need to
-	// set realistic values for the gas params, since in Celo we ensure L1 gas fees of zero.
-	// However this is required in order to be able to correctly derive receipt fields.
-	// See types.Receipts.DeriveFields.
+	// Post ecotone we need to provide a system transaction to set L1 gas params.
+	// This mechanism doesn't work in the STF, since no L2 contracts are pre-deployed.
+	// The l1 gas-parameters are defaulting to 0, which is coincidentally what we expect in Celo.
+	// This is why we don't need to set realistic values in the system transaction here, except for 
+	// the `Data` field, which is used by `types.Receipts.DeriveFields` and expected to be all 0 to match 
+	// what is deducted in the STF.
 	if c.eth.BlockChain().Config().Optimism != nil && c.eth.BlockChain().Config().IsEcotone(c.eth.BlockChain().CurrentBlock().Time) {
 		sysTx := &types.DepositTx{
 			SourceHash:          common.Hash{},
