@@ -2086,7 +2086,7 @@ func SetEthConfig(ctx *cli.Context, stack *node.Node, cfg *ethconfig.Config) {
 
 		// configure default developer genesis which will be used unless a
 		// datadir is specified and a chain is preexisting at that location.
-		cfg.Genesis = core.DeveloperGenesisBlock(ctx.Uint64(DeveloperGasLimitFlag.Name), &developer.Address)
+		cfg.Genesis = core.CeloDeveloperGenesisBlock(ctx.Uint64(DeveloperGasLimitFlag.Name), &developer.Address)
 
 		// If a datadir is specified, ensure that any preexisting chain in that location
 		// has a configuration that is compatible with dev mode: it must be merged at genesis.
