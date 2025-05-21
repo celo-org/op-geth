@@ -198,6 +198,12 @@ func (c *SimulatedBeacon) sealBlock(withdrawals []*types.Withdrawal, timestamp u
 	version := payloadVersion(c.eth.BlockChain().Config(), timestamp)
 	tracer := otel.Tracer("")
 
+	// Construct optional system transaction, dependent on optimism config.
+	transactions, err := c.payloadSystemTransaction()
+	if err != nil {
+		return err
+	}
+
 	var random [32]byte
 	rand.Read(random[:])
 
@@ -207,6 +213,8 @@ func (c *SimulatedBeacon) sealBlock(withdrawals []*types.Withdrawal, timestamp u
 		Withdrawals:           withdrawals,
 		Random:                random,
 		BeaconRoot:            &common.Hash{},
+		GasLimit:              c.payloadGasLimit(),
+		Transactions:          transactions,
 	}
 	if c.eth.BlockChain().Config().LatestFork(timestamp) == forks.Amsterdam {
 		slotNumber := uint64(0)
