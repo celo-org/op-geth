@@ -191,8 +191,9 @@ func TestMinerFillTransactionsOrdering(t *testing.T) {
 			// Verify that transaction ordering depends only on nonce and gas price when all transactions in the TxPool are local
 			t.Run("all local transactions", func(t *testing.T) {
 				miner := createCeloMiner(t)
+				parentHeader = miner.chain.CurrentBlock()
 
-				errs := miner.txpool.Add(txs, true, false)
+				errs := miner.txpool.Add(txs, true, true)
 				requireNoErrors(t, errs)
 
 				res := miner.generateWork(&generateParams{
@@ -200,7 +201,6 @@ func TestMinerFillTransactionsOrdering(t *testing.T) {
 					timestamp:  parentHeader.Time + 1,
 					random:     common.HexToHash("0xcafebabe"),
 					noTxs:      false,
-					forceTime:  true,
 				}, false)
 				require.NoError(t, res.err)
 
@@ -213,9 +213,10 @@ func TestMinerFillTransactionsOrdering(t *testing.T) {
 			// Verify that transaction ordering depends only on nonce and gas price when all transactions in the TxPool are remote
 			t.Run("all remote transactions", func(t *testing.T) {
 				miner := createCeloMiner(t)
+				parentHeader = miner.chain.CurrentBlock()
 
 				miner.txpool.Clear()
-				errs := miner.txpool.Add(txs, false, false)
+				errs := miner.txpool.Add(txs, false, true)
 				requireNoErrors(t, errs)
 
 				res := miner.generateWork(&generateParams{
@@ -237,6 +238,7 @@ func TestMinerFillTransactionsOrdering(t *testing.T) {
 			// while transactions from Account2 are added as remote transactions
 			t.Run("mixed local & remote transactions", func(t *testing.T) {
 				miner := createCeloMiner(t)
+				parentHeader := miner.chain.CurrentBlock()
 
 				var acc1TxNum, acc2TxNum uint64
 
@@ -247,7 +249,7 @@ func TestMinerFillTransactionsOrdering(t *testing.T) {
 					require.NoError(t, err)
 
 					isAccount1 := sender == address1
-					errs := miner.txpool.Add([]*types.Transaction{tx}, isAccount1, false)
+					errs := miner.txpool.Add([]*types.Transaction{tx}, isAccount1, true)
 					requireNoErrors(t, errs)
 
 					if isAccount1 {
