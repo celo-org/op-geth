@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/contracts/addresses"
 	"github.com/ethereum/go-ethereum/contracts/celo"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/params"
 )
 
 // Decode 0x prefixed hex string from file (including trailing newline)
@@ -162,4 +163,27 @@ func addFeeCurrencyToStorage(feeCurrencyAddr common.Address, oracleAddr common.A
 	structStart := CalcMapAddr(common.HexToHash("0x1"), common.BytesToHash(feeCurrencyAddr.Bytes()))
 	storage[structStart] = common.BytesToHash(oracleAddr.Bytes())          // oracle
 	storage[incHash(structStart, 1)] = common.BigToHash(big.NewInt(50000)) // intrinsicGas
+}
+
+// CeloDeveloperGenesisBlock returns the 'geth --dev' genesis block with Celo-specific configurations.
+// It differs from the standard DeveloperGenesisBlock in that it:
+// 1. Uses a more realistic chain configuration that mirrors mainnet settings
+// 2. Includes Celo-specific genesis accounts and contract deployments
+// 3. Sets up fee currency contracts and mock oracles for testing
+//
+// This ensures that development mode behaves as closely as possible to mainnet,
+// making it more suitable for testing and development purposes.
+func CeloDeveloperGenesisBlock(gasLimit uint64, faucet *common.Address) *Genesis {
+	genesis := DeveloperGenesisBlock(gasLimit, faucet)
+
+	// Set our own more realistic config
+	config := *params.DevChainConfig
+	genesis.Config = &config
+
+	// Add state from celoGenesisAccounts
+	for addr, data := range celoGenesisAccounts(common.HexToAddress("0x2")) {
+		genesis.Alloc[addr] = data
+	}
+
+	return genesis
 }
