@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   e2e-tests:
-    runs-on: ["8-cpu","self-hosted","org"]
+    runs-on: ["op-stack","self-hosted","org"]
     steps:
         - uses: actions/checkout@v4
 

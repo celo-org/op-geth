@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   Test:
-    runs-on: ["ubuntu-22-04","self-hosted","org"]
+    runs-on: ["op-stack","self-hosted","org"]
     steps:
         - uses: actions/checkout@v4
 
@@ -46,7 +46,7 @@ jobs:
           run: e2e_test/run_all_tests.sh
 
   Lint:
-    runs-on: ["8-cpu","self-hosted","org"]
+    runs-on: ["op-stack","self-hosted","org"]
     steps:
         - uses: actions/checkout@v4
 
