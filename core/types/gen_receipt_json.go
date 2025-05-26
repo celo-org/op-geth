@@ -69,12 +69,8 @@ func (r Receipt) MarshalJSON() ([]byte, error) {
 	enc.FeeScalar = r.FeeScalar
 	enc.L1BaseFeeScalar = (*hexutil.Uint64)(r.L1BaseFeeScalar)
 	enc.L1BlobBaseFeeScalar = (*hexutil.Uint64)(r.L1BlobBaseFeeScalar)
-	if r.OperatorFeeScalar != nil {
-		enc.OperatorFeeScalar = (*hexutil.Uint64)(r.OperatorFeeScalar)
-	}
-	if r.OperatorFeeConstant != nil {
-		enc.OperatorFeeConstant = (*hexutil.Uint64)(r.OperatorFeeConstant)
-	}
+	enc.OperatorFeeScalar = (*hexutil.Uint64)(r.OperatorFeeScalar)
+	enc.OperatorFeeConstant = (*hexutil.Uint64)(r.OperatorFeeConstant)
 	enc.BaseFee = (*hexutil.Big)(r.BaseFee)
 	return json.Marshal(&enc)
 }
