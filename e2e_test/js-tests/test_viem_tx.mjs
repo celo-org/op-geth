@@ -160,20 +160,11 @@ describe("viem send tx", () => {
 		});
 
 		// Get the exchange rates for the fee currency.
-		const abi = parseAbi(['function getExchangeRate(address token) public view returns (uint256 numerator, uint256 denominator)']);
-		const [numerator, denominator] = await publicClient.readContract({
-			address: process.env.FEE_CURRENCY_DIRECTORY_ADDR,
-			abi: abi,
-			functionName: 'getExchangeRate',
-			args: [process.env.FEE_CURRENCY],
-		});
+		const rate = await getRate(process.env.FEE_CURRENCY);
 
-		// TODO fix this when viem is fixed - https://github.com/celo-org/viem/pull/20
-		// The expected value for the max fee should be the (baseFeePerGas * multiplier) + maxPriorityFeePerGas
-		// Instead what is currently returned is (maxFeePerGas * multiplier) + maxPriorityFeePerGas
-		const maxPriorityFeeInFeeCurrency = (maxPriorityFeePerGasNative * numerator) / denominator;
-		const maxFeeInFeeCurrency = ((block.baseFeePerGas + maxPriorityFeePerGasNative) * numerator) / denominator;
-		assert.equal(fees.maxFeePerGas, ((maxFeeInFeeCurrency * 12n) / 10n) + maxPriorityFeeInFeeCurrency);
+		const maxPriorityFeeInFeeCurrency = rate.toFeeCurrency(maxPriorityFeePerGasNative);
+		const baseFeeInFeeCurrency = rate.toFeeCurrency(block.baseFeePerGas);
+		assert.equal(fees.maxFeePerGas, ((baseFeeInFeeCurrency * 12n) / 10n) + maxPriorityFeeInFeeCurrency);
 		assert.equal(fees.maxPriorityFeePerGas, maxPriorityFeeInFeeCurrency);
 
 		// check that the prepared transaction request uses the
