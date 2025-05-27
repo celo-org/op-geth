@@ -20,23 +20,7 @@ jobs:
     runs-on: ["op-stack","self-hosted","org"]
     steps:
         - uses: actions/checkout@v4
-
-        - uses: actions/setup-go@v5
-          with:
-            go-version: '1.21'
-
-        - name: Build
-          run: make all
-
-        - uses: actions/setup-node@v4
-          with:
-            node-version: 18
-
-        - name: Install Foundry
-          uses: foundry-rs/foundry-toolchain@v1.4.0
-          with:
-            version: v1.1.0
-
+        - uses: ./.github/workflows/composite/setup
         - name: Run e2e tests alfajores
           shell: bash
           run: NETWORK=alfajores e2e_test/run_all_tests.sh
