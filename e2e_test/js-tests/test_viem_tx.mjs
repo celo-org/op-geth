@@ -59,7 +59,7 @@ const testNonceBump = async (
 		// If shouldReplace, no error should be thrown
 		// If shouldReplace == false, exactly the underpriced error should be thrown
 		if (
-			err.cause.details != "replacement transaction underpriced" ||
+			!err.cause.details.includes("replacement transaction underpriced") ||
 			shouldReplace
 		) {
 			throw err; // Only throw if unexpected error.
