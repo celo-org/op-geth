@@ -5,6 +5,7 @@
   ],
   "packageRules": [
     {
+      "forkProcessing": "enabled",
       "enabled": false,
       "groupName": "everything",
       "matchManagers": ["gomod", "dockerfile", "docker-compose", "npm", "html", "github-actions", "pip_requirements"],
