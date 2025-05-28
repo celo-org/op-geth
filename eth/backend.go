@@ -224,8 +224,29 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		}
 		vmConfig.Tracer = t
 	}
-	// Override the chain config with provided settings.
+
 	var overrides core.ChainOverrides
+	// Add Celo-specific overrides
+	// This is a temporary workaround until Celo chains are available in the superchain registry.
+	// See https://github.com/celo-org/op-geth/issues/389
+	if config.Genesis != nil { // some tests do not have a genesis
+		switch config.Genesis.Config.ChainID.Uint64() {
+		case params.CeloMainnetChainID:
+			activationTime := params.CeloMainnetIsthmusTimestamp
+			overrides.OverrideOptimismHolocene = &activationTime
+			overrides.OverrideOptimismIsthmus = &activationTime
+		case params.CeloAlfajoresChainID:
+			activationTime := params.AlfajoresIsthmusTimestamp
+			overrides.OverrideOptimismHolocene = &activationTime
+			overrides.OverrideOptimismIsthmus = &activationTime
+		case params.CeloBaklavaChainID:
+			activationTime := params.BaklavaIsthmusTimestamp
+			overrides.OverrideOptimismHolocene = &activationTime
+			overrides.OverrideOptimismIsthmus = &activationTime
+		}
+	}
+
+	// Override the chain config with provided settings.
 	if config.OverrideCancun != nil {
 		overrides.OverrideCancun = config.OverrideCancun
 	}
