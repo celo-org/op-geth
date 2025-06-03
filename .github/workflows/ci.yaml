@@ -18,65 +18,46 @@ permissions:
 
 jobs:
   Test:
-    runs-on: ["8-cpu","self-hosted","org"]
+    runs-on: ["op-stack", "self-hosted", "org"]
     steps:
-        - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: ./.github/workflows/composite/setup
 
-        - uses: actions/setup-go@v5
-          with:
-            go-version: '1.22'
+      - name: Test
+        run: make test
 
-        - name: Build
-          run: make all
-
-        - name: Test
-          run: make test
-
-        - uses: actions/setup-node@v4
-          with:
-            node-version: 18
-
-        - name: Install Foundry
-          uses: foundry-rs/foundry-toolchain@v1
-          with:
-            version: nightly-143abd6a768eeb52a5785240b763d72a56987b4a
-
-        - name: Run e2e tests local
-          shell: bash
-          run: e2e_test/run_all_tests.sh
+      - name: Run e2e tests local
+        shell: bash
+        run: e2e_test/run_all_tests.sh
 
   Lint:
-    runs-on: ["8-cpu","self-hosted","org"]
+    runs-on: ["op-stack", "self-hosted", "org"]
     steps:
-        - uses: actions/checkout@v4
-
-        - uses: actions/setup-go@v5
-          with:
-            go-version: '1.22'
-            cache: false
-
-        - name: Lint
-          run: make lint
+      - uses: actions/checkout@v4
+      - uses: ./.github/workflows/composite/setup
+        with:
+          build: false
+          setup-node-e2e: false
+      - name: Lint
+        run: make lint
 
   Generate:
     runs-on: ["ubuntu-latest"]
     steps:
-        - uses: actions/checkout@v4
-
-        - uses: actions/setup-go@v5
-          with:
-            go-version: '1.22'
-            cache: false
-
-        - name: Generate check
-          # Run go generate and see if anything changed.
-          # We need to use || true because currently we do not install protoc
-          # and protoc-gen-go which are required for generating some files,
-          # however despite this the non protobuf related types are generated.
-          run: |
-            go generate ./... || true
-            if [ -n "$(git status --porcelain)" ]; then
-              echo "Changes detected after running 'go generate ./...' run generate locally and commit the changes."
-              exit 1
-            fi
-          shell: sh
+      - uses: actions/checkout@v4
+      - uses: ./.github/workflows/composite/setup
+        with:
+          build: false
+          setup-node-e2e: false
+      - name: Generate check
+        # Run go generate and see if anything changed.
+        # We need to use || true because currently we do not install protoc
+        # and protoc-gen-go which are required for generating some files,
+        # however despite this the non protobuf related types are generated.
+        run: |
+          go generate ./... || true
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "Changes detected after running 'go generate ./...' run generate locally and commit the changes."
+            exit 1
+          fi
+        shell: sh
