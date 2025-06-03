@@ -19,14 +19,14 @@ function deploy_fee_currency() {
 	(
 		DEFAULT_INTRINSIC_GAS=60000
 		local fee_currency=$(
-			forge create --json --root "$SCRIPT_DIR/debug-fee-currency" --contracts "$SCRIPT_DIR/debug-fee-currency" --private-key $ACC_PRIVKEY DebugFeeCurrency.sol:DebugFeeCurrency --constructor-args '100000000000000000000000000' $1 $2 $3 | jq .deployedTo -r
+			forge create --broadcast --json --root "$SCRIPT_DIR/debug-fee-currency" --contracts "$SCRIPT_DIR/debug-fee-currency" --private-key $ACC_PRIVKEY DebugFeeCurrency.sol:DebugFeeCurrency --constructor-args '100000000000000000000000000' $1 $2 $3 | jq .deployedTo -r
 		)
 		if [ -z "${fee_currency}" ]; then
 			exit 1
 		fi
 		# this always resets the token address for the predeployed oracle3
-		cast send --private-key $ACC_PRIVKEY $ORACLE3 'setExchangeRate(address, uint256, uint256)' $fee_currency 2ether 1ether > /dev/null
-		cast send --private-key $ACC_PRIVKEY $FEE_CURRENCY_DIRECTORY_ADDR 'setCurrencyConfig(address, address, uint256)' $fee_currency $ORACLE3 ${4:-$DEFAULT_INTRINSIC_GAS} > /dev/null
+		cast send --private-key $ACC_PRIVKEY $ORACLE3 'setExchangeRate(address, uint256, uint256)' $fee_currency 2ether 1ether >/dev/null
+		cast send --private-key $ACC_PRIVKEY $FEE_CURRENCY_DIRECTORY_ADDR 'setCurrencyConfig(address, address, uint256)' $fee_currency $ORACLE3 ${4:-$DEFAULT_INTRINSIC_GAS} >/dev/null
 		echo "$fee_currency"
 	)
 }
