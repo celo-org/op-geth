@@ -531,3 +531,54 @@ func TestCeloSigner_SignAndRecovery(t *testing.T) {
 		})
 	}
 }
+
+// TestLatestSigner_Celo ensures that LatestSigner selects the correct
+// base signer for Celo L2 immediately after launch and after each
+// network upgrade
+func TestLatestSigner_Celo(t *testing.T) {
+	newUint64Ptr := func(x uint64) *uint64 { return &x }
+
+	t.Run("returns celoSigner with LondonSigner right after Celo L2 release", func(t *testing.T) {
+		cfg := &params.ChainConfig{
+			ChainID:     big.NewInt(params.CeloMainnetChainID),
+			Optimism:    &params.OptimismConfig{},
+			Cel2Time:    newUint64Ptr(1742957258),
+			EIP155Block: big.NewInt(0),
+			BerlinBlock: big.NewInt(31056500),
+			LondonBlock: big.NewInt(31056500),
+			CancunTime:  newUint64Ptr(1742957258),
+			PragueTime:  nil,
+			IsthmusTime: nil,
+		}
+
+		got := LatestSigner(cfg)
+
+		assert.Equal(t, &celoSigner{
+			upstreamSigner: NewLondonSigner(cfg.ChainID),
+			chainID:        cfg.ChainID,
+			activatedForks: celoForks,
+		}, got)
+	})
+
+	t.Run("returns celoSigner with IsthmusSigner once Isthmus upgrade is active", func(t *testing.T) {
+		cfg := &params.ChainConfig{
+			ChainID:     big.NewInt(params.CeloMainnetChainID),
+			Optimism:    &params.OptimismConfig{},
+			Cel2Time:    newUint64Ptr(1742957258),
+			EIP155Block: big.NewInt(0),
+			BerlinBlock: big.NewInt(31056500),
+			LondonBlock: big.NewInt(31056500),
+			CancunTime:  newUint64Ptr(1742957258),
+			PragueTime:  newUint64Ptr(1754006400),
+			IsthmusTime: newUint64Ptr(1754006400),
+		}
+
+		got := LatestSigner(cfg)
+
+		assert.Equal(t, &celoSigner{
+			upstreamSigner: NewIsthmusSigner(cfg.ChainID),
+			chainID:        cfg.ChainID,
+			activatedForks: celoForks,
+		}, got)
+	})
+}
