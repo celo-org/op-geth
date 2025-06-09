@@ -264,11 +264,9 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		overrides.OverrideOptimismGranite = config.OverrideOptimismGranite
 	}
 	if config.OverrideOptimismHolocene != nil {
-		// fmt.Printf("!!! Set OverrideOptimismHolocene => *%d\n", config.OverrideOptimismHolocene)
 		overrides.OverrideOptimismHolocene = config.OverrideOptimismHolocene
 	}
 	if config.OverrideOptimismIsthmus != nil {
-		// fmt.Printf("!!! Set OverrideOptimismIsthmus => *%d\n", config.OverrideOptimismIsthmus)
 		overrides.OverrideOptimismIsthmus = config.OverrideOptimismIsthmus
 	}
 	if config.OverrideOptimismJovian != nil {
