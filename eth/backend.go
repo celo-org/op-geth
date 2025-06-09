@@ -229,21 +229,19 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	// Add Celo-specific overrides
 	// This is a temporary workaround until Celo chains are available in the superchain registry.
 	// See https://github.com/celo-org/op-geth/issues/389
-	if config.Genesis != nil { // some tests do not have a genesis
-		switch config.Genesis.Config.ChainID.Uint64() {
-		case params.CeloMainnetChainID:
-			activationTime := params.CeloMainnetIsthmusTimestamp
-			overrides.OverrideOptimismHolocene = &activationTime
-			overrides.OverrideOptimismIsthmus = &activationTime
-		case params.CeloAlfajoresChainID:
-			activationTime := params.AlfajoresIsthmusTimestamp
-			overrides.OverrideOptimismHolocene = &activationTime
-			overrides.OverrideOptimismIsthmus = &activationTime
-		case params.CeloBaklavaChainID:
-			activationTime := params.BaklavaIsthmusTimestamp
-			overrides.OverrideOptimismHolocene = &activationTime
-			overrides.OverrideOptimismIsthmus = &activationTime
-		}
+	switch networkID {
+	case params.CeloMainnetChainID:
+		activationTime := params.CeloMainnetIsthmusTimestamp
+		overrides.OverrideOptimismHolocene = &activationTime
+		overrides.OverrideOptimismIsthmus = &activationTime
+	case params.CeloAlfajoresChainID:
+		activationTime := params.AlfajoresIsthmusTimestamp
+		overrides.OverrideOptimismHolocene = &activationTime
+		overrides.OverrideOptimismIsthmus = &activationTime
+	case params.CeloBaklavaChainID:
+		activationTime := params.BaklavaIsthmusTimestamp
+		overrides.OverrideOptimismHolocene = &activationTime
+		overrides.OverrideOptimismIsthmus = &activationTime
 	}
 
 	// Override the chain config with provided settings.
@@ -266,9 +264,11 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		overrides.OverrideOptimismGranite = config.OverrideOptimismGranite
 	}
 	if config.OverrideOptimismHolocene != nil {
+		// fmt.Printf("!!! Set OverrideOptimismHolocene => *%d\n", config.OverrideOptimismHolocene)
 		overrides.OverrideOptimismHolocene = config.OverrideOptimismHolocene
 	}
 	if config.OverrideOptimismIsthmus != nil {
+		// fmt.Printf("!!! Set OverrideOptimismIsthmus => *%d\n", config.OverrideOptimismIsthmus)
 		overrides.OverrideOptimismIsthmus = config.OverrideOptimismIsthmus
 	}
 	if config.OverrideOptimismJovian != nil {
