@@ -41,3 +41,4 @@ jobs:
       tags: ${{ needs.set-tags.outputs.tags }}
       context: .
       trivy-enabled: false
+      timeout-minutes: 120
