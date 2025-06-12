@@ -278,20 +278,20 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 	// Add Celo-specific overrides
 	// This is a temporary workaround until Celo chains are available in the superchain registry.
 	// See https://github.com/celo-org/op-geth/issues/389
-	switch networkID {
-	case params.CeloMainnetChainID:
-		activationTime := params.CeloMainnetIsthmusTimestamp
-		overrides.OverrideOptimismHolocene = &activationTime
-		overrides.OverrideOptimismIsthmus = &activationTime
-	case params.CeloAlfajoresChainID:
-		activationTime := params.AlfajoresIsthmusTimestamp
-		overrides.OverrideOptimismHolocene = &activationTime
-		overrides.OverrideOptimismIsthmus = &activationTime
-	case params.CeloBaklavaChainID:
-		activationTime := params.BaklavaIsthmusTimestamp
-		overrides.OverrideOptimismHolocene = &activationTime
-		overrides.OverrideOptimismIsthmus = &activationTime
-	}
+	// switch networkID {
+	// case params.CeloMainnetChainID:
+	// 	activationTime := params.CeloMainnetIsthmusTimestamp
+	// 	overrides.OverrideOptimismHolocene = &activationTime
+	// 	overrides.OverrideOptimismIsthmus = &activationTime
+	// case params.CeloAlfajoresChainID:
+	// 	activationTime := params.AlfajoresIsthmusTimestamp
+	// 	overrides.OverrideOptimismHolocene = &activationTime
+	// 	overrides.OverrideOptimismIsthmus = &activationTime
+	// case params.CeloBaklavaChainID:
+	// 	activationTime := params.BaklavaIsthmusTimestamp
+	// 	overrides.OverrideOptimismHolocene = &activationTime
+	// 	overrides.OverrideOptimismIsthmus = &activationTime
+	// }
 
 	if config.OverrideOsaka != nil {
 		overrides.OverrideOsaka = config.OverrideOsaka
