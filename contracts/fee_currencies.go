@@ -100,6 +100,8 @@ func DebitFees(evm *vm.EVM, feeCurrency *common.Address, address common.Address,
 				err,
 			)
 		}
+		// This error could still be caused by lack of gas, since those are not always propagated from sub-calls.
+		// See https://github.com/celo-org/op-geth/issues/346#issuecomment-3027651249
 		return 0, fmt.Errorf(
 			"%w: DebitFees() call error: %w",
 			ErrFeeCurrencyEVMCall,
@@ -173,6 +175,8 @@ func CreditFees(
 				err,
 			)
 		}
+		// This error could still be caused by lack of gas, since those are not always propagated from sub-calls.
+		// See https://github.com/celo-org/op-geth/issues/346#issuecomment-3027651249
 		return fmt.Errorf(
 			"%w: CreditFees() call error: %w",
 			ErrFeeCurrencyEVMCall,
