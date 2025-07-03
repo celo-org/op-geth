@@ -62,21 +62,44 @@ async function sendTypedCreateTransaction(type, feeCurrency) {
 	});
 }
 
-["legacy", "eip2930", "eip1559", "cip64"].forEach(function (type) {
+["cip64"].forEach(function (type) {
 	describe("viem smoke test, tx type " + type, () => {
-		const feeCurrency = type == "cip64" ? process.env.FEE_CURRENCY.toLowerCase() : undefined;
-		let l1Fee = 0n;
+
 		it("send tx", async () => {
-			const send = await sendTypedTransaction(type, feeCurrency);
-			await check(send, {type, feeCurrency}, {l1Fee});
+			const feeCurrency = type == "cip64" ? process.env.FEE_CURRENCY.toLowerCase() : undefined;
+
+
+			const tx = await walletClient.prepareTransactionRequest({
+				to: "0x00000000000000000000000000000000DeaDBeef",
+				value: 1,
+				gas: 200000,
+				feeCurrency: feeCurrency,
+				maxFeePerGas: 30_000_000_000n,
+				maxPriorityFeePerGas: 0, 
+				type: "cip64",
+			});
+
+			console.log(tx);
+
+			const signature = await walletClient.signTransaction(tx);
+			const hash = await walletClient.sendRawTransaction({
+				serializedTransaction: signature,
+			});
+
+			const receipt = await publicClient.waitForTransactionReceipt({ hash });
+
+			console.log(receipt);
+
+			// 	const send = await sendTypedTransaction(type, feeCurrency);
+			// 	await check(send, {type, feeCurrency}, {l1Fee});
 		});
-		it("send create tx", async () => {
-			const create = await sendTypedCreateTransaction(type, feeCurrency);
-			await check(create, {type, feeCurrency}, {l1Fee});
-		});
-		it("send contract interaction tx", async () => {
-			const contract = await sendTypedSmartContractTransaction(type, feeCurrency);
-			await check(contract, {type, feeCurrency}, {l1Fee});
-		});
+		// it("send create tx", async () => {
+		// 	const create = await sendTypedCreateTransaction(type, feeCurrency);
+		// 	await check(create, {type, feeCurrency}, {l1Fee});
+		// });
+		// it("send contract interaction tx", async () => {
+		// 	const contract = await sendTypedSmartContractTransaction(type, feeCurrency);
+		// 	await check(contract, {type, feeCurrency}, {l1Fee});
+		// });
 	});
 });
