@@ -44,14 +44,6 @@ for f in test_*"$TEST_GLOB"*; do
 		  continue
 		  ;;
 	    esac
-	else
-		case $f in
-		  # Skip test fee currency fails on credit, it seems broken
-		  test_fee_currency_fails_on_credit.sh)
-		  echo "skipping file $f"
-		  continue
-		  ;;
-	    esac
 	fi
 	echo -e "\nRun $f"
 	if "./$f"; then
