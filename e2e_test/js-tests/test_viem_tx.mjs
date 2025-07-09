@@ -311,7 +311,54 @@ describe("viem send tx", () => {
 		assert.isAtMost(Number(receipt.effectiveGasPrice), Number(maxFeePerGas), "effective gas price is too high");
 		assert.isAbove(Number(receipt.effectiveGasPrice), Number(maxFeePerGas) * 0.7, "effective gas price is too low");
 	}).timeout(10_000);
+
+	it("zero tip tx rejected", async () => {
+		const gasPrice = await publicClient.getGasPrice();
+		let request = await walletClient.prepareTransactionRequest({
+			to: "0x00000000000000000000000000000000DeaDBeef",
+			gas: TX_GAS,
+			maxFeePerGas: gasPrice,
+			maxPriorityFeePerGas: 0n,
+		});
+		await expectTxFail(request, "transaction underpriced");
+	}).timeout(10_000);
+
+	it("zero tip fee currency tx rejected", async () => {
+		const fc = process.env.FEE_CURRENCY;
+		const [maxFeePerGas, _] = await getGasFees(publicClient, 0n, fc);
+		const request = await walletClient.prepareTransactionRequest({
+			to: "0x00000000000000000000000000000000DeaDBeef",
+			gas: await getIntrinsicGasForFeeCurrency(TX_GAS, fc),
+			feeCurrency: fc,
+			maxFeePerGas: maxFeePerGas,
+			maxPriorityFeePerGas: 0n,
+		});
+		await expectTxFail(request, "transaction underpriced");
+	}).timeout(10_000);
 });
+
+// expectTxFail expects the transaction to fail with an error that contains the given errorString.
+async function expectTxFail(txRequest, errorString) {
+	const signedTx = await walletClient.signTransaction(txRequest);
+	try {
+		await walletClient.sendRawTransaction({
+			serializedTransaction: signedTx,
+		});
+	} catch (err) {
+		// Combine multiple error properties to get comprehensive error information
+		const errorMessage = [
+			err.shortMessage,
+			err.details,
+			err.cause?.message,
+			err.cause?.details
+		].filter(Boolean).join(' | ');
+		if (!errorMessage.includes(errorString)) {
+			assert.fail(`Expected error to contain "${errorString}", but got: ${errorMessage}`);
+		}
+		return;
+	}
+	assert.fail("expecting transaction sending to fail")
+}
 
 async function getRate(feeCurrencyAddress) {
 	const abi = parseAbi(['function getExchangeRate(address token) public view returns (uint256 numerator, uint256 denominator)']);

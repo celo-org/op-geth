@@ -86,6 +86,12 @@ func CeloValidateTransaction(tx *types.Transaction, head *types.Header,
 			if err != nil {
 				return err
 			}
+			// When a currency is worth more than celo it can happen the the celo denominated min
+			// tip results in a 0 min tip for the currency. We enforce that there must always be a
+			// non zero tip.
+			if minTip.Sign() == 0 {
+				minTip = big.NewInt(1)
+			}
 			if tx.EffectiveGasTipIntCmp(minTip, baseFeeFloor) < 0 {
 				return ErrUnderpriced
 			}
