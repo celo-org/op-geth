@@ -1,5 +1,5 @@
 name: Assert Snapsync
-run-name:  "${{ inputs.network || 'mainnet' }} snapsync: geth ${{ inputs.geth_commitsh || 'latest' }} + node ${{ inputs.node_commitsh || 'celo-v2.0.2' }}"
+run-name:  "${{ inputs.network || 'mainnet' }} snapsync: geth ${{ inputs.geth_commitsh || 'latest' }} + node ${{ inputs.node_commitsh || 'celo-v2.1.0' }}"
 on: 
   workflow_dispatch:
     inputs:
@@ -10,7 +10,7 @@ on:
       node_commitsh:
         description: 'op-node revision'
         required: true
-        default: 'celo-v2.0.2'
+        default: 'celo-v2.1.0'
       geth_commitsh:
         description: 'op-geth revision'
         required: true
@@ -33,7 +33,7 @@ jobs:
       security-events: write
     env:
       NETWORK: "mainnet"
-      NODE_REF: "celo-v2.0.2"
+      NODE_REF: "celo-v2.1.0"
       GETH_REF: "latest"
       USE_DEV_IMAGE: "false"
 
@@ -46,7 +46,7 @@ jobs:
         # we can't provide custom values to a scheduled run - so we must use defaults + override with explicit values
 
         export NETWORK="${{ inputs.network || 'mainnet' }}"
-        export NODE_REF="${{ inputs.node_commitsh || 'celo-v2.0.2' }}"
+        export NODE_REF="${{ inputs.node_commitsh || 'celo-v2.1.0' }}"
         export GETH_REF="${{ inputs.geth_commitsh || 'latest' }}"
         export USE_DEV_IMAGE="${{ inputs.use_dev_image || 'false' }}"
 
