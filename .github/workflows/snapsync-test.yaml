@@ -20,8 +20,9 @@ on:
         type: boolean
         required: true
         default: false
-  schedule:
-     - cron: "0 2 * * 4" # Wednesday at 2am
+  # TODO: re-enable once we know this works with a mainnet run
+  # schedule:
+  #    - cron: "0 2 * * 4" # Wednesday at 2am
 
 jobs:
   test-snap-sync:
