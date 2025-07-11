@@ -1,0 +1,195 @@
+name: Assert Snapsync
+run-name:  "${{ inputs.network || 'mainnet' }} snapsync: geth ${{ inputs.geth_commitsh || 'latest' }} + node ${{ inputs.node_commitsh || 'celo-v2.1.0' }}"
+on: 
+  workflow_dispatch:
+    inputs:
+      network:
+        description: 'Testnet / Config file to use for the l2 node'
+        required: true
+        default: 'mainnet'
+      node_commitsh:
+        description: 'op-node revision'
+        required: true
+        default: 'celo-v2.1.0'
+      geth_commitsh:
+        description: 'op-geth revision'
+        required: true
+        default: 'latest'
+      use_dev_image:
+        description: 'Dev image?'
+        type: boolean
+        required: true
+        default: false
+  # TODO: re-enable once we know this works with a mainnet run
+  # schedule:
+  #    - cron: "0 2 * * 4" # Wednesday at 2am
+
+jobs:
+  test-snap-sync:
+    runs-on: ['self-hosted', 'synctest', '8-cpu']
+    timeout-minutes: 7200 # 5 days, stated by GitHub as the maximum for jobs on self-hosted runners
+    permissions:
+      contents: read
+      id-token: write
+      security-events: write
+    env:
+      NETWORK: "mainnet"
+      NODE_REF: "celo-v2.1.0"
+      GETH_REF: "latest"
+      USE_DEV_IMAGE: "false"
+
+    steps:
+    - name: Normalise inputs
+      id: normalise-inputs
+      shell: bash
+      run: |-
+        # due to the way the workflow is triggered, we need to normalise the inputs
+        # we can't provide custom values to a scheduled run - so we must use defaults + override with explicit values
+
+        export NETWORK="${{ inputs.network || 'mainnet' }}"
+        export NODE_REF="${{ inputs.node_commitsh || 'celo-v2.1.0' }}"
+        export GETH_REF="${{ inputs.geth_commitsh || 'latest' }}"
+        export USE_DEV_IMAGE="${{ inputs.use_dev_image || 'false' }}"
+
+        echo "NETWORK=$NETWORK"
+        echo "NODE_REF=$NODE_REF"
+        echo "GETH_REF=$GETH_REF"
+        echo "USE_DEV_IMAGE=$USE_DEV_IMAGE"
+
+        echo "NETWORK=$NETWORK" >> $GITHUB_ENV
+        echo "NODE_REF=$NODE_REF" >> $GITHUB_ENV
+        echo "GETH_REF=$GETH_REF" >> $GITHUB_ENV
+        echo "USE_DEV_IMAGE=$USE_DEV_IMAGE" >> $GITHUB_ENV
+
+    # despite no repo code being used, need checkout in order to create a shared workspace between steps
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Install pre-requisites
+      id: prereq
+      shell: bash
+      run: |-
+        # Update and upgrade packages
+        sudo apt-get update
+        sudo apt-get upgrade -y
+
+        # Install pre-requisites
+        sudo apt-get install -y curl bc
+
+        ### yq to manipulate yaml
+        BINARY=yq_linux_amd64
+        VERSION=v4.45.1
+
+        wget https://github.com/mikefarah/yq/releases/download/${VERSION}/${BINARY}.tar.gz -O - | tar xz && sudo mv ${BINARY} /usr/bin/yq
+
+    - name: Verify Docker and docker-compose installation
+      id: docker-verify
+      shell: bash
+      run: |-
+        docker run hello-world
+        docker compose version
+
+    - name: Checkout celo-l2-node-docker-compose repo
+      uses: actions/checkout@v4
+      with:
+        repository: celo-org/celo-l2-node-docker-compose
+        path: celo-l2-node-docker-compose
+        fetch-depth: 0
+
+    - name: Configure l2 node project
+      id: configure-l2-node
+      shell: bash
+      run: |-
+        cd celo-l2-node-docker-compose
+
+        # copy network specific env file
+        cp ${{ env.NETWORK }}.env .env
+
+        # transform volume paths to be compatible with parent container directory (for self hosted github runners)
+        export RUNNER_PWD_PATH=$(echo "$(pwd)" | sed 's|^/__w/|/runner/_work/|')
+
+        yq eval ".services[].volumes |= map(sub(\"^\\./\"; env(RUNNER_PWD_PATH) + \"/\"))" -i docker-compose.yml
+
+        # interpolate image refs into docker-compose.yml
+        op_node="us-west1-docker.pkg.dev/devopsre/celo-blockchain-public/op-node:${{ env.NODE_REF }}"
+        op_geth="us-west1-docker.pkg.dev/devopsre/celo-blockchain-public/op-geth:${{ env.GETH_REF }}"
+
+        # use dev image if specified
+        if [[ "${{ env.USE_DEV_IMAGE }}" == "true" ]]; then
+          op_node="us-west1-docker.pkg.dev/blockchaintestsglobaltestnet/dev-images/op-node:${{ env.NODE_REF }}"
+          op_geth="us-west1-docker.pkg.dev/blockchaintestsglobaltestnet/dev-images/op-geth:${{ env.GETH_REF }}"
+        fi
+
+        yq eval ".services.op-node.image = \"$op_node\"" docker-compose.yml -i
+        yq eval ".services.op-geth.image = \"$op_geth\"" docker-compose.yml -i
+
+    - name: Start l2 node
+      id: start-l2-node
+      shell: bash
+      run: |-
+        cd celo-l2-node-docker-compose
+
+        docker-compose up --build -d
+
+    - name: Test for snapsync completion
+      id: test-sync
+      shell: bash
+      run: |-
+        cd celo-l2-node-docker-compose
+
+        calculate_sync_percentage() {
+          local json_input="$1"
+
+          # Extract currentBlock and highestBlock from the JSON
+          current_block_hex=$(echo "$json_input" | yq e '.result.currentBlock' -)
+          highest_block_hex=$(echo "$json_input" | yq e '.result.highestBlock' -)
+
+          # Strip the "0x" prefix from the hex values
+          current_block_hex=${current_block_hex#0x}
+          highest_block_hex=${highest_block_hex#0x}
+
+          # Convert hex values to decimal
+          current_block_decimal=$((16#$current_block_hex))
+          highest_block_decimal=$((16#$highest_block_hex))
+
+          # Handle the case where currentBlock is 0x0
+          if [[ "$current_block_decimal" -eq 0 ]]; then
+            echo "0% synced - initializing"
+            return
+          fi
+
+          # Calculate the sync percentage
+          if [[ "$highest_block_decimal" -ne 0 ]]; then
+            sync_percentage=$(echo "scale=2; ($current_block_decimal / $highest_block_decimal) * 100" | bc)
+            if [[ $(echo "$sync_percentage == 100" | bc) -eq 1 ]]; then
+              echo "100% synced - Waiting for node to report eth_syncing as false"
+              echo "$json_input"
+            else
+              echo "${sync_percentage}% - current block: $current_block_decimal, highest block: $highest_block_decimal"
+            fi          
+          else
+            echo "0% synced"
+          fi
+        }
+
+        network=celo-l2-node-docker-compose_default 
+        geth_service=celo-l2-node-docker-compose-op-geth-1
+        sync_request_body='{"jsonrpc":"2.0","method":"eth_syncing","params":[],"id":77}'
+
+        # wait for snapsync to complete
+        while true; do
+          sync_status=$(docker run --network "$network" --rm alpine/curl curl "$geth_service:8545" -X POST -H "Content-Type: application/json"  --data "$sync_request_body" 2> /dev/null)
+          still_syncing=$(echo $sync_status | yq '.result')
+
+          if [[ "$still_syncing" == "false" ]]; then 
+            echo "Snapsync completed" 
+            docker compose down
+            exit 0
+          else 
+            echo "$(calculate_sync_percentage "$sync_status")"
+          fi
+
+          sleep 10
+        done
