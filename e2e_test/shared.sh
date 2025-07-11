@@ -54,8 +54,12 @@ export FIXIDITY_1=1000000000000000000000000
 export ZERO_ADDRESS=0x0000000000000000000000000000000000000000
 
 prepare_node() {
-	(
-		cd js-tests || exit 1
-		[[ -d node_modules ]] || npm install
-	)
+    (
+        cd js-tests || exit 1
+		# re-install when .package-lock.json is missing　or package-lock.json is newer than it
+        if [[ ! -f node_modules/.package-lock.json ]] || 
+           [[ package-lock.json -nt node_modules/.package-lock.json ]]; then
+            npm ci
+        fi
+    )
 }

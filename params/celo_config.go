@@ -131,8 +131,7 @@ var (
 		Celo: &CeloConfig{
 			// 25000000000 is the base fee floor for mainnet, we use a lower value for dev mode
 			// because the real value breaks many of our e2e tests.
-			// TODO: Set to the real value - https://github.com/celo-org/celo-blockchain-planning/issues/1032
-			EIP1559BaseFeeFloor: 250000000,
+			EIP1559BaseFeeFloor: 25000000000,
 		},
 	}
 )

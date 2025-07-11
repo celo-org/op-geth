@@ -178,7 +178,7 @@ describe("viem send tx", () => {
 			to: "0x00000000000000000000000000000000DeaDBeef",
 			value: 2,
 			feeCurrency: process.env.FEE_CURRENCY,
-			maxFeePerGas: 50000000000n,
+			maxFeePerGas: 50000000002n,
 			maxPriorityFeePerGas: 2n,
 		});
 		const signature = await walletClient.signTransaction(request);
