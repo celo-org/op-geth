@@ -27,7 +27,7 @@ on:
 jobs:
   test-snap-sync:
     runs-on: ['self-hosted', 'synctest', '8-cpu']
-    timeout-minutes: 1440 # 24 hours
+    timeout-minutes: 7200 # 5 days, stated by GitHub as the maximum for jobs on self-hosted runners
     permissions:
       contents: read
       id-token: write
