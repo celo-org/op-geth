@@ -55,7 +55,7 @@ type traceContext struct {
 	FeeCurrencyContext common.FeeCurrencyContext `json:"feeCurrencyContext"`
 }
 
-func (c *traceContext) toBlockContext(genesis *core.Genesis) vm.BlockContext {
+func (c *traceContext) toBlockContext(genesis *core.Genesis, statedb types.StateGetter) vm.BlockContext {
 	context := vm.BlockContext{
 		CanTransfer: core.CanTransfer,
 		Transfer:    core.Transfer,
@@ -64,6 +64,7 @@ func (c *traceContext) toBlockContext(genesis *core.Genesis) vm.BlockContext {
 		Time:        uint64(c.Time),
 		Difficulty:  (*big.Int)(c.Difficulty),
 		GasLimit:    uint64(c.GasLimit),
+		L1CostFunc:  types.NewL1CostFunc(genesis.Config, statedb),
 		// Celo specific
 		FeeCurrencyContext: c.FeeCurrencyContext,
 	}
