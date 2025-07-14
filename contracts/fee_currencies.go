@@ -193,9 +193,16 @@ func CreditFees(
 		return fmt.Errorf("%w: %x", exchange.ErrUnregisteredFeeCurrency, feeCurrency)
 	}
 	gasUsedForDebitAndCredit := gasUsedDebit + gasUsed
-	if gasUsedForDebitAndCredit > intrinsicGas {
+	if gasUsedForDebitAndCredit > 2*intrinsicGas {
 		log.Info(
 			"Gas usage for debit+credit exceeds intrinsic gas!",
+			"gasUsed", gasUsedForDebitAndCredit,
+			"intrinsicGas", intrinsicGas,
+			"feeCurrency", feeCurrency,
+		)
+	} else if gasUsedForDebitAndCredit > intrinsicGas {
+		log.Trace(
+			"Gas usage for debit+credit exceeds intrinsic gas, within a factor of 2.",
 			"gasUsed", gasUsedForDebitAndCredit,
 			"intrinsicGas", intrinsicGas,
 			"feeCurrency", feeCurrency,
