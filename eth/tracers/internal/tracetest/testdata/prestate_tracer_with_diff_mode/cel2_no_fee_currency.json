@@ -84,6 +84,9 @@
       "0x0000000000000000000000000000000000005555": {
         "balance": "0x2b5e3af16b1880000"
       },
+      "0xcd437749e43a154c07f3553504c68fbfd56b8778": {
+        "balance": "0x1301673b8cf8"
+      },
       "0x7fa73c21523e01895036b25927677c074cd0a1a5": {
         "balance": "0xfffffffffffffffffffffffffffffffffffffffffffffffd4a1c2ad0e78b6bff",
         "nonce": 2
@@ -95,6 +98,9 @@
         "nonce": 2
       },
       "0x0000000000000000000000000000000000005555": {
+        "balance": "0x0"
+      },
+      "0xcd437749e43a154c07f3553504c68fbfd56b8778": {
         "balance": "0x0"
       },
       "0x7fa73c21523e01895036b25927677c074cd0a1a5": {
