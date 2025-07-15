@@ -25,6 +25,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/contracts/addresses"
 	"github.com/ethereum/go-ethereum/core/tracing"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
@@ -195,11 +196,16 @@ func (t *prestateTracer) OnTxStart(env *tracing.VMContext, tx *types.Transaction
 		t.lookupAccount(addr)
 	}
 
-	if t.chainConfig.Optimism != nil {
+	if t.chainConfig.Cel2Time != nil {
+		// Look up the storage that will receive the base fee
+		if tx.FeeCurrency() == nil {
+			feeHandlerAddress := addresses.GetAddressesOrDefault(t.chainConfig.ChainID, addresses.MainnetAddresses).FeeHandler
+			t.lookupAccount(feeHandlerAddress)
+		} else {
+			t.lookupAccount(*tx.FeeCurrency())
+		}
+	} else if t.chainConfig.Optimism != nil {
 		t.lookupAccount(params.OptimismBaseFeeRecipient)
-	}
-	if tx.FeeCurrency() != nil {
-		t.lookupAccount(*tx.FeeCurrency())
 	}
 
 	if t.chainConfig.Optimism != nil {
