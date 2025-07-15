@@ -1,0 +1,109 @@
+{
+  "genesis": {
+    "baseFeePerGas": "997500000",
+    "blobGasUsed": "0",
+    "difficulty": "0",
+    "excessBlobGas": "0",
+    "extraData": "0x",
+    "gasLimit": "11500000",
+    "hash": "0x22ac23fe9d130d8d0b632d749aa6c3485cb6ac9be736a42b2cf7d0496ac79039",
+    "miner": "0x0000000000000000000000000000000000000000",
+    "mixHash": "0x45c8c6769aaab35d7f70841dab67c00e5961cebdec44a8e051d84768974a1f28",
+    "nonce": "0x0000000000000000",
+    "number": "1",
+    "parentBeaconBlockRoot": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "stateRoot": "0x793fca7b6baf768b0e61d2cd33fbaaeb0a43273413a69bfcb192ef4a526ac285",
+    "timestamp": "1752588029",
+    "withdrawals": [],
+    "withdrawalsRoot": "0x56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421",
+    "alloc": {
+        "0x0000000000000000000000000000000000000000": {
+          "balance": "0x4e3b29200",
+          "nonce": "2"
+        },
+        "0x0000000000000000000000000000000000005555": {
+          "balance": "0x0"
+        },
+        "0x7fa73c21523e01895036b25927677c074cd0a1a5": {
+          "balance": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffecede4018af7",
+          "nonce": "1"
+        }
+      },
+    "config": {
+        "chainId": 1337,
+        "homesteadBlock": 0,
+        "eip150Block": 0,
+        "eip155Block": 0,
+        "eip158Block": 0,
+        "byzantiumBlock": 0,
+        "constantinopleBlock": 0,
+        "petersburgBlock": 0,
+        "istanbulBlock": 0,
+        "muirGlacierBlock": 0,
+        "berlinBlock": 0,
+        "londonBlock": 0,
+        "arrowGlacierBlock": 0,
+        "grayGlacierBlock": 0,
+        "mergeNetsplitBlock": 0,
+        "shanghaiTime": 0,
+        "cancunTime": 0,
+        "bedrockBlock": 0,
+        "regolithTime": 0,
+        "canyonTime": 0,
+        "ecotoneTime": 0,
+        "fjordTime": 0,
+        "graniteTime": 0,
+        "cel2Time": 0,
+        "gingerbreadBlock": 0,
+        "terminalTotalDifficulty": 0,
+        "depositContractAddress": "0x0000000000000000000000000000000000000000",
+        "optimism": {
+          "eip1559Elasticity": 5,
+          "eip1559Denominator": 400,
+          "eip1559DenominatorCanyon": 400
+        },
+        "celo": {
+          "eip1559BaseFeeFloor": 250000000
+        }
+      }
+  },
+  "context": {
+    "number": "2",
+    "difficulty": "0",
+    "timestamp": "1752588072",
+    "gasLimit": "11500000",
+    "miner": "0x0000000000000000000000000000000000000000",
+    "baseFeePerGas": "995083231"
+  },
+  "input": "0x02f87482053901830f42408476f88b008252089400000000000000000000000000000000000055558902b5e3af16b188000080c001a0d8cb2fca6021f6f821c3c6d3b9952cb48ad42d87310a7ea84f3fe6cd95d42248a0775bb7be90867adf02e3fc9603414251209bab0afd55edd7959d1feb0ff79b4b",
+  "result": {
+    "post": {
+      "0x0000000000000000000000000000000000000000": {
+        "balance": "0x9c7652400"
+      },
+      "0x0000000000000000000000000000000000005555": {
+        "balance": "0x2b5e3af16b1880000"
+      },
+      "0xcd437749e43a154c07f3553504c68fbfd56b8778": {
+        "balance": "0x1301673b8cf8"
+      },
+      "0x7fa73c21523e01895036b25927677c074cd0a1a5": {
+        "balance": "0xfffffffffffffffffffffffffffffffffffffffffffffffd4a1c2ad0e78b6bff",
+        "nonce": 2
+      }
+    },
+    "pre": {
+      "0x0000000000000000000000000000000000000000": {
+        "balance": "0x4e3b29200",
+        "nonce": 2
+      },
+      "0x7fa73c21523e01895036b25927677c074cd0a1a5": {
+        "balance": "0xffffffffffffffffffffffffffffffffffffffffffffffffffffecede4018af7",
+        "nonce": 1
+      }
+    }
+  },
+  "tracerConfig": {
+    "diffMode": true
+  }
+}
