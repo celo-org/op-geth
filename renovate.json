@@ -7,9 +7,19 @@
     {
       "enabled": false,
       "groupName": "everything",
-      "matchManagers": ["gomod", "dockerfile", "docker-compose", "npm", "html", "github-actions", "pip_requirements"],
-      "matchPackagePatterns": ["*"],
-      "separateMajorMinor": false
+      "matchManagers": [
+        "gomod",
+        "dockerfile",
+        "docker-compose",
+        "npm",
+        "html",
+        "github-actions",
+        "pip_requirements"
+      ],
+      "separateMajorMinor": false,
+      "matchPackageNames": [
+        "*"
+      ]
     }
   ],
   "forkProcessing": "enabled",
