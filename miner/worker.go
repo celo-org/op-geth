@@ -413,7 +413,7 @@ func (miner *Miner) makeEnv(parent *types.Header, header *types.Header, coinbase
 		coinbase: coinbase,
 		header:   header,
 		witness:  state.Witness(),
-		evm:      vm.NewEVM(core.NewEVMBlockContext(header, miner.chain, &coinbase, miner.chainConfig, state, feeCurrencyContext), state, miner.chainConfig, vm.Config{}),
+		evm:      vm.NewEVM(core.NewEVMBlockContextWithFeeCurrencyContext(header, miner.chain, &coinbase, miner.chainConfig, state, feeCurrencyContext), state, miner.chainConfig, vm.Config{}),
 		rpcCtx:   rpcCtx,
 
 		feeCurrencyContext: feeCurrencyContext,

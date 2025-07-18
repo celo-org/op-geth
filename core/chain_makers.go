@@ -103,7 +103,7 @@ func (b *BlockGen) Difficulty() *big.Int {
 // block.
 func (b *BlockGen) SetParentBeaconRoot(root common.Hash) {
 	b.header.ParentBeaconRoot = &root
-	blockContext := NewEVMBlockContext(b.header, b.cm, &b.header.Coinbase, b.cm.config, b.statedb, b.feeCurrencyContext)
+	blockContext := NewEVMBlockContextWithFeeCurrencyContext(b.header, b.cm, &b.header.Coinbase, b.cm.config, b.statedb, b.feeCurrencyContext)
 	ProcessBeaconBlockRoot(root, vm.NewEVM(blockContext, b.statedb, b.cm.config, vm.Config{}))
 }
 
@@ -119,7 +119,7 @@ func (b *BlockGen) addTx(bc *BlockChain, vmConfig vm.Config, tx *types.Transacti
 		b.SetCoinbase(common.Address{})
 	}
 	var (
-		blockContext = NewEVMBlockContext(b.header, bc, &b.header.Coinbase, b.cm.config, b.statedb, b.feeCurrencyContext)
+		blockContext = NewEVMBlockContextWithFeeCurrencyContext(b.header, bc, &b.header.Coinbase, b.cm.config, b.statedb, b.feeCurrencyContext)
 		evm          = vm.NewEVM(blockContext, b.statedb, b.cm.config, vmConfig)
 	)
 	b.statedb.SetTxContext(tx.Hash(), len(b.txs))
@@ -332,7 +332,7 @@ func (b *BlockGen) collectRequests(readonly bool) (requests [][]byte) {
 			panic(fmt.Sprintf("failed to parse deposit log: %v", err))
 		}
 		// create EVM for system calls
-		blockContext := NewEVMBlockContext(b.header, b.cm, &b.header.Coinbase, b.cm.config, b.statedb, b.feeCurrencyContext)
+		blockContext := NewEVMBlockContextWithFeeCurrencyContext(b.header, b.cm, &b.header.Coinbase, b.cm.config, b.statedb, b.feeCurrencyContext)
 		evm := vm.NewEVM(blockContext, statedb, b.cm.config, vm.Config{})
 		// EIP-7002
 		ProcessWithdrawalQueue(&requests, evm)
@@ -406,7 +406,7 @@ func GenerateChain(config *params.ChainConfig, parent *types.Block, engine conse
 
 		if config.IsPrague(b.header.Number, b.header.Time) || config.IsVerkle(b.header.Number, b.header.Time) {
 			// EIP-2935
-			blockContext := NewEVMBlockContext(b.header, cm, &b.header.Coinbase, b.cm.config, b.statedb, b.feeCurrencyContext)
+			blockContext := NewEVMBlockContextWithFeeCurrencyContext(b.header, cm, &b.header.Coinbase, b.cm.config, b.statedb, b.feeCurrencyContext)
 			blockContext.Random = &common.Hash{} // enable post-merge instruction set
 			evm := vm.NewEVM(blockContext, statedb, cm.config, vm.Config{})
 			ProcessParentBlockHash(b.header.ParentHash, evm)
@@ -514,7 +514,7 @@ func GenerateVerkleChain(config *params.ChainConfig, parent *types.Block, engine
 		// preState := statedb.Copy()
 
 		// EIP-2935 / 7709
-		blockContext := NewEVMBlockContext(b.header, cm, &b.header.Coinbase, b.cm.config, b.statedb, b.feeCurrencyContext)
+		blockContext := NewEVMBlockContextWithFeeCurrencyContext(b.header, cm, &b.header.Coinbase, b.cm.config, b.statedb, b.feeCurrencyContext)
 		blockContext.Random = &common.Hash{} // enable post-merge instruction set
 		evm := vm.NewEVM(blockContext, statedb, cm.config, vm.Config{})
 		ProcessParentBlockHash(b.header.ParentHash, evm)

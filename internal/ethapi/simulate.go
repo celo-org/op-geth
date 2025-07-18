@@ -189,8 +189,7 @@ func (sim *simulator) processBlock(ctx context.Context, block *simBlock, header,
 		}
 		header.ExcessBlobGas = &excess
 	}
-	feeCurrencyContext := core.GetFeeCurrencyContext(header, sim.chainConfig, sim.state)
-	blockContext := core.NewEVMBlockContext(header, sim.newSimulatedChainContext(ctx, headers), nil, sim.chainConfig, sim.state, feeCurrencyContext)
+	blockContext := core.NewEVMBlockContext(header, sim.newSimulatedChainContext(ctx, headers), nil, sim.chainConfig, sim.state)
 	if block.BlockOverrides.BlobBaseFee != nil {
 		blockContext.BlobBaseFee = block.BlockOverrides.BlobBaseFee.ToInt()
 	}
