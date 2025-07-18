@@ -81,8 +81,7 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 	if hooks := cfg.Tracer; hooks != nil {
 		tracingStateDB = state.NewHookedState(statedb, hooks)
 	}
-	feeCurrencyContext := GetFeeCurrencyContext(header, p.config, statedb)
-	context = NewEVMBlockContext(header, p.chain, nil, p.config, statedb, feeCurrencyContext)
+	context = NewEVMBlockContext(header, p.chain, nil, p.config, statedb)
 	evm := vm.NewEVM(context, tracingStateDB, p.config, cfg)
 
 	if beaconRoot := block.BeaconRoot(); beaconRoot != nil {
@@ -240,7 +239,7 @@ func MakeReceipt(evm *vm.EVM, result *ExecutionResult, statedb *state.StateDB, b
 // indicating the block was invalid.
 func ApplyTransaction(evm *vm.EVM, gp *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *uint64, feeCurrencyContext *common.FeeCurrencyContext) (*types.Receipt, error) {
 	// Create a new context to be used in the EVM environment
-	blockContext := NewEVMBlockContext(header, nil, &evm.Context.Coinbase, evm.ChainConfig(), statedb, feeCurrencyContext)
+	blockContext := NewEVMBlockContextWithFeeCurrencyContext(header, nil, &evm.Context.Coinbase, evm.ChainConfig(), statedb, feeCurrencyContext)
 	msg, err := TransactionToMessage(tx, types.MakeSigner(evm.ChainConfig(), header.Number, header.Time), header.BaseFee, blockContext.FeeCurrencyContext.ExchangeRates)
 	if err != nil {
 		return nil, err

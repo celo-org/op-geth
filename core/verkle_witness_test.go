@@ -237,8 +237,7 @@ func TestProcessParentBlockHash(t *testing.T) {
 			if isVerkle {
 				chainConfig = testVerkleChainConfig
 			}
-			feeCurrencyContext := GetFeeCurrencyContext(header, chainConfig, statedb)
-			vmContext := NewEVMBlockContext(header, nil, new(common.Address), chainConfig, statedb, feeCurrencyContext)
+			vmContext := NewEVMBlockContext(header, nil, new(common.Address), chainConfig, statedb)
 			evm := vm.NewEVM(vmContext, statedb, chainConfig, vm.Config{})
 			ProcessParentBlockHash(header.ParentHash, evm)
 		}
