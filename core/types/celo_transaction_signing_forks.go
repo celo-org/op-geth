@@ -85,7 +85,7 @@ func (c *celoLegacy) active(blockTime uint64, config *params.ChainConfig) bool {
 }
 
 func (c *celoLegacy) equal(other fork) bool {
-	_, ok := other.(*cel2)
+	_, ok := other.(*celoLegacy)
 	return ok
 }
 
