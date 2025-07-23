@@ -48,7 +48,8 @@ func GetAddresses(chainID *big.Int) *CeloAddresses {
 	case params.CeloMainnetChainID:
 		return MainnetAddresses
 	default:
-		return nil
+		// default to mainnet
+		return MainnetAddresses
 	}
 }
 
