@@ -187,3 +187,13 @@ func CeloDeveloperGenesisBlock(gasLimit uint64, faucet *common.Address) *Genesis
 
 	return genesis
 }
+
+// SetInitingGenesis marks this genesis as one that is being used in the initGenesis operation.
+func (g *Genesis) SetInitingGenesis() {
+	g.initingGenesis = true
+}
+
+// InitingGenesis returns true if this genesis is being used in the initGenesis operation.
+func (g *Genesis) InitingGenesis() bool {
+	return g.initingGenesis
+}
