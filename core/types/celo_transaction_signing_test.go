@@ -122,8 +122,7 @@ func (u *unprotectedSigner) Sender(tx *Transaction) (common.Address, error) {
 
 // SignatureValues implements Signer.
 func (u *unprotectedSigner) SignatureValues(tx *Transaction, sig []byte) (r *big.Int, s *big.Int, v *big.Int, err error) {
-	r, s, v, err = decodeSignature(sig)
-	return r, s, v, err
+	return decodeSignature(sig)
 }
 
 type testCelo1Tx struct {
