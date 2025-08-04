@@ -3422,7 +3422,7 @@ func TestRPCMarshalHeaderAmsterdamFields(t *testing.T) {
 		SlotNumber:          &slotNumber,
 	}
 
-	result := RPCMarshalHeader(header)
+	result := RPCMarshalHeader(header, false)
 	require.Equal(t, &blockAccessListHash, result["blockAccessListHash"])
 	require.Equal(t, hexutil.Uint64(slotNumber), result["slotNumber"])
 }
