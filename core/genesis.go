@@ -60,8 +60,8 @@ type Genesis struct {
 	Nonce      uint64              `json:"nonce"`
 	Timestamp  uint64              `json:"timestamp"`
 	ExtraData  []byte              `json:"extraData"`
-	GasLimit   uint64              `json:"gasLimit"   gencodec:"required"`
-	Difficulty *big.Int            `json:"difficulty" gencodec:"required"`
+	GasLimit   uint64              `json:"gasLimit"`
+	Difficulty *big.Int            `json:"difficulty"`
 	Mixhash    common.Hash         `json:"mixHash"`
 	Coinbase   common.Address      `json:"coinbase"`
 	Alloc      types.GenesisAlloc  `json:"alloc"      gencodec:"required"`
@@ -617,29 +617,44 @@ func (g *Genesis) ToBlock() *types.Block {
 
 // toBlockWithRoot constructs the genesis block with the given genesis state root.
 func (g *Genesis) toBlockWithRoot(stateRoot, storageRootMessagePasser common.Hash) *types.Block {
-	head := &types.Header{
-		Number:     new(big.Int).SetUint64(g.Number),
-		Nonce:      types.EncodeNonce(g.Nonce),
-		Time:       g.Timestamp,
-		ParentHash: g.ParentHash,
-		Extra:      g.ExtraData,
-		GasLimit:   g.GasLimit,
-		GasUsed:    g.GasUsed,
-		BaseFee:    g.BaseFee,
-		Difficulty: g.Difficulty,
-		MixDigest:  g.Mixhash,
-		Coinbase:   g.Coinbase,
-		Root:       stateRoot,
+	number := new(big.Int).SetUint64(g.Number)
+	head := &types.Header{}
+	// If we are in a context where ginerbread is configured but not active for
+	// the genesis block we set the block to be pre-gingerbread. This affects
+	// the way it is encoded, which affects its hash.
+	if g.Config.GingerbreadBlock != nil && !g.Config.IsGingerbread(number) {
+		head = types.NewPreGingerbreadHeader()
 	}
-	if g.GasLimit == 0 {
-		head.GasLimit = params.GenesisGasLimit
-	}
-	if g.Difficulty == nil {
-		if g.Config != nil && g.Config.Ethash == nil {
-			head.Difficulty = big.NewInt(0)
-		} else if g.Mixhash == (common.Hash{}) {
-			head.Difficulty = params.GenesisDifficulty
+
+	head.Number = number
+	head.Nonce = types.EncodeNonce(g.Nonce)
+	head.Time = g.Timestamp
+	head.ParentHash = g.ParentHash
+	head.Extra = g.ExtraData
+	head.GasLimit = g.GasLimit
+	head.GasUsed = g.GasUsed
+	head.BaseFee = g.BaseFee
+	head.Difficulty = g.Difficulty
+	head.MixDigest = g.Mixhash
+	head.Coinbase = g.Coinbase
+	head.Root = stateRoot
+
+	// Avoid setting default values for gasLimit and difficulty on migrated
+	// chains.
+	if !g.Config.IsMigratedChain() {
+		if g.GasLimit == 0 {
+			head.GasLimit = params.GenesisGasLimit
 		}
+		if g.Difficulty == nil {
+			if g.Config != nil && g.Config.Ethash == nil {
+				head.Difficulty = big.NewInt(0)
+			} else if g.Mixhash == (common.Hash{}) {
+				head.Difficulty = params.GenesisDifficulty
+			}
+		}
+	} else if g.Difficulty == nil {
+		// In the case of migrated chains we ensure a zero rather than nil difficulty.
+		head.Difficulty = new(big.Int)
 	}
 	if g.Config != nil && g.Config.IsLondon(common.Big0) {
 		if g.BaseFee != nil {
