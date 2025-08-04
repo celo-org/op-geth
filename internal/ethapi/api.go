@@ -752,7 +752,7 @@ func (api *BlockChainAPI) GetBlockReceipts(ctx context.Context, blockNrOrHash rp
 		if i == len(txs) {
 			result[i] = marshalBlockReceipt(receipt, block.Hash(), block.NumberU64(), i)
 		} else {
-			result[i] = MarshalReceipt(receipt, block.Hash(), block.NumberU64(), signer, txs[i], i, api.b.ChainConfig())
+			result[i] = MarshalReceipt(receipt, block.Hash(), block.NumberU64(), block.Time(), signer, txs[i], i, api.b.ChainConfig())
 		}
 	}
 	return result, nil
@@ -1844,11 +1844,11 @@ func (api *TransactionAPI) GetTransactionReceipt(ctx context.Context, hash commo
 
 	// Derive the sender.
 	signer := types.MakeSigner(api.b.ChainConfig(), header.Number, header.Time)
-	return MarshalReceipt(receipt, blockHash, blockNumber, signer, tx, int(index), api.b.ChainConfig()), nil
+	return MarshalReceipt(receipt, blockHash, blockNumber, header.Time, signer, tx, int(index), api.b.ChainConfig()), nil
 }
 
-// MarshalReceipt marshals a transaction receipt into a JSON object.
-func MarshalReceipt(receipt *types.Receipt, blockHash common.Hash, blockNumber uint64, signer types.Signer, tx *types.Transaction, txIndex int, chainConfig *params.ChainConfig) map[string]interface{} {
+// marshalReceipt marshals a transaction receipt into a JSON object.
+func MarshalReceipt(receipt *types.Receipt, blockHash common.Hash, blockNumber uint64, blockTime uint64, signer types.Signer, tx *types.Transaction, txIndex int, chainConfig *params.ChainConfig) map[string]interface{} {
 	from, _ := types.Sender(signer, tx)
 
 	fields := map[string]interface{}{
@@ -1936,6 +1936,11 @@ func MarshalReceipt(receipt *types.Receipt, blockHash common.Hash, blockNumber u
 	if receipt.ContractAddress != (common.Address{}) {
 		fields["contractAddress"] = receipt.ContractAddress
 	}
+
+	if chainConfig.IsCel2(blockTime) && tx.Type() == types.CeloDynamicFeeTxV2Type {
+		fields["baseFee"] = (*hexutil.Big)(receipt.BaseFee)
+	}
+
 	return fields
 }
 
@@ -2157,6 +2162,7 @@ func (api *TransactionAPI) SendRawTransactionSync(ctx context.Context, input hex
 							rs[i],
 							rs[i].BlockHash,
 							rs[i].BlockNumber.Uint64(),
+							ev.Header.Time,
 							signer,
 							txs[i],
 							int(rs[i].TransactionIndex),
