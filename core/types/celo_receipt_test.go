@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/holiman/uint256"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -57,6 +58,7 @@ func checkEncodeDecodeConsistency(r *Receipt, t *testing.T) {
 	checkRLPEncodeDecodeConsistency(r, t)
 	checkStorageRLPEncodeDecodeConsistency((*ReceiptForStorage)(r), t)
 	checkBinaryEncodeDecodeConsistency(r, t)
+	checkJsonEncodeDecodeConsistency(r, t)
 }
 
 // checkRLPEncodeDecodeConsistency encodes and decodes the receipt and checks that they are equal.
@@ -102,6 +104,18 @@ func checkStorageRLPEncodeDecodeConsistency(r *ReceiptForStorage, t *testing.T) 
 	require.NoError(t, err)
 
 	require.EqualValues(t, r, &r2)
+}
+
+// checkJsonEncodeDecodeConsistency tests the consistency of JSON encoding and decoding of the receipt.
+func checkJsonEncodeDecodeConsistency(r *Receipt, t *testing.T) {
+	rawJson, err := r.MarshalJSON()
+	require.NoError(t, err)
+
+	r2 := &Receipt{}
+	err = r2.UnmarshalJSON(rawJson)
+	assert.NoError(t, err)
+
+	assert.Equal(t, r, r2)
 }
 
 // Tests that the effective gas price is correctly derived for different transaction types, in different scenarios.
