@@ -581,7 +581,8 @@ func (q *queue) DeliverBodies(id string, hashes eth.BlockBodyHashes, bodies []et
 		if hashes.TransactionRoots[index] != header.TxHash {
 			return errInvalidBody
 		}
-		if hashes.UncleHashes[index] != header.UncleHash {
+		// Pre gingerbread headers do not have a valid uncle hash.
+		if !header.IsPreGingerbread() && hashes.UncleHashes[index] != header.UncleHash {
 			return errInvalidBody
 		}
 		if header.WithdrawalsHash == nil {

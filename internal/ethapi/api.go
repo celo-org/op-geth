@@ -508,7 +508,7 @@ func decodeStorageKey(s string) (h common.Hash, inputLength int, err error) {
 func (api *BlockChainAPI) GetHeaderByNumber(ctx context.Context, number rpc.BlockNumber) (map[string]interface{}, error) {
 	header, err := api.b.HeaderByNumber(ctx, number)
 	if header != nil && err == nil {
-		response := RPCMarshalHeader(header)
+		response := RPCMarshalHeader(header, isCelo1Block(api.b.ChainConfig(), header.Time))
 		if number == rpc.PendingBlockNumber && api.b.ChainConfig().Optimism == nil {
 			// Pending header need to nil out a few fields
 			for _, field := range []string{"hash", "nonce", "miner"} {
@@ -524,7 +524,7 @@ func (api *BlockChainAPI) GetHeaderByNumber(ctx context.Context, number rpc.Bloc
 func (api *BlockChainAPI) GetHeaderByHash(ctx context.Context, hash common.Hash) map[string]interface{} {
 	header, _ := api.b.HeaderByHash(ctx, hash)
 	if header != nil {
-		return RPCMarshalHeader(header)
+		return RPCMarshalHeader(header, isCelo1Block(api.b.ChainConfig(), header.Time))
 	}
 	return nil
 }
@@ -1069,7 +1069,7 @@ func (api *BlockChainAPI) EstimateGas(ctx context.Context, args TransactionArgs,
 }
 
 // RPCMarshalHeader converts the given header to the RPC output .
-func RPCMarshalHeader(head *types.Header) map[string]interface{} {
+func RPCMarshalHeader(head *types.Header, isCelo1 bool) map[string]interface{} {
 	result := map[string]interface{}{
 		"number":           (*hexutil.Big)(head.Number),
 		"hash":             head.Hash(),
@@ -1109,14 +1109,23 @@ func RPCMarshalHeader(head *types.Header) map[string]interface{} {
 	if head.SlotNumber != nil {
 		result["slotNumber"] = hexutil.Uint64(*head.SlotNumber)
 	}
+	if isCelo1 {
+		result["totalDifficulty"] = (*hexutil.Big)(new(big.Int).Add(head.Number, common.Big1))
+	}
 	return result
+}
+
+// isCelo1Block determines whether the given block is a Celo1 block
+// based on the chain config and the provided block time
+func isCelo1Block(config *params.ChainConfig, blockTime uint64) bool {
+	return config.Cel2Time != nil && !config.IsCel2(blockTime)
 }
 
 // RPCMarshalBlock converts the given block to the RPC output which depends on fullTx. If inclTx is true transactions are
 // returned. When fullTx is true the returned block contains full transaction details, otherwise it will only contain
 // transaction hashes.
 func RPCMarshalBlock(ctx context.Context, block *types.Block, inclTx bool, fullTx bool, config *params.ChainConfig, backend ReceiptGetter) (map[string]interface{}, error) {
-	fields := RPCMarshalHeader(block.Header())
+	fields := RPCMarshalHeader(block.Header(), isCelo1Block(config, block.Header().Time))
 	fields["size"] = hexutil.Uint64(block.Size())
 
 	if inclTx {
