@@ -128,6 +128,9 @@ type receiptMarshaling struct {
 	OperatorFeeScalar     *hexutil.Uint64
 	OperatorFeeConstant   *hexutil.Uint64
 	DAFootprintGasScalar  *hexutil.Uint64
+
+	// Celo
+	BaseFee *hexutil.Big
 }
 
 // receiptRLP is the consensus encoding of a receipt.
