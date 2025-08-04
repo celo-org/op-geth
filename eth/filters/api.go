@@ -373,10 +373,18 @@ func (api *FilterAPI) TransactionReceipts(ctx context.Context, filter *Transacti
 					// Convert to the same format as eth_getTransactionReceipt
 					marshaledReceipts := make([]map[string]interface{}, len(receiptsWithTxs))
 					for i, receiptWithTx := range receiptsWithTxs {
+						header, err := api.sys.backend.HeaderByHash(ctx, receiptWithTx.Receipt.BlockHash)
+						if err != nil {
+							notifier.Notify(rpcSub.ID, map[string]interface{}{
+								"error": fmt.Sprintf("failed to get block header for receipt %v: %v", receiptWithTx.Transaction.Hash(), err),
+							})
+							return
+						}
 						marshaledReceipts[i] = ethapi.MarshalReceipt(
 							receiptWithTx.Receipt,
 							receiptWithTx.Receipt.BlockHash,
 							receiptWithTx.Receipt.BlockNumber.Uint64(),
+							header.Time,
 							signer,
 							receiptWithTx.Transaction,
 							int(receiptWithTx.Receipt.TransactionIndex),
