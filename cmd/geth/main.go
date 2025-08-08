@@ -73,7 +73,6 @@ var (
 		utils.OverrideOptimismIsthmus,
 		utils.OverrideOptimismJovian,
 		utils.OverrideOptimismInterop,
-		utils.OverrideOptimismCel2,
 		utils.EnablePersonal, // deprecated
 		utils.TxPoolLocalsFlag,
 		utils.TxPoolNoLocalsFlag,
@@ -133,8 +132,6 @@ var (
 		utils.MinerRecommitIntervalFlag,
 		utils.MinerPendingFeeRecipientFlag,
 		utils.MinerNewPayloadTimeoutFlag, // deprecated
-		utils.CeloFeeCurrencyDefault,
-		utils.CeloFeeCurrencyLimits,
 		utils.NATFlag,
 		utils.NoDiscoverFlag,
 		utils.DiscoveryV4Flag,
@@ -181,7 +178,7 @@ var (
 		utils.BeaconGenesisRootFlag,
 		utils.BeaconGenesisTimeFlag,
 		utils.BeaconCheckpointFlag,
-	}, utils.NetworkFlags, utils.DatabaseFlags)
+	}, utils.NetworkFlags, utils.DatabaseFlags, utils.TracingFlags)
 
 	rpcFlags = []cli.Flag{
 		utils.HTTPEnabledFlag,
