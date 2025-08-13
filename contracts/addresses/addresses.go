@@ -31,6 +31,12 @@ var (
 		FeeHandler:           common.HexToAddress("0xeed0A69c51079114C280f7b936C79e24bD94013e"),
 		FeeCurrencyDirectory: common.HexToAddress("0xD59E1599F45e42Eb356202B2C714D6C7b734C034"),
 	}
+
+	CeloSepoliaAddresses = &CeloAddresses{
+		CeloToken:            common.HexToAddress("0x471EcE3750Da237f93B8E339c536989b8978a438"),
+		FeeHandler:           common.HexToAddress("0xcD437749E43A154C07F3553504c68fBfD56B8778"),
+		FeeCurrencyDirectory: common.HexToAddress("0x9212Fb72ae65367A7c887eC4Ad9bE310BAC611BF"),
+	}
 )
 
 // GetAddresses returns the addresses for the given chainID or
@@ -45,6 +51,8 @@ func GetAddresses(chainID *big.Int) *CeloAddresses {
 		return AlfajoresAddresses
 	case params.CeloBaklavaChainID:
 		return BaklavaAddresses
+	case params.CeloSepoliaChainID:
+		return CeloSepoliaAddresses
 	case params.CeloMainnetChainID:
 		return MainnetAddresses
 	default:

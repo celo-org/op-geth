@@ -8,6 +8,7 @@ const (
 	CeloMainnetChainID   = 42220
 	CeloAlfajoresChainID = 44787
 	CeloBaklavaChainID   = 62320
+	CeloSepoliaChainID   = 11142220
 )
 
 // GasLimits holds the gas limit changes for a given chain
