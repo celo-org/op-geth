@@ -158,6 +158,35 @@ web3._extend({
 			name: 'stopWS',
 			call: 'admin_stopWS'
 		}),
+		new web3._extend.Method({
+			name: 'getBlocklistFeeCurrencies',
+			call: 'admin_getBlocklistFeeCurrencies',
+			params: 1,
+			inputFormatter: [null]
+		}),
+		new web3._extend.Method({
+			name: 'disableBlocklistFeeCurrencies',
+			call: 'admin_disableBlocklistFeeCurrencies',
+			params: 1,
+			inputFormatter: [null]
+		}),
+		new web3._extend.Method({
+			name: 'enableBlocklistFeeCurrencies',
+			call: 'admin_enableBlocklistFeeCurrencies',
+			params: 1,
+			inputFormatter: [null]
+		}),
+		new web3._extend.Method({
+			name: 'getDisabledBlocklistFeeCurrencies',
+			call: 'admin_getDisabledBlocklistFeeCurrencies',
+			params: 0
+		}),
+		new web3._extend.Method({
+			name: 'unblockFeeCurrency',
+			call: 'admin_unblockFeeCurrency',
+			params: 1,
+			inputFormatter: [web3._extend.formatters.inputAddressFormatter]
+		}),
 	],
 	properties: [
 		new web3._extend.Property({
