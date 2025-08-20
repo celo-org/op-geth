@@ -7,7 +7,7 @@ import {
 	webSocket,
 	defineChain,
 } from "viem";
-import { celo, celoAlfajores } from "viem/chains";
+import { celo, celoAlfajores, celoSepolia } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 
 // Setup up chain
@@ -51,6 +51,8 @@ const chain = (() => {
 			return celoAlfajores
 		case 'baklava':
 			return celoBaklava
+		case 'celo-sepolia':
+			return celoSepolia
 		case 'mainnet':
 			return celoMainnet
 		default:
@@ -62,6 +64,7 @@ const transportForNetwork = (() => {
 	switch (process.env.NETWORK) {
 		case 'alfajores':
 		case 'baklava':
+		case 'celo-sepolia':
 		case 'mainnet':
 			return webSocket(process.env.ETH_RPC_URL);
 		default:

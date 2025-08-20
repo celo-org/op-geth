@@ -327,7 +327,7 @@ describe("viem send tx", () => {
 			maxFeePerGas: gasPrice,
 			maxPriorityFeePerGas: 0n,
 		});
-		await expectTxFail(request, "transaction gas price below minimum");
+		await expectTxFail(request, "gas tip cap 0");
 	}).timeout(10_000);
 
 });
