@@ -126,6 +126,20 @@ describe("viem send tx", () => {
 		assert.equal(receipt.status, "success", "receipt status 'failure'");
 	}).timeout(10_000);
 
+	it("send fee currency tx using viem gas estimation and check receipt", async () => {
+		const request = await walletClient.prepareTransactionRequest({
+			to: "0x00000000000000000000000000000000DeaDBeef",
+			value: 2,
+			feeCurrency: process.env.FEE_CURRENCY,
+		});
+		const signature = await walletClient.signTransaction(request);
+		const hash = await walletClient.sendRawTransaction({
+			serializedTransaction: signature,
+		});
+		const receipt = await publicClient.waitForTransactionReceipt({ hash });
+		assert.equal(receipt.status, "success", "receipt status 'failure'");
+	}).timeout(10_000);
+
 	it("test gas price difference for fee currency", async () => {
 		const request = await walletClient.prepareTransactionRequest({
 			to: "0x00000000000000000000000000000000DeaDBeef",
@@ -180,22 +194,6 @@ describe("viem send tx", () => {
 		// converted gas price internally
 		assert.equal(request.maxFeePerGas, fees.maxFeePerGas);
 		assert.equal(request.maxPriorityFeePerGas, fees.maxPriorityFeePerGas);
-	}).timeout(10_000);
-
-	it("send fee currency with gas estimation tx and check receipt", async () => {
-		const request = await walletClient.prepareTransactionRequest({
-			to: "0x00000000000000000000000000000000DeaDBeef",
-			value: 2,
-			feeCurrency: process.env.FEE_CURRENCY,
-			maxFeePerGas: 50000000000n,
-			maxPriorityFeePerGas: 2n,
-		});
-		const signature = await walletClient.signTransaction(request);
-		const hash = await walletClient.sendRawTransaction({
-			serializedTransaction: signature,
-		});
-		const receipt = await publicClient.waitForTransactionReceipt({ hash });
-		assert.equal(receipt.status, "success", "receipt status 'failure'");
 	}).timeout(10_000);
 
 	// The goal is this test is to ensure that fee currencies are correctly

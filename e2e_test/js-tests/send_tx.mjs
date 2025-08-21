@@ -59,7 +59,7 @@ async function main() {
     value: value,
     gas: 90000,
     feeCurrency,
-    maxFeePerGas: 25000000000n,
+    maxFeePerGas: 50000000002n,
     maxPriorityFeePerGas: 100n, // should be >= 1wei even after conversion to native tokens
   });
 
