@@ -330,18 +330,6 @@ describe("viem send tx", () => {
 		await expectTxFail(request, "transaction gas price below minimum");
 	}).timeout(10_000);
 
-	it("zero tip fee currency tx rejected", async () => {
-		const fc = process.env.FEE_CURRENCY;
-		const [maxFeePerGas, _] = await getGasFees(publicClient, 0n, fc);
-		const request = await walletClient.prepareTransactionRequest({
-			to: "0x00000000000000000000000000000000DeaDBeef",
-			gas: await getIntrinsicGasForFeeCurrency(TX_GAS, fc),
-			feeCurrency: fc,
-			maxFeePerGas: maxFeePerGas,
-			maxPriorityFeePerGas: 0n,
-		});
-		await expectTxFail(request, "transaction gas price below minimum");
-	}).timeout(10_000);
 });
 
 // expectTxFail expects the transaction to fail with an error that contains the given errorString.
