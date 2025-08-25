@@ -246,8 +246,6 @@ func initGenesis(ctx *cli.Context) error {
 	triedb := utils.MakeTrieDatabase(ctx, chaindb, ctx.Bool(utils.CachePreimagesFlag.Name), false, genesis.IsVerkle())
 	defer triedb.Close()
 
-	// Set initing genesis here, to signal that we are in an initGenesis flow.
-	genesis.SetInitingGenesis()
 	_, hash, compatErr, err := core.SetupGenesisBlockWithOverride(chaindb, triedb, genesis, &overrides)
 	if err != nil {
 		utils.Fatalf("Failed to write genesis block: %v", err)

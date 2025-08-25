@@ -19,25 +19,14 @@ func TestToBlockWithRoot(t *testing.T) {
 		},
 	}
 
-	t.Run("PreGingerbreadBlocksProducedWhenInitingGenesis", func(t *testing.T) {
+	t.Run("PreGingerbreadBlocksProducedWhenGingerbreadBlockSetButNotActivated", func(t *testing.T) {
 		g := &Genesis{
 			Config: &params.ChainConfig{
 				GingerbreadBlock: big.NewInt(1),
 			},
-			initingGenesis: true,
 		}
 		b := g.toBlockWithRoot(common.Hash{}, common.Hash{})
 		assert.True(t, b.Header().IsPreGingerbread())
-	})
-	t.Run("PreGingerbreadBlocksNotProducedWhenNotInitingGenesis", func(t *testing.T) {
-		g := &Genesis{
-			Config: &params.ChainConfig{
-				GingerbreadBlock: big.NewInt(1),
-			},
-			initingGenesis: false,
-		}
-		b := g.toBlockWithRoot(common.Hash{}, common.Hash{})
-		assert.False(t, b.Header().IsPreGingerbread())
 	})
 	t.Run("PreGingerbreadBlocksNotProducedWhenNotPreGingerbread", func(t *testing.T) {
 		g := &Genesis{
@@ -45,11 +34,7 @@ func TestToBlockWithRoot(t *testing.T) {
 				GingerbreadBlock: big.NewInt(0),
 			},
 		}
-		g.initingGenesis = false
 		b := g.toBlockWithRoot(common.Hash{}, common.Hash{})
-		assert.False(t, b.Header().IsPreGingerbread())
-		g.initingGenesis = true
-		b = g.toBlockWithRoot(common.Hash{}, common.Hash{})
 		assert.False(t, b.Header().IsPreGingerbread())
 	})
 	t.Run("NonMigratedChainWithEthashHasDefaultGasLimit&DifficultySet", func(t *testing.T) {
