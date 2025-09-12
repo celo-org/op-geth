@@ -257,7 +257,7 @@ var PrecompiledContractsJovian = map[common.Address]PrecompiledContract{
 // multiple Ethereum/Optimism hardforks and therefore does not fit into the
 // linear history of normal hardforks.
 var PrecompiledCeloContractsCel2 = map[common.Address]CeloPrecompiledContract{
-	transferPrecompileAddress: &transfer{},
+	TransferPrecompileAddress: &transfer{},
 }
 
 var (
