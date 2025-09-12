@@ -154,6 +154,33 @@ func (t *prestateTracer) OnOpcode(pc uint64, opcode byte, gas, cost uint64, scop
 				t.lookupAccount(target)
 			}
 		}
+		// The transfer precompile modifies two balances that are not expected to change in a normal CALL, so we need to handle this case explicitly.
+		if addr == vm.TransferPrecompileAddress {
+			// For CALL: stack has [gas, addr, value, inOffset, inSize, retOffset, retSize]
+
+			// Get input
+			if stackLen < 7 {
+				log.Warn("unexpected stack length for transfer precompile", "tracer", "prestateTracer", "stackLen", stackLen)
+				return
+			}
+			inOffset := stackData[stackLen-4]
+			inSize := stackData[stackLen-5]
+			if inSize.Uint64() < 64 {
+				log.Warn("unexpected input size for transfer precompile", "tracer", "prestateTracer", "inSize", inSize.Uint64())
+				return
+			}
+			input, err := internal.GetMemoryCopyPadded(scope.MemoryData(), int64(inOffset.Uint64()), 64)
+			if err != nil {
+				log.Warn("failed to copy transfer precompile input", "err", err, "tracer", "prestateTracer", "inOffset", inOffset)
+				return
+			}
+
+			// Look up the from and to accounts
+			from := common.BytesToAddress(input[0:32])
+			to := common.BytesToAddress(input[32:64])
+			t.lookupAccount(from)
+			t.lookupAccount(to)
+		}
 	case op == vm.CREATE:
 		nonce := t.env.StateDB.GetNonce(caller)
 		addr := crypto.CreateAddress(caller, nonce)
