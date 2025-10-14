@@ -59,6 +59,11 @@ func (c *transfer) RequiredGas(input []byte) uint64 {
 }
 
 func (c *transfer) Run(input []byte, ctx *celoPrecompileContext) ([]byte, error) {
+	// STATICCALL protection: prevent state changes in read-only context
+	if ctx.evm.interpreter.readOnly {
+		return nil, ErrWriteProtection
+	}
+
 	if isCeloToken, err := ctx.IsCallerCeloToken(); err != nil {
 		return nil, err
 	} else if !isCeloToken {

@@ -60,6 +60,10 @@ var mockEVM = &EVM{
 	TxContext:   vmTxCtx,
 }
 
+func init() {
+	mockEVM.interpreter = NewEVMInterpreter(mockEVM)
+}
+
 var mockPrecompileContext = NewContext(common.HexToAddress("1337"), mockEVM)
 
 func TestPrecompileTransfer(t *testing.T) {
@@ -117,4 +121,31 @@ func TestPrecompileTransfer(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPrecompileTransferStaticCallProtection(t *testing.T) {
+	// Input with zero from address (will fail balance check in non-static context)
+	validInput := make([]byte, 96)
+	validInput[63] = 1   // to address
+	validInput[95] = 100 // value
+
+	t.Run("rejects transfer in static context", func(t *testing.T) {
+		mockEVM.interpreter.readOnly = true
+		defer func() { mockEVM.interpreter.readOnly = false }()
+
+		ctx := NewContext(addresses.MainnetAddresses.CeloToken, mockEVM)
+		_, err := (&transfer{}).Run(validInput, ctx)
+		if err != ErrWriteProtection {
+			t.Errorf("expected ErrWriteProtection, got %v", err)
+		}
+	})
+
+	t.Run("allows transfer in non-static context", func(t *testing.T) {
+		ctx := NewContext(addresses.MainnetAddresses.CeloToken, mockEVM)
+		_, err := (&transfer{}).Run(validInput, ctx)
+		// Should fail with insufficient balance, not write protection
+		if err != ErrInsufficientBalance {
+			t.Errorf("expected ErrInsufficientBalance, got %v", err)
+		}
+	})
 }
