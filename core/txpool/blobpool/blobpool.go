@@ -386,6 +386,9 @@ type BlobPool struct {
 	insertFeed   event.Feed // Event feed to send out new tx events on pool inclusion (reorg included)
 
 	lock sync.RWMutex // Mutex protecting the pool during reorg handling
+
+	// Celo
+	feeCurrencyValidator txpool.FeeCurrencyValidator
 }
 
 // New creates a new blob transaction pool to gather, sort and filter inbound
@@ -405,6 +408,8 @@ func New(config Config, chain BlockChain, hasPendingAuth func(common.Address) bo
 		spent:          make(map[common.Address]*uint256.Int),
 		gapped:         make(map[common.Address][]*types.Transaction),
 		gappedSource:   make(map[common.Hash]common.Address),
+
+		feeCurrencyValidator: txpool.NewFeeCurrencyValidator(),
 	}
 }
 
@@ -1237,9 +1242,9 @@ func (p *BlobPool) SetGasTip(tip *big.Int) {
 // This check is meant as an early check which only needs to be performed once,
 // and does not require the pool mutex to be held.
 func (p *BlobPool) ValidateTxBasics(tx *types.Transaction) error {
-	opts := &txpool.ValidationOptions{
+	opts := &txpool.CeloValidationOptions{
 		Config:       p.chain.Config(),
-		Accept:       1 << types.BlobTxType,
+		AcceptSet:    txpool.NewAcceptSet(types.BlobTxType),
 		MaxSize:      txMaxSize,
 		MinTip:       p.gasTip.Load().ToBig(),
 		MaxBlobCount: maxBlobsPerTx,
@@ -1319,7 +1324,14 @@ func (p *BlobPool) validateTx(tx *types.Transaction) error {
 			return nil
 		},
 	}
-	if err := txpool.ValidateTransactionWithState(tx, p.signer, stateOpts); err != nil {
+
+	// Adapt to celo validation options
+	celoOpts := &txpool.CeloValidationOptionsWithState{
+		ValidationOptionsWithState: *stateOpts,
+		FeeCurrencyValidator:       p.feeCurrencyValidator,
+	}
+
+	if err := txpool.ValidateTransactionWithState(tx, p.signer, celoOpts); err != nil {
 		return err
 	}
 	if err := p.checkDelegationLimit(tx); err != nil {
