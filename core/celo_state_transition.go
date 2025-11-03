@@ -47,7 +47,9 @@ func (st *stateTransition) subFees(effectiveFee *big.Int) (err error) {
 		st.state.SubBalance(st.msg.From, effectiveFeeU256, tracing.BalanceDecreaseGasBuy)
 		return nil
 	} else {
-		return contracts.DebitFees(st.evm, st.msg.FeeCurrency, st.msg.From, effectiveFee)
+		gasUsedDebit, err := contracts.DebitFees(st.evm, st.msg.FeeCurrency, st.msg.From, effectiveFee)
+		st.feeCurrencyGasUsed += gasUsedDebit
+		return err
 	}
 }
 
@@ -63,7 +65,7 @@ func (st *stateTransition) calculateBaseFee() *big.Int {
 
 	if st.msg.FeeCurrency != nil {
 		// Existence of the fee currency has been checked in `preCheck`
-		baseFee, _ = exchange.ConvertCeloToCurrency(st.evm.Context.ExchangeRates, st.msg.FeeCurrency, baseFee)
+		baseFee, _ = exchange.ConvertCeloToCurrency(st.evm.Context.FeeCurrencyContext.ExchangeRates, st.msg.FeeCurrency, baseFee)
 	}
 
 	return baseFee
