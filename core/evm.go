@@ -38,8 +38,8 @@ type ChainContext interface {
 	Engine() consensus.Engine
 }
 
-// NewEVMBlockContext creates a new context for use in the EVM.
-func NewEVMBlockContext(header *types.Header, chain ChainContext, author *common.Address, config *params.ChainConfig, statedb vm.StateDB) vm.BlockContext {
+// NewEVMBlockContextWithFeeCurrencyContext creates a new context for use in the EVM, with a given FeeCurrencyContext.
+func NewEVMBlockContextWithFeeCurrencyContext(header *types.Header, chain ChainContext, author *common.Address, config *params.ChainConfig, statedb vm.StateDB, feeCurrencyContext *common.FeeCurrencyContext) vm.BlockContext {
 	var (
 		beneficiary    common.Address
 		baseFee        *big.Int
@@ -89,9 +89,18 @@ func NewEVMBlockContext(header *types.Header, chain ChainContext, author *common
 		OperatorCostFunc: operatorCostFn,
 	}
 
-	setCeloFieldsInBlockContext(&blockContext, header, config, statedb)
+	if config.IsCel2(header.Time) {
+		blockContext.FeeCurrencyContext = *feeCurrencyContext
+	}
 
 	return blockContext
+}
+
+// NewEVMBlockContext creates a new context for use in the EVM.
+func NewEVMBlockContext(header *types.Header, chain ChainContext, author *common.Address, config *params.ChainConfig, statedb vm.StateDB) vm.BlockContext {
+	feeCurrencyContext := GetFeeCurrencyContext(header, config, statedb)
+
+	return NewEVMBlockContextWithFeeCurrencyContext(header, chain, author, config, statedb, feeCurrencyContext)
 }
 
 // NewEVMTxContext creates a new transaction context for a single transaction.
