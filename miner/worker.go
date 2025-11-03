@@ -105,7 +105,7 @@ type environment struct {
 	// Celo specific
 	multiGasPool         *core.MultiGasPool // available per-fee-currency gas used to pack transactions
 	feeCurrencyAllowlist common.AddressSet
-	exchangeRates        common.ExchangeRates
+	feeCurrencyContext   *common.FeeCurrencyContext
 }
 
 // txFitsSize reports whether the transaction fits into the block size limit.
@@ -444,7 +444,6 @@ func (miner *Miner) prepareWork(ctx context.Context, genParams *generateParams, 
 			return nil, err
 		}
 	}
-	context := core.NewEVMBlockContext(header, miner.chain, nil, miner.chainConfig, env.state)
 	if evicted := miner.feeCurrencyBlocklist.Evict(parent); len(evicted) > 0 {
 		log.Warn(
 			"Evicted temporarily blocked fee-currencies from local block-list",
@@ -454,10 +453,10 @@ func (miner *Miner) prepareWork(ctx context.Context, genParams *generateParams, 
 		feeCurrenciesInBlocklistCounter.Dec(int64(len(evicted)))
 	}
 	env.feeCurrencyAllowlist = miner.feeCurrencyBlocklist.FilterAllowlist(
-		common.CurrencyAllowlist(context.FeeCurrencyContext.ExchangeRates),
+		common.CurrencyAllowlist(env.feeCurrencyContext.ExchangeRates),
 		header,
 	)
-	env.exchangeRates = context.FeeCurrencyContext.ExchangeRates
+
 	if header.ParentBeaconRoot != nil {
 		core.ProcessBeaconBlockRoot(*header.ParentBeaconRoot, env.evm)
 	}
@@ -486,6 +485,7 @@ func (miner *Miner) makeEnv(parent *types.Header, header *types.Header, coinbase
 			release()
 		}
 	}
+	feeCurrencyContext := core.GetFeeCurrencyContext(header, miner.chainConfig, state)
 
 	var bundle *stateless.Witness
 	if witness {
@@ -504,8 +504,10 @@ func (miner *Miner) makeEnv(parent *types.Header, header *types.Header, coinbase
 		gasPool:  core.NewGasPool(header.GasLimit),
 		header:   header,
 		witness:  state.Witness(),
-		evm:      vm.NewEVM(core.NewEVMBlockContext(header, miner.chain, &coinbase, miner.chainConfig, state), state, miner.chainConfig, vm.Config{}),
+		evm:      vm.NewEVM(core.NewEVMBlockContextWithFeeCurrencyContext(header, miner.chain, &coinbase, miner.chainConfig, state, feeCurrencyContext), state, miner.chainConfig, vm.Config{}),
 		rpcCtx:   rpcCtx,
+
+		feeCurrencyContext: feeCurrencyContext,
 	}, nil
 }
 
@@ -595,7 +597,7 @@ func (miner *Miner) applyTransaction(env *environment, tx *types.Transaction) (*
 		snap = env.state.Snapshot()
 		gp   = env.gasPool.Snapshot()
 	)
-	receipt, err := core.ApplyTransaction(env.evm, env.gasPool, env.state, env.header, tx)
+	receipt, err := core.ApplyTransaction(env.evm, env.gasPool, env.state, env.header, tx, env.feeCurrencyContext)
 	if err != nil {
 		env.state.RevertToSnapshot(snap)
 		env.gasPool.Set(gp)
@@ -886,16 +888,16 @@ func (miner *Miner) fillTransactions(ctx context.Context, interrupt *atomic.Int3
 	}
 	// Fill the block with all available pending transactions.
 	if len(prioPlainTxs) > 0 || len(prioBlobTxs) > 0 {
-		plainTxs := newTransactionsByPriceAndNonce(env.signer, prioPlainTxs, env.header.BaseFee, env.exchangeRates)
-		blobTxs := newTransactionsByPriceAndNonce(env.signer, prioBlobTxs, env.header.BaseFee, env.exchangeRates)
+		plainTxs := newTransactionsByPriceAndNonce(env.signer, prioPlainTxs, env.header.BaseFee, env.feeCurrencyContext.ExchangeRates)
+		blobTxs := newTransactionsByPriceAndNonce(env.signer, prioBlobTxs, env.header.BaseFee, env.feeCurrencyContext.ExchangeRates)
 
 		if err := miner.commitTransactions(ctx, env, plainTxs, blobTxs, interrupt); err != nil {
 			return err
 		}
 	}
 	if len(normalPlainTxs) > 0 || len(normalBlobTxs) > 0 {
-		plainTxs := newTransactionsByPriceAndNonce(env.signer, normalPlainTxs, env.header.BaseFee, env.exchangeRates)
-		blobTxs := newTransactionsByPriceAndNonce(env.signer, normalBlobTxs, env.header.BaseFee, env.exchangeRates)
+		plainTxs := newTransactionsByPriceAndNonce(env.signer, normalPlainTxs, env.header.BaseFee, env.feeCurrencyContext.ExchangeRates)
+		blobTxs := newTransactionsByPriceAndNonce(env.signer, normalBlobTxs, env.header.BaseFee, env.feeCurrencyContext.ExchangeRates)
 
 		if err := miner.commitTransactions(ctx, env, plainTxs, blobTxs, interrupt); err != nil {
 			return err
