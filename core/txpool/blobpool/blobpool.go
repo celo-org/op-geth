@@ -341,8 +341,8 @@ type BlobPool struct {
 	lock sync.RWMutex // Mutex protecting the pool during reorg handling
 
 	// Celo specific
-	celoBackend  *contracts.CeloBackend // For fee currency balances & exchange rate calculation
-	currentRates common.ExchangeRates   // current exchange rates for fee currencies
+	celoBackend        *contracts.CeloBackend // For fee currency balances & exchange rate calculation
+	feeCurrencyContext common.FeeCurrencyContext
 }
 
 // New creates a new blob transaction pool to gather, sort and filter inbound
@@ -1130,7 +1130,7 @@ func (p *BlobPool) ValidateTxBasics(tx *types.Transaction) error {
 		MinTip:       p.gasTip.ToBig(),
 		MaxBlobCount: maxBlobsPerTx,
 	}
-	return txpool.ValidateTransaction(tx, p.head, p.signer, opts)
+	return txpool.CeloValidateTransaction(tx, p.head, p.signer, opts, p.feeCurrencyContext)
 }
 
 // checkDelegationLimit determines if the tx sender is delegated or has a
@@ -1169,16 +1169,7 @@ func (p *BlobPool) checkDelegationLimit(tx *types.Transaction) error {
 // validateTx checks whether a transaction is valid according to the consensus
 // rules and adheres to some heuristic limits of the local node (price and size).
 func (p *BlobPool) validateTx(tx *types.Transaction) error {
-	// Ensure the transaction adheres to basic pool filters (type, size, tip) and
-	// consensus rules
-	baseOpts := &txpool.CeloValidationOptions{
-		Config:       p.chain.Config(),
-		AcceptSet:    txpool.NewAcceptSet(types.BlobTxType),
-		MaxSize:      txMaxSize,
-		MinTip:       p.gasTip.ToBig(),
-		MaxBlobCount: maxBlobsPerTx,
-	}
-	if err := txpool.ValidateTransaction(tx, p.head, p.signer, baseOpts); err != nil {
+	if err := p.ValidateTxBasics(tx); err != nil {
 		return err
 	}
 	// Ensure the transaction adheres to the stateful pool filters (nonce, balance)
