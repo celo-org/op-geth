@@ -270,12 +270,13 @@ func (api *API) traceChain(start, end *types.Block, config *TraceConfig, closed 
 			// Fetch and execute the block trace taskCh
 			for task := range taskCh {
 				var (
-					signer   = types.MakeSigner(api.backend.ChainConfig(), task.block.Number(), task.block.Time())
-					blockCtx = core.NewEVMBlockContext(task.block.Header(), api.chainContext(ctx), nil, api.backend.ChainConfig(), task.statedb)
+					feeCurrencyContext = core.GetFeeCurrencyContext(end.Header(), api.backend.ChainConfig(), task.statedb)
+					signer             = types.MakeSigner(api.backend.ChainConfig(), task.block.Number(), task.block.Time())
+					blockCtx           = core.NewEVMBlockContextWithFeeCurrencyContext(task.block.Header(), api.chainContext(ctx), nil, api.backend.ChainConfig(), task.statedb, feeCurrencyContext)
 				)
 				// Trace all the transactions contained within
 				for i, tx := range task.block.Transactions() {
-					msg, _ := core.TransactionToMessage(tx, signer, task.block.BaseFee(), blockCtx.FeeCurrencyContext.ExchangeRates)
+					msg, _ := core.TransactionToMessage(tx, signer, task.block.BaseFee(), feeCurrencyContext.ExchangeRates)
 					txctx := &Context{
 						BlockHash:   task.block.Hash(),
 						BlockNumber: task.block.Number(),
@@ -708,7 +709,7 @@ func (api *API) traceBlockParallel(ctx context.Context, block *types.Block, bloc
 				// as the GetHash function of BlockContext is not safe for
 				// concurrent use.
 				// See: https://github.com/ethereum/go-ethereum/issues/29114
-				blockCtx := core.NewEVMBlockContext(block.Header(), api.chainContext(ctx), nil, api.backend.ChainConfig(), task.statedb)
+				blockCtx := core.NewEVMBlockContextWithFeeCurrencyContext(block.Header(), api.chainContext(ctx), nil, api.backend.ChainConfig(), task.statedb, &blockCtx.FeeCurrencyContext)
 				res, err := api.traceTx(ctx, txs[task.index], msg, txctx, blockCtx, task.statedb, config, nil)
 				if err != nil {
 					results[task.index] = &txTraceResult{TxHash: txs[task.index].Hash(), Error: err.Error()}
@@ -928,13 +929,14 @@ func (api *API) TraceTransaction(ctx context.Context, hash common.Hash, config *
 	if err != nil {
 		return nil, err
 	}
+
 	tx, vmctx, statedb, release, err := api.backend.StateAtTransaction(ctx, block, int(index), reexec)
 	if err != nil {
 		return nil, err
 	}
 	defer release()
-	exchangeRates := vmctx.FeeCurrencyContext.ExchangeRates
-	msg, err := core.TransactionToMessage(tx, types.MakeSigner(api.backend.ChainConfig(), block.Number(), block.Time()), block.BaseFee(), exchangeRates)
+
+	msg, err := core.TransactionToMessage(tx, types.MakeSigner(api.backend.ChainConfig(), block.Number(), block.Time()), block.BaseFee(), vmctx.FeeCurrencyContext.ExchangeRates)
 	if err != nil {
 		return nil, err
 	}
