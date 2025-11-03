@@ -129,7 +129,7 @@ func (q *queue) add(tx *types.Transaction) (*common.Hash, error) {
 		q.queued[from] = newRollupList(false, q.rollupCostFnProvider) // OP Stack diff
 	}
 	queuedtxs := q.queued[from]
-	inserted, old := queuedtxs.Add(tx, q.config.PriceBump, q.pool.currentRates)
+	inserted, old := queuedtxs.Add(tx, q.config.PriceBump, q.pool.feeCurrencyContext.ExchangeRates)
 	if !inserted {
 		// An older transaction was better, discard this
 		queuedDiscardMeter.Mark(1)
