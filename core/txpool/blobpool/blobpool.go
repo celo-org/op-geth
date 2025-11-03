@@ -338,6 +338,9 @@ type BlobPool struct {
 	insertFeed   event.Feed // Event feed to send out new tx events on pool inclusion (reorg included)
 
 	lock sync.RWMutex // Mutex protecting the pool during reorg handling
+
+	// Celo
+	feeCurrencyValidator txpool.FeeCurrencyValidator
 }
 
 // New creates a new blob transaction pool to gather, sort and filter inbound
@@ -355,6 +358,8 @@ func New(config Config, chain BlockChain, hasPendingAuth func(common.Address) bo
 		lookup:         newLookup(),
 		index:          make(map[common.Address][]*blobTxMeta),
 		spent:          make(map[common.Address]*uint256.Int),
+
+		feeCurrencyValidator: txpool.NewFeeCurrencyValidator(),
 	}
 }
 
@@ -1116,9 +1121,9 @@ func (p *BlobPool) SetGasTip(tip *big.Int) {
 // This check is meant as an early check which only needs to be performed once,
 // and does not require the pool mutex to be held.
 func (p *BlobPool) ValidateTxBasics(tx *types.Transaction) error {
-	opts := &txpool.ValidationOptions{
+	opts := &txpool.CeloValidationOptions{
 		Config:       p.chain.Config(),
-		Accept:       1 << types.BlobTxType,
+		AcceptSet:    txpool.NewAcceptSet(types.BlobTxType),
 		MaxSize:      txMaxSize,
 		MinTip:       p.gasTip.ToBig(),
 		MaxBlobCount: maxBlobsPerTx,
@@ -1162,7 +1167,16 @@ func (p *BlobPool) checkDelegationLimit(tx *types.Transaction) error {
 // validateTx checks whether a transaction is valid according to the consensus
 // rules and adheres to some heuristic limits of the local node (price and size).
 func (p *BlobPool) validateTx(tx *types.Transaction) error {
-	if err := p.ValidateTxBasics(tx); err != nil {
+	// Ensure the transaction adheres to basic pool filters (type, size, tip) and
+	// consensus rules
+	baseOpts := &txpool.CeloValidationOptions{
+		Config:       p.chain.Config(),
+		AcceptSet:    txpool.NewAcceptSet(types.BlobTxType),
+		MaxSize:      txMaxSize,
+		MinTip:       p.gasTip.ToBig(),
+		MaxBlobCount: maxBlobsPerTx,
+	}
+	if err := txpool.ValidateTransaction(tx, p.head, p.signer, baseOpts); err != nil {
 		return err
 	}
 	// Ensure the transaction adheres to the stateful pool filters (nonce, balance)
@@ -1196,7 +1210,14 @@ func (p *BlobPool) validateTx(tx *types.Transaction) error {
 			return nil
 		},
 	}
-	if err := txpool.ValidateTransactionWithState(tx, p.signer, stateOpts); err != nil {
+
+	// Adapt to celo validation options
+	celoOpts := &txpool.CeloValidationOptionsWithState{
+		ValidationOptionsWithState: *stateOpts,
+		FeeCurrencyValidator:       p.feeCurrencyValidator,
+	}
+
+	if err := txpool.ValidateTransactionWithState(tx, p.signer, celoOpts); err != nil {
 		return err
 	}
 	if err := p.checkDelegationLimit(tx); err != nil {
