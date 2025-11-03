@@ -94,7 +94,7 @@ func TestValidateTransactionMaxTxGasLimit(t *testing.T) {
 				Difficulty: big.NewInt(0),
 			}
 
-			err = ValidateTransaction(signedTx, header, signer, opts)
+			err = ValidateTransaction(signedTx, header, signer, opts, common.FeeCurrencyContext{})
 
 			if test.expectError {
 				if err == nil {

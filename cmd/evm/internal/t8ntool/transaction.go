@@ -132,8 +132,14 @@ func Transaction(ctx *cli.Context) error {
 			r.Address = sender
 		}
 		// Check intrinsic gas
+		// NOTE: we can't provide specific intrinsic gas costs
+		// for fee-currencies here, since those are written to the
+		// FeeCurrencyDirectory contract and are chain-specific.
+		// When a Celo transaction with specified fee-currency is validated with this tool,
+		// this will thus result in a ErrUnregisteredFeeCurrency error for now.
+		var feeIntrinsic common.IntrinsicGasCosts
 		rules := chainConfig.Rules(common.Big0, true, 0)
-		gas, err := core.IntrinsicGas(tx.Data(), tx.AccessList(), tx.SetCodeAuthorizations(), tx.To() == nil, rules.IsHomestead, rules.IsIstanbul, rules.IsShanghai, tx.FeeCurrency())
+		gas, err := core.IntrinsicGas(tx.Data(), tx.AccessList(), tx.SetCodeAuthorizations(), tx.To() == nil, rules.IsHomestead, rules.IsIstanbul, rules.IsShanghai, tx.FeeCurrency(), feeIntrinsic)
 		if err != nil {
 			r.Error = err
 			results = append(results, r)
