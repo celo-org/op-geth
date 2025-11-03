@@ -46,9 +46,15 @@ func TestValidateTransactionEIP2681(t *testing.T) {
 	signer := types.LatestSigner(params.TestChainConfig)
 
 	// Create validation options
-	opts := &ValidationOptions{
-		Config:       params.TestChainConfig,
-		Accept:       0xFF, // Accept all transaction types
+	opts := &CeloValidationOptions{
+		Config: params.TestChainConfig,
+		// <<<<<<< HEAD
+		// 		AcceptSet:       0xFF, // Accept all transaction types
+		// ||||||| parent of 4acb9a755 (txpool: Validations for celo txs in txpool (#31))
+		// 		AcceptSet:       1 << types.LegacyTxType, // Accept all transaction types
+		// =======
+		AcceptSet: NewAcceptSet(types.LegacyTxType), // Accept all transaction types
+		// >>>>>>> 4acb9a755 (txpool: Validations for celo txs in txpool (#31))
 		MaxSize:      32 * 1024,
 		MaxBlobCount: 6,
 		MinTip:       big.NewInt(0),
