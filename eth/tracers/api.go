@@ -645,7 +645,7 @@ func (api *API) traceBlock(ctx context.Context, block *types.Block, config *Trac
 	// in separate worker threads.
 	if config != nil && config.Tracer != nil && *config.Tracer != "" {
 		if isJS := DefaultDirectory.IsJS(*config.Tracer); isJS {
-			return api.traceBlockParallel(ctx, block, statedb, config)
+			return api.traceBlockParallel(ctx, block, blockCtx, statedb, config)
 		}
 	}
 	// Native tracers have low overhead
@@ -676,7 +676,7 @@ func (api *API) traceBlock(ctx context.Context, block *types.Block, config *Trac
 // traceBlockParallel is for tracers that have a high overhead (read JS tracers). One thread
 // runs along and executes txes without tracing enabled to generate their prestate.
 // Worker threads take the tasks and the prestate and trace them.
-func (api *API) traceBlockParallel(ctx context.Context, block *types.Block, statedb *state.StateDB, config *TraceConfig) ([]*txTraceResult, error) {
+func (api *API) traceBlockParallel(ctx context.Context, block *types.Block, blockCtx vm.BlockContext, statedb *state.StateDB, config *TraceConfig) ([]*txTraceResult, error) {
 	// Execute all the transaction contained within the block concurrently
 	var (
 		txs       = block.Transactions()
@@ -689,7 +689,7 @@ func (api *API) traceBlockParallel(ctx context.Context, block *types.Block, stat
 	if threads > len(txs) {
 		threads = len(txs)
 	}
-	exchangeRates := core.GetExchangeRates(block.Header(), api.backend.ChainConfig(), statedb)
+	exchangeRates := blockCtx.FeeCurrencyContext.ExchangeRates
 	jobs := make(chan *txTraceTask, threads)
 	for th := 0; th < threads; th++ {
 		pend.Add(1)
@@ -721,7 +721,6 @@ func (api *API) traceBlockParallel(ctx context.Context, block *types.Block, stat
 
 	// Feed the transactions into the tracers and return
 	var failed error
-	blockCtx := core.NewEVMBlockContext(block.Header(), api.chainContext(ctx), nil, api.backend.ChainConfig(), statedb)
 	evm := vm.NewEVM(blockCtx, statedb, api.backend.ChainConfig(), vm.Config{})
 
 txloop:
