@@ -276,7 +276,7 @@ func (api *API) traceChain(start, end *types.Block, config *TraceConfig, closed 
 				)
 				// Trace all the transactions contained within
 				for i, tx := range task.block.Transactions() {
-					msg, _ := core.TransactionToMessage(tx, signer, task.block.BaseFee(), blockCtx.ExchangeRates)
+					msg, _ := core.TransactionToMessage(tx, signer, task.block.BaseFee(), blockCtx.FeeCurrencyContext.ExchangeRates)
 					txctx := &Context{
 						BlockHash:   task.block.Hash(),
 						BlockNumber: task.block.Number(),
@@ -580,7 +580,7 @@ func (api *API) IntermediateRoots(ctx context.Context, hash common.Hash, config 
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee(), vmctx.ExchangeRates)
+		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee(), vmctx.FeeCurrencyContext.ExchangeRates)
 		statedb.SetTxContext(tx.Hash(), i)
 		if _, err := core.ApplyMessage(evm, msg, nil); err != nil {
 			log.Warn("Tracing intermediate roots did not complete", "txindex", i, "txhash", tx.Hash(), "err", err)
@@ -646,7 +646,7 @@ func (api *API) traceBlock(ctx context.Context, block *types.Block, config *Trac
 	// in separate worker threads.
 	if config != nil && config.Tracer != nil && *config.Tracer != "" {
 		if isJS := DefaultDirectory.IsJS(*config.Tracer); isJS {
-			return api.traceBlockParallel(ctx, block, statedb, config)
+			return api.traceBlockParallel(ctx, block, blockCtx, statedb, config)
 		}
 	}
 	// Native tracers have low overhead
@@ -658,7 +658,7 @@ func (api *API) traceBlock(ctx context.Context, block *types.Block, config *Trac
 	)
 	for i, tx := range txs {
 		// Generate the next state snapshot fast without tracing
-		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee(), blockCtx.ExchangeRates)
+		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee(), blockCtx.FeeCurrencyContext.ExchangeRates)
 		txctx := &Context{
 			BlockHash:   blockHash,
 			BlockNumber: block.Number(),
@@ -677,7 +677,7 @@ func (api *API) traceBlock(ctx context.Context, block *types.Block, config *Trac
 // traceBlockParallel is for tracers that have a high overhead (read JS tracers). One thread
 // runs along and executes txes without tracing enabled to generate their prestate.
 // Worker threads take the tasks and the prestate and trace them.
-func (api *API) traceBlockParallel(ctx context.Context, block *types.Block, statedb *state.StateDB, config *TraceConfig) ([]*txTraceResult, error) {
+func (api *API) traceBlockParallel(ctx context.Context, block *types.Block, blockCtx vm.BlockContext, statedb *state.StateDB, config *TraceConfig) ([]*txTraceResult, error) {
 	// Execute all the transaction contained within the block concurrently
 	var (
 		txs       = block.Transactions()
@@ -690,7 +690,7 @@ func (api *API) traceBlockParallel(ctx context.Context, block *types.Block, stat
 	if threads > len(txs) {
 		threads = len(txs)
 	}
-	exchangeRates := core.GetExchangeRates(block.Header(), api.backend.ChainConfig(), statedb)
+	exchangeRates := blockCtx.FeeCurrencyContext.ExchangeRates
 	jobs := make(chan *txTraceTask, threads)
 	for th := 0; th < threads; th++ {
 		pend.Add(1)
@@ -722,7 +722,6 @@ func (api *API) traceBlockParallel(ctx context.Context, block *types.Block, stat
 
 	// Feed the transactions into the tracers and return
 	var failed error
-	blockCtx := core.NewEVMBlockContext(block.Header(), api.chainContext(ctx), nil, api.backend.ChainConfig(), statedb)
 	evm := vm.NewEVM(blockCtx, statedb, api.backend.ChainConfig(), vm.Config{})
 
 txloop:
@@ -737,7 +736,7 @@ txloop:
 		}
 
 		// Generate the next state snapshot fast without tracing
-		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee(), blockCtx.ExchangeRates)
+		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee(), blockCtx.FeeCurrencyContext.ExchangeRates)
 		statedb.SetTxContext(tx.Hash(), i)
 		if _, err := core.ApplyMessage(evm, msg, nil); err != nil {
 			failed = err
@@ -821,7 +820,7 @@ func (api *API) standardTraceBlockToFile(ctx context.Context, block *types.Block
 	}
 	for i, tx := range block.Transactions() {
 		// Prepare the transaction for un-traced execution
-		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee(), vmctx.ExchangeRates)
+		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee(), vmctx.FeeCurrencyContext.ExchangeRates)
 		if txHash != (common.Hash{}) && tx.Hash() != txHash {
 			// Process the tx to update state, but don't trace it.
 			_, err := core.ApplyMessage(evm, msg, nil)
@@ -935,7 +934,7 @@ func (api *API) TraceTransaction(ctx context.Context, hash common.Hash, config *
 		return nil, err
 	}
 	defer release()
-	exchangeRates := core.GetExchangeRates(block.Header(), api.backend.ChainConfig(), statedb)
+	exchangeRates := vmctx.FeeCurrencyContext.ExchangeRates
 	msg, err := core.TransactionToMessage(tx, types.MakeSigner(api.backend.ChainConfig(), block.Number(), block.Time()), block.BaseFee(), exchangeRates)
 	if err != nil {
 		return nil, err
@@ -1002,8 +1001,9 @@ func (api *API) TraceCall(ctx context.Context, args ethapi.TransactionArgs, bloc
 		reexec = *config.Reexec
 	}
 
+	var blockContext vm.BlockContext
 	if config != nil && config.TxIndex != nil {
-		_, _, statedb, release, err = api.backend.StateAtTransaction(ctx, block, int(*config.TxIndex), reexec)
+		_, blockContext, statedb, release, err = api.backend.StateAtTransaction(ctx, block, int(*config.TxIndex), reexec)
 	} else {
 		statedb, release, err = api.backend.StateAtBlock(ctx, block, reexec, nil, true, false)
 	}
@@ -1012,11 +1012,12 @@ func (api *API) TraceCall(ctx context.Context, args ethapi.TransactionArgs, bloc
 	}
 	defer release()
 
-	h := block.Header()
-	blockContext := core.NewEVMBlockContext(h, api.chainContext(ctx), nil, api.backend.ChainConfig(), statedb)
-	// Apply the customization rules if required.
-	if config != nil {
-		if config.BlockOverrides != nil && config.BlockOverrides.Number != nil && config.BlockOverrides.Number.ToInt().Uint64() == h.Number.Uint64()+1 {
+	// If we don't have a blockContext from StateAtTransaction, create one now
+	// after potentially modifying the header for block overrides.
+	if config == nil || config.TxIndex == nil {
+		h := block.Header()
+		// Apply the header modifications if needed BEFORE creating the blockContext
+		if config != nil && config.BlockOverrides != nil && config.BlockOverrides.Number != nil && config.BlockOverrides.Number.ToInt().Uint64() == h.Number.Uint64()+1 {
 			// Overriding the block number to n+1 is a common way for wallets to
 			// simulate transactions, however without the following fix, a contract
 			// can assert it is being simulated by checking if blockhash(n) == 0x0 and
@@ -1027,6 +1028,11 @@ func (api *API) TraceCall(ctx context.Context, args ethapi.TransactionArgs, bloc
 			h.ParentHash = h.Hash()
 			h.Number.Add(h.Number, big.NewInt(1))
 		}
+		blockContext = core.NewEVMBlockContext(h, api.chainContext(ctx), nil, api.backend.ChainConfig(), statedb)
+	}
+
+	// Apply the remaining block overrides
+	if config != nil {
 		if err := config.BlockOverrides.Apply(&blockContext); err != nil {
 			return nil, err
 		}
@@ -1042,7 +1048,7 @@ func (api *API) TraceCall(ctx context.Context, args ethapi.TransactionArgs, bloc
 		return nil, err
 	}
 	var (
-		msg         = args.ToMessage(blockContext.BaseFee, true, blockContext.ExchangeRates)
+		msg         = args.ToMessage(blockContext.BaseFee, true, blockContext.FeeCurrencyContext.ExchangeRates)
 		tx          = args.ToTransaction(types.DynamicFeeTxType)
 		traceConfig *TraceConfig
 	)

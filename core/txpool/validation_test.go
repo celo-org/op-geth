@@ -47,17 +47,16 @@ func TestValidateTransactionEIP2681(t *testing.T) {
 
 	// Create validation options
 	opts := &CeloValidationOptions{
-		Config: params.TestChainConfig,
-		// <<<<<<< HEAD
-		// 		AcceptSet:       0xFF, // Accept all transaction types
-		// ||||||| parent of 4acb9a755 (txpool: Validations for celo txs in txpool (#31))
-		// 		AcceptSet:       1 << types.LegacyTxType, // Accept all transaction types
-		// =======
-		AcceptSet: NewAcceptSet(types.LegacyTxType), // Accept all transaction types
-		// >>>>>>> 4acb9a755 (txpool: Validations for celo txs in txpool (#31))
+		Config:       params.TestChainConfig,
+		AcceptSet:    NewAcceptSet(types.LegacyTxType), // Accept all transaction types
 		MaxSize:      32 * 1024,
 		MaxBlobCount: 6,
 		MinTip:       big.NewInt(0),
+	}
+
+	// Create simple FeeCurrencyContext for testing
+	currencyCtx := common.FeeCurrencyContext{
+		ExchangeRates: make(common.ExchangeRates),
 	}
 
 	tests := []struct {
@@ -85,7 +84,7 @@ func TestValidateTransactionEIP2681(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tx := createTestTransaction(key, tt.nonce)
-			err := ValidateTransaction(tx, head, signer, opts)
+			err = ValidateTransaction(tx, head, signer, opts, currencyCtx)
 
 			if tt.wantErr == nil {
 				if err != nil {
