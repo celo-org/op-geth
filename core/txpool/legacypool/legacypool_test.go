@@ -2004,7 +2004,7 @@ func TestDualHeapEviction(t *testing.T) {
 
 	add(false)
 	for baseFee = 0; baseFee <= 1000; baseFee += 100 {
-		pool.priced.SetBaseFeeAndRates(big.NewInt(int64(baseFee)), nil)
+		pool.priced.SetBaseFeeAndRates(uint256.NewInt(uint64(baseFee)), nil)
 		add(true)
 		check(highCap, "fee cap")
 		add(false)
