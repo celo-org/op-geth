@@ -582,11 +582,7 @@ func (pool *LegacyPool) Pending(filter txpool.PendingFilter) map[common.Address]
 				if filter.MinTip != nil {
 					// Get base fee from pool's price tracking for multi-currency support
 					baseFee := pool.priced.urgent.GetNativeBaseFee()
-					var baseFeeU256 *uint256.Int
-					if baseFee != nil {
-						baseFeeU256 = uint256.MustFromBig(baseFee)
-					}
-					if tx.EffectiveGasTipIntCmp(filter.MinTip, baseFeeU256) < 0 {
+					if tx.EffectiveGasTipIntCmp(filter.MinTip, baseFee) < 0 {
 						txs = txs[:i]
 						break
 					}
@@ -1387,7 +1383,7 @@ func (pool *LegacyPool) runReorg(done chan struct{}, reset *txpoolResetRequest, 
 		if reset.newHead != nil {
 			if pool.chainconfig.IsLondon(new(big.Int).Add(reset.newHead.Number, big.NewInt(1))) {
 				pendingBaseFee := eip1559.CalcBaseFee(pool.chainconfig, reset.newHead, reset.newHead.Time+1)
-				pool.priced.SetBaseFeeAndRates(pendingBaseFee, pool.currentRates)
+				pool.priced.SetBaseFeeAndRates(uint256.MustFromBig(pendingBaseFee), pool.currentRates)
 			} else {
 				pool.priced.Reheap()
 			}
