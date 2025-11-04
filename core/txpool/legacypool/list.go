@@ -738,11 +738,7 @@ func (l *pricedList) Reheap() {
 
 // SetBaseFeeAndRates updates the base fee and triggers a re-heap. Note that Removed is not
 // necessary to call right before SetBaseFee when processing a new block.
-func (l *pricedList) SetBaseFeeAndRates(baseFee *big.Int, rates common.ExchangeRates) {
-	base := new(uint256.Int)
-	if baseFee != nil {
-		base.SetFromBig(baseFee)
-	}
+func (l *pricedList) SetBaseFeeAndRates(baseFee *uint256.Int, rates common.ExchangeRates) {
 	l.urgent.ratesAndFees = exchange.NewRatesAndFees(rates, baseFee)
 	l.floating.ratesAndFees = exchange.NewRatesAndFees(rates, nil)
 	l.Reheap()
