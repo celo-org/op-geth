@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/holiman/uint256"
 )
 
 var (
@@ -111,12 +112,12 @@ func CompareValue(exchangeRates common.ExchangeRates, val1 *big.Int, feeCurrency
 type RatesAndFees struct {
 	Rates common.ExchangeRates
 
-	nativeBaseFee    *big.Int
+	nativeBaseFee    *uint256.Int
 	currencyBaseFees map[common.Address]*big.Int
 }
 
 // NewRatesAndFees creates a new empty RatesAndFees object.
-func NewRatesAndFees(rates common.ExchangeRates, nativeBaseFee *big.Int) *RatesAndFees {
+func NewRatesAndFees(rates common.ExchangeRates, nativeBaseFee *uint256.Int) *RatesAndFees {
 	// While it could be made so that currency basefees are calculated on demand,
 	// the low amount of these (usually N < 20)
 	return &RatesAndFees{
@@ -132,16 +133,19 @@ func (rf *RatesAndFees) HasBaseFee() bool {
 }
 
 // GetNativeBaseFee returns the basefee in celo currency.
-func (rf *RatesAndFees) GetNativeBaseFee() *big.Int {
+func (rf *RatesAndFees) GetNativeBaseFee() *uint256.Int {
 	return rf.nativeBaseFee
 }
 
 // GetBaseFeeIn returns the basefee expressed in the specified currency. Returns nil
 // if the currency is not allowlisted.
 func (rf *RatesAndFees) GetBaseFeeIn(currency *common.Address) *big.Int {
-	// If native currency is being requested, return it
+	// If native currency is being requested, convert to big.Int and return it
 	if currency == nil {
-		return rf.nativeBaseFee
+		if rf.nativeBaseFee == nil {
+			return nil
+		}
+		return rf.nativeBaseFee.ToBig()
 	}
 	// If a non-native currency is being requested, but it is nil,
 	// it means there is no baseFee in this context. Return nil as well.
@@ -153,8 +157,8 @@ func (rf *RatesAndFees) GetBaseFeeIn(currency *common.Address) *big.Int {
 	if ok {
 		return baseFee
 	}
-	// Not found, calculate
-	calculatedBaseFee, err := ConvertCeloToCurrency(rf.Rates, currency, rf.nativeBaseFee)
+	// Not found, calculate (convert to big.Int for the calculation)
+	calculatedBaseFee, err := ConvertCeloToCurrency(rf.Rates, currency, rf.nativeBaseFee.ToBig())
 	if err != nil {
 		// Should never happen: error lvl log line
 		log.Error("BaseFee requested for unregistered currency",
