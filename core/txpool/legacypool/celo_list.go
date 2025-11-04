@@ -2,7 +2,6 @@ package legacypool
 
 import (
 	"math"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -119,7 +118,7 @@ func (l *list) setCapsTo(caps map[common.Address]*uint256.Int) {
 }
 
 // GetNativeBaseFee returns the base fee for this priceHeap
-func (h *priceHeap) GetNativeBaseFee() *big.Int {
+func (h *priceHeap) GetNativeBaseFee() *uint256.Int {
 	if h.ratesAndFees == nil {
 		return nil
 	}

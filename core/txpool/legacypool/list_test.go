@@ -25,6 +25,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/exchange"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/holiman/uint256"
 )
 
 // Tests that transactions can be added to strict lists and list contents and
@@ -88,7 +89,7 @@ func TestPriceHeapCmp(t *testing.T) {
 
 	// now set the basefee on the heap
 	for _, basefee := range []uint64{0, 1, 2, 3} {
-		ph.ratesAndFees = exchange.NewRatesAndFees(nil, new(big.Int).SetUint64(basefee))
+		ph.ratesAndFees = exchange.NewRatesAndFees(nil, uint256.NewInt(basefee))
 
 		for i := 0; i < len(txs); i++ {
 			for j := 0; j < len(txs); j++ {
