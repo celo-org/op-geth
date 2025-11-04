@@ -4107,3 +4107,28 @@ func (b configTimeBackend) HeaderByNumber(_ context.Context, n rpc.BlockNumber) 
 func (b configTimeBackend) CurrentHeader() *types.Header {
 	return &types.Header{Time: b.time}
 }
+
+// Celo-specific methods not implemented but required to satisfy the CeloBackend interface
+
+func (b configTimeBackend) GetFeeBalance(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash, account common.Address, feeCurrency *common.Address) (*big.Int, error) {
+	return nil, errCeloNotImplemented
+}
+
+func (b configTimeBackend) GetExchangeRates(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash) (common.ExchangeRates, error) {
+	var er common.ExchangeRates
+	return er, nil
+}
+
+func (b configTimeBackend) ConvertToCurrency(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash, value *big.Int, feeCurrency *common.Address) (*big.Int, error) {
+	if feeCurrency == nil {
+		return value, nil
+	}
+	return nil, errCeloNotImplemented
+}
+
+func (b configTimeBackend) ConvertToCelo(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash, value *big.Int, feeCurrency *common.Address) (*big.Int, error) {
+	if feeCurrency == nil {
+		return value, nil
+	}
+	return nil, errCeloNotImplemented
+}
