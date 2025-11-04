@@ -311,6 +311,7 @@ func New(config Config, chain BlockChain) *LegacyPool {
 		initDoneCh:      make(chan struct{}),
 	}
 	pool.priced = newPricedList(pool.all)
+	pool.queue.pool = pool // Celo addition
 
 	// OP Stack diff
 	pool.queue.withRollupCostFnProvider(pool)
@@ -934,40 +935,8 @@ func (pool *LegacyPool) enqueueTx(hash common.Hash, tx *types.Transaction, addAl
 	if err != nil {
 		return false, err
 	}
-<<<<<<< HEAD
 	if replaced != nil {
 		pool.removeTx(*replaced, true, true)
-||||||| parent of 39f2bd509 (txpool: Patch txpool core/list for managing multi currencies (#43) (#55))
-	inserted, old := pool.queue[from].Add(tx, pool.config.PriceBump)
-	if !inserted {
-		// An older transaction was better, discard this
-		queuedDiscardMeter.Mark(1)
-		return false, txpool.ErrReplaceUnderpriced
-	}
-	// Discard any previous transaction and mark this
-	if old != nil {
-		pool.all.Remove(old.Hash())
-		pool.priced.Removed(1)
-		queuedReplaceMeter.Mark(1)
-	} else {
-		// Nothing was replaced, bump the queued counter
-		queuedGauge.Inc(1)
-=======
-	inserted, old := pool.queue[from].Add(tx, pool.config.PriceBump, pool.currentRates)
-	if !inserted {
-		// An older transaction was better, discard this
-		queuedDiscardMeter.Mark(1)
-		return false, txpool.ErrReplaceUnderpriced
-	}
-	// Discard any previous transaction and mark this
-	if old != nil {
-		pool.all.Remove(old.Hash())
-		pool.priced.Removed(1)
-		queuedReplaceMeter.Mark(1)
-	} else {
-		// Nothing was replaced, bump the queued counter
-		queuedGauge.Inc(1)
->>>>>>> 39f2bd509 (txpool: Patch txpool core/list for managing multi currencies (#43) (#55))
 	}
 	// If the transaction isn't in lookup set but it's expected to be there,
 	// show the error log.
@@ -1571,49 +1540,7 @@ func (pool *LegacyPool) resetRollupCostFn(ts uint64, statedb *state.StateDB) {
 // invalidated transactions (low nonce, low balance) are deleted.
 func (pool *LegacyPool) promoteExecutables(accounts []common.Address) []*types.Transaction {
 	gasLimit := txpool.EffectiveGasLimit(pool.chainconfig, pool.currentHead.Load().GasLimit, pool.config.EffectiveGasCeil)
-<<<<<<< HEAD
 	promotable, dropped, removedAddresses := pool.queue.promoteExecutables(accounts, gasLimit, pool.currentState, pool.pendingNonces)
-||||||| parent of 39f2bd509 (txpool: Patch txpool core/list for managing multi currencies (#43) (#55))
-	for _, addr := range accounts {
-		list := pool.queue[addr]
-		if list == nil {
-			continue // Just in case someone calls with a non existing account
-		}
-		// Drop all transactions that are deemed too old (low nonce)
-		forwards := list.Forward(pool.currentState.GetNonce(addr))
-		for _, tx := range forwards {
-			pool.all.Remove(tx.Hash())
-		}
-		log.Trace("Removed old queued transactions", "count", len(forwards))
-		balance := pool.currentState.GetBalance(addr)
-		// Drop all transactions that are too costly (low balance or out of gas)
-		drops, _ := list.Filter(balance, gasLimit)
-		for _, tx := range drops {
-			pool.all.Remove(tx.Hash())
-		}
-		log.Trace("Removed unpayable queued transactions", "count", len(drops))
-		queuedNofundsMeter.Mark(int64(len(drops)))
-=======
-	for _, addr := range accounts {
-		list := pool.queue[addr]
-		if list == nil {
-			continue // Just in case someone calls with a non existing account
-		}
-		// Drop all transactions that are deemed too old (low nonce)
-		forwards := list.Forward(pool.currentState.GetNonce(addr))
-		for _, tx := range forwards {
-			pool.all.Remove(tx.Hash())
-		}
-		log.Trace("Removed old queued transactions", "count", len(forwards))
-
-		// Drop all transactions that are too costly (low balance or out of gas)
-		drops, _ := pool.filter(list, addr, gasLimit)
-		for _, tx := range drops {
-			pool.all.Remove(tx.Hash())
-		}
-		log.Trace("Removed unpayable queued transactions", "count", len(drops))
-		queuedNofundsMeter.Mark(int64(len(drops)))
->>>>>>> 39f2bd509 (txpool: Patch txpool core/list for managing multi currencies (#43) (#55))
 
 	// promote all promotable transactions
 	promoted := make([]*types.Transaction, 0, len(promotable))
@@ -2089,6 +2016,7 @@ func (pool *LegacyPool) Clear() {
 	pool.priced.Reheap()
 	pool.pending = make(map[common.Address]*list)
 	pool.queue = newQueue(pool.config, pool.signer)
+	pool.queue.pool = pool // Celo addition
 	pool.pendingNonces = newNoncer(pool.currentState)
 }
 

@@ -392,24 +392,23 @@ func (l *list) Add(tx *types.Transaction, priceBump uint64, rates common.Exchang
 	}
 
 	l.txCosts[tx.Hash()] = cost // OP-Stack addition
-<<<<<<< HEAD
-	total, overflow := new(uint256.Int).AddOverflow(l.totalcost, cost)
+	total, overflow := new(uint256.Int).AddOverflow(feeCurrencyTc, feeCurrencyCost)
 	if overflow {
 		return false, nil
 	}
-	l.totalcost = total
+	feeCurrencyTc.Set(total)
+
+	total, overflow = new(uint256.Int).AddOverflow(nativeTc, cost)
+	if overflow {
+		return false, nil
+	}
+	nativeTc.Set(total)
 
 	// Old is being replaced, subtract old cost
 	if old != nil {
 		l.subTotalCost([]*types.Transaction{old})
 	}
 
-||||||| parent of 39f2bd509 (txpool: Patch txpool core/list for managing multi currencies (#43) (#55))
-	l.totalcost.Add(l.totalcost, cost)
-=======
-	feeCurrencyTc.Add(feeCurrencyTc, feeCurrencyCost)
-	nativeTc.Add(nativeTc, cost)
->>>>>>> 39f2bd509 (txpool: Patch txpool core/list for managing multi currencies (#43) (#55))
 	// Otherwise overwrite the old transaction with the current one
 	l.txs.Put(tx)
 	l.updateCostCapFor(tx.FeeCurrency(), feeCurrencyCost)
