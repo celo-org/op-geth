@@ -25,23 +25,23 @@ const (
 
 // Attribute keys
 const (
-	AttrMethod          = "rpc.method"
-	AttrTxHash          = "tx.hash"
-	AttrTxFrom          = "tx.from"
-	AttrTxTo            = "tx.to"
-	AttrTxGas           = "tx.gas"
-	AttrTxGasPrice      = "tx.gasPrice"
-	AttrTxValue         = "tx.value"
-	AttrBlockNumber     = "block.number"
-	AttrBlockHash       = "block.hash"
-	AttrPayloadID       = "payload.id"
-	AttrEngineMethod    = "engine.method"
-	AttrBackendURL      = "backend.url"
-	AttrErrorCode       = "error.code"
-	AttrErrorMessage    = "error.message"
-	AttrRequestID       = "request.id"
-	AttrUserAgent       = "http.user_agent"
-	AttrRemoteAddr      = "http.remote_addr"
+	AttrMethod       = "rpc.method"
+	AttrTxHash       = "tx.hash"
+	AttrTxFrom       = "tx.from"
+	AttrTxTo         = "tx.to"
+	AttrTxGas        = "tx.gas"
+	AttrTxGasPrice   = "tx.gasPrice"
+	AttrTxValue      = "tx.value"
+	AttrBlockNumber  = "block.number"
+	AttrBlockHash    = "block.hash"
+	AttrPayloadID    = "payload.id"
+	AttrEngineMethod = "engine.method"
+	AttrBackendURL   = "backend.url"
+	AttrErrorCode    = "error.code"
+	AttrErrorMessage = "error.message"
+	AttrRequestID    = "request.id"
+	AttrUserAgent    = "http.user_agent"
+	AttrRemoteAddr   = "http.remote_addr"
 )
 
 // StartRPCSpan starts a span for an RPC request
@@ -104,11 +104,11 @@ func AddTransactionAttributes(span oteltrace.Span, txHash, from, to string, gas 
 	if !IsEnabled() {
 		return
 	}
-	
+
 	attrs := []attribute.KeyValue{
 		attribute.String(AttrTxHash, txHash),
 	}
-	
+
 	if from != "" {
 		attrs = append(attrs, attribute.String(AttrTxFrom, from))
 	}
@@ -124,7 +124,7 @@ func AddTransactionAttributes(span oteltrace.Span, txHash, from, to string, gas 
 	if value != "" {
 		attrs = append(attrs, attribute.String(AttrTxValue, value))
 	}
-	
+
 	span.SetAttributes(attrs...)
 }
 
@@ -133,7 +133,7 @@ func AddBlockAttributes(span oteltrace.Span, blockNumber uint64, blockHash strin
 	if !IsEnabled() {
 		return
 	}
-	
+
 	attrs := []attribute.KeyValue{}
 	if blockNumber > 0 {
 		attrs = append(attrs, attribute.Int64(AttrBlockNumber, int64(blockNumber)))
@@ -141,7 +141,7 @@ func AddBlockAttributes(span oteltrace.Span, blockNumber uint64, blockHash strin
 	if blockHash != "" {
 		attrs = append(attrs, attribute.String(AttrBlockHash, blockHash))
 	}
-	
+
 	span.SetAttributes(attrs...)
 }
 
@@ -150,7 +150,7 @@ func AddHTTPAttributes(span oteltrace.Span, req *http.Request) {
 	if !IsEnabled() || req == nil {
 		return
 	}
-	
+
 	attrs := []attribute.KeyValue{}
 	if req.UserAgent() != "" {
 		attrs = append(attrs, attribute.String(AttrUserAgent, req.UserAgent()))
@@ -158,7 +158,7 @@ func AddHTTPAttributes(span oteltrace.Span, req *http.Request) {
 	if req.RemoteAddr != "" {
 		attrs = append(attrs, attribute.String(AttrRemoteAddr, req.RemoteAddr))
 	}
-	
+
 	span.SetAttributes(attrs...)
 }
 
@@ -167,7 +167,7 @@ func SetSpanError(span oteltrace.Span, err error) {
 	if !IsEnabled() || err == nil {
 		return
 	}
-	
+
 	span.SetStatus(codes.Error, err.Error())
 	span.SetAttributes(
 		attribute.String(AttrErrorMessage, err.Error()),
@@ -179,7 +179,7 @@ func SetSpanErrorWithCode(span oteltrace.Span, code int, message string) {
 	if !IsEnabled() {
 		return
 	}
-	
+
 	span.SetStatus(codes.Error, message)
 	span.SetAttributes(
 		attribute.Int(AttrErrorCode, code),
@@ -205,7 +205,7 @@ func RecordEvent(span oteltrace.Span, name string, attrs ...attribute.KeyValue) 
 	if !IsEnabled() {
 		return
 	}
-	
+
 	span.AddEvent(name, oteltrace.WithAttributes(attrs...))
 }
 
@@ -214,6 +214,6 @@ func SetSpanAttributes(span oteltrace.Span, attrs ...attribute.KeyValue) {
 	if !IsEnabled() {
 		return
 	}
-	
+
 	span.SetAttributes(attrs...)
 }

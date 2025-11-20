@@ -19,7 +19,7 @@ package rpc
 import (
 	"context"
 	"net/http"
-	
+
 	"github.com/ethereum/go-ethereum/tracing"
 )
 

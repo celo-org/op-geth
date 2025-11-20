@@ -43,13 +43,13 @@ func DefaultConfig() *Config {
 	return &Config{
 		Enabled:                  false,
 		Endpoint:                 "",
-		ServiceName:             "geth",
-		ServiceVersion:          "",
-		Headers:                 make(map[string]string),
-		Timeout:                 10 * time.Second,
-		SampleRate:              1.0,
-		EnableRPCTracing:        true,
-		EnableEngineAPITracing:  true,
+		ServiceName:              "geth",
+		ServiceVersion:           "",
+		Headers:                  make(map[string]string),
+		Timeout:                  10 * time.Second,
+		SampleRate:               1.0,
+		EnableRPCTracing:         true,
+		EnableEngineAPITracing:   true,
 		EnableTransactionTracing: false,
 	}
 }
