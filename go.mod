@@ -1,6 +1,6 @@
 module github.com/ethereum/go-ethereum
 
-go 1.22.0
+go 1.23.0
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.2.0
@@ -14,7 +14,8 @@ require (
 	github.com/cespare/cp v0.1.0
 	github.com/cloudflare/cloudflare-go v0.114.0
 	github.com/cockroachdb/pebble v1.1.2
-	github.com/consensys/gnark-crypto v0.14.0
+	github.com/consensys/gnark-crypto v0.16.0
+	github.com/crate-crypto/go-eth-kzg v1.4.0
 	github.com/crate-crypto/go-ipa v0.0.0-20240724233137-53bbb0ceb27a
 	github.com/crate-crypto/go-kzg-4844 v1.1.0
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
@@ -22,7 +23,7 @@ require (
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.1
 	github.com/donovanhide/eventsource v0.0.0-20210830082556-c59027999da0
 	github.com/dop251/goja v0.0.0-20230806174421-c933cf95e127
-	github.com/ethereum/c-kzg-4844 v1.0.0
+	github.com/ethereum/c-kzg-4844/v2 v2.1.5
 	github.com/ethereum/go-verkle v0.2.2
 	github.com/fatih/color v1.16.0
 	github.com/ferranbt/fastssz v0.1.2
@@ -55,13 +56,13 @@ require (
 	github.com/peterh/liner v1.1.1-0.20190123174540-a2c9a5303de7
 	github.com/pion/stun/v2 v2.0.0
 	github.com/protolambda/bls12-381-util v0.1.0
-	github.com/protolambda/zrnt v0.32.2
+	github.com/protolambda/zrnt v0.34.1
 	github.com/protolambda/ztyp v0.2.2
 	github.com/rs/cors v1.7.0
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible
 	github.com/status-im/keycard-go v0.2.0
 	github.com/stretchr/testify v1.10.0
-	github.com/supranational/blst v0.3.14
+	github.com/supranational/blst v0.3.15
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 	github.com/urfave/cli/v2 v2.27.5
 	go.opentelemetry.io/otel v1.24.0
@@ -97,7 +98,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.23.2 // indirect
 	github.com/aws/smithy-go v1.15.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/bits-and-blooms/bitset v1.17.0 // indirect
+	github.com/bits-and-blooms/bitset v1.20.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cockroachdb/errors v1.11.3 // indirect
@@ -105,7 +106,7 @@ require (
 	github.com/cockroachdb/logtags v0.0.0-20230118201751-21c54148d20b // indirect
 	github.com/cockroachdb/redact v1.1.5 // indirect
 	github.com/cockroachdb/tokenbucket v0.0.0-20230807174530-cc333fc44b06 // indirect
-	github.com/consensys/bavard v0.1.22 // indirect
+	github.com/consensys/bavard v0.1.27 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
 	github.com/deepmap/oapi-codegen v1.6.0 // indirect
 	github.com/dlclark/regexp2 v1.7.0 // indirect

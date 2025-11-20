@@ -63,7 +63,7 @@ var (
 		utils.NoUSBFlag, // deprecated
 		utils.USBFlag,
 		utils.SmartCardDaemonPathFlag,
-		utils.OverrideCancun,
+		utils.OverridePrague,
 		utils.OverrideVerkle,
 		utils.OverrideOptimismCanyon,
 		utils.OverrideOptimismEcotone,
