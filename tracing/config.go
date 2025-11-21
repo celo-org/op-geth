@@ -3,6 +3,8 @@ package tracing
 import (
 	"fmt"
 	"time"
+
+	"github.com/ethereum/go-ethereum/log"
 )
 
 // Config represents the tracing configuration
@@ -58,16 +60,23 @@ func DefaultConfig() *Config {
 func (c *Config) Validate() error {
 	if c.Enabled {
 		if c.Endpoint == "" {
+			log.Error("Tracing enabled but endpoint is missing")
 			return fmt.Errorf("tracing endpoint is required when tracing is enabled")
 		}
 		if c.ServiceName == "" {
+			log.Error("Tracing enabled but service name is missing")
 			return fmt.Errorf("service name is required when tracing is enabled")
 		}
 		if c.SampleRate < 0.0 || c.SampleRate > 1.0 {
+			log.Error("Invalid sample rate", "sample_rate", c.SampleRate)
 			return fmt.Errorf("sample rate must be between 0.0 and 1.0, got %f", c.SampleRate)
 		}
 		if c.Timeout <= 0 {
+			log.Error("Invalid timeout", "timeout", c.Timeout)
 			return fmt.Errorf("timeout must be positive, got %v", c.Timeout)
+		}
+		if c.SampleRate < 1.0 {
+			log.Debug("Tracing sample rate configured", "sample_rate", c.SampleRate)
 		}
 	}
 	return nil

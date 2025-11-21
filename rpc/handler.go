@@ -540,7 +540,19 @@ func (h *handler) handleCall(cp *callProc, msg *jsonrpcMessage) *jsonrpcMessage 
 	// Start tracing span for RPC call if enabled
 	var span oteltrace.Span
 	ctx := cp.ctx
-	if tracing.GetConfig().IsRPCTracingEnabled() {
+	
+	// Check if this is an Engine API method
+	isEngineAPI := strings.HasPrefix(msg.Method, "engine_")
+	
+	// Determine if tracing should be enabled for this method
+	shouldTrace := false
+	if isEngineAPI {
+		shouldTrace = tracing.GetConfig().IsEngineAPITracingEnabled()
+	} else {
+		shouldTrace = tracing.GetConfig().IsRPCTracingEnabled()
+	}
+	
+	if shouldTrace {
 		ctx, span = tracing.StartRPCSpan(ctx, msg.Method)
 		defer span.End()
 

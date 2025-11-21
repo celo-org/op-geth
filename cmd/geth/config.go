@@ -249,7 +249,7 @@ func makeFullNode(ctx *cli.Context) *node.Node {
 		if err := tracing.Initialize(tracingCfg); err != nil {
 			utils.Fatalf("Failed to initialize tracing: %v", err)
 		}
-		log.Info("OpenTelemetry tracing enabled", "endpoint", tracingCfg.Endpoint, "service", tracingCfg.ServiceName)
+		// Tracing initialization details are logged by the tracing package
 	}
 
 	// Create gauge with geth system and build information

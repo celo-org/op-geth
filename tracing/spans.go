@@ -56,7 +56,11 @@ func StartRPCSpan(ctx context.Context, method string) (context.Context, oteltrac
 }
 
 // StartSendRawTransactionSpan starts a span for sendRawTransaction
+// Returns a no-op span if transaction tracing is not enabled
 func StartSendRawTransactionSpan(ctx context.Context, txHash string) (context.Context, oteltrace.Span) {
+	if !GetConfig().IsTransactionTracingEnabled() {
+		return ctx, oteltrace.SpanFromContext(ctx)
+	}
 	ctx, span := StartSpan(ctx, SpanNameSendRawTx,
 		oteltrace.WithSpanKind(oteltrace.SpanKindServer),
 		oteltrace.WithAttributes(
@@ -67,7 +71,11 @@ func StartSendRawTransactionSpan(ctx context.Context, txHash string) (context.Co
 }
 
 // StartTxForwardSpan starts a span for transaction forwarding
+// Returns a no-op span if transaction tracing is not enabled
 func StartTxForwardSpan(ctx context.Context, txHash string, backendURL string) (context.Context, oteltrace.Span) {
+	if !GetConfig().IsTransactionTracingEnabled() {
+		return ctx, oteltrace.SpanFromContext(ctx)
+	}
 	ctx, span := StartSpan(ctx, SpanNameTxForward,
 		oteltrace.WithSpanKind(oteltrace.SpanKindClient),
 		oteltrace.WithAttributes(
@@ -90,7 +98,11 @@ func StartEngineAPISpan(ctx context.Context, method string) (context.Context, ot
 }
 
 // StartTxPoolSpan starts a span for transaction pool operations
+// Returns a no-op span if transaction tracing is not enabled
 func StartTxPoolSpan(ctx context.Context, txHash string) (context.Context, oteltrace.Span) {
+	if !GetConfig().IsTransactionTracingEnabled() {
+		return ctx, oteltrace.SpanFromContext(ctx)
+	}
 	ctx, span := StartSpan(ctx, SpanNameTxPoolAdd,
 		oteltrace.WithAttributes(
 			attribute.String(AttrTxHash, txHash),

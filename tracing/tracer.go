@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/ethereum/go-ethereum/log"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
@@ -40,6 +41,7 @@ func Initialize(cfg *Config) error {
 		// Set up a no-op tracer
 		otel.SetTracerProvider(oteltrace.NewNoopTracerProvider())
 		tracer = otel.Tracer("geth-noop")
+		log.Debug("OpenTelemetry tracing disabled, using no-op tracer")
 		return nil
 	}
 
@@ -99,11 +101,13 @@ func initializeTracer(cfg *Config) error {
 	// Use insecure connection for HTTP endpoints
 	if useInsecure {
 		opts = append(opts, otlptracehttp.WithInsecure())
+		log.Debug("Using insecure HTTP connection for OTLP exporter", "endpoint", endpoint)
 	}
 
 	// Create OTLP HTTP exporter
 	exporter, err := otlptracehttp.New(context.Background(), opts...)
 	if err != nil {
+		log.Error("Failed to create OTLP exporter", "endpoint", endpoint, "err", err)
 		return fmt.Errorf("failed to create OTLP exporter: %w", err)
 	}
 
@@ -119,6 +123,17 @@ func initializeTracer(cfg *Config) error {
 
 	// Get tracer
 	tracer = otel.Tracer("geth")
+
+	log.Info("OpenTelemetry tracing initialized",
+		"endpoint", endpoint,
+		"service", cfg.ServiceName,
+		"version", cfg.ServiceVersion,
+		"sample_rate", cfg.SampleRate,
+		"timeout", cfg.Timeout,
+		"rpc_tracing", cfg.EnableRPCTracing,
+		"engine_api_tracing", cfg.EnableEngineAPITracing,
+		"transaction_tracing", cfg.EnableTransactionTracing,
+	)
 
 	return nil
 }
@@ -161,8 +176,13 @@ func Shutdown(ctx context.Context) error {
 		return nil
 	}
 
+	log.Debug("Shutting down OpenTelemetry tracer")
 	if tp, ok := otel.GetTracerProvider().(*trace.TracerProvider); ok {
-		return tp.Shutdown(ctx)
+		if err := tp.Shutdown(ctx); err != nil {
+			log.Error("Error shutting down tracer", "err", err)
+			return err
+		}
+		log.Info("OpenTelemetry tracer shut down successfully")
 	}
 	return nil
 }
@@ -175,19 +195,23 @@ func ExtractTraceContext() (*Config, error) {
 	if endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"); endpoint != "" {
 		cfg.Endpoint = endpoint
 		cfg.Enabled = true
+		log.Debug("Tracing enabled via OTEL_EXPORTER_OTLP_ENDPOINT", "endpoint", endpoint)
 	}
 
 	if serviceName := os.Getenv("OTEL_SERVICE_NAME"); serviceName != "" {
 		cfg.ServiceName = serviceName
+		log.Debug("Service name set from OTEL_SERVICE_NAME", "service", serviceName)
 	}
 
 	if serviceVersion := os.Getenv("OTEL_SERVICE_VERSION"); serviceVersion != "" {
 		cfg.ServiceVersion = serviceVersion
+		log.Debug("Service version set from OTEL_SERVICE_VERSION", "version", serviceVersion)
 	}
 
 	// Parse headers from OTEL_EXPORTER_OTLP_HEADERS
 	if headers := os.Getenv("OTEL_EXPORTER_OTLP_HEADERS"); headers != "" {
 		cfg.Headers = parseHeaders(headers)
+		log.Debug("OTLP headers configured from OTEL_EXPORTER_OTLP_HEADERS")
 	}
 
 	return cfg, nil
