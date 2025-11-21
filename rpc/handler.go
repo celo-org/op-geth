@@ -28,7 +28,11 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/otel/attribute"
+	oteltrace "go.opentelemetry.io/otel/trace"
+
 	"github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/tracing"
 )
 
 // handler handles JSON-RPC messages. There is one handler per connection. Note that
@@ -532,8 +536,38 @@ func (h *handler) handleCall(cp *callProc, msg *jsonrpcMessage) *jsonrpcMessage 
 	if err != nil {
 		return msg.errorResponse(&invalidParamsError{err.Error()})
 	}
+
+	// Start tracing span for RPC call if enabled
+	var span oteltrace.Span
+	ctx := cp.ctx
+	if tracing.GetConfig().IsRPCTracingEnabled() {
+		ctx, span = tracing.StartRPCSpan(ctx, msg.Method)
+		defer span.End()
+
+		// Add request ID attribute if available
+		if msg.ID != nil {
+			span.SetAttributes(attribute.String(tracing.AttrRequestID, string(msg.ID)))
+		}
+
+		// Add HTTP attributes from peer info if available
+		if peerInfo := PeerInfoFromContext(ctx); peerInfo.RemoteAddr != "" {
+			attrs := []attribute.KeyValue{
+				attribute.String(tracing.AttrRemoteAddr, peerInfo.RemoteAddr),
+			}
+			if peerInfo.HTTP.UserAgent != "" {
+				attrs = append(attrs, attribute.String(tracing.AttrUserAgent, peerInfo.HTTP.UserAgent))
+			}
+			span.SetAttributes(attrs...)
+		}
+	}
+
 	start := time.Now()
-	answer := h.runMethod(cp.ctx, msg, callb, args)
+	answer := h.runMethod(ctx, msg, callb, args)
+
+	// Set error status on span if call failed
+	if span != nil && answer.Error != nil {
+		tracing.SetSpanErrorWithCode(span, answer.Error.Code, answer.Error.Message)
+	}
 
 	// Collect the statistics for RPC calls if metrics is enabled.
 	// We only care about pure rpc call. Filter out subscription.
