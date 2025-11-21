@@ -73,6 +73,7 @@ var (
 		utils.OverrideOptimismIsthmus,
 		utils.OverrideOptimismJovian,
 		utils.OverrideOptimismInterop,
+		utils.OverrideOptimismCel2,
 		utils.EnablePersonal, // deprecated
 		utils.TxPoolLocalsFlag,
 		utils.TxPoolNoLocalsFlag,
@@ -132,6 +133,8 @@ var (
 		utils.MinerRecommitIntervalFlag,
 		utils.MinerPendingFeeRecipientFlag,
 		utils.MinerNewPayloadTimeoutFlag, // deprecated
+		utils.CeloFeeCurrencyDefault,
+		utils.CeloFeeCurrencyLimits,
 		utils.NATFlag,
 		utils.NoDiscoverFlag,
 		utils.DiscoveryV4Flag,
