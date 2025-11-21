@@ -3,7 +3,9 @@ package tracing
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
+	"strings"
 	"sync"
 
 	"go.opentelemetry.io/otel"
@@ -58,12 +60,49 @@ func initializeTracer(cfg *Config) error {
 		return fmt.Errorf("failed to create resource: %w", err)
 	}
 
-	// Create OTLP HTTP exporter
-	exporter, err := otlptracehttp.New(context.Background(),
-		otlptracehttp.WithEndpoint(cfg.Endpoint),
+	// Parse endpoint URL to determine scheme and extract host:port
+	endpoint := cfg.Endpoint
+	var useInsecure bool
+	
+	// If endpoint contains a scheme, parse it
+	if strings.Contains(endpoint, "://") {
+		parsedURL, err := url.Parse(endpoint)
+		if err != nil {
+			return fmt.Errorf("failed to parse endpoint URL: %w", err)
+		}
+		
+		// Determine if we should use insecure (HTTP) connection
+		useInsecure = parsedURL.Scheme == "http"
+		
+		// Extract host:port from URL (strip scheme and path)
+		endpoint = parsedURL.Host
+		if parsedURL.Port() == "" {
+			// Add default port if not specified
+			if parsedURL.Scheme == "https" {
+				endpoint += ":443"
+			} else {
+				endpoint += ":80"
+			}
+		}
+	} else {
+		// No scheme specified, default to HTTP (insecure)
+		useInsecure = true
+	}
+
+	// Build exporter options
+	opts := []otlptracehttp.Option{
+		otlptracehttp.WithEndpoint(endpoint),
 		otlptracehttp.WithHeaders(cfg.Headers),
 		otlptracehttp.WithTimeout(cfg.Timeout),
-	)
+	}
+	
+	// Use insecure connection for HTTP endpoints
+	if useInsecure {
+		opts = append(opts, otlptracehttp.WithInsecure())
+	}
+
+	// Create OTLP HTTP exporter
+	exporter, err := otlptracehttp.New(context.Background(), opts...)
 	if err != nil {
 		return fmt.Errorf("failed to create OTLP exporter: %w", err)
 	}
