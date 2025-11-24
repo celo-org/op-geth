@@ -4,8 +4,10 @@ import (
 	"context"
 	"net/http"
 
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
 	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
@@ -199,17 +201,47 @@ func SetSpanErrorWithCode(span oteltrace.Span, code int, message string) {
 	)
 }
 
-// InjectTraceContext injects trace context into HTTP headers (simplified)
+// InjectTraceContext injects trace context into HTTP headers for outgoing requests.
+// This propagates the current trace context so downstream services can link traces.
 func InjectTraceContext(ctx context.Context, req *http.Request) {
-	// Simplified implementation - would normally inject W3C trace context
-	// For now, just a no-op to allow building
+	if !IsEnabled() {
+		return
+	}
+	
+	// Get the global text map propagator (defaults to W3C TraceContext)
+	propagator := otel.GetTextMapPropagator()
+	if propagator == nil {
+		// Fallback to W3C TraceContext if no propagator is set
+		propagator = propagation.NewCompositeTextMapPropagator(
+			propagation.TraceContext{},
+			propagation.Baggage{},
+		)
+	}
+	
+	// Inject trace context into HTTP headers
+	propagator.Inject(ctx, propagation.HeaderCarrier(req.Header))
 }
 
-// ExtractTraceContextFromHeaders extracts trace context from HTTP headers (simplified)
+// ExtractTraceContextFromHeaders extracts trace context from HTTP headers for incoming requests.
+// This allows geth to link its traces with traces from upstream services (like proxies).
 func ExtractTraceContextFromHeaders(ctx context.Context, headers http.Header) context.Context {
-	// Simplified implementation - would normally extract W3C trace context
-	// For now, just return the original context
-	return ctx
+	if !IsEnabled() {
+		return ctx
+	}
+	
+	// Get the global text map propagator (defaults to W3C TraceContext)
+	propagator := otel.GetTextMapPropagator()
+	if propagator == nil {
+		// Fallback to W3C TraceContext if no propagator is set
+		propagator = propagation.NewCompositeTextMapPropagator(
+			propagation.TraceContext{},
+			propagation.Baggage{},
+		)
+	}
+	
+	// Extract trace context from HTTP headers
+	// This will extract traceparent, tracestate, and baggage headers
+	return propagator.Extract(ctx, propagation.HeaderCarrier(headers))
 }
 
 // RecordEvent records an event on a span

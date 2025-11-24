@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	oteltrace "go.opentelemetry.io/otel/trace"
@@ -120,6 +121,13 @@ func initializeTracer(cfg *Config) error {
 
 	// Set global tracer provider
 	otel.SetTracerProvider(tp)
+
+	// Set up W3C TraceContext propagator for trace context propagation
+	// This enables trace linking between services (e.g., proxy -> geth)
+	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
+		propagation.TraceContext{},
+		propagation.Baggage{},
+	))
 
 	// Get tracer
 	tracer = otel.Tracer("geth")
