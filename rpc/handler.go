@@ -561,13 +561,16 @@ func (h *handler) handleCall(cp *callProc, msg *jsonrpcMessage) *jsonrpcMessage 
 			span.SetAttributes(attribute.String(tracing.AttrRequestID, string(msg.ID)))
 		}
 
-		// Add HTTP attributes from peer info if available
+		// Add HTTP attributes from peer info if available (using OpenTelemetry semantic conventions)
 		if peerInfo := PeerInfoFromContext(ctx); peerInfo.RemoteAddr != "" {
 			attrs := []attribute.KeyValue{
-				attribute.String(tracing.AttrRemoteAddr, peerInfo.RemoteAddr),
+				attribute.String(tracing.AttrNetPeerIP, peerInfo.RemoteAddr),
 			}
 			if peerInfo.HTTP.UserAgent != "" {
-				attrs = append(attrs, attribute.String(tracing.AttrUserAgent, peerInfo.HTTP.UserAgent))
+				attrs = append(attrs, attribute.String(tracing.AttrHTTPUserAgent, peerInfo.HTTP.UserAgent))
+			}
+			if peerInfo.HTTP.Host != "" {
+				attrs = append(attrs, attribute.String(tracing.AttrNetHostName, peerInfo.HTTP.Host))
 			}
 			span.SetAttributes(attrs...)
 		}
