@@ -110,7 +110,9 @@
       "shanghaiTime": 0,
       "terminalTotalDifficulty": 0,
       "terminalTotalDifficultyPassed": true,
-      "cel2Time": 0
+      "cel2Time": 0,
+      "jovianTime": 0,
+      "optimism": {}
     },
     "difficulty": "0",
     "extraData": "0x",
