@@ -100,7 +100,7 @@ func (c *transfer) Run(input []byte, ctx *celoPrecompileContext) ([]byte, error)
 
 	// The mockEVM doesn't have a StateDB set up, so ctx.evm.StateDB is nil
 	// in the tests. We could add a mockStateDB to it to avoid this check.
-	if ctx.evm.StateDB != nil {
+	if ctx.evm.StateDB != nil && ctx.IsOptimismJovian {
 		// Warm the from and to addresses by adding them to the access list. We didn't
 		// do this when Celo launched, but it is more consistent with Ethereum, where
 		// all accessed addresses are always warmed.
