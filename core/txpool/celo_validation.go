@@ -69,7 +69,8 @@ func CeloValidateTransaction(tx *types.Transaction, head *types.Header,
 		return exchange.ErrUnregisteredFeeCurrency
 	}
 
-	if opts.Config.Celo != nil {
+	// Skip Celo base fee floor validation for Jovian and later, as OP's minBaseFee mechanism handles it.
+	if opts.Config.Celo != nil && !opts.Config.IsJovian(head.Time) {
 		baseFeeFloor, err := exchange.ConvertCeloToCurrency(currencyCtx.ExchangeRates, tx.FeeCurrency(), new(big.Int).SetUint64(opts.Config.Celo.EIP1559BaseFeeFloor))
 		if err != nil {
 			return err
