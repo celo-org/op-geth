@@ -88,6 +88,46 @@ func newCeloTx(t *testing.T) *Transaction {
 	})
 }
 
+// TestAccessListTxWrongChainId verifies that AccessListTx with a wrong chain ID
+// returns ErrInvalidChainId when calling Sender.
+// Regression test for https://github.com/celo-org/op-geth/issues/454
+func TestAccessListTxWrongChainId(t *testing.T) {
+	t.Parallel()
+
+	// Create a signer with CeloMainnetChainID
+	signerChainID := big.NewInt(params.CeloMainnetChainID)
+	cel2Time := uint64(1000)
+	chainConfig := *params.TestChainConfig
+	chainConfig.ChainID = signerChainID
+	chainConfig.Cel2Time = &cel2Time
+	signer := MakeSigner(&chainConfig, big.NewInt(1), cel2Time+1)
+
+	// Create an AccessListTx with a DIFFERENT chain ID
+	wrongChainID := big.NewInt(999)
+	signerKey, _ := crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
+	to := common.HexToAddress("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045")
+
+	txData := &AccessListTx{
+		ChainID:  wrongChainID,
+		Nonce:    10,
+		GasPrice: big.NewInt(1e9),
+		Gas:      500000,
+		To:       &to,
+		Value:    big.NewInt(1e18),
+		Data:     []byte{0x11, 0x22},
+	}
+
+	// Sign with a signer that uses the wrong chain ID (to create a valid signature for that chain)
+	wrongChainSigner := NewEIP2930Signer(wrongChainID)
+	signedTx, err := SignNewTx(signerKey, wrongChainSigner, txData)
+	require.NoError(t, err)
+
+	// Now try to recover sender using the correct chain ID signer
+	// This SHOULD fail with ErrInvalidChainId because tx.ChainId() != signerChainID
+	_, err = signer.Sender(signedTx)
+	require.ErrorIs(t, err, ErrInvalidChainId, "expected ErrInvalidChainId when tx chain ID doesn't match signer chain ID")
+}
+
 func randomAddress(t *testing.T) *common.Address {
 	addr := common.Address{}
 	_, err := rand.Read(addr[:])
