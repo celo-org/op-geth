@@ -235,7 +235,7 @@ func validateBlobSidecar(hashes []common.Hash, sidecar *types.BlobTxSidecar) err
 	// blobs themselves via KZG
 	for i := range sidecar.Blobs {
 		if err := kzg4844.VerifyBlobProof(&sidecar.Blobs[i], sidecar.Commitments[i], sidecar.Proofs[i]); err != nil {
-			return fmt.Errorf("invalid blob %d: %v", i, err)
+			return fmt.Errorf("%w: invalid blob proof: %v", ErrKZGVerificationError, err)
 		}
 	}
 	return nil

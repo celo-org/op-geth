@@ -56,4 +56,7 @@ var (
 	// input transaction of non-blob type when a blob transaction from this sender
 	// remains pending (and vice-versa).
 	ErrAlreadyReserved = errors.New("address already reserved")
+
+	// ErrKZGVerificationError is returned when a KZG proof was not verified correctly.
+	ErrKZGVerificationError = errors.New("KZG verification error")
 )
