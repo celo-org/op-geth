@@ -60,7 +60,6 @@ var mockEVM = &EVM{
 	TxContext:   vmTxCtx,
 }
 
-
 var mockPrecompileContext = NewContext(common.HexToAddress("1337"), mockEVM)
 
 func TestPrecompileTransfer(t *testing.T) {
