@@ -32,7 +32,8 @@ jobs:
       run: |
         failed=0; 
         while read commit; do
-        echo -n "commit $commit: "
+          git checkout $commit
+          echo -n "commit $commit: "
           if ! go build > output.log 2>&1; then
             failed=1
             echo "failed build"
