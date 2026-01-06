@@ -57,7 +57,6 @@ func (c Config) MarshalTOML() (interface{}, error) {
 		OverrideOsaka                             *uint64 `toml:",omitempty"`
 		OverrideVerkle                            *uint64 `toml:",omitempty"`
 		OverrideOptimismCanyon                    *uint64 `toml:",omitempty"`
-		OverrideOptimismCel2                      *uint64 `toml:",omitempty"`
 		OverrideOptimismEcotone                   *uint64 `toml:",omitempty"`
 		OverrideOptimismFjord                     *uint64 `toml:",omitempty"`
 		OverrideOptimismGranite                   *uint64 `toml:",omitempty"`
@@ -72,7 +71,7 @@ func (c Config) MarshalTOML() (interface{}, error) {
 		RollupHistoricalRPC                       string
 		RollupHistoricalRPCTimeout                time.Duration
 		RollupDisableTxPoolGossip                 bool
-		RollupNetrestrictTxPoolGossip             string
+		RollupTxPoolNetrestrict                   string `toml:",omitempty"`
 		RollupTxPoolTrustedPeersOnly              bool
 		RollupDisableTxPoolAdmission              bool
 		RollupHaltOnIncompatibleProtocolVersion   string
@@ -120,7 +119,6 @@ func (c Config) MarshalTOML() (interface{}, error) {
 	enc.OverrideOsaka = c.OverrideOsaka
 	enc.OverrideVerkle = c.OverrideVerkle
 	enc.OverrideOptimismCanyon = c.OverrideOptimismCanyon
-	enc.OverrideOptimismCel2 = c.OverrideOptimismCel2
 	enc.OverrideOptimismEcotone = c.OverrideOptimismEcotone
 	enc.OverrideOptimismFjord = c.OverrideOptimismFjord
 	enc.OverrideOptimismGranite = c.OverrideOptimismGranite
@@ -135,7 +133,7 @@ func (c Config) MarshalTOML() (interface{}, error) {
 	enc.RollupHistoricalRPC = c.RollupHistoricalRPC
 	enc.RollupHistoricalRPCTimeout = c.RollupHistoricalRPCTimeout
 	enc.RollupDisableTxPoolGossip = c.RollupDisableTxPoolGossip
-	enc.RollupNetrestrictTxPoolGossip = c.RollupTxPoolNetrestrict
+	enc.RollupTxPoolNetrestrict = c.RollupTxPoolNetrestrict
 	enc.RollupTxPoolTrustedPeersOnly = c.RollupTxPoolTrustedPeersOnly
 	enc.RollupDisableTxPoolAdmission = c.RollupDisableTxPoolAdmission
 	enc.RollupHaltOnIncompatibleProtocolVersion = c.RollupHaltOnIncompatibleProtocolVersion
@@ -187,7 +185,6 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 		OverrideOsaka                             *uint64 `toml:",omitempty"`
 		OverrideVerkle                            *uint64 `toml:",omitempty"`
 		OverrideOptimismCanyon                    *uint64 `toml:",omitempty"`
-		OverrideOptimismCel2                      *uint64 `toml:",omitempty"`
 		OverrideOptimismEcotone                   *uint64 `toml:",omitempty"`
 		OverrideOptimismFjord                     *uint64 `toml:",omitempty"`
 		OverrideOptimismGranite                   *uint64 `toml:",omitempty"`
@@ -202,7 +199,7 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 		RollupHistoricalRPC                       *string
 		RollupHistoricalRPCTimeout                *time.Duration
 		RollupDisableTxPoolGossip                 *bool
-		RollupNetrestrictTxPoolGossip             *string
+		RollupTxPoolNetrestrict                   *string `toml:",omitempty"`
 		RollupTxPoolTrustedPeersOnly              *bool
 		RollupDisableTxPoolAdmission              *bool
 		RollupHaltOnIncompatibleProtocolVersion   *string
@@ -333,9 +330,6 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	if dec.OverrideOptimismCanyon != nil {
 		c.OverrideOptimismCanyon = dec.OverrideOptimismCanyon
 	}
-	if dec.OverrideOptimismCel2 != nil {
-		c.OverrideOptimismCel2 = dec.OverrideOptimismCel2
-	}
 	if dec.OverrideOptimismEcotone != nil {
 		c.OverrideOptimismEcotone = dec.OverrideOptimismEcotone
 	}
@@ -378,8 +372,8 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	if dec.RollupDisableTxPoolGossip != nil {
 		c.RollupDisableTxPoolGossip = *dec.RollupDisableTxPoolGossip
 	}
-	if dec.RollupNetrestrictTxPoolGossip != nil {
-		c.RollupTxPoolNetrestrict = *dec.RollupNetrestrictTxPoolGossip
+	if dec.RollupTxPoolNetrestrict != nil {
+		c.RollupTxPoolNetrestrict = *dec.RollupTxPoolNetrestrict
 	}
 	if dec.RollupTxPoolTrustedPeersOnly != nil {
 		c.RollupTxPoolTrustedPeersOnly = *dec.RollupTxPoolTrustedPeersOnly
