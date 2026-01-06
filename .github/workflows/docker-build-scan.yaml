@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Login at GCP Artifact Registry
-        uses: celo-org/reusable-workflows/.github/actions/auth-gcp-artifact-registry@v2.0.5
+        uses: celo-org/reusable-workflows/.github/actions/auth-gcp-artifact-registry@v3.1
         with:
           workload-id-provider: projects/1094498259535/locations/global/workloadIdentityPools/gh-op-geth/providers/github-by-repos
           service-account: op-geth-dev@blockchaintestsglobaltestnet.iam.gserviceaccount.com
