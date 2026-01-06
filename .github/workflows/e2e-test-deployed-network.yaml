@@ -21,6 +21,6 @@ jobs:
     steps:
         - uses: actions/checkout@v4
         - uses: ./.github/workflows/composite/setup
-        - name: Run e2e tests alfajores
+        - name: Run e2e tests on Celo Sepolia
           shell: bash
           run: NETWORK=celo-sepolia e2e_test/run_all_tests.sh
