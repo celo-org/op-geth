@@ -135,7 +135,7 @@ func CreditFees(
 	// Our old `creditGasFees` function does not accept an l1DataFee and
 	// the fee currencies do not implement the new interface yet. Since tip
 	// and data fee both go to the sequencer, we can work around that for
-	// now by addint the l1DataFee to the tip.
+	// now by adding the l1DataFee to the tip.
 	if l1DataFee != nil {
 		feeTip = new(big.Int).Add(feeTip, l1DataFee)
 	}
