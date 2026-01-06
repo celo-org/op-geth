@@ -16,8 +16,7 @@ type AddressBlocklist struct {
 	currencies map[common.Address]*types.Header
 	// fee-currencies blocked at headers with an older timestamp
 	// will get evicted when evict() is called
-	headerEvictionTimeoutSeconds uint64
-	oldestHeader                 *types.Header
+	oldestHeader *types.Header
 
 	// disabledCurrencies is the set of currencies for which the blocklist
 	// functionality has been manually disabled.
@@ -26,11 +25,10 @@ type AddressBlocklist struct {
 
 func NewAddressBlocklist() *AddressBlocklist {
 	bl := &AddressBlocklist{
-		mux:                          &sync.RWMutex{},
-		currencies:                   map[common.Address]*types.Header{},
-		headerEvictionTimeoutSeconds: EvictionTimeoutSeconds,
-		oldestHeader:                 nil,
-		disabledCurrencies:           make(map[common.Address]struct{}),
+		mux:                &sync.RWMutex{},
+		currencies:         map[common.Address]*types.Header{},
+		oldestHeader:       nil,
+		disabledCurrencies: make(map[common.Address]struct{}),
 	}
 	return bl
 }
@@ -47,7 +45,7 @@ func (b *AddressBlocklist) Blocklist(includeDisabled bool) map[common.Address]ui
 		if _, disabled := b.disabledCurrencies[currency]; disabled && !includeDisabled {
 			continue
 		}
-		result[currency] = addedHeader.Time + b.headerEvictionTimeoutSeconds
+		result[currency] = addedHeader.Time + EvictionTimeoutSeconds
 	}
 	return result
 }
@@ -186,7 +184,7 @@ func (b *AddressBlocklist) evict(latest *types.Header) []common.Address {
 }
 
 func (b *AddressBlocklist) headerEvicted(h, latest *types.Header) bool {
-	return h.Time+b.headerEvictionTimeoutSeconds < latest.Time
+	return h.Time+EvictionTimeoutSeconds < latest.Time
 }
 
 func (b *AddressBlocklist) isBlocked(currency common.Address, latest *types.Header) bool {
