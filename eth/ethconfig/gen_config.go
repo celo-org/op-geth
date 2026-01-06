@@ -120,7 +120,6 @@ func (c Config) MarshalTOML() (interface{}, error) {
 	enc.OverrideOsaka = c.OverrideOsaka
 	enc.OverrideVerkle = c.OverrideVerkle
 	enc.OverrideOptimismCanyon = c.OverrideOptimismCanyon
-	enc.OverrideOptimismCel2 = c.OverrideOptimismCel2
 	enc.OverrideOptimismEcotone = c.OverrideOptimismEcotone
 	enc.OverrideOptimismFjord = c.OverrideOptimismFjord
 	enc.OverrideOptimismGranite = c.OverrideOptimismGranite
@@ -332,9 +331,6 @@ func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	}
 	if dec.OverrideOptimismCanyon != nil {
 		c.OverrideOptimismCanyon = dec.OverrideOptimismCanyon
-	}
-	if dec.OverrideOptimismCel2 != nil {
-		c.OverrideOptimismCel2 = dec.OverrideOptimismCel2
 	}
 	if dec.OverrideOptimismEcotone != nil {
 		c.OverrideOptimismEcotone = dec.OverrideOptimismEcotone
