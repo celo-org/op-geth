@@ -71,7 +71,7 @@ func latestCeloSigner(chainID *big.Int, upstreamSigner Signer) Signer {
 // Sender implements Signer.
 func (c *celoSigner) Sender(tx *Transaction) (common.Address, error) {
 	if funcs := c.findTxFuncs(tx); funcs != nil {
-		return funcs.sender(tx, funcs.hash, c.ChainID())
+		return funcs.sender(tx, c.ChainID())
 	}
 	return c.upstreamSigner.Sender(tx)
 }
@@ -87,7 +87,12 @@ func (c *celoSigner) SignatureValues(tx *Transaction, sig []byte) (r *big.Int, s
 // Hash implements Signer.
 func (c *celoSigner) Hash(tx *Transaction) common.Hash {
 	if funcs := c.findTxFuncs(tx); funcs != nil {
-		return funcs.hash(tx, c.ChainID())
+		// Deprecated Celo L1 transaction types return the full transaction hash
+		// to preserve compatibility with historical hashes from Celo L1
+		if funcs == deprecatedTxFuncs {
+			return tx.Hash()
+		}
+		return tx.inner.sigHash(c.ChainID())
 	}
 	return c.upstreamSigner.Hash(tx)
 }
