@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bytes"
 	"encoding/hex"
 	"fmt"
 	"math/big"
@@ -12,10 +13,10 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 )
 
-// Decode 0x prefixed hex string from file (including trailing newline)
+// Decode from file. Strip 0x prefix and whitespace (newline) if present.
 func DecodeHex(hexbytes []byte) ([]byte, error) {
 	// Strip 0x prefix and trailing newline
-	hexbytes = hexbytes[2 : len(hexbytes)-1] // strip 0x prefix
+	hexbytes = bytes.TrimPrefix(bytes.TrimSpace(hexbytes), []byte("0x")) // strip 0x prefix
 
 	// Decode hex string
 	bytes := make([]byte, hex.DecodedLen(len(hexbytes)))
