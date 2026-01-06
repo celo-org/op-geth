@@ -9,7 +9,7 @@ import (
 
 const hours uint64 = 60 * 60
 
-var EvictionTimeoutSeconds uint64 = 2 * hours
+const EvictionTimeoutSeconds uint64 = 2 * hours
 
 type AddressBlocklist struct {
 	mux        *sync.RWMutex
