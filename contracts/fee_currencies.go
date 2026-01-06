@@ -117,7 +117,7 @@ func DebitFees(evm *vm.EVM, feeCurrency *common.Address, address common.Address,
 // Credits fees to the respective parties
 // - the base fee goes to the fee handler
 // - the transaction tip goes to the miner
-// - the l1 data fee goes the the data fee receiver, is the node runs in rollup mode
+// - the l1 data fee goes to the data fee receiver, if the node runs in rollup mode
 // - remaining funds are refunded to the transaction sender
 func CreditFees(
 	evm *vm.EVM,
