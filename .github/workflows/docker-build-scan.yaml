@@ -29,7 +29,7 @@ jobs:
           service-account: op-geth-dev@blockchaintestsglobaltestnet.iam.gserviceaccount.com
           docker-gcp-registries: us-west1-docker.pkg.dev
       - name: Build and push container
-        uses: celo-org/reusable-workflows/.github/actions/build-container@v2.0.5
+        uses: celo-org/reusable-workflows/.github/actions/build-container@v3.1
         with:
           platforms: ${{ startsWith(github.ref, 'refs/heads/celo') && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
           registry: us-west1-docker.pkg.dev/blockchaintestsglobaltestnet/dev-images/op-geth
