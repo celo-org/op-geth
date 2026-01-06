@@ -305,8 +305,6 @@ type ChainOverrides struct {
 	OverrideOptimismJovian   *uint64
 	OverrideOptimismInterop  *uint64
 	ApplySuperchainUpgrades  bool
-	// celo
-	OverrideOptimismCel2 *uint64
 }
 
 // apply applies the chain overrides on the supplied chain config.
@@ -385,10 +383,6 @@ func (o *ChainOverrides) apply(cfg *params.ChainConfig) error {
 	}
 	if o.OverrideOptimismInterop != nil {
 		cfg.InteropTime = o.OverrideOptimismInterop
-	}
-	// Celo overrides
-	if o.OverrideOptimismCel2 != nil {
-		cfg.Cel2Time = o.OverrideOptimismCel2
 	}
 
 	// We check for validity after applying the overrides, even if there weren't any.
