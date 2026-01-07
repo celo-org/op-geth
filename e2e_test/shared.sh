@@ -25,6 +25,25 @@ celo-sepolia)
 	export FEE_CURRENCY=0x6B172e333e2978484261D7eCC3DE491E79764BbC
 	export FEE_CURRENCY_DIRECTORY_ADDR=0x9212Fb72ae65367A7c887eC4Ad9bE310BAC611BF
 	echo "Using Celo Sepolia network"
+
+	case $CURRENCY in
+        EUR)
+			echo "Set FEE_CURRENCY to cEUR address"
+          	export FEE_CURRENCY=0x6B172e333e2978484261D7eCC3DE491E79764BbC
+          	;;
+        USD)
+			echo "Set FEE_CURRENCY to cUSD address"
+          	export FEE_CURRENCY=0xEF4d55D6dE8e8d73232827Cd1e9b2F2dBb45bC80
+          	;;	
+        REAL)
+		  	echo "Set FEE_CURRENCY to cREAL address"
+          	export FEE_CURRENCY=0x13d68A1Bf4a8cB7d9feF54EF70401871b666269c
+          	;;
+        '')
+			echo "Set FEE_CURRENCY to cEUR address"
+        	export FEE_CURRENCY=0x6B172e333e2978484261D7eCC3DE491E79764BbC
+        	;;
+    esac
 	;;
 '')
 	export ETH_RPC_URL=http://127.0.0.1:8545
