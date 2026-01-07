@@ -5,10 +5,8 @@ import (
 )
 
 const (
-	CeloMainnetChainID   = 42220
-	CeloAlfajoresChainID = 44787
-	CeloBaklavaChainID   = 62320
-	CeloSepoliaChainID   = 11142220
+	CeloMainnetChainID = 42220
+	CeloSepoliaChainID = 11142220
 )
 
 // GasLimits holds the gas limit changes for a given chain
@@ -49,31 +47,8 @@ var (
 		},
 	}
 
-	alfajoresGasLimits = &GasLimits{
-		changes: []LimitChange{
-			{big.NewInt(0), 20e6},
-			{big.NewInt(912), 10e6},
-			{big.NewInt(1392355), 130e6},
-			{big.NewInt(1507905), 13e6},
-			{big.NewInt(4581182), 20e6},
-			{big.NewInt(11143973), 35e6},
-		},
-	}
-
-	baklavaGasLimits = &GasLimits{
-		changes: []LimitChange{
-			{big.NewInt(0), 20e6},
-			{big.NewInt(1230), 10e6},
-			{big.NewInt(1713181), 130e6},
-			{big.NewInt(1945003), 13e6},
-			{big.NewInt(15158971), 20e6},
-		},
-	}
-
 	PreGingerbreadNetworkGasLimits = map[uint64]*GasLimits{
-		CeloMainnetChainID:   mainnetGasLimits,
-		CeloAlfajoresChainID: alfajoresGasLimits,
-		CeloBaklavaChainID:   baklavaGasLimits,
+		CeloMainnetChainID: mainnetGasLimits,
 	}
 
 	// This config should be kept up to date with our mainnet config so that the --dev flag produces

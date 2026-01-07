@@ -63,7 +63,7 @@ function getChainConfig(chainId) {
 
 	// Celo-specific config
 	if (isCeloChain(chainId)) {
-		// Celo networks (Mainnet, Alfajores, Baklava, Sepolia)
+		// Celo networks (Mainnet, Sepolia)
 		return {
 			...baseConfig,
 			cel2Time: 0,

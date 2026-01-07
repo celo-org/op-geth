@@ -387,7 +387,7 @@ func TestNewRPCTransactionDynamicFee(t *testing.T) {
 func allEnabledChainConfig() *params.ChainConfig {
 	zeroTime := uint64(0)
 	return &params.ChainConfig{
-		ChainID:             big.NewInt(params.CeloAlfajoresChainID),
+		ChainID:             big.NewInt(params.CeloMainnetChainID),
 		HomesteadBlock:      big.NewInt(0),
 		EIP150Block:         big.NewInt(0),
 		EIP155Block:         big.NewInt(0),
@@ -775,7 +775,7 @@ func Test_MarshalReceipt(t *testing.T) {
 
 	t.Run("CeloDynamicFeeTxV1 receipt", func(t *testing.T) {
 		tx, err := types.SignTx(types.NewTx(&types.CeloDynamicFeeTx{
-			ChainID:             big.NewInt(params.CeloAlfajoresChainID),
+			ChainID:             big.NewInt(params.CeloMainnetChainID),
 			Nonce:               nonce,
 			GasTipCap:           gasTipCap,
 			GasFeeCap:           gasFeeCap,
@@ -799,7 +799,7 @@ func Test_MarshalReceipt(t *testing.T) {
 
 	t.Run("CeloDynamicFeeTxV2 receipt (Post Cel2)", func(t *testing.T) {
 		tx, err := types.SignTx(types.NewTx(&types.CeloDynamicFeeTxV2{
-			ChainID:     big.NewInt(params.CeloAlfajoresChainID),
+			ChainID:     big.NewInt(params.CeloMainnetChainID),
 			Nonce:       nonce,
 			GasTipCap:   gasTipCap,
 			GasFeeCap:   gasFeeCap,
@@ -821,7 +821,7 @@ func Test_MarshalReceipt(t *testing.T) {
 
 	t.Run("CeloDynamicFeeTxV2 receipt (Pre Cel2)", func(t *testing.T) {
 		tx, err := types.SignTx(types.NewTx(&types.CeloDynamicFeeTxV2{
-			ChainID:     big.NewInt(params.CeloAlfajoresChainID),
+			ChainID:     big.NewInt(params.CeloMainnetChainID),
 			Nonce:       nonce,
 			GasTipCap:   gasTipCap,
 			GasFeeCap:   gasFeeCap,
