@@ -7,34 +7,10 @@ import {
 	webSocket,
 	defineChain,
 } from "viem";
-import { celo, celoAlfajores, celoSepolia } from "viem/chains";
+import { celo, celoSepolia as viemCeloSepolia } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 
 // Setup up chain
-const devChain = defineChain({
-	...celoAlfajores,
-	id: 1337,
-	name: "local dev chain",
-	rpcUrls: {
-		default: {
-			http: [process.env.ETH_RPC_URL],
-			webSocket: [process.env.ETH_RPC_URL],
-		},
-	},
-});
-
-const celoBaklava = defineChain({
-	...celoAlfajores,
-	id: 62320,
-	name: "baklava",
-	rpcUrls: {
-		default: {
-			http: [process.env.ETH_RPC_URL],
-			webSocket: [process.env.ETH_RPC_URL],
-		},
-	},
-});
-
 const celoMainnet = defineChain({
 	...celo,
 	rpcUrls: {
@@ -45,12 +21,18 @@ const celoMainnet = defineChain({
 	},
 });
 
+const celoSepolia = defineChain({
+	...viemCeloSepolia,
+	rpcUrls: {
+		default: {
+			http: [process.env.ETH_RPC_URL],
+			webSocket: [process.env.ETH_RPC_URL],
+		},
+	},
+});
+
 const chain = (() => {
 	switch (process.env.NETWORK) {
-		case 'alfajores':
-			return celoAlfajores
-		case 'baklava':
-			return celoBaklava
 		case 'celo-sepolia':
 			return celoSepolia
 		case 'mainnet':
@@ -62,8 +44,6 @@ const chain = (() => {
 
 const transportForNetwork = (() => {
 	switch (process.env.NETWORK) {
-		case 'alfajores':
-		case 'baklava':
 		case 'celo-sepolia':
 		case 'mainnet':
 			return webSocket(process.env.ETH_RPC_URL);
