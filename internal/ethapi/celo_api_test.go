@@ -387,7 +387,7 @@ func TestNewRPCTransactionDynamicFee(t *testing.T) {
 func allEnabledChainConfig() *params.ChainConfig {
 	zeroTime := uint64(0)
 	return &params.ChainConfig{
-		ChainID:             big.NewInt(params.CeloSepoliaChainID),
+		ChainID:             big.NewInt(params.CeloMainnetChainID),
 		HomesteadBlock:      big.NewInt(0),
 		EIP150Block:         big.NewInt(0),
 		EIP155Block:         big.NewInt(0),
