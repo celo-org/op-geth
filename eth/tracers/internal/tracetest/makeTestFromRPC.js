@@ -65,10 +65,10 @@ function getChainConfig(chainId) {
 	if (isCeloChain(chainId)) {
 		// Celo networks (Mainnet, Celo Sepolia)
 		return {
-			...baseConfig,
-			cel2Time: 0,
-			gingerbreadBlock: 0,
-		};
+		...baseConfig,
+		cel2Time: 0,
+		gingerbreadBlock: 0,
+	};
 	}
 
 	// Default for other chains
