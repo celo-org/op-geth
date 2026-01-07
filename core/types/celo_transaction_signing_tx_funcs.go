@@ -5,9 +5,13 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/params"
 )
 
 var (
+	// Historical txs accepted with wrong chain ID before validation fix. See https://github.com/celo-org/op-geth/issues/454
+	sepoliaChainIDExceptionHash = common.HexToHash("0x4564b9903cfe18814ffc2696e1ad141d9cc3a549dc4f5726e15f7be2e0ccaa25") // block 12531083
+	mainnetChainIDExceptionHash = common.HexToHash("0xd6bdf3261df7e7a4db6bbc486bf091eb62dfd2883e335c31219b6a37d3febca1") // block 53619115
 
 	// deprecatedTxFuncs should be returned by forks that have deprecated support for a tx type.
 	deprecatedTxFuncs = &txFuncs{
@@ -65,6 +69,10 @@ var (
 			return NewEIP2930Signer(signerChainID).SignatureValues(tx, sig)
 		},
 		sender: func(tx *Transaction, signerChainID *big.Int) (common.Address, error) {
+			// Historical chain ID bug exceptions - use tx's chain ID for signature recovery
+			if isChainIDException(tx.Hash(), signerChainID) {
+				return NewEIP2930Signer(tx.ChainId()).Sender(tx)
+			}
 			return NewEIP2930Signer(signerChainID).Sender(tx)
 		},
 	}
@@ -137,4 +145,12 @@ func baseCeloLegacyTxSigningFields(tx *Transaction) []interface{} {
 		tx.Value(),
 		tx.Data(),
 	}
+}
+
+// isChainIDException returns true if the tx hash is a known historical exception
+// AND the signerChainID matches the network where the exception occurred.
+func isChainIDException(txHash common.Hash, signerChainID *big.Int) bool {
+	chainID := signerChainID.Uint64()
+	return (txHash == sepoliaChainIDExceptionHash && chainID == params.CeloSepoliaChainID) ||
+		(txHash == mainnetChainIDExceptionHash && chainID == params.CeloMainnetChainID)
 }
