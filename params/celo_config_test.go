@@ -26,6 +26,4 @@ func TestGasLimits_Limit(t *testing.T) {
 	}
 
 	subTest(t, "mainnet", CeloMainnetChainID, mainnetGasLimits.changes)
-	subTest(t, "alfajores", CeloAlfajoresChainID, alfajoresGasLimits.changes)
-	subTest(t, "baklava", CeloBaklavaChainID, baklavaGasLimits.changes)
 }
