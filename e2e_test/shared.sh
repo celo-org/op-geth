@@ -44,21 +44,21 @@ celo-sepolia)
 
 	case $CURRENCY in
         EUR)
-          echo "Set cEUR address to FEE_CURRENCY"
-          export FEE_CURRENCY=0x6B172e333e2978484261D7eCC3DE491E79764BbC
-          ;;
+			echo "Set FEE_CURRENCY to cEUR address"
+          	export FEE_CURRENCY=0x6B172e333e2978484261D7eCC3DE491E79764BbC
+          	;;
         USD)
-          echo "Set cUSD address to FEE_CURRENCY"
-          export FEE_CURRENCY=0xEF4d55D6dE8e8d73232827Cd1e9b2F2dBb45bC80
-          ;;
+			echo "Set FEE_CURRENCY to cUSD address"
+          	export FEE_CURRENCY=0xEF4d55D6dE8e8d73232827Cd1e9b2F2dBb45bC80
+          	;;	
         REAL)
-          echo "Set cREAL address to FEE_CURRENCY"
-          export FEE_CURRENCY=0x13d68A1Bf4a8cB7d9feF54EF70401871b666269c
-          ;;
+		  	echo "Set FEE_CURRENCY to cREAL address"
+          	export FEE_CURRENCY=0x13d68A1Bf4a8cB7d9feF54EF70401871b666269c
+          	;;
         '')
-          echo "Set cEUR address to FEE_CURRENCY"
-          export FEE_CURRENCY=0x6B172e333e2978484261D7eCC3DE491E79764BbC
-          ;;
+			echo "Set FEE_CURRENCY to cEUR address"
+        	export FEE_CURRENCY=0x6B172e333e2978484261D7eCC3DE491E79764BbC
+        	;;
     esac
 	;;
 '')
