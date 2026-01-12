@@ -28,6 +28,10 @@ jobs:
           workload-id-provider: projects/1094498259535/locations/global/workloadIdentityPools/gh-op-geth/providers/github-by-repos
           service-account: op-geth-dev@blockchaintestsglobaltestnet.iam.gserviceaccount.com
           docker-gcp-registries: us-west1-docker.pkg.dev
+      - name: Install envsubst
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gettext-base
       - name: Build and push container
         uses: celo-org/reusable-workflows/.github/actions/build-container@v2.0.5
         with:
