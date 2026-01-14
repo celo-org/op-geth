@@ -152,15 +152,18 @@ func (t *prestateTracer) OnOpcode(pc uint64, opcode byte, gas, cost uint64, scop
 
 			// Get input
 			if stackLen < 7 {
+				log.Warn("unexpected stack length for transfer precompile", "tracer", "prestateTracer", "stackLen", stackLen)
 				return
 			}
 			inOffset := stackData[stackLen-4]
 			inSize := stackData[stackLen-5]
 			if inSize.Uint64() < 64 {
+				log.Warn("unexpected input size for transfer precompile", "tracer", "prestateTracer", "inSize", inSize.Uint64())
 				return
 			}
 			input, err := internal.GetMemoryCopyPadded(scope.MemoryData(), int64(inOffset.Uint64()), 64)
 			if err != nil {
+				log.Warn("failed to copy transfer precompile input", "err", err, "tracer", "prestateTracer", "inOffset", inOffset)
 				return
 			}
 
