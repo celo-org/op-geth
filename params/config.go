@@ -586,6 +586,9 @@ type ChainConfig struct {
 
 	// Optimism config, nil if not active
 	Optimism *OptimismConfig `json:"optimism,omitempty"`
+
+	// Celo config, nil if not active
+	Celo *CeloConfig `json:"celo,omitempty"`
 }
 
 // EthashConfig is the consensus engine configs for proof-of-work based sealing.
@@ -724,6 +727,15 @@ func (c *ChainConfig) String() string {
 	return result
 }
 
+type CeloConfig struct {
+	EIP1559BaseFeeFloor uint64 `json:"eip1559BaseFeeFloor"`
+}
+
+// String implements the stringer interface, returning the celo config details.
+func (o *CeloConfig) String() string {
+	return fmt.Sprintf("celo(eip1559BaseFeeFloor: %d)", o.EIP1559BaseFeeFloor)
+}
+
 // Description returns a human-readable description of ChainConfig.
 func (c *ChainConfig) Description() string {
 	var banner string
@@ -737,6 +749,8 @@ func (c *ChainConfig) Description() string {
 	switch {
 	case c.Optimism != nil:
 		banner += "Consensus: Optimism\n"
+		banner += fmt.Sprintf(" - %s\n", c.Optimism)
+		banner += fmt.Sprintf(" - %s\n", c.Celo)
 	case c.Ethash != nil:
 		banner += "Consensus: Beacon (proof-of-stake), merged from Ethash (proof-of-work)\n"
 	case c.Clique != nil:
