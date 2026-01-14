@@ -63,5 +63,10 @@ var (
 			EIP1559DenominatorCanyon: newUint64(400),
 			EIP1559Elasticity:        5,
 		},
+		Celo: &CeloConfig{
+			// 25000000000 is the base fee floor for mainnet, we use a lower value for dev mode
+			// because the real value breaks many of our e2e tests.
+			EIP1559BaseFeeFloor: 25000000000,
+		},
 	}
 )

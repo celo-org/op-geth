@@ -180,6 +180,7 @@ func CeloDeveloperGenesisBlock(gasLimit uint64, faucet *common.Address) *Genesis
 	// Set our own more realistic config
 	config := *params.DevChainConfig
 	genesis.Config = &config
+	genesis.BaseFee = big.NewInt(int64(config.Celo.EIP1559BaseFeeFloor))
 
 	// Add state from celoGenesisAccounts
 	for addr, data := range celoGenesisAccounts(common.HexToAddress("0x2")) {
