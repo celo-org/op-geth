@@ -36,6 +36,8 @@ type queue struct {
 	beats  map[common.Address]time.Time // Last heartbeat from each known account
 
 	rollupCostFnProvider rollupCostFuncProvider // OP Stack diff
+
+	pool *LegacyPool // Celo diff
 }
 
 func newQueue(config Config, signer types.Signer) *queue {
@@ -132,7 +134,8 @@ func (q *queue) add(tx *types.Transaction) (*common.Hash, error) {
 		q.queued[from] = newRollupList(false, q.rollupCostFnProvider) // OP Stack diff
 		queuedAddrsGauge.Inc(1)
 	}
-	inserted, old := q.queued[from].Add(tx, q.config.PriceBump)
+	queuedtxs := q.queued[from]
+	inserted, old := queuedtxs.Add(tx, q.config.PriceBump, q.pool.currentRates)
 	if !inserted {
 		// An older transaction was better, discard this
 		queuedDiscardMeter.Mark(1)
@@ -182,7 +185,7 @@ func (q *queue) promoteExecutables(accounts []common.Address, gasLimit uint64, c
 		log.Trace("Removing old queued transactions", "count", len(forwards))
 
 		// Drop all transactions that are too costly (low balance or out of gas)
-		drops, _ := list.Filter(currentState.GetBalance(addr), gasLimit)
+		drops, _ := q.pool.filter(list, addr, gasLimit)
 		for _, tx := range drops {
 			dropped = append(dropped, tx.Hash())
 		}

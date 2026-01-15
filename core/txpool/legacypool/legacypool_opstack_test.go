@@ -143,7 +143,7 @@ func testRollupTransactionCostAccounting(t *testing.T, stateMod func(t *testing.
 	require.False(t, ok, "tx0 should not be in queue, but pending")
 	pending, ok := pool.pending[from]
 	require.True(t, ok, "tx0 should be pending")
-	require.Equal(t, cost0, pending.totalcost, "tx0 total pending cost should match")
+	require.Equal(t, cost0, pending.totalCost[common.Address{}], "tx0 total pending cost should match")
 
 	pool.reset(nil, nil) // reset the rollup cost function, simulates a head change
 	if stateMod != nil {
@@ -162,7 +162,7 @@ func testRollupTransactionCostAccounting(t *testing.T, stateMod func(t *testing.
 	require.False(t, ok, "tx1 should not be in queue, but pending")
 	pending, ok = pool.pending[from]
 	require.True(t, ok, "tx1 should be pending")
-	require.Equal(t, cost1, pending.totalcost, "tx1 total pending cost should match")
+	require.Equal(t, cost1, pending.totalCost[common.Address{}], "tx1 total pending cost should match")
 }
 
 // TestRollupCostFuncChange tests that changes in the underlying rollup cost parameters
