@@ -35,6 +35,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus/misc/eip1559"
 	"github.com/ethereum/go-ethereum/consensus/misc/eip4844"
+	"github.com/ethereum/go-ethereum/contracts"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/txpool"
@@ -355,8 +356,9 @@ type BlobPool struct {
 
 	lock sync.RWMutex // Mutex protecting the pool during reorg handling
 
-	// Celo
-	feeCurrencyValidator txpool.FeeCurrencyValidator
+	// Celo specific
+	celoBackend  *contracts.CeloBackend // For fee currency balances & exchange rate calculation
+	currentRates common.ExchangeRates   // current exchange rates for fee currencies
 }
 
 // New creates a new blob transaction pool to gather, sort and filter inbound
@@ -375,8 +377,6 @@ func New(config Config, chain BlockChain, hasPendingAuth func(common.Address) bo
 		lookup:         newLookup(),
 		index:          make(map[common.Address][]*blobTxMeta),
 		spent:          make(map[common.Address]*uint256.Int),
-
-		feeCurrencyValidator: txpool.NewFeeCurrencyValidator(),
 	}
 }
 
@@ -421,6 +421,7 @@ func (p *BlobPool) Init(gasTip uint64, head *types.Header, reserver txpool.Reser
 	}
 	p.head.Store(head)
 	p.state = state
+	p.recreateCeloProperties()
 
 	// Create new slotter for pre-Osaka blob configuration.
 	slotter := newSlotter(eip4844.LatestMaxBlobsPerBlock(p.chain.Config()))
@@ -857,6 +858,7 @@ func (p *BlobPool) Reset(oldHead, newHead *types.Header) {
 	}
 	p.head.Store(newHead)
 	p.state = statedb
+	p.recreateCeloProperties()
 
 	// Run the reorg between the old and new head and figure out which accounts
 	// need to be rechecked and which transactions need to be readded
@@ -1390,28 +1392,25 @@ func (p *BlobPool) validateTx(tx *types.Transaction) error {
 			}
 			return have, maxTxsPerAccount - have
 		},
-		ExistingExpenditure: func(addr common.Address) *big.Int {
+		ExistingExpenditure: func(addr common.Address) (*big.Int, *big.Int) {
 			if spent := p.spent[addr]; spent != nil {
-				return spent.ToBig()
+				return new(big.Int), spent.ToBig()
 			}
-			return new(big.Int)
+			return new(big.Int), new(big.Int)
 		},
-		ExistingCost: func(addr common.Address, nonce uint64) *big.Int {
+		ExistingCost: func(addr common.Address, nonce uint64) (*big.Int, *big.Int) {
 			next := p.state.GetNonce(addr)
 			if uint64(len(p.index[addr])) > nonce-next {
-				return p.index[addr][int(nonce-next)].costCap.ToBig()
+				return new(big.Int), p.index[addr][int(nonce-next)].costCap.ToBig()
 			}
-			return nil
+			return nil, nil
+		},
+		ExistingBalance: func(addr common.Address, feeCurrency *common.Address) *big.Int {
+			return contracts.GetFeeBalance(p.celoBackend, addr, feeCurrency)
 		},
 	}
 
-	// Adapt to celo validation options
-	celoOpts := &txpool.CeloValidationOptionsWithState{
-		ValidationOptionsWithState: *stateOpts,
-		FeeCurrencyValidator:       p.feeCurrencyValidator,
-	}
-
-	if err := txpool.ValidateTransactionWithState(tx, p.signer, celoOpts); err != nil {
+	if err := txpool.ValidateTransactionWithState(tx, p.signer, stateOpts); err != nil {
 		return err
 	}
 	if err := p.checkDelegationLimit(tx); err != nil {

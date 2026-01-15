@@ -18,7 +18,6 @@ package legacypool
 
 import (
 	"container/heap"
-	"math"
 	"math/big"
 	"slices"
 	"sort"
@@ -27,6 +26,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/exchange"
 	"github.com/ethereum/go-ethereum/core/txpool"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/holiman/uint256"
@@ -283,9 +283,9 @@ type list struct {
 	strict bool       // Whether nonces are strictly continuous or not
 	txs    *SortedMap // Heap indexed sorted hash map of the transactions
 
-	costcap   *uint256.Int // Price of the highest costing transaction (reset only if exceeds balance)
-	gascap    uint64       // Gas limit of the highest spending transaction (reset only if exceeds block limit)
-	totalcost *uint256.Int // Total cost of all transactions in the list
+	costCap   map[common.Address]*uint256.Int // Price of the highest costing transaction per currency (reset only if exceeds balance)
+	gascap    uint64                          // Gas limit of the highest spending transaction (reset only if exceeds block limit)
+	totalCost map[common.Address]*uint256.Int // Total cost of all transactions in the list (by currency)
 
 	// OP-Stack adds a backpointer to the pool's rollup cost function.
 	// A list always belongs to a fixed pool, so it's ok to use a reference instead of
@@ -296,6 +296,10 @@ type list struct {
 	// OP-Stack needs to cache the total cost of transactions because the rollup costs
 	// can vary from block to block.
 	txCosts map[common.Hash]*uint256.Int
+	// TODO: convert the above to a map of tx hash to map of fee currency to
+	// cost we need the total cost and we need multiple fee currencies to hold
+	// it. Or do we? Can we just calculate the total cost in native currency?
+
 }
 
 // newList creates a new transaction list for maintaining nonce-indexable fast,
@@ -304,8 +308,8 @@ func newList(strict bool) *list {
 	return &list{
 		strict:    strict,
 		txs:       NewSortedMap(),
-		costcap:   new(uint256.Int),
-		totalcost: new(uint256.Int),
+		costCap:   make(map[common.Address]*uint256.Int),
+		totalCost: make(map[common.Address]*uint256.Int),
 
 		// OP-Stack addition
 		txCosts: make(map[common.Hash]*uint256.Int),
@@ -344,11 +348,12 @@ func (l *list) Contains(nonce uint64) bool {
 //
 // If the new transaction is accepted into the list, the lists' cost and gas
 // thresholds are also potentially updated.
-func (l *list) Add(tx *types.Transaction, priceBump uint64) (bool, *types.Transaction) {
+func (l *list) Add(tx *types.Transaction, priceBump uint64, rates common.ExchangeRates) (bool, *types.Transaction) {
 	// If there's an older better transaction, abort
 	old := l.txs.Get(tx.Nonce())
 	if old != nil {
-		if old.GasFeeCapCmp(tx) >= 0 || old.GasTipCapCmp(tx) >= 0 {
+		// Short circuit when it's clear that the new tx is worse
+		if common.AreSameAddress(old.FeeCurrency(), tx.FeeCurrency()) && (old.GasFeeCapCmp(tx) >= 0 || old.GasTipCapCmp(tx) >= 0) {
 			return false, nil
 		}
 		// thresholdFeeCap = oldFC  * (100 + priceBump) / 100
@@ -361,19 +366,33 @@ func (l *list) Add(tx *types.Transaction, priceBump uint64) (bool, *types.Transa
 		thresholdFeeCap := aFeeCap.Div(aFeeCap, b)
 		thresholdTip := aTip.Div(aTip, b)
 
+		var thresholdFeeCapInCurrency = thresholdFeeCap
+		var thresholdTipInCurrency = thresholdTip
+		if tx.FeeCurrency() != old.FeeCurrency() {
+			thresholdFeeCapInCurrency = exchange.ConvertCurrency(rates, thresholdFeeCap, old.FeeCurrency(), tx.FeeCurrency())
+			thresholdTipInCurrency = exchange.ConvertCurrency(rates, thresholdTip, old.FeeCurrency(), tx.FeeCurrency())
+		}
 		// We have to ensure that both the new fee cap and tip are higher than the
 		// old ones as well as checking the percentage threshold to ensure that
 		// this is accurate for low (Wei-level) gas price replacements.
-		if tx.GasFeeCapIntCmp(thresholdFeeCap) < 0 || tx.GasTipCapIntCmp(thresholdTip) < 0 {
+		if tx.GasFeeCapIntCmp(thresholdFeeCapInCurrency) < 0 || tx.GasTipCapIntCmp(thresholdTipInCurrency) < 0 {
 			return false, nil
 		}
 	}
 	// Add new tx cost to totalcost
+	feeCurrencyTc := l.totalCostVar(tx.FeeCurrency())
+	nativeTc := l.totalCostVar(&common.ZeroAddress)
 	cost, overflow := txpool.TotalTxCost(tx, l.rollupCostFn())
 	if overflow {
 		return false, nil
 	}
+	feeCurrencyCost, overflow := uint256.FromBig(tx.FeeCurrencyCost())
+	if overflow {
+		return false, nil
+	}
+
 	l.txCosts[tx.Hash()] = cost // OP-Stack addition
+<<<<<<< HEAD
 	total, overflow := new(uint256.Int).AddOverflow(l.totalcost, cost)
 	if overflow {
 		return false, nil
@@ -385,11 +404,16 @@ func (l *list) Add(tx *types.Transaction, priceBump uint64) (bool, *types.Transa
 		l.subTotalCost([]*types.Transaction{old})
 	}
 
+||||||| parent of 39f2bd509 (txpool: Patch txpool core/list for managing multi currencies (#43) (#55))
+	l.totalcost.Add(l.totalcost, cost)
+=======
+	feeCurrencyTc.Add(feeCurrencyTc, feeCurrencyCost)
+	nativeTc.Add(nativeTc, cost)
+>>>>>>> 39f2bd509 (txpool: Patch txpool core/list for managing multi currencies (#43) (#55))
 	// Otherwise overwrite the old transaction with the current one
 	l.txs.Put(tx)
-	if l.costcap.Cmp(cost) < 0 {
-		l.costcap = cost
-	}
+	l.updateCostCapFor(tx.FeeCurrency(), feeCurrencyCost)
+	l.updateCostCapFor(&common.ZeroAddress, cost)
 	if gas := tx.Gas(); l.gascap < gas {
 		l.gascap = gas
 	}
@@ -414,12 +438,12 @@ func (l *list) Forward(threshold uint64) types.Transactions {
 // a point in calculating all the costs or if the balance covers all. If the threshold
 // is lower than the costgas cap, the caps will be reset to a new high after removing
 // the newly invalidated transactions.
-func (l *list) Filter(costLimit *uint256.Int, gasLimit uint64) (types.Transactions, types.Transactions) {
+func (l *list) Filter(costLimits map[common.Address]*uint256.Int, gasLimit uint64) (types.Transactions, types.Transactions) {
 	// If all transactions are below the threshold, short circuit
-	if l.costcap.Cmp(costLimit) <= 0 && l.gascap <= gasLimit {
+	if l.costCapsLowerThan(costLimits) && l.gascap <= gasLimit {
 		return nil, nil
 	}
-	l.costcap = new(uint256.Int).Set(costLimit) // Lower the caps to the thresholds
+	l.setCapsTo(costLimits) // Lower the caps to the thresholds
 	l.gascap = gasLimit
 
 	// Filter out all the transactions above the account's funds
@@ -428,23 +452,15 @@ func (l *list) Filter(costLimit *uint256.Int, gasLimit uint64) (types.Transactio
 		if of {
 			panic("Filter: tx total cost overflow")
 		}
-		return tx.Gas() > gasLimit || cost.Cmp(costLimit) > 0
+		feeCurrencyCost := tx.FeeCurrencyCost()
+		return tx.Gas() > gasLimit || feeCurrencyCost.Cmp(l.costCapFor(tx.FeeCurrency()).ToBig()) > 0 || cost.Cmp(l.costCapFor(&common.ZeroAddress)) > 0
 	})
 
 	if len(removed) == 0 {
 		return nil, nil
 	}
-	var invalids types.Transactions
-	// If the list was strict, filter anything above the lowest nonce
-	if l.strict {
-		lowest := uint64(math.MaxUint64)
-		for _, tx := range removed {
-			if nonce := tx.Nonce(); lowest > nonce {
-				lowest = nonce
-			}
-		}
-		invalids = l.txs.filter(func(tx *types.Transaction) bool { return tx.Nonce() > lowest })
-	}
+
+	invalids := l.dropInvalidsAfterRemovalAndReheap(removed)
 	// Reset total cost
 	l.subTotalCost(removed)
 	l.subTotalCost(invalids)
@@ -523,9 +539,16 @@ func (l *list) subTotalCost(txs []*types.Transaction) {
 		// OP-Stack diff: read cached cost
 		// Note that subTotalCost is always called after Add, so the cached cost must be present.
 		cost := l.txCosts[h]
-		_, underflow := l.totalcost.SubOverflow(l.totalcost, cost)
+		feeCurrencyCost := tx.FeeCurrencyCost()
+		feeCurrencyTc := l.totalCostVar(tx.FeeCurrency())
+		nativeTc := l.totalCostVar(&common.ZeroAddress)
+		_, underflow := feeCurrencyTc.SubOverflow(feeCurrencyTc, uint256.MustFromBig(feeCurrencyCost))
 		if underflow {
-			panic("totalcost underflow")
+			panic("totalcost underflow (feecurrency)")
+		}
+		_, underflow = nativeTc.SubOverflow(nativeTc, uint256.MustFromBig(cost.ToBig()))
+		if underflow {
+			panic("totalcost underflow (native)")
 		}
 		delete(l.txCosts, h) // OP-Stack addition: sanitize cache
 	}
@@ -536,8 +559,11 @@ func (l *list) subTotalCost(txs []*types.Transaction) {
 // then the heap is sorted based on the effective tip based on the given base fee.
 // If baseFee is nil then the sorting is based on gasFeeCap.
 type priceHeap struct {
-	baseFee *uint256.Int // heap should always be re-sorted after baseFee is changed
-	list    []*types.Transaction
+	list []*types.Transaction
+
+	// Celo specific
+	ratesAndFees *exchange.RatesAndFees // current exchange rates and basefees
+	// heap should always be re-sorted after ratesAndFees is changed
 }
 
 func (h *priceHeap) Len() int      { return len(h.list) }
@@ -555,18 +581,7 @@ func (h *priceHeap) Less(i, j int) bool {
 }
 
 func (h *priceHeap) cmp(a, b *types.Transaction) int {
-	if h.baseFee != nil {
-		// Compare effective tips if baseFee is specified
-		if c := a.EffectiveGasTipCmp(b, h.baseFee); c != 0 {
-			return c
-		}
-	}
-	// Compare fee caps if baseFee is not specified or effective tips are equal
-	if c := a.GasFeeCapCmp(b); c != 0 {
-		return c
-	}
-	// Compare tips if effective tips and fee caps are equal
-	return a.GasTipCapCmp(b)
+	return types.CompareWithRates(a, b, h.ratesAndFees)
 }
 
 func (h *priceHeap) Push(x interface{}) {
@@ -735,13 +750,14 @@ func (l *pricedList) Reheap() {
 	reheapTimer.Update(time.Since(start))
 }
 
-// SetBaseFee updates the base fee and triggers a re-heap. Note that Removed is not
+// SetBaseFeeAndRates updates the base fee and triggers a re-heap. Note that Removed is not
 // necessary to call right before SetBaseFee when processing a new block.
-func (l *pricedList) SetBaseFee(baseFee *big.Int) {
+func (l *pricedList) SetBaseFeeAndRates(baseFee *big.Int, rates common.ExchangeRates) {
 	base := new(uint256.Int)
 	if baseFee != nil {
 		base.SetFromBig(baseFee)
 	}
-	l.urgent.baseFee = base
+	l.urgent.ratesAndFees = exchange.NewRatesAndFees(rates, baseFee)
+	l.floating.ratesAndFees = exchange.NewRatesAndFees(rates, nil)
 	l.Reheap()
 }
