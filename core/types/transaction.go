@@ -383,8 +383,13 @@ func (tx *Transaction) IsSystemTx() bool {
 	return tx.inner.isSystemTx()
 }
 
-// Cost returns (gas * gasPrice) + (blobGas * blobGasPrice) + value.
+// Cost returns:
+// Native fee currency - (gas * gasPrice) + (blobGas * blobGasPrice) + value
+// Non native fee currency - value
 func (tx *Transaction) Cost() *big.Int {
+	if tx.FeeCurrency() != nil {
+		return tx.Value()
+	}
 	// Avoid allocating copies via tx.GasPrice()/tx.Value(); use inner values directly.
 	total := new(big.Int).SetUint64(tx.inner.gas())
 	total.Mul(total, tx.inner.gasPrice())
@@ -394,6 +399,20 @@ func (tx *Transaction) Cost() *big.Int {
 		total.Add(total, tmp)
 	}
 	total.Add(total, tx.inner.value())
+	return total
+}
+
+// FeeCurrencyCost returns:
+// Native fee currency - 0
+// Non native fee currency - (gas * gasPrice) + (blobGas * blobGasPrice)
+func (tx *Transaction) FeeCurrencyCost() *big.Int {
+	if tx.FeeCurrency() == nil {
+		return new(big.Int)
+	}
+	total := new(big.Int).Mul(tx.GasPrice(), new(big.Int).SetUint64(tx.Gas()))
+	if tx.Type() == BlobTxType {
+		total.Add(total, new(big.Int).Mul(tx.BlobGasFeeCap(), new(big.Int).SetUint64(tx.BlobGas())))
+	}
 	return total
 }
 

@@ -22,9 +22,9 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/exchange"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/holiman/uint256"
 )
 
 // Tests that transactions can be added to strict lists and list contents and
@@ -40,7 +40,7 @@ func TestStrictListAdd(t *testing.T) {
 	// Insert the transactions in a random order
 	list := newList(true)
 	for _, v := range rand.Perm(len(txs)) {
-		list.Add(txs[v], DefaultConfig.PriceBump)
+		list.Add(txs[v], DefaultConfig.PriceBump, nil)
 	}
 	// Verify internal state
 	if len(list.txs.items) != len(txs) {
@@ -63,8 +63,10 @@ func TestListAddVeryExpensive(t *testing.T) {
 		gasprice, _ := new(big.Int).SetString("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 0)
 		gaslimit := uint64(i)
 		tx, _ := types.SignTx(types.NewTransaction(uint64(i), common.Address{}, value, gaslimit, gasprice, nil), types.HomesteadSigner{}, key)
-		t.Logf("cost: %x bitlen: %d\n", tx.Cost(), tx.Cost().BitLen())
-		list.Add(tx, DefaultConfig.PriceBump)
+		costNative := tx.Cost()
+		costFeeCurrency := tx.FeeCurrencyCost()
+		t.Logf("cost: %x %x\n", costFeeCurrency, costNative)
+		list.Add(tx, DefaultConfig.PriceBump, nil)
 	}
 }
 
@@ -86,7 +88,7 @@ func TestPriceHeapCmp(t *testing.T) {
 
 	// now set the basefee on the heap
 	for _, basefee := range []uint64{0, 1, 2, 3} {
-		ph.baseFee = uint256.NewInt(basefee)
+		ph.ratesAndFees = exchange.NewRatesAndFees(nil, new(big.Int).SetUint64(basefee))
 
 		for i := 0; i < len(txs); i++ {
 			for j := 0; j < len(txs); j++ {
@@ -114,13 +116,11 @@ func BenchmarkListAdd(b *testing.B) {
 		txs[i] = transaction(uint64(i), 0, key)
 	}
 	// Insert the transactions in a random order
-	priceLimit := uint256.NewInt(DefaultConfig.PriceLimit)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		list := newList(true)
 		for _, v := range rand.Perm(len(txs)) {
-			list.Add(txs[v], DefaultConfig.PriceBump)
-			list.Filter(priceLimit, DefaultConfig.PriceBump)
+			list.Add(txs[v], DefaultConfig.PriceBump, nil)
 		}
 	}
 }
@@ -139,7 +139,7 @@ func BenchmarkListCapOneTx(b *testing.B) {
 		list := newList(true)
 		// Insert the transactions in a random order
 		for _, v := range rand.Perm(len(txs)) {
-			list.Add(txs[v], DefaultConfig.PriceBump)
+			list.Add(txs[v], DefaultConfig.PriceBump, nil)
 		}
 		b.StartTimer()
 		list.Cap(list.Len() - 1)
