@@ -17,6 +17,7 @@
 package stateless
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -105,4 +106,42 @@ func (w *Witness) ToExecutionWitness() *ExecutionWitness {
 		Codes:   transformMap(w.Codes),
 		State:   transformMap(w.State),
 	}
+}
+
+// FromExecutionWitness converts an execution witness (JSON format) back to internal witness format.
+// The JSON format uses keccak(data) => data mappings, so we verify the hashes match.
+func FromExecutionWitness(ew *ExecutionWitness) (*Witness, error) {
+	w := &Witness{
+		Headers: ew.Headers,
+		Codes:   make(map[string]struct{}, len(ew.Codes)),
+		State:   make(map[string]struct{}, len(ew.State)),
+	}
+
+	// Convert codes: verify hash and store raw bytes
+	for hash, hexData := range ew.Codes {
+		data, err := hexutil.Decode(hexData)
+		if err != nil {
+			return nil, fmt.Errorf("invalid code hex data for key %s: %w", hash, err)
+		}
+		computedHash := crypto.Keccak256Hash(data).Hex()
+		if computedHash != hash {
+			return nil, fmt.Errorf("code hash mismatch: expected %s, got %s", hash, computedHash)
+		}
+		w.Codes[string(data)] = struct{}{}
+	}
+
+	// Convert state: verify hash and store raw bytes
+	for hash, hexData := range ew.State {
+		data, err := hexutil.Decode(hexData)
+		if err != nil {
+			return nil, fmt.Errorf("invalid state hex data for key %s: %w", hash, err)
+		}
+		computedHash := crypto.Keccak256Hash(data).Hex()
+		if computedHash != hash {
+			return nil, fmt.Errorf("state hash mismatch: expected %s, got %s", hash, computedHash)
+		}
+		w.State[string(data)] = struct{}{}
+	}
+
+	return w, nil
 }

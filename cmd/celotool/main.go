@@ -30,6 +30,7 @@ func init() {
 	app = flags.NewApp("Celo tool")
 	app.Commands = []*cli.Command{
 		commandSend,
+		commandWitness,
 	}
 }
 
