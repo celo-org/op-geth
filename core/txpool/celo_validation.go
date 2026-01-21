@@ -6,17 +6,15 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/exchange"
+	"github.com/ethereum/go-ethereum/consensus/misc/eip1559"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
 )
 
 var (
-
-	// ErrGasPriceDoesNotExceedBaseFeeFloor is returned if the gas price specified is
-	// lower than the configured base-fee-floor
-	ErrGasPriceDoesNotExceedBaseFeeFloor = errors.New("gas-price is less than the base-fee-floor")
-	ErrMinimumEffectiveGasTipBelowMinTip = errors.New("effective gas tip at base-fee-floor is below threshold")
+	// ErrGasFeeCapBelowMinBaseFee is returned if the gas fee cap is below the minimum base fee
+	ErrGasFeeCapBelowMinBaseFee = errors.New("gas fee cap is below the minimum base fee")
 )
 
 // AcceptSet is a set of accepted transaction types for a transaction subpool.
@@ -69,15 +67,31 @@ func CeloValidateTransaction(tx *types.Transaction, head *types.Header,
 		return exchange.ErrUnregisteredFeeCurrency
 	}
 
-	if opts.Config.Celo != nil {
-		baseFeeFloor, err := exchange.ConvertCeloToCurrency(currencyCtx.ExchangeRates, tx.FeeCurrency(), new(big.Int).SetUint64(opts.Config.Celo.EIP1559BaseFeeFloor))
+	// Determine the base fee floor based on the fork
+	var baseFeeFloorNative *big.Int
+	if opts.Config.IsJovian(head.Time) {
+		// Post-Jovian: use OP minBaseFee from header
+		_, _, minBaseFee := eip1559.DecodeOptimismExtraData(opts.Config, head.Time, head.Extra)
+		if minBaseFee != nil && *minBaseFee > 0 {
+			baseFeeFloorNative = new(big.Int).SetUint64(*minBaseFee)
+		}
+	} else if opts.Config.Celo != nil {
+		// Pre-Jovian: use Celo config floor
+		baseFeeFloorNative = new(big.Int).SetUint64(opts.Config.Celo.EIP1559BaseFeeFloor)
+	}
+
+	if baseFeeFloorNative != nil {
+		baseFeeFloor, err := exchange.ConvertCeloToCurrency(
+			currencyCtx.ExchangeRates,
+			tx.FeeCurrency(),
+			baseFeeFloorNative,
+		)
 		if err != nil {
 			return err
 		}
-
 		// Check that the fee cap exceeds the base fee floor
 		if baseFeeFloor.Cmp(tx.GasFeeCap()) == 1 {
-			return ErrGasPriceDoesNotExceedBaseFeeFloor
+			return ErrGasFeeCapBelowMinBaseFee
 		}
 
 		// Make sure that the effective gas tip at the base fee floor is at least the
