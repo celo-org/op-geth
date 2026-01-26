@@ -43,9 +43,7 @@ func (r Receipt) MarshalJSON() ([]byte, error) {
 		OperatorFeeScalar     *hexutil.Uint64 `json:"operatorFeeScalar,omitempty"`
 		OperatorFeeConstant   *hexutil.Uint64 `json:"operatorFeeConstant,omitempty"`
 		DAFootprintGasScalar  *hexutil.Uint64 `json:"daFootprintGasScalar,omitempty"`
-
-		// Celo-specific receipt field
-		BaseFee *hexutil.Big `json:"baseFee,omitempty"`
+		BaseFee               *hexutil.Big    `json:"baseFee,omitempty"`
 	}
 	var enc Receipt
 	enc.Type = hexutil.Uint64(r.Type)
@@ -75,10 +73,7 @@ func (r Receipt) MarshalJSON() ([]byte, error) {
 	enc.OperatorFeeScalar = (*hexutil.Uint64)(r.OperatorFeeScalar)
 	enc.OperatorFeeConstant = (*hexutil.Uint64)(r.OperatorFeeConstant)
 	enc.DAFootprintGasScalar = (*hexutil.Uint64)(r.DAFootprintGasScalar)
-
-	// Celo-specific receipt field
 	enc.BaseFee = (*hexutil.Big)(r.BaseFee)
-
 	return json.Marshal(&enc)
 }
 
