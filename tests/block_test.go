@@ -68,6 +68,7 @@ func TestBlockchain(t *testing.T) {
 	bt.skipLoad(`.*\.meta/.*`)
 
 	bt.walk(t, blockTestDir, func(t *testing.T, name string, test *BlockTest) {
+		skipCeloTests(t, name)
 		execBlockTest(t, bt, test)
 	})
 	// There is also a LegacyTests folder, containing blockchain tests generated
@@ -87,6 +88,7 @@ func TestExecutionSpecBlocktests(t *testing.T) {
 	bt.skipLoad(".*prague/eip7002_el_triggerable_withdrawals/test_system_contract_deployment.json")
 
 	bt.walk(t, executionSpecBlockchainTestDir, func(t *testing.T, name string, test *BlockTest) {
+		skipCeloTests(t, name)
 		matches, err := regexp.MatchString("create2?-over_limit_(ones|zeros)", name)
 		if err != nil {
 			t.Errorf("Bad regexp: %s", err)
