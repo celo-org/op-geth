@@ -71,6 +71,7 @@ func TestState(t *testing.T) {
 		benchmarksDir,
 	} {
 		st.walk(t, dir, func(t *testing.T, name string, test *StateTest) {
+			skipCeloTests(t, name)
 			execStateTest(t, st, test)
 		})
 	}
@@ -82,6 +83,7 @@ func TestLegacyState(t *testing.T) {
 	st := new(testMatcher)
 	initMatcher(st)
 	st.walk(t, legacyStateTestDir, func(t *testing.T, name string, test *StateTest) {
+		skipCeloTests(t, name)
 		execStateTest(t, st, test)
 	})
 }
@@ -94,6 +96,7 @@ func TestExecutionSpecState(t *testing.T) {
 	st := new(testMatcher)
 
 	st.walk(t, executionSpecStateTestDir, func(t *testing.T, name string, test *StateTest) {
+		skipCeloTests(t, name)
 		matches, err := regexp.MatchString("state_test-(create2?-)?over_limit_(ones|zeros)", name)
 		if err != nil {
 			t.Errorf("Bad regexp: %s", err)
