@@ -16,6 +16,8 @@ permissions:
 jobs:
   build-scan-container-geth:
     runs-on: ['self-hosted', 'org', 'ubuntu-22-04']
+    env:
+      DOCKER_API_VERSION: "1.43"
     permissions:
       contents: read
       security-events: write
