@@ -7,6 +7,7 @@ import (
 const (
 	CeloMainnetChainID = 42220
 	CeloSepoliaChainID = 11142220
+	CeloChaosChainID   = 11162320
 )
 
 // GasLimits holds the gas limit changes for a given chain
