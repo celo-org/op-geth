@@ -18,6 +18,7 @@ package eth
 
 import (
 	"bytes"
+	"math/big"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -102,6 +103,24 @@ var receiptsTests = []struct {
 	{
 		input: []types.ReceiptForStorage{{CumulativeGasUsed: 555, Status: 1, Logs: receiptsTestLogs2, DepositNonce: u64(0x7a7), DepositReceiptVersion: u64(types.CanyonDepositReceiptVersion)}},
 		txs:   []*types.Transaction{types.NewTx(&types.DepositTx{})},
+	},
+
+	// Celo additional tests for CeloDynamicFeeTxV2 receipts
+	{
+		input: []types.ReceiptForStorage{{CumulativeGasUsed: 555, Status: 1, Logs: nil}},
+		txs:   []*types.Transaction{types.NewTx(&types.CeloDynamicFeeTxV2{ChainID: big.NewInt(1)})},
+	},
+	{
+		input: []types.ReceiptForStorage{{CumulativeGasUsed: 555, Status: 1, Logs: nil, BaseFee: big.NewInt(1000)}},
+		txs:   []*types.Transaction{types.NewTx(&types.CeloDynamicFeeTxV2{ChainID: big.NewInt(1)})},
+	},
+	{
+		input: []types.ReceiptForStorage{{CumulativeGasUsed: 555, Status: 1, Logs: receiptsTestLogs1, BaseFee: big.NewInt(1000)}},
+		txs:   []*types.Transaction{types.NewTx(&types.CeloDynamicFeeTxV2{ChainID: big.NewInt(1)})},
+	},
+	{
+		input: []types.ReceiptForStorage{{CumulativeGasUsed: 555, Status: 1, Logs: receiptsTestLogs2, BaseFee: big.NewInt(1000)}},
+		txs:   []*types.Transaction{types.NewTx(&types.CeloDynamicFeeTxV2{ChainID: big.NewInt(1)})},
 	},
 }
 
