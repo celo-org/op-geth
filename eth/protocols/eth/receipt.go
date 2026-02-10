@@ -34,10 +34,15 @@ type Receipt struct {
 	GasUsed           uint64
 	Logs              rlp.RawValue
 
-	// OP-Stack additions for deposit receipts
-	// The `optional` tags are required to make some upstream unit tests pass.
+	// OP-Stack additions for deposit receipts.
+	// The `optional` tags are vestigial — auto-RLP is bypassed by the custom
+	// EncodeRLP/DecodeRLP methods below, but we keep the tags for any callers
+	// that still introspect the struct via reflection.
 	DepositNonce          *uint64 `rlp:"optional"`
 	DepositReceiptVersion *uint64 `rlp:"optional"`
+
+	// Celo addition for CeloDynamicFeeTxV2 receipts.
+	BaseFee *big.Int `rlp:"optional"`
 }
 
 func newReceipt(tr *types.Receipt) Receipt {
@@ -53,10 +58,20 @@ func newReceipt(tr *types.Receipt) Receipt {
 	r.DepositNonce = tr.DepositNonce
 	r.DepositReceiptVersion = tr.DepositReceiptVersion
 
+	// Celo addition for CeloDynamicFeeTxV2 receipts
+	r.BaseFee = tr.BaseFee
+
 	return r
 }
 
-// OP-Stack addition for deposit receipts
+// Celo addition for CeloDynamicFeeTxV2 receipts.
+func (r *Receipt) maybeWriteCeloBaseFee(w *rlp.EncoderBuffer) {
+	if r.BaseFee != nil {
+		w.WriteBigInt(r.BaseFee)
+	}
+}
+
+// OP-Stack addition for deposit receipts.
 func (r *Receipt) maybeWriteDepositFields(w *rlp.EncoderBuffer, onlyWithVersion bool) {
 	// Post-Regolith+pre-Canyon receipts may have been stored in DBs with
 	// the deposit nonce but not the version.
@@ -74,6 +89,77 @@ func (r *Receipt) maybeWriteDepositFields(w *rlp.EncoderBuffer, onlyWithVersion 
 	}
 }
 
+// EncodeRLP implements rlp.Encoder. The encoding mirrors the original Celo
+// `encodeForNetwork69`: trailing fields after Logs are gated by which optional
+// fields are non-nil. For V2 receipts BaseFee is the only trailing field; for
+// deposit receipts it's DepositNonce/Version. Auto-RLP can't express this
+// because it would write nil-pointer placeholders ahead of any non-nil
+// optional, which the decoder then can't disambiguate.
+func (r *Receipt) EncodeRLP(w io.Writer) error {
+	enc := rlp.NewEncoderBuffer(w)
+	list := enc.List()
+	enc.WriteUint64(uint64(r.TxType))
+	enc.WriteBytes(r.PostStateOrStatus)
+	enc.WriteUint64(r.GasUsed)
+	enc.Write(r.Logs)
+	r.maybeWriteDepositFields(&enc, false)
+	r.maybeWriteCeloBaseFee(&enc)
+	enc.ListEnd(list)
+	return enc.Flush()
+}
+
+// DecodeRLP implements rlp.Decoder. It mirrors the original Celo
+// `decode69`+`decodeInnerList`: trailing fields after Logs are gated by TxType.
+func (r *Receipt) DecodeRLP(s *rlp.Stream) error {
+	if _, err := s.List(); err != nil {
+		return err
+	}
+	txType, err := s.Uint8()
+	if err != nil {
+		return fmt.Errorf("invalid txType: %w", err)
+	}
+	r.TxType = txType
+
+	r.PostStateOrStatus, err = s.Bytes()
+	if err != nil {
+		return fmt.Errorf("invalid postStateOrStatus: %w", err)
+	}
+	r.GasUsed, err = s.Uint64()
+	if err != nil {
+		return fmt.Errorf("invalid gasUsed: %w", err)
+	}
+	r.Logs, err = s.Raw()
+	if err != nil {
+		return fmt.Errorf("invalid logs: %w", err)
+	}
+
+	// OP-Stack: optional deposit receipt fields (only for deposit receipts).
+	if r.TxType == types.DepositTxType && s.MoreDataInList() {
+		dn, err := s.Uint64()
+		if err != nil {
+			return fmt.Errorf("invalid depositNonce: %w", err)
+		}
+		r.DepositNonce = &dn
+		if s.MoreDataInList() {
+			drv, err := s.Uint64()
+			if err != nil {
+				return fmt.Errorf("invalid depositReceiptVersion: %w", err)
+			}
+			r.DepositReceiptVersion = &drv
+		}
+	}
+	// Celo: optional base fee (only for CeloDynamicFeeTxV2 receipts).
+	if r.TxType == types.CeloDynamicFeeTxV2Type && s.MoreDataInList() {
+		var bf big.Int
+		if err := s.Decode(&bf); err != nil {
+			return fmt.Errorf("invalid baseFee: %w", err)
+		}
+		r.BaseFee = &bf
+	}
+
+	return s.ListEnd()
+}
+
 // encodeForHash encodes a receipt for the block receiptsRoot derivation.
 func (r *Receipt) encodeForHash(bloomBuf *[6]byte, out *bytes.Buffer) {
 	// For typed receipts, add the tx type.
@@ -88,6 +174,8 @@ func (r *Receipt) encodeForHash(bloomBuf *[6]byte, out *bytes.Buffer) {
 	bloom := r.bloom(bloomBuf)
 	w.WriteBytes(bloom[:])
 	w.Write(r.Logs)
+	// Celo addition: include base fee for CeloDynamicFeeTxV2 receipts.
+	r.maybeWriteCeloBaseFee(&w)
 	// Note that deposit fields must NOT be included in the receipt hash pre-Canyon,
 	// which is detected by checking for the presence of the version field.
 	r.maybeWriteDepositFields(&w, true)
@@ -122,67 +210,10 @@ func (r *Receipt) bloom(buffer *[6]byte) types.Bloom {
 }
 
 // decode assigns the fields of r by decoding the network format.
+// It delegates to DecodeRLP, which knows how to read trailing fields gated
+// by TxType (deposit nonce/version, or Celo BaseFee for V2 receipts).
 func (r *Receipt) decode(input []byte) error {
-	input, _, err := rlp.SplitList(input)
-	if err != nil {
-		return fmt.Errorf("inner list: %v", err)
-	}
-
-	// txType
-	var txType uint64
-	txType, input, err = rlp.SplitUint64(input)
-	if err != nil {
-		return fmt.Errorf("invalid txType: %w", err)
-	}
-	if txType > 0x7f {
-		return fmt.Errorf("invalid txType: too large")
-	}
-	r.TxType = byte(txType)
-
-	// status
-	r.PostStateOrStatus, input, err = rlp.SplitString(input)
-	if err != nil {
-		return fmt.Errorf("invalid postStateOrStatus: %w", err)
-	}
-	if len(r.PostStateOrStatus) > 1 && len(r.PostStateOrStatus) != 32 {
-		return fmt.Errorf("invalid postStateOrStatus length %d", len(r.PostStateOrStatus))
-	}
-
-	// gas
-	r.GasUsed, input, err = rlp.SplitUint64(input)
-	if err != nil {
-		return fmt.Errorf("invalid gasUsed: %w", err)
-	}
-
-	// logs
-	_, rest, err := rlp.SplitList(input)
-	if err != nil {
-		return fmt.Errorf("invalid logs: %w", err)
-	}
-	r.Logs = input[:len(input)-len(rest)]
-
-	// OP-Stack: optional deposit receipt fields
-	if len(rest) > 0 {
-		var dn uint64
-		dn, rest, err = rlp.SplitUint64(rest)
-		if err != nil {
-			return fmt.Errorf("invalid depositNonce: %w", err)
-		}
-		r.DepositNonce = &dn
-
-		if len(rest) > 0 {
-			var drv uint64
-			drv, rest, err = rlp.SplitUint64(rest)
-			if err != nil {
-				return fmt.Errorf("invalid depositReceiptVersion: %w", err)
-			}
-			r.DepositReceiptVersion = &drv
-		}
-	}
-	if len(rest) != 0 {
-		return fmt.Errorf("junk at end of receipt")
-	}
-	return nil
+	return rlp.DecodeBytes(input, r)
 }
 
 // ReceiptList is the block receipt list as downloaded by eth/69.
@@ -213,8 +244,9 @@ func (rl *ReceiptList) EncodeRLP(w io.Writer) error {
 }
 
 // EncodeForStorage encodes a list of receipts for the database.
-// It only strips the first element (TxType) from each receipt's
-// raw RLP without the actual decoding and re-encoding.
+// It strips the first element (TxType) from each receipt's raw RLP and,
+// for CeloDynamicFeeTxV2 receipts, prepends the empty-list marker (0xc0)
+// expected by the storage encoding.
 func (rl *ReceiptList) EncodeForStorage() (rlp.RawValue, error) {
 	var out bytes.Buffer
 	w := rlp.NewEncoderBuffer(&out)
@@ -225,11 +257,16 @@ func (rl *ReceiptList) EncodeForStorage() (rlp.RawValue, error) {
 		if err != nil {
 			return nil, fmt.Errorf("bad receipt: %v", err)
 		}
-		_, _, rest, err := rlp.Split(content)
+		txType, rest, err := rlp.SplitUint64(content)
 		if err != nil {
 			return nil, fmt.Errorf("bad receipt: %v", err)
 		}
 		inner := w.List()
+		// Celo addition: re-add the empty-list marker for CeloDynamicFeeTxV2 receipts.
+		if byte(txType) == types.CeloDynamicFeeTxV2Type {
+			marker := w.List()
+			w.ListEnd(marker)
+		}
 		w.Write(rest)
 		w.ListEnd(inner)
 	}
@@ -271,6 +308,12 @@ func blockReceiptsToNetwork(blockReceipts, blockBody rlp.RawValue) ([]byte, erro
 	for i := 0; it.Next(); i++ {
 		txType, _ := nextTxType()
 		content, _, _ := rlp.SplitList(it.Value())
+
+		// Celo addition: strip the empty list marker (0xc0) for CeloDynamicFeeTxV2 storage format.
+		if txType == types.CeloDynamicFeeTxV2Type && len(content) > 0 && content[0] == 0xc0 {
+			content = content[1:]
+		}
+
 		receiptList := enc.List()
 		enc.WriteUint64(uint64(txType))
 		enc.Write(content)
