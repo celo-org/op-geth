@@ -40,6 +40,9 @@ type Receipt struct {
 	// OP-Stack additions for deposit receipts
 	DepositNonce          *uint64
 	DepositReceiptVersion *uint64
+
+	// Celo addition for CeloDynamicFeeTxV2 receipts
+	BaseFee *big.Int
 }
 
 func newReceipt(tr *types.Receipt) Receipt {
@@ -54,6 +57,9 @@ func newReceipt(tr *types.Receipt) Receipt {
 	// OP-Stack addition for deposit receipts - these fields will be nil for non-deposit receipts
 	r.DepositNonce = tr.DepositNonce
 	r.DepositReceiptVersion = tr.DepositReceiptVersion
+
+	// Celo addition for CeloDynamicFeeTxV2 receipts
+	r.BaseFee = tr.BaseFee
 
 	return r
 }
@@ -108,6 +114,21 @@ func (r *Receipt) decodeInnerList(s *rlp.Stream, readTxType, readBloom bool) err
 			return fmt.Errorf("invalid txType: %w", err)
 		}
 	}
+
+	// Celo addition: skip the empty list marker for CeloDynamicFeeTxV2 in storage format.
+	// Storage format doesn't include the tx type byte, so it uses an empty list marker
+	// (0xc0) to identify CeloDynamicFeeTxV2 receipts. Network formats (eth/68, eth/69)
+	// include the type explicitly and don't have this marker.
+	if !readTxType && !readBloom && // storage format (eth/68: readBloom=true, eth/69: readTxType=true)
+		r.TxType == types.CeloDynamicFeeTxV2Type {
+		if _, err := s.List(); err != nil {
+			return fmt.Errorf("invalid CeloDynamicFeeTxV2 marker: %w", err)
+		}
+		if err := s.ListEnd(); err != nil {
+			return fmt.Errorf("invalid CeloDynamicFeeTxV2 marker: %w", err)
+		}
+	}
+
 	r.PostStateOrStatus, err = s.Bytes()
 	if err != nil {
 		return fmt.Errorf("invalid postStateOrStatus: %w", err)
@@ -144,7 +165,22 @@ func (r *Receipt) decodeInnerList(s *rlp.Stream, readTxType, readBloom bool) err
 		}
 	}
 
+	// Celo addition: read the base fee for CeloDynamicFeeTxV2 receipts, if present.
+	if r.TxType == types.CeloDynamicFeeTxV2Type && s.MoreDataInList() {
+		r.BaseFee = new(big.Int)
+		if err := s.Decode(r.BaseFee); err != nil {
+			return fmt.Errorf("invalid base fee: %w", err)
+		}
+	}
+
 	return s.ListEnd()
+}
+
+// Celo addition for CeloDynamicFeeTxV2 receipts
+func (r *Receipt) maybeWriteCeloBaseFee(w *rlp.EncoderBuffer) {
+	if r.BaseFee != nil {
+		w.WriteBigInt(r.BaseFee)
+	}
 }
 
 // OP-Stack addition for deposit receipts
@@ -169,10 +205,17 @@ func (r *Receipt) maybeWriteDepositFields(w *rlp.EncoderBuffer, onlyWithVersion 
 // the RLP encoding of types.ReceiptForStorage.
 func (r *Receipt) encodeForStorage(w *rlp.EncoderBuffer) {
 	list := w.List()
+	// Celo addition: mark CeloDynamicFeeTxV2 receipts with an empty list prefix
+	if r.TxType == types.CeloDynamicFeeTxV2Type {
+		markerList := w.List()
+		w.ListEnd(markerList)
+	}
 	w.WriteBytes(r.PostStateOrStatus)
 	w.WriteUint64(r.GasUsed)
 	w.Write(r.Logs)
 	r.maybeWriteDepositFields(w, false)
+	// Celo addition: include base fee for CeloDynamicFeeTxV2 receipts (after deposit fields for storage)
+	r.maybeWriteCeloBaseFee(w)
 	w.ListEnd(list)
 }
 
@@ -186,6 +229,7 @@ func (r *Receipt) encodeForNetwork68(buf *receiptListBuffers, w *rlp.EncoderBuff
 		bloom := r.bloom(&buf.bloom)
 		w.WriteBytes(bloom[:])
 		w.Write(r.Logs)
+		r.maybeWriteCeloBaseFee(w)
 		r.maybeWriteDepositFields(w, false)
 		w.ListEnd(list)
 	}
@@ -209,6 +253,7 @@ func (r *Receipt) encodeForNetwork69(w *rlp.EncoderBuffer) {
 	w.WriteBytes(r.PostStateOrStatus)
 	w.WriteUint64(r.GasUsed)
 	w.Write(r.Logs)
+	r.maybeWriteCeloBaseFee(w)
 	r.maybeWriteDepositFields(w, false)
 	w.ListEnd(list)
 }
@@ -228,6 +273,8 @@ func (r *Receipt) encodeForHash(buf *receiptListBuffers, out *bytes.Buffer) {
 	bloom := r.bloom(&buf.bloom)
 	w.WriteBytes(bloom[:])
 	w.Write(r.Logs)
+	// Celo addition: include base fee for CeloDynamicFeeTxV2 receipts.
+	r.maybeWriteCeloBaseFee(w)
 	// Note that deposit fields must NOT be included in the receipt hash pre-Canyon,
 	// which is detected by checking for the presence of the version field.
 	r.maybeWriteDepositFields(w, true)
@@ -474,6 +521,12 @@ func blockReceiptsToNetwork69(blockReceipts, blockBody rlp.RawValue) ([]byte, er
 	for i := 0; it.Next(); i++ {
 		txType, _ := nextTxType()
 		content, _, _ := rlp.SplitList(it.Value())
+
+		// Celo addition: strip the empty list marker (0xc0) for CeloDynamicFeeTxV2 storage format.
+		if txType == types.CeloDynamicFeeTxV2Type && len(content) > 0 && content[0] == 0xc0 {
+			content = content[1:]
+		}
+
 		receiptList := enc.List()
 		enc.WriteUint64(uint64(txType))
 		enc.Write(content)
