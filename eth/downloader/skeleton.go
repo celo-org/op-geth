@@ -48,6 +48,16 @@ const scratchHeaders = 131072
 // vs. dynamic interval fillings.
 const requestHeaders = 512
 
+// maxGapFill is the maximum number of blocks we'll try to fill via a small
+// p2p request rather than restarting the entire sync cycle. This avoids
+// tearing down and re-downloading 512 headers when the gap is only a few
+// blocks (common in OP Stack when op-node misses gossip updates).
+const maxGapFill = 64
+
+// gapFillTimeout is the time allowed for a small p2p header request to fill
+// a skeleton gap before falling back to a full sync restart.
+var gapFillTimeout = 5 * time.Second
+
 // errSyncLinked is an internal helper error to signal that the current sync
 // cycle linked up to the genesis block, this the skeleton syncer should ping
 // the backfiller to resume. Since we already have that logic on sync start,
@@ -650,7 +660,14 @@ func (s *skeleton) processNewHead(head *types.Header, final *types.Header) error
 		return fmt.Errorf("%w, tail: %d, head: %d, newHead: %d", errChainReorged, lastchain.Tail, lastchain.Head, number)
 	}
 	if lastchain.Head+1 < number {
-		return fmt.Errorf("%w, head: %d, newHead: %d", errChainGapped, lastchain.Head, number)
+		gap := number - lastchain.Head
+		if gap > maxGapFill {
+			return fmt.Errorf("%w, head: %d, newHead: %d", errChainGapped, lastchain.Head, number)
+		}
+		if err := s.fillGap(head, lastchain, gapFillTimeout); err != nil {
+			log.Debug("Failed to fill skeleton gap, falling back to restart", "head", lastchain.Head, "newHead", number, "err", err)
+			return fmt.Errorf("%w, head: %d, newHead: %d", errChainGapped, lastchain.Head, number)
+		}
 	}
 	if parent := rawdb.ReadSkeletonHeader(s.db, number-1); parent.Hash() != head.ParentHash {
 		return fmt.Errorf("%w, ancestor: %d, hash: %s, want: %s", errChainForked, number-1, parent.Hash(), head.ParentHash)
@@ -669,6 +686,87 @@ func (s *skeleton) processNewHead(head *types.Header, final *types.Header) error
 	if err := batch.Write(); err != nil {
 		log.Crit("Failed to write skeleton sync status", "err", err)
 	}
+	return nil
+}
+
+// fillGap fetches the headers between the current subchain head and the new
+// head from a peer, validates they form a contiguous chain, and writes them
+// to the skeleton database. This avoids restarting the entire sync cycle for
+// small gaps (e.g. when op-node misses a few gossip updates).
+func (s *skeleton) fillGap(head *types.Header, chain *subchain, timeout time.Duration) error {
+	number := head.Number.Uint64()
+	count := int(number - chain.Head - 1) // headers needed between old head and new head
+	if count == 0 {
+		return nil
+	}
+	// Pick any connected peer to request from (idle peers may all be busy
+	// with skeleton batch tasks during active syncing).
+	allPeers := s.peers.AllPeers()
+	if len(allPeers) == 0 {
+		return errors.New("no peers available for gap fill")
+	}
+	peer := allPeers[0]
+	// Request gap headers backward from number-1 (the new head itself is
+	// written by the caller in processNewHead)
+	resCh := make(chan *eth.Response)
+	req, err := peer.peer.RequestHeadersByNumber(number-1, count, 0, true, resCh)
+	if err != nil {
+		return fmt.Errorf("gap fill request failed: %w", err)
+	}
+	defer req.Close()
+	// Drain any response that raced with the timer to avoid permanently
+	// blocking the peer's read goroutine on res.Done.
+	defer func() {
+		select {
+		case res := <-resCh:
+			res.Done <- nil
+		default:
+		}
+	}()
+
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+
+	var headers []*types.Header
+	select {
+	case <-timer.C:
+		return errors.New("gap fill request timed out")
+	case res := <-resCh:
+		headers = *res.Res.(*eth.BlockHeadersRequest)
+	}
+	if len(headers) != count {
+		return fmt.Errorf("gap fill: expected %d headers, got %d", count, len(headers))
+	}
+	// Headers arrive in reverse order (highest number first). Validate the
+	// full chain links:
+	//   head.ParentHash == headers[0].Hash()
+	//   headers[0].ParentHash == headers[1].Hash()
+	//   ...
+	//   headers[last].ParentHash == existingHead.Hash()
+	if headers[0].Hash() != head.ParentHash {
+		return fmt.Errorf("gap fill: top header doesn't link to new head")
+	}
+	for i := 1; i < len(headers); i++ {
+		if headers[i].Hash() != headers[i-1].ParentHash {
+			return fmt.Errorf("gap fill: chain broken at position %d", i)
+		}
+	}
+	existing := rawdb.ReadSkeletonHeader(s.db, chain.Head)
+	if existing == nil || existing.Hash() != headers[len(headers)-1].ParentHash {
+		return fmt.Errorf("gap fill: bottom header doesn't link to existing chain head")
+	}
+	// Validation passed — write gap headers and extend the subchain
+	batch := s.db.NewBatch()
+	for _, header := range headers {
+		rawdb.WriteSkeletonHeader(batch, header)
+	}
+	chain.Head = number - 1 // the new head itself will be written by processNewHead
+	s.saveSyncStatus(batch)
+
+	if err := batch.Write(); err != nil {
+		return fmt.Errorf("gap fill: failed to write headers: %w", err)
+	}
+	log.Info("Filled skeleton gap via p2p", "from", chain.Head-uint64(count)+1, "to", chain.Head, "headers", count)
 	return nil
 }
 
