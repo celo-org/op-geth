@@ -699,19 +699,25 @@ func (s *skeleton) fillGap(head *types.Header, chain *subchain, timeout time.Dur
 	if count == 0 {
 		return nil
 	}
-	// Pick any connected peer to request from (idle peers may all be busy
-	// with skeleton batch tasks during active syncing).
+	// Try connected peers until one accepts the request (peers may be
+	// shutting down, so iterate rather than failing on the first error).
 	allPeers := s.peers.AllPeers()
 	if len(allPeers) == 0 {
 		return errors.New("no peers available for gap fill")
 	}
-	peer := allPeers[0]
-	// Request gap headers backward from number-1 (the new head itself is
-	// written by the caller in processNewHead)
-	resCh := make(chan *eth.Response)
-	req, err := peer.peer.RequestHeadersByNumber(number-1, count, 0, true, resCh)
-	if err != nil {
-		return fmt.Errorf("gap fill request failed: %w", err)
+	var (
+		resCh = make(chan *eth.Response)
+		req   *eth.Request
+	)
+	for _, p := range allPeers {
+		r, err := p.peer.RequestHeadersByNumber(number-1, count, 0, true, resCh)
+		if err == nil {
+			req = r
+			break
+		}
+	}
+	if req == nil {
+		return errors.New("all peers rejected gap fill request")
 	}
 	defer req.Close()
 	// Drain any response that raced with the timer to avoid permanently
