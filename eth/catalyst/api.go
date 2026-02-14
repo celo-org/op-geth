@@ -322,6 +322,17 @@ func (api *ConsensusAPI) forkchoiceUpdated(update engine.ForkchoiceStateV1, payl
 		// probably resyncing. Ignore the update.
 		log.Info("Ignoring beacon update to old head", "number", block.NumberU64(), "hash", update.HeadBlockHash, "age", common.PrettyAge(time.Unix(int64(block.Time()), 0)), "have", api.eth.BlockChain().CurrentBlock().Number)
 		return valid(nil), nil
+	} else {
+		// OP-Stack: block is canonical but not the current head. During snap sync
+		// or execution sync, the downloader may advance the canonical chain far
+		// beyond the CL's forkchoice target. With async buffer flushing, this gap
+		// can exceed the 128 diff layer limit, causing the target block's state to
+		// be pruned from the layer tree. Call SetCanonical to ensure the state is
+		// available (recovering it from state history if necessary) before any
+		// payload building is attempted.
+		if latestValid, err := api.eth.BlockChain().SetCanonical(block); err != nil {
+			return engine.ForkChoiceResponse{PayloadStatus: engine.PayloadStatusV1{Status: engine.INVALID, LatestValidHash: &latestValid}}, err
+		}
 	}
 	api.eth.SetSynced()
 
