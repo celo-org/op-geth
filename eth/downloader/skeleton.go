@@ -210,6 +210,7 @@ type skeleton struct {
 	started  time.Time         // Timestamp when the skeleton syncer was created
 	logged   time.Time         // Timestamp when progress was last logged to the user
 	pulled   uint64            // Number of headers downloaded in this run
+	filled   uint64            // Number of headers consumed by the backfiller
 
 	scratchSpace  []*types.Header // Scratch space to accumulate headers in (first = recent)
 	scratchOwners []string        // Peer IDs owning chunks of the scratch space (pend or delivered)
@@ -1110,17 +1111,23 @@ func (s *skeleton) processResponse(res *headerResponse) (linked bool, merged boo
 	}
 	// Print a progress report making the UX a bit nicer
 	left := s.progress.Subchains[0].Tail - 1
+	if s.filled < left {
+		left -= s.filled
+	} else {
+		left = 0
+	}
 	if linked {
 		left = 0
 	}
 	if time.Since(s.logged) > 8*time.Second || left == 0 {
 		s.logged = time.Now()
 
-		if s.pulled == 0 {
+		done := s.pulled + s.filled
+		if done == 0 {
 			log.Info("Beacon sync starting", "left", left)
 		} else {
-			eta := float64(time.Since(s.started)) / float64(s.pulled) * float64(left)
-			log.Info("Syncing beacon headers", "downloaded", s.pulled, "left", left, "eta", common.PrettyDuration(eta))
+			eta := float64(time.Since(s.started)) / float64(done) * float64(left)
+			log.Info("Syncing beacon headers", "downloaded", done, "left", left, "eta", common.PrettyDuration(eta))
 		}
 	}
 	return linked, merged
@@ -1166,11 +1173,13 @@ func (s *skeleton) cleanStales(filled *types.Header) error {
 			return fmt.Errorf("filled header is discontinuous with subchain: %d %s, please file an issue", number, filled.Hash())
 		}
 		start, end = s.progress.Subchains[0].Tail, number+1 // remove headers in [tail, filled]
+		s.filled += tail.Number.Uint64() - s.progress.Subchains[0].Tail
 		s.progress.Subchains[0].Tail = tail.Number.Uint64()
 		s.progress.Subchains[0].Next = tail.ParentHash
 	} else {
 		// The skeleton chain is fully consumed, set both head and tail as filled.
 		start, end = s.progress.Subchains[0].Tail, filled.Number.Uint64() // remove headers in [tail, filled)
+		s.filled += filled.Number.Uint64() - s.progress.Subchains[0].Tail
 		s.progress.Subchains[0].Tail = filled.Number.Uint64()
 		s.progress.Subchains[0].Next = filled.ParentHash
 
