@@ -968,3 +968,75 @@ func checkSkeletonProgress(db ethdb.KeyValueReader, unpredictable bool, peers []
 	}
 	return nil
 }
+
+// Tests that the filled accounting correctly tracks blocks consumed by the
+// backfiller via cleanStales, so that the "left" progress metric does not
+// become inflated across sync cycle restarts.
+func TestSkeletonFilledAccounting(t *testing.T) {
+	// Create a simple 100-block chain
+	chain := []*types.Header{{Number: big.NewInt(0)}}
+	for i := 1; i <= 100; i++ {
+		chain = append(chain, &types.Header{
+			ParentHash: chain[i-1].Hash(),
+			Number:     big.NewInt(int64(i)),
+		})
+	}
+	// Set up a database with skeleton headers for blocks 10-100
+	db := rawdb.NewMemoryDatabase()
+	for i := 10; i <= 100; i++ {
+		rawdb.WriteSkeletonHeader(db, chain[i])
+	}
+	skeleton := &skeleton{
+		db: db,
+		progress: &skeletonProgress{
+			Subchains: []*subchain{
+				{Head: 100, Tail: 10, Next: chain[9].Hash()},
+			},
+		},
+	}
+	// Before any cleaning, filled should be zero and left should reflect the
+	// raw tail position.
+	if skeleton.filled != 0 {
+		t.Fatalf("initial filled should be 0, got %d", skeleton.filled)
+	}
+	initialLeft := skeleton.progress.Subchains[0].Tail - 1 // 9
+	if initialLeft != 9 {
+		t.Fatalf("initial left should be 9, got %d", initialLeft)
+	}
+
+	// Simulate backfiller processing blocks 10 through 50. cleanStales should
+	// move Tail from 10 to 51 and record 41 filled blocks.
+	if err := skeleton.cleanStales(chain[50]); err != nil {
+		t.Fatalf("first cleanStales failed: %v", err)
+	}
+	if skeleton.filled != 41 {
+		t.Fatalf("filled after first clean: have %d, want 41", skeleton.filled)
+	}
+	// Raw left (Tail-1) is now 50, but corrected left should still be 9
+	// because the 41 filled blocks cancel out the Tail increase.
+	tail := skeleton.progress.Subchains[0].Tail
+	if tail != 51 {
+		t.Fatalf("tail after first clean: have %d, want 51", tail)
+	}
+	correctedLeft := tail - 1 - skeleton.filled
+	if correctedLeft != initialLeft {
+		t.Fatalf("corrected left after first clean: have %d, want %d", correctedLeft, initialLeft)
+	}
+
+	// Simulate backfiller processing more blocks (51 through 80). The filled
+	// counter should accumulate and corrected left should remain stable.
+	if err := skeleton.cleanStales(chain[80]); err != nil {
+		t.Fatalf("second cleanStales failed: %v", err)
+	}
+	if skeleton.filled != 71 {
+		t.Fatalf("filled after second clean: have %d, want 71", skeleton.filled)
+	}
+	tail = skeleton.progress.Subchains[0].Tail
+	if tail != 81 {
+		t.Fatalf("tail after second clean: have %d, want 81", tail)
+	}
+	correctedLeft = tail - 1 - skeleton.filled
+	if correctedLeft != initialLeft {
+		t.Fatalf("corrected left after second clean: have %d, want %d", correctedLeft, initialLeft)
+	}
+}
