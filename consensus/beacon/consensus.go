@@ -243,10 +243,11 @@ func (beacon *Beacon) verifyHeader(chain consensus.ChainHeaderReader, header, pa
 		isCeloMigrationBlock := chain.Config().IsMigratedChain() &&
 			chain.Config().BedrockBlock != nil &&
 			chain.Config().BedrockBlock.Cmp(header.Number) == 0
-		if !isCeloMigrationBlock {
-			if err := eip1559.ValidateOptimismExtraData(chain.Config(), header.Time, header.Extra); err != nil {
-				return fmt.Errorf("invalid optimism extraData: %w", err)
-			}
+		if isCeloMigrationBlock {
+			return
+		}
+		if err := eip1559.ValidateOptimismExtraData(chain.Config(), header.Time, header.Extra); err != nil {
+			return fmt.Errorf("invalid optimism extraData: %w", err)
 		}
 	}
 	// Verify the seal parts. Ensure the nonce and uncle hash are the expected value.
