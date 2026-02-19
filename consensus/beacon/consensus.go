@@ -244,7 +244,7 @@ func (beacon *Beacon) verifyHeader(chain consensus.ChainHeaderReader, header, pa
 			chain.Config().BedrockBlock != nil &&
 			chain.Config().BedrockBlock.Cmp(header.Number) == 0
 		if isCeloMigrationBlock {
-			return
+			return nil
 		}
 		if err := eip1559.ValidateOptimismExtraData(chain.Config(), header.Time, header.Extra); err != nil {
 			return fmt.Errorf("invalid optimism extraData: %w", err)
