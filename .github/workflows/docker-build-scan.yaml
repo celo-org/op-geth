@@ -7,38 +7,26 @@ on:
       - '!**'
   workflow_dispatch:
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-permissions:
-  contents: read
-
 jobs:
   build-scan-container-geth:
-    runs-on: ['self-hosted', 'org', 'ubuntu-22-04']
     permissions:
-      contents: read
+      contents: write
+      actions: read
+      pull-requests: write
       security-events: write
+      attestations: write
       id-token: write
-    steps:
-      - uses: actions/checkout@v4
-      - name: Login at GCP Artifact Registry
-        uses: celo-org/reusable-workflows/.github/actions/auth-gcp-artifact-registry@v2.0.5
-        with:
-          workload-id-provider: projects/1094498259535/locations/global/workloadIdentityPools/gh-op-geth/providers/github-by-repos
-          service-account: op-geth-dev@blockchaintestsglobaltestnet.iam.gserviceaccount.com
-          docker-gcp-registries: us-west1-docker.pkg.dev
-      - name: Install envsubst
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gettext-base
-      - name: Build and push container
-        uses: celo-org/reusable-workflows/.github/actions/build-container@v2.0.5
-        with:
-          platforms: ${{ startsWith(github.ref, 'refs/heads/celo') && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
-          registry: us-west1-docker.pkg.dev/blockchaintestsglobaltestnet/dev-images/op-geth
-          tags: ${{ github.sha }}
-          context: .
-          dockerfile: Dockerfile
-          push: true
-          trivy: ${{ startsWith(github.ref, 'refs/heads/celo') }}
+    concurrency:
+      group:   ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+      cancel-in-progress: true
+    uses: celo-org/reusable-workflows/.github/workflows/docker-build.yaml@v3.1
+    with:
+      workload-id-provider: projects/1094498259535/locations/global/workloadIdentityPools/gh-op-geth/providers/github-by-repos
+      service-account: op-geth-dev@blockchaintestsglobaltestnet.iam.gserviceaccount.com
+      artifact-registry: us-west1-docker.pkg.dev/blockchaintestsglobaltestnet/dev-images/op-geth
+      access-token-lifetime: 60m
+      platforms: ${{ startsWith(github.ref, 'refs/heads/celo') && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
+      tags: ${{ github.sha }}
+      context: .
+      trivy-enabled: ${{ startsWith(github.ref, 'refs/heads/celo') }}
+      timeout-minutes: 120
