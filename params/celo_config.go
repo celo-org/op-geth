@@ -86,8 +86,8 @@ var (
 		EcotoneTime:  newUint64(0),
 		FjordTime:    newUint64(0),
 		GraniteTime:  newUint64(0),
-		HoloceneTime: nil,
-		IsthmusTime:  nil,
+		HoloceneTime: newUint64(0),
+		IsthmusTime:  newUint64(0),
 		InteropTime:  nil,
 
 		// Celo forks
