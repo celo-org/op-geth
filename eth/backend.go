@@ -285,6 +285,13 @@ func New(stack *node.Node, config *ethconfig.Config) (*Ethereum, error) {
 		activationTime := params.CeloMainnetIsthmusTimestamp
 		overrides.OverrideOptimismHolocene = &activationTime
 		overrides.OverrideOptimismIsthmus = &activationTime
+
+		jovianActivationTime := params.CeloMainnetJovianTimestamp
+		overrides.OverrideOptimismJovian = &jovianActivationTime
+	}
+	if networkID == params.CeloSepoliaChainID {
+		jovianActivationTime := params.CeloSepoliaJovianTimestamp
+		overrides.OverrideOptimismJovian = &jovianActivationTime
 	}
 
 	if config.OverrideOsaka != nil {
