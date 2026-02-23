@@ -32,12 +32,12 @@ jobs:
     concurrency:
       group:   ${{ github.workflow }}-${{ github.head_ref || github.ref }}
       cancel-in-progress: true
-    uses: celo-org/reusable-workflows/.github/workflows/docker-build.yaml@v3.0.0-alpha
+    uses: celo-org/reusable-workflows/.github/workflows/docker-build.yaml@v3.1
     with:
       workload-id-provider: projects/1094498259535/locations/global/workloadIdentityPools/gh-op-geth-release/providers/github-by-repos
       service-account: op-geth-release@blockchaintestsglobaltestnet.iam.gserviceaccount.com
       artifact-registry: us-west1-docker.pkg.dev/devopsre/celo-blockchain-public/op-geth
-      access-token-lifetime: 120m
+      access-token-lifetime: 60m
       platforms: linux/amd64,linux/arm64
       tags: ${{ needs.set-tags.outputs.tags }}
       context: .
