@@ -339,6 +339,33 @@ func (o *ChainOverrides) apply(cfg *params.ChainConfig) error {
 		}
 	}
 
+	// Celo chain defaults — sets override values for hardfork times that may be missing
+	// from the superchain registry or genesis file. Only sets overrides that haven't
+	// already been explicitly provided, so CLI flags always win. The overrides are then
+	// applied below in the normal override flow.
+	// This is a temporary measure until the superchain registry is fully up to date.
+	// See https://github.com/celo-org/celo-blockchain-planning/issues/1346
+	if cfg.IsOptimism() && cfg.ChainID != nil && cfg.ChainID.IsUint64() {
+		switch cfg.ChainID.Uint64() {
+		case params.CeloMainnetChainID:
+			if o.OverrideOptimismHolocene == nil {
+				t := params.CeloMainnetIsthmusTimestamp
+				o.OverrideOptimismHolocene = &t
+			}
+			if o.OverrideOptimismIsthmus == nil {
+				t := params.CeloMainnetIsthmusTimestamp
+				o.OverrideOptimismIsthmus = &t
+			}
+		case params.CeloSepoliaChainID:
+			// Sepolia had isthmus active from genesis but the superchain
+			// registry genesis is missing the isthmus time.
+			if o.OverrideOptimismIsthmus == nil {
+				zero := uint64(0)
+				o.OverrideOptimismIsthmus = &zero
+			}
+		}
+	}
+
 	if o.OverrideOsaka != nil {
 		cfg.OsakaTime = o.OverrideOsaka
 	}
