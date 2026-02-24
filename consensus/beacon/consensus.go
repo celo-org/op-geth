@@ -239,8 +239,16 @@ func (beacon *Beacon) verifyHeader(chain consensus.ChainHeaderReader, header, pa
 	}
 	// Validate Optimism extraData format (skip genesis block which may have non-empty extraData)
 	if chain.Config().IsOptimism() && !chain.Config().IsOptimismGenesisBlock(header.Number) {
-		if err := eip1559.ValidateOptimismExtraData(chain.Config(), header.Time, header.Extra); err != nil {
-			return fmt.Errorf("invalid optimism extraData: %w", err)
+		// The Celo L2 migration block has non-empty extraData ("Celo L2 migration"
+		// marker), exempt it from the standard OP Stack extraData validation which
+		// requires empty extraData before Holocene.
+		isCeloMigrationBlock := chain.Config().IsMigratedChain() &&
+			chain.Config().BedrockBlock != nil &&
+			chain.Config().BedrockBlock.Cmp(header.Number) == 0
+		if !isCeloMigrationBlock {
+			if err := eip1559.ValidateOptimismExtraData(chain.Config(), header.Time, header.Extra); err != nil {
+				return fmt.Errorf("invalid optimism extraData: %w", err)
+			}
 		}
 	}
 	// Verify the seal parts. Ensure the nonce and uncle hash are the expected value.
