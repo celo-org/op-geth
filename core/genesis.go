@@ -339,10 +339,12 @@ func (o *ChainOverrides) apply(cfg *params.ChainConfig) error {
 		}
 	}
 
-	// Celo chain defaults — sets override values for hardfork times that may be missing
-	// from the superchain registry or genesis file. Only sets overrides that haven't
-	// already been explicitly provided, so CLI flags always win. The overrides are then
-	// applied below in the normal override flow.
+	// Celo chain defaults — fills in config values that may be missing from the
+	// superchain registry or genesis file. The superchain registry does not know
+	// about Celo-specific fields (Cel2Time, GingerbreadBlock, Celo config), and
+	// when ApplySuperchainUpgrades replaces the config above, those fields are
+	// lost. This block restores them. Hardfork overrides are set on the
+	// ChainOverrides struct so they flow through the normal override logic below.
 	// This is a temporary measure until the superchain registry is fully up to date.
 	// See https://github.com/celo-org/celo-blockchain-planning/issues/1346
 	if cfg.IsOptimism() && cfg.ChainID != nil && cfg.ChainID.IsUint64() {
@@ -356,12 +358,36 @@ func (o *ChainOverrides) apply(cfg *params.ChainConfig) error {
 				t := params.CeloMainnetIsthmusTimestamp
 				o.OverrideOptimismIsthmus = &t
 			}
+			if cfg.Cel2Time == nil {
+				t := params.CeloMainnetCel2Timestamp
+				cfg.Cel2Time = &t
+			}
+			if cfg.GingerbreadBlock == nil {
+				cfg.GingerbreadBlock = new(big.Int).SetUint64(params.CeloMainnetGingerbreadBlock)
+			}
+			if cfg.Celo == nil {
+				cfg.Celo = &params.CeloConfig{
+					EIP1559BaseFeeFloor: params.CeloMainnetBaseFeeFloor,
+				}
+			}
 		case params.CeloSepoliaChainID:
 			// Sepolia had isthmus active from genesis but the superchain
-			// registry genesis is missing the isthmus time.
+			// registry is missing the isthmus time and Celo-specific fields.
 			if o.OverrideOptimismIsthmus == nil {
 				zero := uint64(0)
 				o.OverrideOptimismIsthmus = &zero
+			}
+			if cfg.Cel2Time == nil {
+				t := params.CeloSepoliaCel2Timestamp
+				cfg.Cel2Time = &t
+			}
+			if cfg.GingerbreadBlock == nil {
+				cfg.GingerbreadBlock = new(big.Int).SetUint64(params.CeloSepoliaGingerbreadBlock)
+			}
+			if cfg.Celo == nil {
+				cfg.Celo = &params.CeloConfig{
+					EIP1559BaseFeeFloor: params.CeloSepoliaBaseFeeFloor,
+				}
 			}
 		}
 	}
