@@ -14,7 +14,7 @@ workdir=$(mktemp -d)
 # Clone the registry
 echo "Cloning SR..."
 cd "$repodir"
-git clone --no-checkout --depth 1 --shallow-submodules https://github.com/ethereum-optimism/superchain-registry.git
+git clone --no-checkout --depth 1 --shallow-submodules https://github.com/celo-org/superchain-registry.git
 cd "$repodir/superchain-registry"
 git fetch --depth 1 origin "$REGISTRY_COMMIT"
 git checkout "$REGISTRY_COMMIT"
@@ -54,9 +54,7 @@ process_network_dir() {
               # Boba Sepolia
               || "$chain_id" -eq 28882
               # Boba Mainnet
-              || "$chain_id" -eq 288
-              # Celo Mainnet: non-standard genesis format (forked from Ethereum, then converted to L2)
-              || "$chain_id" -eq 42220 ]];
+              || "$chain_id" -eq 288 ]];
         then
             echo "Skipping $network_name/$chain_name ($chain_id)"
             rm "$toml_file"

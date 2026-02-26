@@ -24,6 +24,7 @@ type ChainConfig struct {
 	Hardforks         HardforkConfig  `toml:"hardforks"`
 	Interop           *Interop        `toml:"interop,omitempty"`
 	Optimism          *OptimismConfig `toml:"optimism,omitempty"`
+	Celo              *CeloConfig     `toml:"celo,omitempty"`
 
 	AltDA *AltDAConfig `toml:"alt_da,omitempty"`
 
@@ -53,12 +54,19 @@ type HardforkConfig struct {
 	InteropTime  *uint64 `toml:"interop_time"`
 	// Optional Forks
 	PectraBlobScheduleTime *uint64 `toml:"pectra_blob_schedule_time,omitempty"`
+	// Celo-specific forks
+	Cel2Time         *uint64 `toml:"cel2_time,omitempty"`
+	GingerbreadBlock *uint64 `toml:"gingerbread_block,omitempty"`
 }
 
 type OptimismConfig struct {
 	EIP1559Elasticity        uint64  `toml:"eip1559_elasticity"`
 	EIP1559Denominator       uint64  `toml:"eip1559_denominator"`
 	EIP1559DenominatorCanyon *uint64 `toml:"eip1559_denominator_canyon"`
+}
+
+type CeloConfig struct {
+	EIP1559BaseFeeFloor uint64 `toml:"eip1559_base_fee_floor"`
 }
 
 type AltDAConfig struct {
