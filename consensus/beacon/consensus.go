@@ -243,7 +243,8 @@ func (beacon *Beacon) verifyHeader(chain consensus.ChainHeaderReader, header, pa
 		isCeloMigrationBlock := chain.Config().IsMigratedChain() &&
 			chain.Config().BedrockBlock != nil &&
 			chain.Config().BedrockBlock.Cmp(header.Number) == 0
-		if !isCeloMigrationBlock {
+			// Validate Optimism extraData format (skip genesis block which may have non-empty extraData)
+		if !isCeloMigrationBlock && !chain.Config().IsOptimismGenesisBlock(header.Number) {
 			if err := eip1559.ValidateOptimismExtraData(chain.Config(), header.Time, header.Extra); err != nil {
 				return fmt.Errorf("invalid optimism extraData: %w", err)
 			}

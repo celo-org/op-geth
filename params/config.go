@@ -36,9 +36,10 @@ var (
 )
 
 const (
-	OPMainnetChainID   = 10
-	BaseMainnetChainID = 8453
-	baseSepoliaChainID = 84532
+	OPMainnetChainID         = 10
+	OPMainnetGenesisBlockNum = 105235063
+	BaseMainnetChainID       = 8453
+	baseSepoliaChainID       = 84532
 )
 
 func newUint64(val uint64) *uint64 { return &val }
@@ -1094,6 +1095,19 @@ func (c *ChainConfig) IsMigratedChain() bool {
 // IsOptimism returns whether the node is an optimism node or not.
 func (c *ChainConfig) IsOptimism() bool {
 	return c.Optimism != nil
+}
+
+// IsOptimismGenesisBlock returns true if the given block number is the genesis block for this
+// Optimism chain. For OP Mainnet (chain ID 10), the genesis block is 105235063. For all other
+// OP chains, the genesis block is 0.
+func (c *ChainConfig) IsOptimismGenesisBlock(num *big.Int) bool {
+	if !c.IsOptimism() || num == nil {
+		return false
+	}
+	if c.ChainID.Cmp(big.NewInt(OPMainnetChainID)) == 0 {
+		return num.Uint64() == OPMainnetGenesisBlockNum
+	}
+	return num.Sign() == 0
 }
 
 // IsOptimismBedrock returns true iff this is an optimism node & bedrock is active
