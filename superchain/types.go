@@ -54,8 +54,7 @@ type HardforkConfig struct {
 	// Optional Forks
 	PectraBlobScheduleTime *uint64 `toml:"pectra_blob_schedule_time,omitempty"`
 	// Celo-specific forks
-	Cel2Time         *uint64 `toml:"cel2_time,omitempty"`
-	GingerbreadBlock *uint64 `toml:"gingerbread_block,omitempty"`
+	Cel2Time *uint64 `toml:"cel2_time,omitempty"`
 }
 
 type OptimismConfig struct {
