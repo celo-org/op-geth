@@ -23,14 +23,12 @@ func TestNonCeloChainHasNoCeloFields(t *testing.T) {
 	t.Run("OP Mainnet", func(t *testing.T) {
 		cfg := loadChainConfig(t, OPMainnetChainID)
 		assert.Nil(t, cfg.Cel2Time)
-		assert.Nil(t, cfg.GingerbreadBlock)
 		assert.Nil(t, cfg.Celo)
 	})
 
 	t.Run("Base Mainnet", func(t *testing.T) {
 		cfg := loadChainConfig(t, BaseMainnetChainID)
 		assert.Nil(t, cfg.Cel2Time)
-		assert.Nil(t, cfg.GingerbreadBlock)
 		assert.Nil(t, cfg.Celo)
 	})
 }
@@ -39,7 +37,6 @@ func TestCeloChainHasCeloFields(t *testing.T) {
 	t.Run("Celo Mainnet", func(t *testing.T) {
 		cfg := loadChainConfig(t, CeloMainnetChainID)
 		assert.NotNil(t, cfg.Cel2Time)
-		assert.NotNil(t, cfg.GingerbreadBlock)
 		require.NotNil(t, cfg.Celo)
 		assert.NotZero(t, cfg.Celo.EIP1559BaseFeeFloor)
 	})
@@ -47,7 +44,6 @@ func TestCeloChainHasCeloFields(t *testing.T) {
 	t.Run("Celo Sepolia", func(t *testing.T) {
 		cfg := loadChainConfig(t, CeloSepoliaChainID)
 		assert.NotNil(t, cfg.Cel2Time)
-		assert.NotNil(t, cfg.GingerbreadBlock)
 		require.NotNil(t, cfg.Celo)
 		assert.NotZero(t, cfg.Celo.EIP1559BaseFeeFloor)
 	})
