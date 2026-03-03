@@ -61,6 +61,7 @@ func LoadOPStackChainConfig(chConfig *superchain.ChainConfig) (*ChainConfig, err
 		TerminalTotalDifficulty: common.Big0,
 		Ethash:                  nil,
 		Clique:                  nil,
+		GingerbreadBlock:        common.Big0,
 	}
 
 	if chConfig.Optimism != nil {
@@ -82,9 +83,6 @@ func LoadOPStackChainConfig(chConfig *superchain.ChainConfig) (*ChainConfig, err
 	if hardforks.Cel2Time != nil {
 		out.Cel2Time = uint64ptr(*hardforks.Cel2Time)
 	}
-	if hardforks.GingerbreadBlock != nil {
-		out.GingerbreadBlock = new(big.Int).SetUint64(*hardforks.GingerbreadBlock)
-	}
 
 	// special overrides for OP-Stack chains with pre-Regolith upgrade history
 	switch chConfig.ChainID {
@@ -96,6 +94,7 @@ func LoadOPStackChainConfig(chConfig *superchain.ChainConfig) (*ChainConfig, err
 		out.MergeNetsplitBlock = big.NewInt(105235063)
 		out.BedrockBlock = big.NewInt(105235063)
 	case CeloMainnetChainID:
+		out.GingerbreadBlock = big.NewInt(21616000)
 		out.BerlinBlock = big.NewInt(31056500)
 		out.LondonBlock = big.NewInt(31056500)
 		out.ArrowGlacierBlock = big.NewInt(31056500)
