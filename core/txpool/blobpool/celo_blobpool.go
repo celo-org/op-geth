@@ -6,9 +6,11 @@ import (
 )
 
 func (pool *BlobPool) recreateCeloProperties() {
+	head := pool.head.Load()
 	pool.celoBackend = &contracts.CeloBackend{
 		ChainConfig: pool.chain.Config(),
 		State:       pool.state,
+		BlockTime:   head.Time,
 	}
 	currencyContext, err := contracts.GetFeeCurrencyContext(pool.celoBackend)
 	if err != nil {

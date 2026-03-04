@@ -16,6 +16,7 @@ import (
 type CeloBackend struct {
 	ChainConfig *params.ChainConfig
 	State       vm.StateDB
+	BlockTime   uint64 // Current block timestamp, needed for correct fork rule selection
 }
 
 // ContractCaller implementation
@@ -34,15 +35,12 @@ func (b *CeloBackend) CallContract(ctx context.Context, call ethereum.CallMsg, b
 		call.Value = new(big.Int)
 	}
 
-	// Minimal initialization, might need to be extended when CeloBackend
-	// is used in more places. Also initializing blockNumber and time with
-	// 0 works now, but will break once we add hardforks at a later time.
 	if blockNumber == nil {
 		blockNumber = common.Big0
 	}
 	blockCtx := vm.BlockContext{
 		BlockNumber: blockNumber,
-		Time:        0,
+		Time:        b.BlockTime,
 		Random:      &common.Hash{}, // Setting this is important since it is used to set IsMerge
 	}
 	vmConfig := vm.Config{}
@@ -63,7 +61,7 @@ func (b *CeloBackend) CallContract(ctx context.Context, call ethereum.CallMsg, b
 func (b *CeloBackend) NewEVM(feeCurrencyContext *common.FeeCurrencyContext) *vm.EVM {
 	blockCtx := vm.BlockContext{
 		BlockNumber: new(big.Int),
-		Time:        0,
+		Time:        b.BlockTime,
 		Transfer: func(state vm.StateDB, from common.Address, to common.Address, value *uint256.Int) {
 			if value.Cmp(common.U2560) != 0 {
 				panic("Non-zero transfers not implemented, yet.")

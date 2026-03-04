@@ -49,6 +49,7 @@ func (c *CeloAPI) celoBackendCurrentState() (*contracts.CeloBackend, error) {
 	cb := &contracts.CeloBackend{
 		ChainConfig: c.eth.BlockChain().Config(),
 		State:       state,
+		BlockTime:   c.eth.BlockChain().CurrentBlock().Time,
 	}
 	return cb, nil
 }

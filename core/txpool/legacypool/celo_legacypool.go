@@ -30,9 +30,11 @@ func (pool *LegacyPool) getBalances(address common.Address, currencies []common.
 }
 
 func (pool *LegacyPool) recreateCeloProperties() {
+	head := pool.currentHead.Load()
 	pool.celoBackend = &contracts.CeloBackend{
 		ChainConfig: pool.chainconfig,
 		State:       pool.currentState,
+		BlockTime:   head.Time,
 	}
 	feeCurrencyContext, err := contracts.GetFeeCurrencyContext(pool.celoBackend)
 	if err != nil {

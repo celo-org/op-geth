@@ -144,37 +144,18 @@ func TestCeloBackendCallContractWithPush0(t *testing.T) {
 		}
 	})
 
-	t.Run("new Mento cUSD impl works with correct Time", func(t *testing.T) {
-		// When Shanghai rules are active (ShanghaiTime: 0), the new
-		// implementation works correctly. This proves the contract + state
-		// are set up correctly and only the hardcoded Time: 0 in
-		// CeloBackend is the problem.
-		shanghaiAtZero := uint64(0)
-		configWithShanghai := &params.ChainConfig{
-			ChainID:                 big.NewInt(42220),
-			HomesteadBlock:          big.NewInt(0),
-			EIP150Block:             big.NewInt(0),
-			EIP155Block:             big.NewInt(0),
-			EIP158Block:             big.NewInt(0),
-			ByzantiumBlock:          big.NewInt(0),
-			ConstantinopleBlock:     big.NewInt(0),
-			PetersburgBlock:         big.NewInt(0),
-			IstanbulBlock:           big.NewInt(0),
-			BerlinBlock:             big.NewInt(0),
-			LondonBlock:             big.NewInt(0),
-			MergeNetsplitBlock:      big.NewInt(0),
-			ShanghaiTime:            &shanghaiAtZero,
-			TerminalTotalDifficulty: big.NewInt(0),
-		}
-
+	t.Run("new Mento cUSD impl works with BlockTime set", func(t *testing.T) {
+		// With the fix: setting BlockTime to a post-Shanghai timestamp
+		// makes the new implementation work correctly.
 		backend := &CeloBackend{
-			ChainConfig: configWithShanghai,
+			ChainConfig: config,
 			State:       newState(),
+			BlockTime:   shanghaiTime, // >= ShanghaiTime, so Shanghai rules are active
 		}
 
 		balance, err := GetBalanceERC20(backend, accountAddr, contractAddr)
 		if err != nil {
-			t.Fatalf("unexpected error with Shanghai-enabled config: %v", err)
+			t.Fatalf("unexpected error with BlockTime set: %v", err)
 		}
 		if balance.Cmp(expectedBalance) != 0 {
 			t.Fatalf("expected balance %v, got %v", expectedBalance, balance)

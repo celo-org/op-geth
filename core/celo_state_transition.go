@@ -43,6 +43,7 @@ func (st *stateTransition) canPayFee(checkAmountForGas *big.Int) error {
 		backend := &contracts.CeloBackend{
 			ChainConfig: st.evm.ChainConfig(),
 			State:       st.state,
+			BlockTime:   st.evm.Context.Time,
 		}
 		balance, err := contracts.GetBalanceERC20(backend, st.msg.From, *st.msg.FeeCurrency)
 		if err != nil {
