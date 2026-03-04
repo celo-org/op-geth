@@ -88,10 +88,13 @@ func newCeloTestBackend(t *testing.T, pending bool, genBlock func(i int, b *core
 	chain.SetSafe(chain.GetBlockByNumber(25).Header())
 
 	state, _ := chain.State()
+	head := chain.CurrentBlock()
 
 	backend := contracts.CeloBackend{
 		ChainConfig: &config,
 		State:       state,
+		BlockNumber: head.Number,
+		Time:        head.Time,
 	}
 	exchangeRates, err := contracts.GetExchangeRates(&backend)
 	if err != nil {
