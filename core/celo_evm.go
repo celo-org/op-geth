@@ -14,7 +14,7 @@ func GetFeeCurrencyContext(header *types.Header, config *params.ChainConfig, sta
 		return &common.FeeCurrencyContext{}
 	}
 
-	caller := &contracts.CeloBackend{ChainConfig: config, State: statedb}
+	caller := &contracts.CeloBackend{ChainConfig: config, State: statedb, BlockNumber: header.Number, Time: header.Time}
 
 	feeCurrencyContext, err := contracts.GetFeeCurrencyContext(caller)
 	if err != nil {

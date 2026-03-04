@@ -27,7 +27,7 @@ type CeloAPIBackend struct {
 }
 
 func (b *CeloAPIBackend) getContractCaller(ctx context.Context, blockNumOrHash rpc.BlockNumberOrHash) (*contracts.CeloBackend, error) {
-	state, _, err := b.Backend.StateAndHeaderByNumberOrHash(
+	state, header, err := b.Backend.StateAndHeaderByNumberOrHash(
 		ctx,
 		blockNumOrHash,
 	)
@@ -37,6 +37,8 @@ func (b *CeloAPIBackend) getContractCaller(ctx context.Context, blockNumOrHash r
 	return &contracts.CeloBackend{
 		ChainConfig: b.Backend.ChainConfig(),
 		State:       state,
+		BlockNumber: header.Number,
+		Time:        header.Time,
 	}, nil
 }
 

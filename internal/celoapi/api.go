@@ -46,9 +46,12 @@ func (c *CeloAPI) celoBackendCurrentState() (*contracts.CeloBackend, error) {
 		return nil, fmt.Errorf("retrieve HEAD blockchain state': %w", err)
 	}
 
+	currentBlock := c.eth.BlockChain().CurrentBlock()
 	cb := &contracts.CeloBackend{
 		ChainConfig: c.eth.BlockChain().Config(),
 		State:       state,
+		BlockNumber: currentBlock.Number,
+		Time:        currentBlock.Time,
 	}
 	return cb, nil
 }

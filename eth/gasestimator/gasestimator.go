@@ -307,6 +307,8 @@ func getFeeBalance(call *core.Message, opts *Options) *big.Int {
 	cb := &contracts.CeloBackend{
 		ChainConfig: opts.Config,
 		State:       opts.State,
+		BlockNumber: opts.Header.Number,
+		Time:        opts.Header.Time,
 	}
 	return contracts.GetFeeBalance(cb, call.From, call.FeeCurrency)
 }

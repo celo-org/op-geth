@@ -117,10 +117,13 @@ func testNativeTransferWithFeeCurrency(t *testing.T, scheme string, feeCurrencyA
 	}
 
 	state, _ := chain.State()
+	head := chain.CurrentBlock()
 
 	backend := contracts.CeloBackend{
 		ChainConfig: chain.chainConfig,
 		State:       state,
+		BlockNumber: head.Number,
+		Time:        head.Time,
 	}
 	exchangeRates, err := contracts.GetExchangeRates(&backend)
 	if err != nil {
