@@ -119,5 +119,5 @@ func (c *celoSigner) Equal(s Signer) bool {
 }
 
 func (c *celoSigner) latestFork() fork {
-	return c.activatedForks[len(c.activatedForks)-1]
+	return c.activatedForks[0]
 }

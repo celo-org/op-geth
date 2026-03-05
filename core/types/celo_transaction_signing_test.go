@@ -88,6 +88,136 @@ func newCeloTx(t *testing.T) *Transaction {
 	})
 }
 
+// TestAccessListTxWrongChainId verifies that AccessListTx with a wrong chain ID
+// returns ErrInvalidChainId when calling Sender.
+// Regression test for https://github.com/celo-org/op-geth/issues/454
+func TestAccessListTxWrongChainId(t *testing.T) {
+	t.Parallel()
+
+	// Create a signer with CeloMainnetChainID
+	signerChainID := big.NewInt(params.CeloMainnetChainID)
+	cel2Time := uint64(1000)
+	chainConfig := *params.TestChainConfig
+	chainConfig.ChainID = signerChainID
+	chainConfig.Cel2Time = &cel2Time
+	signer := MakeSigner(&chainConfig, big.NewInt(1), cel2Time+1)
+
+	// Create an AccessListTx with a DIFFERENT chain ID
+	wrongChainID := big.NewInt(999)
+	signerKey, _ := crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
+	to := common.HexToAddress("0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045")
+
+	txData := &AccessListTx{
+		ChainID:  wrongChainID,
+		Nonce:    10,
+		GasPrice: big.NewInt(1e9),
+		Gas:      500000,
+		To:       &to,
+		Value:    big.NewInt(1e18),
+		Data:     []byte{0x11, 0x22},
+	}
+
+	// Sign with a signer that uses the wrong chain ID (to create a valid signature for that chain)
+	wrongChainSigner := NewEIP2930Signer(wrongChainID)
+	signedTx, err := SignNewTx(signerKey, wrongChainSigner, txData)
+	require.NoError(t, err)
+
+	// Now try to recover sender using the correct chain ID signer
+	// This SHOULD fail with ErrInvalidChainId because tx.ChainId() != signerChainID
+	_, err = signer.Sender(signedTx)
+	require.ErrorIs(t, err, ErrInvalidChainId, "expected ErrInvalidChainId when tx chain ID doesn't match signer chain ID")
+}
+
+// TestChainIDExceptionTxs verifies that the historical transactions that were
+// accepted with wrong chain IDs (before the validation fix) can still have
+// their sender recovered correctly.
+// See https://github.com/celo-org/op-geth/issues/454
+func TestChainIDExceptionTxs(t *testing.T) {
+	t.Parallel()
+
+	hexToBigInt := func(hex string) *big.Int {
+		hex = strings.TrimPrefix(hex, "0x")
+		b, _ := new(big.Int).SetString(hex, 16)
+		return b
+	}
+
+	tests := []struct {
+		name           string
+		signerChainID  int64       // The correct network chain ID
+		txChainID      int64       // The wrong chain ID in the tx
+		expectedHash   common.Hash // Expected tx hash (must match exception)
+		expectedSender common.Address
+		txData         *AccessListTx
+	}{
+		{
+			name:           "Celo Sepolia exception tx",
+			signerChainID:  params.CeloSepoliaChainID, // 11142220
+			txChainID:      11162320,                  // Wrong chain ID in the tx
+			expectedHash:   common.HexToHash("0x4564b9903cfe18814ffc2696e1ad141d9cc3a549dc4f5726e15f7be2e0ccaa25"),
+			expectedSender: common.HexToAddress("0xEaD1E32D7D783f37d464d223Aa4E4C88f02Ae52f"),
+			txData: &AccessListTx{
+				ChainID:    big.NewInt(11162320),
+				Nonce:      0,
+				GasPrice:   big.NewInt(25001000000),
+				Gas:        21000,
+				To:         ptrTo(common.HexToAddress("0x52BCbd8Bf68EE24A15adcD05951a49aE6c168A14")),
+				Value:      big.NewInt(1),
+				Data:       []byte{},
+				AccessList: AccessList{},
+				V:          big.NewInt(0),
+				R:          hexToBigInt("0xc96e8be6c653d8eb6f03842ffdc29347745c8122893f9cc9b64809d1bc49302d"),
+				S:          hexToBigInt("0x49b51c8d25cff880327495cb1f322ebfbcb42151e9b617466eee2c737737f259"),
+			},
+		},
+		{
+			name:           "Celo Mainnet exception tx",
+			signerChainID:  params.CeloMainnetChainID, // 42220
+			txChainID:      44787,                     // Alfajores chain ID - wrong!
+			expectedHash:   common.HexToHash("0xd6bdf3261df7e7a4db6bbc486bf091eb62dfd2883e335c31219b6a37d3febca1"),
+			expectedSender: common.HexToAddress("0x5421E1E4fcc98AF133059723BA049B4ea1e9DE91"),
+			txData: &AccessListTx{
+				ChainID:    big.NewInt(44787),
+				Nonce:      5,
+				GasPrice:   big.NewInt(30000000000),
+				Gas:        30000,
+				To:         ptrTo(common.HexToAddress("0xC04b2FFAcc30C7FE19741E27ea150ccCc212e072")),
+				Value:      big.NewInt(200000000000000),
+				Data:       []byte{},
+				AccessList: AccessList{},
+				V:          big.NewInt(1),
+				R:          hexToBigInt("0x197400aceb14cacc9a75710ebb4d3cba85538fc96a2b254d51a0db742c24ad08"),
+				S:          hexToBigInt("0x2c18b58821fe02d107ff1fa9f4fd157bafb571bb83867d56618de3e1045141bb"),
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create the transaction
+			tx := NewTx(tt.txData)
+
+			// Verify the hash matches the expected exception hash
+			require.Equal(t, tt.expectedHash, tx.Hash(), "tx hash must match exception hash")
+
+			// Create a signer for the correct network chain ID
+			cel2Time := uint64(1000)
+			chainConfig := *params.TestChainConfig
+			chainConfig.ChainID = big.NewInt(tt.signerChainID)
+			chainConfig.Cel2Time = &cel2Time
+			signer := MakeSigner(&chainConfig, big.NewInt(1), cel2Time+1)
+
+			// Verify that sender can be recovered despite chain ID mismatch
+			sender, err := signer.Sender(tx)
+			require.NoError(t, err, "sender recovery should succeed for exception tx")
+			require.Equal(t, tt.expectedSender, sender, "recovered sender must match expected")
+		})
+	}
+}
+
+func ptrTo[T any](v T) *T {
+	return &v
+}
+
 func randomAddress(t *testing.T) *common.Address {
 	addr := common.Address{}
 	_, err := rand.Read(addr[:])

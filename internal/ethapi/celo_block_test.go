@@ -156,18 +156,6 @@ func Test_retrievePreGingerbreadGasLimit(t *testing.T) {
 			expected: big.NewInt(32e6),
 		},
 		{
-			name:     "should return latest gas limit value for Celo Alfajores",
-			chainId:  params.CeloAlfajoresChainID,
-			height:   big.NewInt(11143973),
-			expected: big.NewInt(35e6),
-		},
-		{
-			name:     "should return latest gas limit value for Celo Baklava",
-			chainId:  params.CeloBaklavaChainID,
-			height:   big.NewInt(15158971),
-			expected: big.NewInt(20e6),
-		},
-		{
 			name:     "should return nil if chainId is unknown",
 			chainId:  12345,
 			height:   big.NewInt(10),

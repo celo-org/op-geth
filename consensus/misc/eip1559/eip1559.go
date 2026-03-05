@@ -61,7 +61,8 @@ func VerifyEIP1559Header(config *params.ChainConfig, parent, header *types.Heade
 func CalcBaseFee(config *params.ChainConfig, parent *types.Header, time uint64) (response *big.Int) {
 	defer func() {
 		// If the base fee response is below the floor, intercept the return and return the floor instead.
-		if config.Celo != nil {
+		// Skip this for Jovian and later, as OP's minBaseFee mechanism handles it.
+		if config.Celo != nil && !config.IsJovian(time) {
 			baseFeeFloor := new(big.Int).SetUint64(config.Celo.EIP1559BaseFeeFloor)
 			if response.Cmp(baseFeeFloor) < 0 {
 				response = baseFeeFloor
