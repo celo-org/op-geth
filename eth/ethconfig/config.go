@@ -55,7 +55,7 @@ var Defaults = Config{
 	NetworkId:            0,            // enable auto configuration of networkID == chainID
 	TxLookupLimit:        2350000 * 12, // Increase by factor 12 to adapt to Celo 1s block time
 	TransactionHistory:   2350000 * 12,
-	LogHistory:           2350000, // Increase by factor 12 to adapt to Celo 1s block time
+	LogHistory:           2350000 * 12, // Increase by factor 12 to adapt to Celo 1s block time
 	StateHistory:         params.FullImmutabilityThreshold,
 	DatabaseCache:        512,
 	TrieCleanCache:       154,
