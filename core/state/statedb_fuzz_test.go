@@ -182,7 +182,7 @@ func (test *stateTest) run() bool {
 		accountOrigin []map[common.Address][]byte
 		storages      []map[common.Hash]map[common.Hash][]byte
 		storageOrigin []map[common.Address]map[common.Hash][]byte
-		copyUpdate    = func(update *stateUpdate) {
+		copyUpdate    = func(update *StateUpdate) {
 			accounts = append(accounts, maps.Clone(update.accounts))
 			accountOrigin = append(accountOrigin, maps.Clone(update.accountsOrigin))
 			storages = append(storages, maps.Clone(update.storages))
@@ -209,7 +209,7 @@ func (test *stateTest) run() bool {
 		if i != 0 {
 			root = roots[len(roots)-1]
 		}
-		state, err := New(root, NewDatabase(tdb, snaps))
+		state, err := New(root, NewDatabase(tdb, nil).WithSnapshot(snaps))
 		if err != nil {
 			panic(err)
 		}

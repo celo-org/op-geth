@@ -32,13 +32,11 @@ type PrecompileOverrides func(rules params.Rules, original PrecompiledContract, 
 
 // Config are the configuration options for the Interpreter
 type Config struct {
-	Tracer                  *tracing.Hooks
+	Tracer *tracing.Hooks
+
 	NoBaseFee               bool  // Forces the EIP-1559 baseFee to 0 (needed for 0 price calls)
 	EnablePreimageRecording bool  // Enables recording of SHA3/keccak preimages
 	ExtraEips               []int // Additional EIPS that are to be enabled
-
-	StatelessSelfValidation bool // Generate execution witnesses and self-check against them (testing purpose)
-	EnableWitnessStats      bool // Whether trie access statistics collection is enabled
 
 	PrecompileOverrides PrecompileOverrides                   // Precompiles can be swapped / changed / wrapped as needed
 	NoMaxCodeSize       bool                                  // Ignore Max code size and max init code size limits
