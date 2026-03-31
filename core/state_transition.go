@@ -332,6 +332,10 @@ func (st *stateTransition) buyGas() error {
 	var l1Cost *big.Int
 	var operatorCost *uint256.Int
 	if !st.msg.SkipNonceChecks && !st.msg.SkipTransactionChecks {
+		// NOTE: l1Cost and operatorCost are denominated in CELO wei, while mgval is
+		// denominated in fee-currency units when a fee currency is used. This is fine because
+		// on Celo chains' l1BaseFeeScalar, l1BlobBaseFeeScalar, and operatorFeeScalar are
+		// always zero, so l1Cost and operatorCost are always zero.
 		if st.evm.Context.L1CostFunc != nil {
 			l1Cost = st.evm.Context.L1CostFunc(st.msg.RollupCostData, st.evm.Context.Time)
 			if l1Cost != nil {
@@ -347,6 +351,8 @@ func (st *stateTransition) buyGas() error {
 	if st.msg.GasFeeCap != nil {
 		balanceCheck.SetUint64(st.msg.GasLimit)
 		balanceCheck = balanceCheck.Mul(balanceCheck, st.msg.GasFeeCap)
+		// See note above: l1Cost/operatorCost are always zero on Celo chains,
+		// so mixing CELO-denominated values into fee-currency balanceCheck is safe.
 		if l1Cost != nil {
 			balanceCheck.Add(balanceCheck, l1Cost)
 		}
