@@ -35,7 +35,7 @@ import (
 // ExecutionResult includes all output after executing given evm
 // message no matter the execution itself is successful or not.
 type ExecutionResult struct {
-	UsedGas    uint64 // Total used gas, not including the refunded gas
+	UsedGas    uint64 // Total used gas, refunded gas is deducted
 	MaxUsedGas uint64 // Maximum gas consumed during execution, excluding gas refunds.
 	Err        error  // Any error encountered during the execution(listed in core/vm/errors.go)
 	ReturnData []byte // Returned data from evm(function result or data supplied with revert opcode)
@@ -221,6 +221,11 @@ func TransactionToMessage(tx *types.Transaction, s types.Signer, baseFee *big.In
 // indicates a core error meaning that the message would always fail for that particular
 // state and would never be accepted within a block.
 func ApplyMessage(evm *vm.EVM, msg *Message, gp *GasPool) (*ExecutionResult, error) {
+	// Do not panic if the gas pool is nil. This is allowed when executing
+	// a single message via RPC invocation.
+	if gp == nil {
+		gp = NewGasPool(msg.GasLimit)
+	}
 	evm.SetTxContext(NewEVMTxContext(msg))
 	return newStateTransition(evm, msg, gp).execute()
 }
@@ -331,8 +336,8 @@ func (st *stateTransition) buyGas() error {
 		st.evm.Config.Tracer.OnGasChange(0, st.msg.GasLimit, tracing.GasChangeTxInitialBalance)
 	}
 	st.gasRemaining = st.msg.GasLimit
-
 	st.initialGas = st.msg.GasLimit
+
 	mgvalU256, _ := uint256.FromBig(mgval)
 	st.state.SubBalance(st.msg.From, mgvalU256, tracing.BalanceDecreaseGasBuy)
 	return nil
@@ -494,6 +499,9 @@ func (st *stateTransition) execute() (*ExecutionResult, error) {
 		if st.msg.IsSystemTx && !st.evm.ChainConfig().IsRegolith(st.evm.Context.Time) {
 			gasUsed = 0
 		}
+		if err := st.gp.ReturnGas(0, gasUsed); err != nil {
+			return nil, fmt.Errorf("return gas for deposit tx: %w", err)
+		}
 		result = &ExecutionResult{
 			UsedGas:    gasUsed,
 			Err:        fmt.Errorf("failed deposit: %w", err),
@@ -572,8 +580,10 @@ func (st *stateTransition) innerExecute() (*ExecutionResult, error) {
 	}
 
 	// Check whether the init code size has been exceeded.
-	if rules.IsShanghai && contractCreation && len(msg.Data) > params.MaxInitCodeSize {
-		return nil, fmt.Errorf("%w: code size %v limit %v", ErrMaxInitCodeSizeExceeded, len(msg.Data), params.MaxInitCodeSize)
+	if contractCreation {
+		if err := vm.CheckMaxInitCodeSize(&rules, uint64(len(msg.Data))); err != nil {
+			return nil, err
+		}
 	}
 
 	// Execute the preparatory steps for state transition which includes:
@@ -621,6 +631,9 @@ func (st *stateTransition) innerExecute() (*ExecutionResult, error) {
 		if st.msg.IsSystemTx {
 			gasUsed = 0
 		}
+		if err := st.gp.ReturnGas(0, gasUsed); err != nil {
+			return nil, fmt.Errorf("return gas for pre-Regolith deposit tx: %w", err)
+		}
 		return &ExecutionResult{
 			UsedGas:    gasUsed,
 			Err:        vmerr,
@@ -647,7 +660,20 @@ func (st *stateTransition) innerExecute() (*ExecutionResult, error) {
 			peakGasUsed = floorDataGas
 		}
 	}
+	// Return gas to the user
 	st.returnGas()
+
+	// Return gas to the gas pool
+	if rules.IsAmsterdam {
+		// Refund is excluded for returning
+		err = st.gp.ReturnGas(st.initialGas-peakGasUsed, st.gasUsed())
+	} else {
+		// Refund is included for returning
+		err = st.gp.ReturnGas(st.gasRemaining, st.gasUsed())
+	}
+	if err != nil {
+		return nil, err
+	}
 
 	// OP-Stack: Note for deposit tx there is no ETH refunded for unused gas, but that's taken care of by the fact that gasPrice
 	// is always 0 for deposit tx. So calling refundGas will ensure the gasUsed accounting is correct without actually
@@ -707,7 +733,9 @@ func (st *stateTransition) innerExecute() (*ExecutionResult, error) {
 			}
 		}
 	}
-
+	if rules.IsAmsterdam {
+		st.evm.StateDB.EmitLogsForBurnAccounts()
+	}
 	return &ExecutionResult{
 		UsedGas:    st.gasUsed(),
 		MaxUsedGas: peakGasUsed,
@@ -803,10 +831,6 @@ func (st *stateTransition) returnGas() {
 	if st.evm.Config.Tracer != nil && st.evm.Config.Tracer.OnGasChange != nil && st.gasRemaining > 0 {
 		st.evm.Config.Tracer.OnGasChange(st.gasRemaining, 0, tracing.GasChangeTxLeftOverReturned)
 	}
-
-	// Also return remaining gas to the block gas counter so it is
-	// available for the next transaction.
-	st.gp.AddGas(st.gasRemaining)
 }
 
 func (st *stateTransition) refundIsthmusOperatorCost() {

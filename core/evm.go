@@ -146,7 +146,10 @@ func CanTransfer(db vm.StateDB, addr common.Address, amount *uint256.Int) bool {
 }
 
 // Transfer subtracts amount from sender and adds amount to recipient using the given Db
-func Transfer(db vm.StateDB, sender, recipient common.Address, amount *uint256.Int) {
+func Transfer(db vm.StateDB, sender, recipient common.Address, amount *uint256.Int, rules *params.Rules) {
 	db.SubBalance(sender, amount, tracing.BalanceChangeTransfer)
 	db.AddBalance(recipient, amount, tracing.BalanceChangeTransfer)
+	if rules.IsAmsterdam && !amount.IsZero() && sender != recipient {
+		db.AddLog(types.EthTransferLog(sender, recipient, amount))
+	}
 }

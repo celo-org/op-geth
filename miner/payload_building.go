@@ -31,9 +31,11 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/stateless"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/internal/telemetry"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // BuildPayloadArgs contains the provided parameters for building payload.
@@ -144,14 +146,15 @@ func newPayload(lifeCtx context.Context, empty *types.Block, emptyRequests [][]b
 
 var errInterruptedUpdate = errors.New("interrupted payload update")
 
-// update updates the full-block with latest built version.
-func (payload *Payload) update(r *newPayloadResult, elapsed time.Duration) {
+// update updates the full-block with latest built version. It returns true if
+// the update was accepted (i.e. the new block has higher fees than the previous).
+func (payload *Payload) update(r *newPayloadResult, elapsed time.Duration) (result bool) {
 	payload.lock.Lock()
 	defer payload.lock.Unlock()
 
 	select {
 	case <-payload.stop:
-		return // reject stale update
+		return false // reject stale update
 	default:
 	}
 
@@ -189,7 +192,9 @@ func (payload *Payload) update(r *newPayloadResult, elapsed time.Duration) {
 			"root", r.block.Root(),
 			"elapsed", common.PrettyDuration(elapsed),
 		)
+		result = true
 	}
+	return
 }
 
 // Resolve returns the latest built payload and also terminates the background
@@ -298,8 +303,32 @@ func (payload *Payload) stopBuilding() {
 	})
 }
 
+func (miner *Miner) runBuildIteration(ctx context.Context, start time.Time, iteration int, payload *Payload, params *generateParams, witness bool) {
+	ctx, span, spanEnd := telemetry.StartSpan(ctx, "miner.buildIteration",
+		telemetry.Int64Attribute("iteration", int64(iteration)),
+	)
+	var err error
+	defer spanEnd(&err)
+
+	r := miner.generateWork(ctx, params, witness)
+	err = r.err
+	if err == nil {
+		accepted := payload.update(r, time.Since(start))
+		span.SetAttributes(telemetry.BoolAttribute("update.accepted", accepted))
+	} else {
+		log.Info("Error while generating work", "id", payload.id, "err", err)
+	}
+}
+
 // buildPayload builds the payload according to the provided parameters.
-func (miner *Miner) buildPayload(args *BuildPayloadArgs, witness bool) (*Payload, error) {
+func (miner *Miner) buildPayload(ctx context.Context, args *BuildPayloadArgs, witness bool) (result *Payload, err error) {
+	payloadID := args.Id()
+	ctx, _, spanEnd := telemetry.StartSpan(ctx, "miner.buildPayload",
+		telemetry.StringAttribute("payload.id", payloadID.String()),
+		telemetry.StringAttribute("parent.hash", args.Parent.String()),
+		telemetry.Int64Attribute("timestamp", int64(args.Timestamp)),
+	)
+	defer spanEnd(&err)
 	if args.NoTxPool { // don't start the background payload updating job if there is no tx pool to pull from
 		// Build the initial version with no transaction included. It should be fast
 		// enough to run. The empty payload can at least make sure there is something
@@ -322,7 +351,7 @@ func (miner *Miner) buildPayload(args *BuildPayloadArgs, witness bool) (*Payload
 			// No RPC requests allowed.
 			rpcCtx: nil,
 		}
-		empty := miner.generateWork(emptyParams, witness)
+		empty := miner.generateWork(ctx, emptyParams, witness)
 		if empty.err != nil {
 			return nil, empty.err
 		}
@@ -367,12 +396,20 @@ func (miner *Miner) buildPayload(args *BuildPayloadArgs, witness bool) (*Payload
 	// Spin up a routine for updating the payload in background. This strategy
 	// can maximum the revenue for including transactions with highest fee.
 	go func() {
+		var iteration int
+		bCtx, bSpan, bSpanEnd := telemetry.StartSpan(ctx, "miner.background",
+			telemetry.Int64Attribute("block.number", int64(miner.chain.CurrentHeader().Number.Uint64())),
+		)
+		defer func() {
+			bSpan.SetAttributes(telemetry.Int64Attribute("iterations.total", int64(iteration)))
+			bSpanEnd(nil)
+		}()
+
 		// Setup the timer for re-building the payload. The initial clock is kept
 		// for triggering process immediately.
 		timer := time.NewTimer(0)
 		defer timer.Stop()
 
-		start := time.Now()
 		// Setup the timer for terminating the payload building process as determined
 		// by validateParams.
 		endTimer := time.NewTimer(blockTime)
@@ -380,58 +417,59 @@ func (miner *Miner) buildPayload(args *BuildPayloadArgs, witness bool) (*Payload
 
 		timeout := time.Now().Add(blockTime)
 
-		stopReason := "delivery"
-		defer func() {
-			log.Info("Stopping work on payload",
-				"id", payload.id,
-				"reason", stopReason,
-				"elapsed", common.PrettyDuration(time.Since(start)))
-		}()
-
-		updatePayload := func() time.Duration {
-			start := time.Now()
-			// getSealingBlock is interrupted by shared interrupt
-			r := miner.generateWork(fullParams, witness)
-			dur := time.Since(start)
-			// update handles error case
-			payload.update(r, dur)
-			if r.err == nil {
-				// after first successful pass, we're updating
-				fullParams.isUpdate = true
-			}
-			timer.Reset(max(0, miner.config.Recommit-time.Since(start)))
-			return dur
-		}
-
 		var lastDuration time.Duration
 		for {
 			select {
 			case <-miner.lifeCtx.Done():
-				stopReason = "miner-shutdown"
+				bSpan.SetAttributes(telemetry.StringAttribute("exit.reason", "miner-shutdown"))
+				log.Info("Stopping work on payload", "id", payload.id, "reason", "miner-shutdown")
 			case <-timer.C:
-				// We have to prioritize the stop signal because the recommit timer
-				// might have fired while stop also got closed.
+				// When block building takes close to the full recommit interval,
+				// the timer fires near-instantly on the next iteration. If the
+				// payload was resolved during that build, both timer.C and
+				// payload.stop are ready and Go's select picks one at random.
+				// Check payload.stop first to avoid an unnecessary generateWork.
 				select {
 				case <-payload.stop:
+					payload.updateSpanForDelivery(bSpan)
+					log.Info("Stopping work on payload", "id", payload.id, "reason", "delivery")
 					return
 				default:
 				}
 				// Assuming last payload building duration as lower bound for next one,
 				// skip new update if we're too close to the timeout anyways.
 				if lastDuration > 0 && time.Now().Add(lastDuration).After(timeout) {
-					stopReason = "near-timeout"
+					bSpan.SetAttributes(telemetry.StringAttribute("exit.reason", "near-timeout"))
+					log.Info("Stopping work on payload", "id", payload.id, "reason", "near-timeout")
 					return
 				}
-				lastDuration = updatePayload()
+				start := time.Now()
+				iteration++
+				miner.runBuildIteration(bCtx, start, iteration, payload, fullParams, witness)
+				lastDuration = time.Since(start)
+				timer.Reset(max(0, miner.config.Recommit-time.Since(start)))
 			case <-payload.stop:
+				payload.updateSpanForDelivery(bSpan)
+				log.Info("Stopping work on payload", "id", payload.id, "reason", "delivery")
 				return
 			case <-endTimer.C:
-				stopReason = "timeout"
+				payload.updateSpanForDelivery(bSpan)
+				log.Info("Stopping work on payload", "id", payload.id, "reason", "timeout")
 				return
 			}
 		}
 	}()
 	return payload, nil
+}
+
+func (payload *Payload) updateSpanForDelivery(bSpan trace.Span) {
+	payload.lock.Lock()
+	emptyDelivered := payload.full == nil
+	payload.lock.Unlock()
+	bSpan.SetAttributes(
+		telemetry.StringAttribute("exit.reason", "delivery"),
+		telemetry.BoolAttribute("empty.delivered", emptyDelivered),
+	)
 }
 
 // BuildTestingPayload is for testing_buildBlockV*. It creates a block with the exact content given
@@ -445,12 +483,13 @@ func (miner *Miner) BuildTestingPayload(args *BuildPayloadArgs, transactions []*
 		random:            args.Random,
 		withdrawals:       args.Withdrawals,
 		beaconRoot:        args.BeaconRoot,
+		slotNum:           args.SlotNum,
 		noTxs:             empty,
 		forceOverrides:    true,
 		overrideExtraData: extraData,
 		overrideTxs:       transactions,
 	}
-	res := miner.generateWork(fullParams, false)
+	res := miner.generateWork(context.Background(), fullParams, false)
 	if res.err != nil {
 		return nil, res.err
 	}
