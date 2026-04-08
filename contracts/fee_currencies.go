@@ -281,6 +281,7 @@ func GetBalanceERC20(caller bind.ContractCaller, accountOwner common.Address, co
 
 // GetFeeBalance returns the account's balance from the specified feeCurrency
 // (if feeCurrency is nil or ZeroAddress, native currency balance is returned).
+// Returns zero if the ERC20 balance call fails (e.g. no contract at the address).
 func GetFeeBalance(backend *CeloBackend, account common.Address, feeCurrency *common.Address) *big.Int {
 	if feeCurrency == nil || *feeCurrency == common.ZeroAddress {
 		return backend.State.GetBalance(account).ToBig()
@@ -288,6 +289,7 @@ func GetFeeBalance(backend *CeloBackend, account common.Address, feeCurrency *co
 	balance, err := GetBalanceERC20(backend, account, *feeCurrency)
 	if err != nil {
 		log.Error("Error while trying to get ERC20 balance:", "cause", err, "contract", feeCurrency.Hex(), "account", account.Hex())
+		return new(big.Int)
 	}
 	return balance
 }
