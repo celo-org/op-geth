@@ -102,8 +102,13 @@ func (r *Receipt) EncodeRLP(w io.Writer) error {
 	enc.WriteBytes(r.PostStateOrStatus)
 	enc.WriteUint64(r.GasUsed)
 	enc.Write(r.Logs)
-	r.maybeWriteDepositFields(&enc, false)
-	r.maybeWriteCeloBaseFee(&enc)
+	// Trailing fields are gated by TxType so encode/decode stay symmetric.
+	switch r.TxType {
+	case types.DepositTxType:
+		r.maybeWriteDepositFields(&enc, false)
+	case types.CeloDynamicFeeTxV2Type:
+		r.maybeWriteCeloBaseFee(&enc)
+	}
 	enc.ListEnd(list)
 	return enc.Flush()
 }
@@ -118,11 +123,17 @@ func (r *Receipt) DecodeRLP(s *rlp.Stream) error {
 	if err != nil {
 		return fmt.Errorf("invalid txType: %w", err)
 	}
+	if txType > 0x7f {
+		return fmt.Errorf("invalid txType: too large")
+	}
 	r.TxType = txType
 
 	r.PostStateOrStatus, err = s.Bytes()
 	if err != nil {
 		return fmt.Errorf("invalid postStateOrStatus: %w", err)
+	}
+	if len(r.PostStateOrStatus) > 1 && len(r.PostStateOrStatus) != 32 {
+		return fmt.Errorf("invalid postStateOrStatus length %d", len(r.PostStateOrStatus))
 	}
 	r.GasUsed, err = s.Uint64()
 	if err != nil {
