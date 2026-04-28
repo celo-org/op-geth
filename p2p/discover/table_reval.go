@@ -154,32 +154,40 @@ func (tr *tableRevalidation) handleResponse(tab *Table, resp revalidationRespons
 	}()
 
 	// Remaining logic needs access to Table internals.
-	tab.mutex.Lock()
-	defer tab.mutex.Unlock()
+	var nodeToNotify *enode.Node
+	func() {
+		tab.mutex.Lock()
+		defer tab.mutex.Unlock()
 
-	if !resp.didRespond {
-		n.livenessChecks /= 3
-		if n.livenessChecks <= 0 {
-			tab.deleteInBucket(b, n.ID())
-		} else {
-			tab.log.Debug("Node revalidation failed", "b", b.index, "id", n.ID(), "checks", n.livenessChecks, "q", n.revalList.name)
-			tr.moveToList(&tr.fast, n, now, &tab.rand)
+		if !resp.didRespond {
+			n.livenessChecks /= 3
+			if n.livenessChecks <= 0 {
+				_, nodeToNotify = tab.deleteInBucket(b, n.ID())
+			} else {
+				tab.log.Debug("Node revalidation failed", "b", b.index, "id", n.ID(), "checks", n.livenessChecks, "q", n.revalList.name)
+				tr.moveToList(&tr.fast, n, now, &tab.rand)
+			}
+			return
 		}
-		return
-	}
 
-	// The node responded.
-	n.livenessChecks++
-	n.isValidatedLive = true
-	tab.log.Debug("Node revalidated", "b", b.index, "id", n.ID(), "checks", n.livenessChecks, "q", n.revalList.name)
-	var endpointChanged bool
-	if resp.newRecord != nil {
-		_, endpointChanged = tab.bumpInBucket(b, resp.newRecord, false)
-	}
+		// The node responded.
+		n.livenessChecks++
+		n.isValidatedLive = true
+		tab.log.Debug("Node revalidated", "b", b.index, "id", n.ID(), "checks", n.livenessChecks, "q", n.revalList.name)
+		var endpointChanged bool
+		if resp.newRecord != nil {
+			_, endpointChanged = tab.bumpInBucket(b, resp.newRecord, false)
+		}
 
-	// Node moves to slow list if it passed and hasn't changed.
-	if !endpointChanged {
-		tr.moveToList(&tr.slow, n, now, &tab.rand)
+		// Node moves to slow list if it passed and hasn't changed.
+		if !endpointChanged {
+			tr.moveToList(&tr.slow, n, now, &tab.rand)
+		}
+	}()
+
+	// Send notification outside of mutex to avoid deadlock.
+	if nodeToNotify != nil {
+		tab.nodeFeed.Send(nodeToNotify)
 	}
 }
 
