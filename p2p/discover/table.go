@@ -699,30 +699,30 @@ func (tab *Table) handleTrackRequest(op trackRequestOp) {
 
 	// Collect nodes to notify after releasing mutex.
 	var nodesToNotify []*enode.Node
+	func() {
+		tab.mutex.Lock()
+		defer tab.mutex.Unlock()
 
-	tab.mutex.Lock()
-
-	b := tab.bucket(op.node.ID())
-	// Remove the node from the local table if it fails to return anything useful too
-	// many times, but only if there are enough other nodes in the bucket. This latter
-	// condition specifically exists to make bootstrapping in smaller test networks more
-	// reliable.
-	if fails >= maxFindnodeFailures && len(b.entries) >= bucketSize/4 {
-		_, nodeToNotify := tab.deleteInBucket(b, op.node.ID())
-		if nodeToNotify != nil {
-			nodesToNotify = append(nodesToNotify, nodeToNotify)
+		b := tab.bucket(op.node.ID())
+		// Remove the node from the local table if it fails to return anything useful too
+		// many times, but only if there are enough other nodes in the bucket. This latter
+		// condition specifically exists to make bootstrapping in smaller test networks more
+		// reliable.
+		if fails >= maxFindnodeFailures && len(b.entries) >= bucketSize/4 {
+			_, nodeToNotify := tab.deleteInBucket(b, op.node.ID())
+			if nodeToNotify != nil {
+				nodesToNotify = append(nodesToNotify, nodeToNotify)
+			}
 		}
-	}
 
-	// Add found nodes.
-	for _, n := range op.foundNodes {
-		_, addedNode := tab.handleAddNode(addNodeOp{n, false, false})
-		if addedNode != nil {
-			nodesToNotify = append(nodesToNotify, addedNode)
+		// Add found nodes.
+		for _, n := range op.foundNodes {
+			_, addedNode := tab.handleAddNode(addNodeOp{n, false, false})
+			if addedNode != nil {
+				nodesToNotify = append(nodesToNotify, addedNode)
+			}
 		}
-	}
-
-	tab.mutex.Unlock()
+	}()
 
 	// Send notifications outside of mutex to avoid deadlock.
 	for _, n := range nodesToNotify {
@@ -743,10 +743,13 @@ func pushNode(list []*tableNode, n *tableNode, max int) ([]*tableNode, *tableNod
 
 // deleteNode removes a node from the table.
 func (tab *Table) deleteNode(n *enode.Node) {
-	tab.mutex.Lock()
-	b := tab.bucket(n.ID())
-	_, nodeToNotify := tab.deleteInBucket(b, n.ID())
-	tab.mutex.Unlock()
+	var nodeToNotify *enode.Node
+	func() {
+		tab.mutex.Lock()
+		defer tab.mutex.Unlock()
+		b := tab.bucket(n.ID())
+		_, nodeToNotify = tab.deleteInBucket(b, n.ID())
+	}()
 
 	// Send notification outside of mutex to avoid deadlock.
 	if nodeToNotify != nil {
