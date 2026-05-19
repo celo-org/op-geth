@@ -180,7 +180,7 @@ func TestVerifyEIP1559HeaderRejectsMissingParentBaseFee(t *testing.T) {
 }
 
 func TestVerifyEIP1559HeaderRejectsMissingGingerbreadParentBaseFee(t *testing.T) {
-	config := config()
+	config := celoConfig()
 	config.GingerbreadBlock = big.NewInt(20)
 	config.LondonBlock = big.NewInt(40)
 	parent := &types.Header{
@@ -198,6 +198,27 @@ func TestVerifyEIP1559HeaderRejectsMissingGingerbreadParentBaseFee(t *testing.T)
 	err := VerifyEIP1559Header(config, parent, header)
 	if err == nil || err.Error() != "parent header is missing baseFee" {
 		t.Fatalf("error mismatch: have %v, want missing parent baseFee", err)
+	}
+}
+
+func TestVerifyEIP1559HeaderAllowsOPStackGenesisGingerbreadAtLondonTransition(t *testing.T) {
+	config := opConfig()
+	config.GingerbreadBlock = common.Big0
+	config.LondonBlock = big.NewInt(105235063)
+	parent := &types.Header{
+		Number:   big.NewInt(105235062),
+		GasLimit: 10_000_000,
+		GasUsed:  5_000_000,
+	}
+	header := &types.Header{
+		Number:   big.NewInt(105235063),
+		GasLimit: parent.GasLimit * config.ElasticityMultiplier(),
+		GasUsed:  5_000_000,
+		BaseFee:  new(big.Int).SetUint64(params.InitialBaseFee),
+	}
+
+	if err := VerifyEIP1559Header(config, parent, header); err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 
