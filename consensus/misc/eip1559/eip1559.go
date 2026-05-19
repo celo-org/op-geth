@@ -46,7 +46,7 @@ func VerifyEIP1559Header(config *params.ChainConfig, parent, header *types.Heade
 		return errors.New("header is missing baseFee")
 	}
 	// Verify the parent header is not malformed
-	if config.IsLondon(parent.Number) && parent.BaseFee == nil {
+	if parent.BaseFee == nil && (config.IsLondon(parent.Number) || config.IsGingerbread(parent.Number)) {
 		return errors.New("parent header is missing baseFee")
 	}
 	// Verify the baseFee is correct based on the parent header.

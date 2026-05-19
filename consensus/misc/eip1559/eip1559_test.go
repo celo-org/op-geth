@@ -160,6 +160,65 @@ func TestCalcBaseFee(t *testing.T) {
 	}
 }
 
+func TestVerifyEIP1559HeaderRejectsMissingParentBaseFee(t *testing.T) {
+	parent := &types.Header{
+		Number:   common.Big32,
+		GasLimit: 20_000_000,
+		GasUsed:  9_000_000,
+	}
+	header := &types.Header{
+		Number:   big.NewInt(33),
+		GasLimit: parent.GasLimit,
+		GasUsed:  parent.GasUsed,
+		BaseFee:  big.NewInt(params.InitialBaseFee),
+	}
+
+	err := VerifyEIP1559Header(config(), parent, header)
+	if err == nil || err.Error() != "parent header is missing baseFee" {
+		t.Fatalf("error mismatch: have %v, want missing parent baseFee", err)
+	}
+}
+
+func TestVerifyEIP1559HeaderRejectsMissingGingerbreadParentBaseFee(t *testing.T) {
+	config := config()
+	config.GingerbreadBlock = big.NewInt(20)
+	config.LondonBlock = big.NewInt(40)
+	parent := &types.Header{
+		Number:   common.Big32,
+		GasLimit: 20_000_000,
+		GasUsed:  9_000_000,
+	}
+	header := &types.Header{
+		Number:   big.NewInt(33),
+		GasLimit: parent.GasLimit * config.ElasticityMultiplier(),
+		GasUsed:  parent.GasUsed,
+		BaseFee:  big.NewInt(params.InitialBaseFee),
+	}
+
+	err := VerifyEIP1559Header(config, parent, header)
+	if err == nil || err.Error() != "parent header is missing baseFee" {
+		t.Fatalf("error mismatch: have %v, want missing parent baseFee", err)
+	}
+}
+
+func TestVerifyEIP1559HeaderAllowsMissingParentBaseFeeAtLondonTransition(t *testing.T) {
+	parent := &types.Header{
+		Number:   big.NewInt(4),
+		GasLimit: 10_000_000,
+		GasUsed:  5_000_000,
+	}
+	header := &types.Header{
+		Number:   big.NewInt(5),
+		GasLimit: parent.GasLimit * config().ElasticityMultiplier(),
+		GasUsed:  5_000_000,
+		BaseFee:  new(big.Int).SetUint64(params.InitialBaseFee),
+	}
+
+	if err := VerifyEIP1559Header(config(), parent, header); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 // TestCalcBaseFeeOptimism assumes all blocks are 1559-blocks but tests the Canyon activation
 func TestCalcBaseFeeOptimism(t *testing.T) {
 	tests := []struct {

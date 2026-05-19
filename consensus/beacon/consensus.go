@@ -320,6 +320,7 @@ func (beacon *Beacon) verifyHeaders(chain consensus.ChainHeaderReader, headers [
 		results = make(chan error, len(headers))
 	)
 	go func() {
+		var lastErr error
 		for i, header := range headers {
 			var parent *types.Header
 			if i == 0 {
@@ -328,10 +329,11 @@ func (beacon *Beacon) verifyHeaders(chain consensus.ChainHeaderReader, headers [
 				} else {
 					parent = chain.GetHeader(headers[0].ParentHash, headers[0].Number.Uint64()-1)
 				}
-			} else if headers[i-1].Hash() == headers[i].ParentHash {
+			} else if lastErr == nil && headers[i-1].Hash() == headers[i].ParentHash {
 				parent = headers[i-1]
 			}
 			if parent == nil {
+				lastErr = consensus.ErrUnknownAncestor
 				select {
 				case <-abort:
 					return
@@ -345,6 +347,7 @@ func (beacon *Beacon) verifyHeaders(chain consensus.ChainHeaderReader, headers [
 				return
 			case results <- err:
 			}
+			lastErr = err
 		}
 	}()
 	return abort, results
