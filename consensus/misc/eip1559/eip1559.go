@@ -110,7 +110,7 @@ func CalcBaseFee(config *params.ChainConfig, parent *types.Header, time uint64) 
 }
 
 func isCeloGingerbread(config *params.ChainConfig, number *big.Int) bool {
-	return config.Celo != nil && config.GingerbreadBlock != nil && config.GingerbreadBlock.Sign() > 0 && config.IsGingerbread(number)
+	return config.Celo != nil && config.IsGingerbread(number)
 }
 
 func calcBaseFeeInner(config *params.ChainConfig, parent *types.Header, elasticity uint64, denominator uint64) *big.Int {
