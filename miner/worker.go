@@ -234,15 +234,21 @@ func (miner *Miner) generateWork(ctx context.Context, genParam *generateParams, 
 	for _, tx := range genParam.txs {
 		from, _ := types.Sender(work.signer, tx)
 		work.state.SetTxContext(tx.Hash(), work.tcount)
+		availableGas := work.gasPool.Gas()
 		err = miner.commitTransaction(ctx, work, tx)
 		if err != nil {
 			return &newPayloadResult{err: fmt.Errorf("failed to force-include tx: %s type: %d sender: %s nonce: %d, err: %w", tx.Hash(), tx.Type(), from, tx.Nonce(), err)}
 		}
-		// the non-fee currency pool in the multipool is not used, but for consistency
-		// subtract the gas. Don't check the error either, this has been checked already
-		// with the work.gasPool.
+		// Keep the native (non-fee-currency) pool of the multipool in sync with the
+		// real block gas pool: subtract the gas actually consumed, not tx.Gas().
+		// Forced deposits can carry a large gas limit while consuming little gas
+		// (post-Regolith unused deposit gas is refunded to work.gasPool); charging
+		// the limit here would wrongly throttle native CELO txpool selection, which
+		// is filtered against this same pool in fillTransactions. Don't check the
+		// error, this has been checked already with the work.gasPool.
+		gasUsed := availableGas - work.gasPool.Gas()
 		pool, _ := work.multiGasPool.PoolFor(nil)
-		pool.SubGas(tx.Gas())
+		pool.SubGas(gasUsed)
 	}
 	if !genParam.noTxs {
 		// If forceOverrides is true and overrideTxs is not empty, commit the override transactions
