@@ -20,7 +20,7 @@ runs:
     - uses: actions/setup-node@v4
       if: "${{ inputs.setup-node-e2e == 'true' }}"
       with:
-        node-version-file: "e2e_test/js-tests/package.json"
+        node-version-file: "e2e_test/js-tests/.node-version"
     - name: Install Foundry
       if: "${{ inputs.setup-foundry == 'true' }}"
       uses: foundry-rs/foundry-toolchain@v1.4.0
