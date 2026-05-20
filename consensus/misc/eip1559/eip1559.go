@@ -45,6 +45,10 @@ func VerifyEIP1559Header(config *params.ChainConfig, parent, header *types.Heade
 	if header.BaseFee == nil {
 		return errors.New("header is missing baseFee")
 	}
+	// Verify the parent header is not malformed
+	if parent.BaseFee == nil && (config.IsLondon(parent.Number) || isCeloGingerbread(config, parent.Number)) {
+		return errors.New("parent header is missing baseFee")
+	}
 	// Verify the baseFee is correct based on the parent header.
 	expectedBaseFee := CalcBaseFee(config, parent, header.Time)
 	if header.BaseFee.Cmp(expectedBaseFee) != 0 {
@@ -75,7 +79,7 @@ func CalcBaseFee(config *params.ChainConfig, parent *types.Header, time uint64) 
 	// using our existing base fee and simply transition the calculation logic across to the real eip1559 logic
 	// I.E. stop using original celo logic defined in a smart contract. So if gingerbread was active for the parent
 	// block we don't set the base fee to the InitialBaseFee, and instead use the normal calculation logic.
-	if !config.IsLondon(parent.Number) && !config.IsGingerbread(parent.Number) {
+	if !config.IsLondon(parent.Number) && !isCeloGingerbread(config, parent.Number) {
 		return new(big.Int).SetUint64(params.InitialBaseFee)
 	}
 
@@ -103,6 +107,10 @@ func CalcBaseFee(config *params.ChainConfig, parent *types.Header, time uint64) 
 	}
 
 	return baseFee
+}
+
+func isCeloGingerbread(config *params.ChainConfig, number *big.Int) bool {
+	return config.Celo != nil && config.IsGingerbread(number)
 }
 
 func calcBaseFeeInner(config *params.ChainConfig, parent *types.Header, elasticity uint64, denominator uint64) *big.Int {
