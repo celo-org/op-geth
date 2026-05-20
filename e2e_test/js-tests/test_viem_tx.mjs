@@ -206,7 +206,7 @@ describe("viem send tx", () => {
 
 		const rate = await getRate(process.env.FEE_CURRENCY);
 		// Native to FEE_CURRENCY
-		const nativeCap = 30_000_000_000;
+		const nativeCap = 60_000_000_000;
 		const bumpCurrencyCap = rate.toFeeCurrency(BigInt(Math.round(nativeCap * priceBump)));
 		const failToBumpCurrencyCap = rate.toFeeCurrency(BigInt(
 			Math.round(nativeCap * priceNearBump)
@@ -229,7 +229,7 @@ describe("viem send tx", () => {
 		);
 
 		// FEE_CURRENCY to Native
-		const currencyCap = 60_000_000_000;
+		const currencyCap = 120_000_000_000;
 		const bumpNativeCap = rate.toNative(BigInt(Math.round(currencyCap * priceBump)));
 		const failToBumpNativeCap = rate.toNative(BigInt(
 			Math.round(currencyCap * priceNearBump)
