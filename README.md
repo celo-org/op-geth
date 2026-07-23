@@ -1,5 +1,8 @@
 ## Celo L2 Execution Client
 
+> [!WARNING]
+> **Deprecation notice**: This client is deprecated and has been replaced by [op-reth](https://github.com/celo-org/celo-kona). See the [op-geth deprecation notice](https://docs.celo.org/infra-partners/notices/op-geth-deprecation) for details and migration instructions.
+
 This is a fork of [Optimism's op-geth](https://github.com/ethereum-optimism/op-geth), which itself is a fork of [go-ethereum
 (geth)](https://github.com/ethereum/go-ethereum/). It is used as the execution client for the Celo L2 blockchain.
 
