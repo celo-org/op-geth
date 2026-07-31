@@ -24,6 +24,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/trie"
 )
@@ -70,6 +71,7 @@ type PayloadAttributes struct {
 	Withdrawals           []*types.Withdrawal `json:"withdrawals"`
 	BeaconRoot            *common.Hash        `json:"parentBeaconBlockRoot"`
 	SlotNumber            *uint64             `json:"slotNumber"`
+	TargetGasLimit        *uint64             `json:"targetGasLimit"`
 
 	// Transactions is a field for rollups: the transactions list is forced into the block
 	Transactions [][]byte `json:"transactions,omitempty"  gencodec:"optional"`
@@ -89,11 +91,12 @@ type PayloadAttributes struct {
 
 // JSON type overrides for PayloadAttributes.
 type payloadAttributesMarshaling struct {
-	Transactions  []hexutil.Bytes
-	GasLimit      *hexutil.Uint64
-	EIP1559Params hexutil.Bytes
-	Timestamp     hexutil.Uint64
-	SlotNumber    *hexutil.Uint64
+	Transactions   []hexutil.Bytes
+	GasLimit       *hexutil.Uint64
+	EIP1559Params  hexutil.Bytes
+	Timestamp      hexutil.Uint64
+	SlotNumber     *hexutil.Uint64
+	TargetGasLimit *hexutil.Uint64
 }
 
 //go:generate go run github.com/fjl/gencodec -type ExecutableData -field-override executableDataMarshaling -out gen_ed.go
@@ -118,6 +121,10 @@ type ExecutableData struct {
 	BlobGasUsed   *uint64             `json:"blobGasUsed"`
 	ExcessBlobGas *uint64             `json:"excessBlobGas"`
 	SlotNumber    *uint64             `json:"slotNumber"`
+	// BlockAccessList carries the EIP-7928 RLP payload as an Engine API hex value.
+	// op-geth does not execute BALs yet; keeping this field opaque lets clients use
+	// op-geth's Engine API types to drive a newer geth subprocess without data loss.
+	BlockAccessList *hexutil.Bytes `json:"blockAccessList,omitempty"`
 
 	// OP-Stack Isthmus specific field:
 	// instead of computing the root from a withdrawals list, set it directly.
@@ -344,29 +351,38 @@ func ExecutableDataToBlockNoHash(data ExecutableData, versionedHashes []common.H
 	} else if isthmusEnabled {
 		return nil, fmt.Errorf("requests must be an empty array for Isthmus blocks")
 	}
+	if data.SlotNumber != nil && data.BlockAccessList == nil {
+		return nil, fmt.Errorf("attribute BlockAccessList is required for Amsterdam blocks")
+	}
+	var blockAccessListHash *common.Hash
+	if data.BlockAccessList != nil {
+		hash := crypto.Keccak256Hash(*data.BlockAccessList)
+		blockAccessListHash = &hash
+	}
 
 	header := &types.Header{
-		ParentHash:       data.ParentHash,
-		UncleHash:        types.EmptyUncleHash,
-		Coinbase:         data.FeeRecipient,
-		Root:             data.StateRoot,
-		TxHash:           types.DeriveSha(types.Transactions(txs), trie.NewStackTrie(nil)),
-		ReceiptHash:      data.ReceiptsRoot,
-		Bloom:            types.BytesToBloom(data.LogsBloom),
-		Difficulty:       common.Big0,
-		Number:           new(big.Int).SetUint64(data.Number),
-		GasLimit:         data.GasLimit,
-		GasUsed:          data.GasUsed,
-		Time:             data.Timestamp,
-		BaseFee:          data.BaseFeePerGas,
-		Extra:            data.ExtraData,
-		MixDigest:        data.Random,
-		WithdrawalsHash:  withdrawalsRoot,
-		ExcessBlobGas:    data.ExcessBlobGas,
-		BlobGasUsed:      data.BlobGasUsed,
-		ParentBeaconRoot: beaconRoot,
-		RequestsHash:     requestsHash,
-		SlotNumber:       data.SlotNumber,
+		ParentHash:          data.ParentHash,
+		UncleHash:           types.EmptyUncleHash,
+		Coinbase:            data.FeeRecipient,
+		Root:                data.StateRoot,
+		TxHash:              types.DeriveSha(types.Transactions(txs), trie.NewStackTrie(nil)),
+		ReceiptHash:         data.ReceiptsRoot,
+		Bloom:               types.BytesToBloom(data.LogsBloom),
+		Difficulty:          common.Big0,
+		Number:              new(big.Int).SetUint64(data.Number),
+		GasLimit:            data.GasLimit,
+		GasUsed:             data.GasUsed,
+		Time:                data.Timestamp,
+		BaseFee:             data.BaseFeePerGas,
+		Extra:               data.ExtraData,
+		MixDigest:           data.Random,
+		WithdrawalsHash:     withdrawalsRoot,
+		ExcessBlobGas:       data.ExcessBlobGas,
+		BlobGasUsed:         data.BlobGasUsed,
+		ParentBeaconRoot:    beaconRoot,
+		RequestsHash:        requestsHash,
+		BlockAccessListHash: blockAccessListHash,
+		SlotNumber:          data.SlotNumber,
 	}
 	return types.NewBlockWithHeader(header).
 			WithBody(types.Body{Transactions: txs, Uncles: nil, Withdrawals: data.Withdrawals}),
