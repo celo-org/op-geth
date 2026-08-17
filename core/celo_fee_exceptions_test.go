@@ -60,6 +60,12 @@ func TestFeeCurrencyMaxFeeExceptionTxHash(t *testing.T) {
 	require.Equal(t, uint64(params.CeloMainnetChainID), pinned.chainID)
 	require.Equal(t, uint64(75046581), pinned.blockNumber)
 
+	// The signature is part of the hash, so recovering the sender ties R/S to the
+	// account that actually sent the transaction on mainnet.
+	sender, err := types.Sender(types.LatestSignerForChainID(big.NewInt(params.CeloMainnetChainID)), tx)
+	require.NoError(t, err)
+	require.Equal(t, common.HexToAddress("0x1De6939e8A03DF7bDc970A951B67628d2D138eD9"), sender)
+
 	// The rebuilt transaction is the one the exception is meant to cover, and it is
 	// only exempt on the network and at the height it is canonical on.
 	require.True(t, isFeeCurrencyMaxFeeException(hash, big.NewInt(params.CeloMainnetChainID), big.NewInt(75046581)))
