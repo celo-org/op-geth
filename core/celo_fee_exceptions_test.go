@@ -218,9 +218,12 @@ func TestFeeCurrencyMaxFeeExceptionSkipsTheCheck(t *testing.T) {
 		balance, err := contracts.GetBalanceERC20(&backend, addr1, feeCurrencyAddr)
 		require.NoError(t, err)
 
+		receipts := chain.GetReceiptsByHash(blocks[0].Hash())
+		require.Len(t, receipts, 1)
+		effectiveFee := new(big.Int).Mul(new(big.Int).SetUint64(receipts[0].GasUsed), receipts[0].EffectiveGasPrice)
+
 		paid := new(big.Int).Sub(DevBalance, balance)
-		require.Positive(t, paid.Sign(), "the sender must have been debited")
-		require.Negative(t, paid.Cmp(maxFee), "the sender must have paid less than the max fee it could not afford")
+		require.Equal(t, effectiveFee, paid, "the sender must have been debited gasUsed * effectiveGasPrice")
 		return nil
 	}
 
