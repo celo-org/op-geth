@@ -35,13 +35,15 @@ func (st *stateTransition) canPayFee(checkAmountForGas *big.Int) error {
 			return fmt.Errorf("%w: address %v have %v want %v", ErrInsufficientFunds, st.msg.From.Hex(), balance, checkAmountInCelo)
 		}
 	}
-	// Historical transactions that celo-reth accepted under its more lenient rule are
-	// exempt from the max fee check. Skipping it leaves subFees to debit the fee
-	// currency as usual, so the debit still has to succeed - the same constraint
-	// celo-reth applies. See isFeeCurrencyMaxFeeException.
-	isException := st.msg.FeeCurrency != nil && isFeeCurrencyMaxFeeException(st.msg.TxHash, st.evm.ChainConfig().ChainID, st.evm.Context.BlockNumber)
+	if checkAmountInAlternativeCurrency.Cmp(common.Big0) > 0 {
+		// Historical transactions that celo-reth accepted under its more lenient rule
+		// are exempt from the max fee check. Skipping it leaves subFees to debit the
+		// fee currency as usual, so the debit still has to succeed - the same
+		// constraint celo-reth applies. See isFeeCurrencyMaxFeeException.
+		if isFeeCurrencyMaxFeeException(st.msg.TxHash, st.evm.ChainConfig().ChainID, st.evm.Context.BlockNumber) {
+			return nil
+		}
 
-	if checkAmountInAlternativeCurrency.Cmp(common.Big0) > 0 && !isException {
 		_, overflow := uint256.FromBig(checkAmountInAlternativeCurrency)
 		if overflow {
 			return fmt.Errorf("%w: address %v required balance exceeds 256 bits", ErrInsufficientFunds, st.msg.From.Hex())
