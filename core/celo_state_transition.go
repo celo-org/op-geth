@@ -39,7 +39,7 @@ func (st *stateTransition) canPayFee(checkAmountForGas *big.Int) error {
 	// exempt from the max fee check. Skipping it leaves subFees to debit the fee
 	// currency as usual, so the debit still has to succeed - the same constraint
 	// celo-reth applies. See isFeeCurrencyMaxFeeException.
-	isException := st.msg.FeeCurrency != nil && isFeeCurrencyMaxFeeException(st.msg.TxHash, st.evm.ChainConfig().ChainID)
+	isException := st.msg.FeeCurrency != nil && isFeeCurrencyMaxFeeException(st.msg.TxHash, st.evm.ChainConfig().ChainID, st.evm.Context.BlockNumber)
 
 	if checkAmountInAlternativeCurrency.Cmp(common.Big0) > 0 && !isException {
 		_, overflow := uint256.FromBig(checkAmountInAlternativeCurrency)
