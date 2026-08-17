@@ -6,7 +6,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/consensus/beacon"
+	"github.com/ethereum/go-ethereum/consensus/ethash"
+	"github.com/ethereum/go-ethereum/contracts"
+	"github.com/ethereum/go-ethereum/core/rawdb"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/stretchr/testify/require"
 )
@@ -17,7 +22,8 @@ import (
 //
 // Celo Mainnet block 75046581, tx index 29.
 func TestFeeCurrencyMaxFeeExceptionTxHash(t *testing.T) {
-	t.Parallel()
+	// Not parallel: TestFeeCurrencyMaxFeeExceptionSkipsTheCheck swaps out
+	// feeCurrencyMaxFeeExceptions, which this test reads.
 
 	require.Len(t, feeCurrencyMaxFeeExceptions, 1, "update this test when an entry is added")
 	pinned := feeCurrencyMaxFeeExceptions[0]
@@ -74,7 +80,8 @@ func TestFeeCurrencyMaxFeeExceptionTxHash(t *testing.T) {
 }
 
 func TestIsFeeCurrencyMaxFeeException(t *testing.T) {
-	t.Parallel()
+	// Not parallel: TestFeeCurrencyMaxFeeExceptionSkipsTheCheck swaps out
+	// feeCurrencyMaxFeeExceptions, which this test reads.
 
 	require.Len(t, feeCurrencyMaxFeeExceptions, 1, "update this test when an entry is added")
 	pinned := feeCurrencyMaxFeeExceptions[0]
@@ -102,4 +109,123 @@ func TestIsFeeCurrencyMaxFeeException(t *testing.T) {
 	require.False(t, isFeeCurrencyMaxFeeException(known, chainID, nil))
 	require.False(t, isFeeCurrencyMaxFeeException(known, huge, block))
 	require.False(t, isFeeCurrencyMaxFeeException(known, chainID, huge))
+}
+
+// TestFeeCurrencyMaxFeeExceptionSkipsTheCheck is the behavioural counterpart to the unit
+// tests above: it reproduces the mainnet halt and shows the exception clearing it.
+//
+// A CIP-64 transaction is built whose sender holds a fee currency balance in
+// [gasLimit * effectiveGasPrice, gasLimit * maxFeePerGas) - the window where celo-reth and
+// op-geth disagreed. The block containing it is generated with the exception pinned, so it
+// is the canonical-but-lenient block op-geth has to accept, and then inserted twice:
+//
+//  1. with the exception pinned, the block is accepted and the fee currency debit still
+//     runs, which is the constraint celo-reth applies;
+//  2. without it, op-geth rejects the very same block - exactly the failure that stalled
+//     mainnet at block 75046581.
+func TestFeeCurrencyMaxFeeExceptionSkipsTheCheck(t *testing.T) {
+	// Not parallel: this test swaps out the package-level exception table.
+	defer func(saved []feeCurrencyMaxFeeException) {
+		feeCurrencyMaxFeeExceptions = saved
+	}(feeCurrencyMaxFeeExceptions)
+
+	var (
+		aa      = common.HexToAddress("0x000000000000000000000000000000000000aaaa")
+		engine  = beacon.New(ethash.NewFaker())
+		key1, _ = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
+		addr1   = crypto.PubkeyToAddress(key1.PublicKey)
+		// Worth twice as much as native CELO, so the base fee halves when converted.
+		feeCurrencyAddr = DevFeeCurrencyAddr2
+		config          = *params.AllEthashProtocolChanges
+		gspec           = &Genesis{
+			Config: &config,
+			Alloc:  CeloGenesisAccounts(addr1),
+		}
+
+		// The sender holds DevBalance of the fee currency. gasLimit * maxFeePerGas is
+		// twice that, so the max fee check cannot pass, while the effective price is
+		// small enough that the debit comfortably can.
+		gasLimit  = uint64(100000)
+		gasFeeCap = big.NewInt(2_000_000_000_000_000)
+		gasTipCap = big.NewInt(2)
+	)
+	gspec.Config.Cel2Time = uint64ptr(0)
+	gspec.Config.BedrockBlock = big.NewInt(0)
+	gspec.Config.Optimism = &params.OptimismConfig{EIP1559Elasticity: 2, EIP1559Denominator: 8}
+	gspec.Config.Celo = &params.CeloConfig{EIP1559BaseFeeFloor: 250000000}
+	gspec.Config.Ethash = nil
+
+	maxFee := new(big.Int).Mul(new(big.Int).SetUint64(gasLimit), gasFeeCap)
+	require.Negative(t, DevBalance.Cmp(maxFee), "the max fee must be unaffordable, or the exception is untested")
+
+	signer := types.LatestSigner(gspec.Config)
+
+	// Generate the block with the exception in place, so that block production itself is
+	// not what rejects the transaction.
+	var tx *types.Transaction
+	_, blocks, _ := GenerateChainWithGenesis(gspec, engine, 1, func(i int, b *BlockGen) {
+		b.SetCoinbase(common.Address{1})
+
+		var err error
+		tx, err = types.SignTx(types.NewTx(&types.CeloDynamicFeeTxV2{
+			ChainID:     gspec.Config.ChainID,
+			Nonce:       0,
+			To:          &aa,
+			Gas:         gasLimit,
+			GasFeeCap:   gasFeeCap,
+			GasTipCap:   gasTipCap,
+			FeeCurrency: &feeCurrencyAddr,
+		}), signer, key1)
+		require.NoError(t, err)
+
+		feeCurrencyMaxFeeExceptions = []feeCurrencyMaxFeeException{{
+			txHash:      tx.Hash(),
+			chainID:     gspec.Config.ChainID.Uint64(),
+			blockNumber: b.Number().Uint64(),
+		}}
+
+		b.AddTx(tx)
+	})
+	require.Len(t, blocks, 1)
+	require.Len(t, blocks[0].Transactions(), 1, "the transaction must have made it into the block")
+
+	insert := func() error {
+		chain, err := NewBlockChain(rawdb.NewMemoryDatabase(), gspec, engine, DefaultConfig())
+		require.NoError(t, err)
+		defer chain.Stop()
+
+		if _, err := chain.InsertChain(blocks); err != nil {
+			return err
+		}
+
+		// The exception skips the max fee check and nothing else, so the fee currency
+		// debit must still have happened.
+		state, err := chain.State()
+		require.NoError(t, err)
+		head := chain.CurrentBlock()
+		backend := contracts.CeloBackend{
+			ChainConfig: chain.chainConfig,
+			State:       state,
+			BlockNumber: head.Number,
+			Time:        head.Time,
+		}
+		balance, err := contracts.GetBalanceERC20(&backend, addr1, feeCurrencyAddr)
+		require.NoError(t, err)
+
+		paid := new(big.Int).Sub(DevBalance, balance)
+		require.Positive(t, paid.Sign(), "the sender must have been debited")
+		require.Negative(t, paid.Cmp(maxFee), "the sender must have paid less than the max fee it could not afford")
+		return nil
+	}
+
+	// 1: the pinned transaction is accepted despite failing the max fee check.
+	require.NoError(t, insert(), "the pinned block must be accepted")
+
+	// 2: the same block without the exception is what stalled mainnet.
+	feeCurrencyMaxFeeExceptions = nil
+	err := insert()
+	require.Error(t, err, "without the exception op-geth must reject the block")
+	require.ErrorContains(t, err, ErrInsufficientFunds.Error())
+	require.ErrorContains(t, err, "have "+DevBalance.String()+" want "+maxFee.String())
+	require.ErrorContains(t, err, feeCurrencyAddr.Hex())
 }
