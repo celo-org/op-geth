@@ -12,12 +12,15 @@ import (
 )
 
 // TestFeeCurrencyMaxFeeExceptionTxHash rebuilds the canonical mainnet transaction from
-// its on-chain fields and checks that it hashes to mainnetMaxFeeExceptionHash, so the
+// its on-chain fields and checks that it hashes to the pinned exception entry, so the
 // exception cannot silently point at nothing.
 //
 // Celo Mainnet block 75046581, tx index 29.
 func TestFeeCurrencyMaxFeeExceptionTxHash(t *testing.T) {
 	t.Parallel()
+
+	require.Len(t, feeCurrencyMaxFeeExceptions, 1, "update this test when an entry is added")
+	pinned := feeCurrencyMaxFeeExceptions[0]
 
 	hexToBigInt := func(s string) *big.Int {
 		b, ok := new(big.Int).SetString(s, 0)
@@ -47,12 +50,15 @@ func TestFeeCurrencyMaxFeeExceptionTxHash(t *testing.T) {
 	})
 
 	hash := tx.Hash()
-	require.Equal(t, mainnetMaxFeeExceptionHash, hash)
+	require.Equal(t, pinned.txHash, hash)
+	require.Equal(t, uint64(params.CeloMainnetChainID), pinned.chainID)
+	require.Equal(t, uint64(75046581), pinned.blockNumber)
 
 	// The rebuilt transaction is the one the exception is meant to cover, and it is
-	// only exempt on the network it is canonical on.
-	require.True(t, isFeeCurrencyMaxFeeException(hash, big.NewInt(params.CeloMainnetChainID)))
-	require.False(t, isFeeCurrencyMaxFeeException(hash, big.NewInt(params.CeloSepoliaChainID)))
+	// only exempt on the network and at the height it is canonical on.
+	require.True(t, isFeeCurrencyMaxFeeException(hash, big.NewInt(params.CeloMainnetChainID), big.NewInt(75046581)))
+	require.False(t, isFeeCurrencyMaxFeeException(hash, big.NewInt(params.CeloSepoliaChainID), big.NewInt(75046581)))
+	require.False(t, isFeeCurrencyMaxFeeException(hash, big.NewInt(params.CeloMainnetChainID), big.NewInt(75046582)))
 
 	// The sender must still not be able to afford the max fee, otherwise the exception
 	// is pointless and the plain check would already let the transaction through.
@@ -70,19 +76,30 @@ func TestFeeCurrencyMaxFeeExceptionTxHash(t *testing.T) {
 func TestIsFeeCurrencyMaxFeeException(t *testing.T) {
 	t.Parallel()
 
-	known := mainnetMaxFeeExceptionHash
+	require.Len(t, feeCurrencyMaxFeeExceptions, 1, "update this test when an entry is added")
+	pinned := feeCurrencyMaxFeeExceptions[0]
+	known := pinned.txHash
+	chainID := new(big.Int).SetUint64(pinned.chainID)
+	block := new(big.Int).SetUint64(pinned.blockNumber)
 
-	require.True(t, isFeeCurrencyMaxFeeException(known, big.NewInt(params.CeloMainnetChainID)))
-	require.False(t, isFeeCurrencyMaxFeeException(known, big.NewInt(params.CeloSepoliaChainID)))
-	require.False(t, isFeeCurrencyMaxFeeException(known, big.NewInt(1)))
-	require.False(t, isFeeCurrencyMaxFeeException(known, nil))
+	require.True(t, isFeeCurrencyMaxFeeException(known, chainID, block))
+
+	// Every part of the key has to match.
+	require.False(t, isFeeCurrencyMaxFeeException(known, big.NewInt(params.CeloSepoliaChainID), block))
+	require.False(t, isFeeCurrencyMaxFeeException(known, big.NewInt(1), block))
+	require.False(t, isFeeCurrencyMaxFeeException(known, chainID, new(big.Int).Sub(block, common.Big1)))
+	require.False(t, isFeeCurrencyMaxFeeException(known, chainID, new(big.Int).Add(block, common.Big1)))
+	require.False(t, isFeeCurrencyMaxFeeException(known, chainID, common.Big0))
 
 	// Messages synthesized from call arguments carry no transaction hash and must never
 	// match an exception.
-	require.False(t, isFeeCurrencyMaxFeeException(common.Hash{}, big.NewInt(params.CeloMainnetChainID)))
-	require.False(t, isFeeCurrencyMaxFeeException(common.HexToHash("0xdead"), big.NewInt(params.CeloMainnetChainID)))
+	require.False(t, isFeeCurrencyMaxFeeException(common.Hash{}, chainID, block))
+	require.False(t, isFeeCurrencyMaxFeeException(common.HexToHash("0xdead"), chainID, block))
 
-	// A chain ID that does not fit in a uint64 must not panic or match.
+	// A nil or oversized chain ID or block number must not panic or match.
 	huge := new(big.Int).Lsh(big.NewInt(1), 70)
-	require.False(t, isFeeCurrencyMaxFeeException(known, huge))
+	require.False(t, isFeeCurrencyMaxFeeException(known, nil, block))
+	require.False(t, isFeeCurrencyMaxFeeException(known, chainID, nil))
+	require.False(t, isFeeCurrencyMaxFeeException(known, huge, block))
+	require.False(t, isFeeCurrencyMaxFeeException(known, chainID, huge))
 }
