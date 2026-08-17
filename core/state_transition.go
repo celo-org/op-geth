@@ -216,6 +216,12 @@ type Message struct {
 	// `nil` corresponds to CELO (native currency).
 	// All other values should correspond to ERC20 contract addresses.
 	FeeCurrency *common.Address
+
+	// TxHash is the hash of the transaction this message was derived from. It is only
+	// set by TransactionToMessage and stays zero for messages synthesized from call
+	// arguments (eth_call, eth_estimateGas). It is used solely to look up the
+	// historical exceptions in isFeeCurrencyMaxFeeException.
+	TxHash common.Hash
 }
 
 // TransactionToMessage converts a transaction into a Message.
@@ -242,6 +248,7 @@ func TransactionToMessage(tx *types.Transaction, s types.Signer, baseFee *big.In
 		RollupCostData: tx.RollupCostData(),
 
 		FeeCurrency: tx.FeeCurrency(),
+		TxHash:      tx.Hash(),
 	}
 	// If baseFee provided, set gasPrice to effectiveGasPrice.
 	if baseFee != nil {
