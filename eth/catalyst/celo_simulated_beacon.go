@@ -29,6 +29,8 @@ func (c *SimulatedBeacon) payloadSystemTransaction() ([][]byte, error) {
 	// the `Data` field, which is used by `types.Receipts.DeriveFields` and expected to be all 0 to match
 	// what is deducted in the STF.
 	if c.eth.BlockChain().Config().Optimism != nil && c.eth.BlockChain().Config().IsEcotone(c.eth.BlockChain().CurrentBlock().Time) {
+		// Post-Regolith L1-info deposits are not system transactions; the STF rejects
+		// system transactions after Regolith, which would stop the dev chain from sealing.
 		sysTx := &types.DepositTx{
 			SourceHash:          common.Hash{},
 			From:                common.Address{},
@@ -36,7 +38,7 @@ func (c *SimulatedBeacon) payloadSystemTransaction() ([][]byte, error) {
 			Mint:                nil,
 			Value:               big.NewInt(0),
 			Gas:                 50000,
-			IsSystemTransaction: true,
+			IsSystemTransaction: false,
 			Data:                make([]byte, PostEcotoneGasParamsLength),
 		}
 
