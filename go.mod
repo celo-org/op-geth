@@ -1,6 +1,6 @@
 module github.com/ethereum/go-ethereum
 
-go 1.24.0
+go 1.25
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.2.0
@@ -45,7 +45,7 @@ require (
 	github.com/jackpal/go-nat-pmp v1.0.2
 	github.com/jedisct1/go-minisign v0.0.0-20230811132847-661be99b8267
 	github.com/karalabe/hid v1.0.1-0.20260315100226-f5d04adeffeb
-	github.com/klauspost/compress v1.17.8
+	github.com/klauspost/compress v1.20.2
 	github.com/kylelemons/godebug v1.1.0
 	github.com/mattn/go-colorable v0.1.13
 	github.com/mattn/go-isatty v0.0.20
